@@ -1,0 +1,45 @@
+# Gradle
+.gradle/
+build/
+**/build/
+!gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Local config
+local.properties
+*.log
+
+# Android
+captures/
+output.json
+
+# Keystore / signing
+*.jks
+*.keystore
+*.pem
+*.p12
+
+# Generated
+generated/
+app/release/
+app/debug/
+
+# Crashlytics / Firebase
+google-services.json
+crashlytics-build.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+.env
+*.tmp
+*.bak
+*.swp
+
