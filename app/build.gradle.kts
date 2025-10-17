@@ -76,7 +76,7 @@ android {
 
     composeOptions {
         kotlinCompilerExtensionVersion =
-            (project.findProperty("compose.compiler.version") as String?) ?: "1.5.10"
+            (project.findProperty("compose.compiler.version") as String?) ?: "1.5.13"
     }
 
     packaging {

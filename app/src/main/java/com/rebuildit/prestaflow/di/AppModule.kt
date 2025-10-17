@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.room.Room
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.rebuildit.prestaflow.BuildConfig
@@ -10,11 +11,18 @@ import com.rebuildit.prestaflow.core.security.EncryptedTokenStorage
 import com.rebuildit.prestaflow.core.security.InMemoryTokenProvider
 import com.rebuildit.prestaflow.core.security.TokenStorage
 import com.rebuildit.prestaflow.data.auth.AuthRepositoryImpl
+import com.rebuildit.prestaflow.data.local.dao.DashboardDao
+import com.rebuildit.prestaflow.data.local.dao.OrderDao
+import com.rebuildit.prestaflow.data.local.dao.PendingSyncDao
+import com.rebuildit.prestaflow.data.local.dao.ProductDao
+import com.rebuildit.prestaflow.data.local.db.PrestaFlowDatabase
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.interceptor.AuthInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DefaultHeadersInterceptor
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
+import com.rebuildit.prestaflow.data.orders.OrdersRepositoryImpl
+import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -129,4 +137,30 @@ object AppModule {
     @Provides
     @Singleton
     fun provideAuthRepository(impl: AuthRepositoryImpl): AuthRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideOrdersRepository(impl: OrdersRepositoryImpl): OrdersRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideDatabase(
+        @ApplicationContext context: Context
+    ): PrestaFlowDatabase = Room.databaseBuilder(
+        context,
+        PrestaFlowDatabase::class.java,
+        "prestaflow.db"
+    ).fallbackToDestructiveMigration().build()
+
+    @Provides
+    fun provideOrderDao(database: PrestaFlowDatabase): OrderDao = database.orderDao()
+
+    @Provides
+    fun provideProductDao(database: PrestaFlowDatabase): ProductDao = database.productDao()
+
+    @Provides
+    fun provideDashboardDao(database: PrestaFlowDatabase): DashboardDao = database.dashboardDao()
+
+    @Provides
+    fun providePendingSyncDao(database: PrestaFlowDatabase): PendingSyncDao = database.pendingSyncDao()
 }

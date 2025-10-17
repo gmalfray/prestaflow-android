@@ -11,6 +11,7 @@ Gérer facilement sa boutique PrestaShop depuis un smartphone :
 - Ajout du numéro de suivi colis via scan caméra
 - Mode hors ligne (lecture et synchro différée)
 - Connexion sécurisée via URL HTTPS + clé API dédiée (stockage chiffré)
+- Cache local Room pour commandes/produits avec file d’attente des synchros
 
 ## 🧩 Stack technique
 
@@ -66,6 +67,7 @@ app/
 - `./gradlew ktlintCheck ktlintFormat` pour le formatage Kotlin.
 - `./gradlew detekt` pour l’analyse statique (`config/detekt/detekt.yml`).
 - `./gradlew lintDebug` et `./gradlew testDebugUnitTest` pour la qualité Android.
+- `./gradlew testPreprodDebugUnitTest` pour exécuter les tests unitaires du flavour préproduction.
 - `./gradlew testPreprodDebugUnitTest` pour exécuter les tests unitaires du flavour préproduction.
 
 ## 🧠 Roadmap
