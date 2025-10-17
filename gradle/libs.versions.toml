@@ -8,6 +8,7 @@ androidxLifecycle = "2.7.0"
 activityCompose = "1.9.0"
 navigationCompose = "2.7.7"
 material3 = "1.2.1"
+material = "1.12.0"
 work = "2.9.0"
 room = "2.6.1"
 hilt = "2.50"
@@ -69,6 +70,7 @@ firebase-messaging = { module = "com.google.firebase:firebase-messaging-ktx" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics-ktx" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
+google-material = { module = "com.google.android.material:material", version.ref = "material" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 timber-jdk = { module = "com.jakewharton.timber:timber-jdk18", version.ref = "timber" }
 
