@@ -10,6 +10,7 @@ Gérer facilement sa boutique PrestaShop depuis un smartphone :
 - Notifications push en temps réel (nouvelles commandes)
 - Ajout du numéro de suivi colis via scan caméra
 - Mode hors ligne (lecture et synchro différée)
+- Connexion sécurisée via URL HTTPS + clé API dédiée (stockage chiffré)
 
 ## 🧩 Stack technique
 
@@ -17,7 +18,7 @@ Gérer facilement sa boutique PrestaShop depuis un smartphone :
 |--------|---------------|
 | UI | Jetpack Compose, Material 3 |
 | Données | Room, Retrofit2/OkHttp3, KotlinX Serialization |
-| Auth | JWT + HTTPS (module Rebuild Connector) |
+| Auth | JWT + HTTPS (module Rebuild Connector), EncryptedSharedPreferences |
 | Notif | Firebase Cloud Messaging (HTTP v1) |
 | CI/CD | GitHub Actions (build, tests, artefacts) |
 | Qualité | Detekt, Lint, Unit/UI tests, Crashlytics |
@@ -65,6 +66,7 @@ app/
 - `./gradlew ktlintCheck ktlintFormat` pour le formatage Kotlin.
 - `./gradlew detekt` pour l’analyse statique (`config/detekt/detekt.yml`).
 - `./gradlew lintDebug` et `./gradlew testDebugUnitTest` pour la qualité Android.
+- `./gradlew testPreprodDebugUnitTest` pour exécuter les tests unitaires du flavour préproduction.
 
 ## 🧠 Roadmap
 

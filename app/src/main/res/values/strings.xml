@@ -11,4 +11,20 @@
     <string name="destination_products">Products</string>
     <string name="destination_clients">Clients</string>
     <string name="destination_carts">Carts</string>
+    <string name="auth_title">Connect to your shop</string>
+    <string name="auth_subtitle">Enter the HTTPS URL of your PrestaShop and the API key generated for this app.</string>
+    <string name="auth_field_shop_url">Shop URL</string>
+    <string name="auth_field_shop_url_placeholder">https://yourshop.tld</string>
+    <string name="auth_field_api_key">API Key</string>
+    <string name="auth_field_api_key_placeholder">Paste your API key</string>
+    <string name="auth_action_connect">Connect</string>
+    <string name="auth_action_prefill_https">Use https:// prefix</string>
+    <string name="auth_error_shop_url_empty">Please enter the shop URL.</string>
+    <string name="auth_error_shop_url_malformed">The shop URL looks invalid.</string>
+    <string name="auth_error_shop_url_https">HTTPS is required.</string>
+    <string name="auth_error_api_key_empty">Please enter the API key.</string>
+    <string name="error_network_unreachable">Network unavailable. Check your connection.</string>
+    <string name="error_unauthorized">Authentication failed. Check your credentials.</string>
+    <string name="error_forbidden">You do not have access to this resource.</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
 </resources>

@@ -2,12 +2,12 @@ package com.rebuildit.prestaflow.core
 
 import android.app.Application
 import android.util.Log
+import com.rebuildit.prestaflow.BuildConfig
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 import javax.inject.Inject
-import com.rebuildit.prestaflow.BuildConfig
 
 @HiltAndroidApp
 class PrestaFlowApp : Application(), Configuration.Provider {

@@ -5,6 +5,8 @@ composeBom = "2024.05.00"
 composeCompiler = "1.5.13"
 androidxCore = "1.12.0"
 androidxLifecycle = "2.7.0"
+lifecycleRuntimeCompose = "2.7.0"
+lifecycleViewmodelCompose = "2.7.0"
 activityCompose = "1.9.0"
 navigationCompose = "2.7.7"
 material3 = "1.2.1"
@@ -28,10 +30,13 @@ androidxTestExt = "1.1.5"
 espresso = "3.5.1"
 composeTesting = "1.6.7"
 turbine = "1.0.0"
+securityCrypto = "1.1.0-alpha06"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "androidxLifecycle" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleRuntimeCompose" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
@@ -73,6 +78,7 @@ hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.re
 google-material = { module = "com.google.android.material:material", version.ref = "material" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 timber-jdk = { module = "com.jakewharton.timber:timber-jdk18", version.ref = "timber" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 
 # Testing
 junit = { module = "junit:junit", version.ref = "junit" }

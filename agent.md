@@ -18,10 +18,11 @@ repo-root/
 │  └─ src/
 │      ├─ main/
 │      │   ├─ java/com/rebuildit/prestaflow/
-│      │   │   ├─ ui/                # Écrans Compose, navigation
-│      │   │   ├─ data/              # Repositories, Retrofit, Room
-│      │   │   ├─ domain/            # Use-cases, modèles métier
-│      │   │   └─ di/                # Modules Hilt/Koin
+│      │   │   ├─ core/              # App, sécurité, helpers communs (UiText, NetworkErrorMapper)
+│      │   │   ├─ data/              # Repositories, Retrofit, interceptors
+│      │   │   ├─ domain/            # Logique métier (auth, tokens, validations)
+│      │   │   ├─ navigation/        # Graph Compose
+│      │   │   └─ ui/                # Écrans (auth, shells) et thèmes
 │      │   ├─ res/                   # Thèmes, strings FR/EN, icônes
 │      │   └─ AndroidManifest.xml
 │      └─ test/ & androidTest/
@@ -106,7 +107,7 @@ Mapper couche `domain` pour convertir en modèles UI (ex. `Order`, `OrderSummary
 - **Scan suivi expédition** : écran action rapide → Intent caméra (ML Kit / ZXing) → parsing du code → préremplissage du champ tracking → validation → `PATCH /orders/{id}/shipping` → si max 5s sans réponse, indiquer statut pending + push local snooze.
 - **Gestion produit** : recherche → sélection produit → édition prix/stock/actif → enregistrement local en pending → tentative `PATCH /products/{id}` ou `/stock` → si offline, en file d’attente → UI affiche badge "En attente de synchro".
 - **Mode hors ligne** : bootstrap → charger cache Room (orders, products, metrics) → afficher timestamp de fraîcheur → file d’attente Replay sur reconnexion (WorkManager, backoff expo 5/30/120s). Conflit stock : si 409, recharger état distant et proposer merge.
-- **Connexion initiale** : écran onboarding → saisie URL + clé API → test `POST /connector/login` (vérif HTTPS + cert) → stockage secure + initial sync (orders, products, metrics) → paramétrage notifications/skins.
+- **Connexion initiale** : écran onboarding → saisie URL + clé API → test `POST /connector/login` (vérif HTTPS + cert) → stockage secure (EncryptedSharedPreferences + InMemoryTokenProvider) + initial sync (orders, products, metrics) → paramétrage notifications/skins.
 - **Thèmes/Skins** : Material 3 dynamic color (Android 12+) ou palettes fixes (Royal Violet, Indigo Neon, Teal & Tangerine, Graphite Pro, Forest Green). Stocker préférences par compte + appareil. Appliquer tokens Compose (colorScheme, shapes 16-20dp, elevations).
 
 ## 7. Guides build, qualité & release
@@ -130,12 +131,14 @@ Mapper couche `domain` pour convertir en modèles UI (ex. `Order`, `OrderSummary
 - **HTTP 5xx / timeout** : WorkManager retry (backoff exponentiel), badge d’état sur cartes (ex. "Sync en échec"). Stocker stack simplifiée pour support.
 - **Conflits stock (409)** : recharger stock via `GET /products/{id}` et proposer override ou annulation. Historiser tentative dans Room.
 - **Perte connexion** : détection via `ConnectivityManager` → bascule mode hors ligne → UI affiche bannière + lecture cache. Les actions modifiantes sont `enqueued` et marquées `pending`.
+- Mapper d’erreurs réseau : `NetworkErrorMapper` traduit les exceptions (IO/HTTP) en `UiText` localisés pour l’UI (snackbar / dialogues).
 - **Logs** : `Timber` en debug, logger custom en release (Crashlytics breadcrumbs) sans PII.
 
 ## 9. Sécurité & conformité
 - HTTPS obligatoire (+ check certificate pinning optionnel via OkHttp). HSTS forcé côté boutique.
 - JWT courts, scopes limités (Commandes, Produits, Stocks, Dashboard). Rotation + révocation : prévoir purge des tokens sur logout, invalidation automatique à expiration.
 - Stockage local : `EncryptedSharedPrefs`, `BiometricPrompt` optionnel pour déverrouillage rapide. Ne pas stocker clés en clair ni logs contenant PII.
+- Stockage local : `EncryptedSharedPrefs` via `TokenManager` + `TokenStorage` (InMemory + disque). Purger dès logout ou expiration.
 - RGPD : masquer emails/téléphones lorsque non nécessaires (affichage partiel). Prévoir purge des caches sur logout ou via menu "Effacer données".
 - Permissions : accès caméra (scan tracking) → demander runtime + explication. Notifications → `POST_NOTIFICATIONS` (Android 13+). Aucun stockage externe.
 - Observabilité : Crashlytics + traces (option). Prévoir switch debug pour réseau (chucker) non inclus en release.

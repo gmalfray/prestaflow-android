@@ -1,21 +1,33 @@
 package com.rebuildit.prestaflow.di
 
-import com.rebuildit.prestaflow.core.config.AppEnvironment
+import android.content.Context
+import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.rebuildit.prestaflow.BuildConfig
+import com.rebuildit.prestaflow.core.config.AppEnvironment
+import com.rebuildit.prestaflow.core.security.EncryptedTokenStorage
 import com.rebuildit.prestaflow.core.security.InMemoryTokenProvider
+import com.rebuildit.prestaflow.core.security.TokenStorage
+import com.rebuildit.prestaflow.data.auth.AuthRepositoryImpl
+import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.interceptor.AuthInterceptor
+import com.rebuildit.prestaflow.data.remote.interceptor.DefaultHeadersInterceptor
+import com.rebuildit.prestaflow.domain.auth.AuthRepository
+import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
 import java.time.Duration
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
@@ -47,11 +59,19 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient =
+    fun provideDefaultHeadersInterceptor(): DefaultHeadersInterceptor = DefaultHeadersInterceptor()
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        authInterceptor: AuthInterceptor,
+        defaultHeadersInterceptor: DefaultHeadersInterceptor
+    ): OkHttpClient =
         OkHttpClient.Builder()
             .connectTimeout(Duration.ofSeconds(30))
             .readTimeout(Duration.ofSeconds(30))
             .writeTimeout(Duration.ofSeconds(30))
+            .addInterceptor(defaultHeadersInterceptor)
             .addInterceptor(authInterceptor)
             .apply {
                 if (BuildConfig.DEBUG) {
@@ -74,5 +94,39 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun providePrestaFlowApi(retrofit: Retrofit): PrestaFlowApi =
+        retrofit.create(PrestaFlowApi::class.java)
+
+    @Provides
+    @Singleton
     fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
+
+    @Provides
+    @Singleton
+    fun provideEncryptedSharedPreferences(
+        @ApplicationContext context: Context
+    ): SharedPreferences {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        return EncryptedSharedPreferences.create(
+            context,
+            "prestaflow_secure_prefs",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideTokenStorage(storage: EncryptedTokenStorage): TokenStorage = storage
+
+    @Provides
+    @Singleton
+    fun provideShopUrlValidator(): ShopUrlValidator = ShopUrlValidator()
+
+    @Provides
+    @Singleton
+    fun provideAuthRepository(impl: AuthRepositoryImpl): AuthRepository = impl
 }
