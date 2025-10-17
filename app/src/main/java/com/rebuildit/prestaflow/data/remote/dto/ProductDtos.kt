@@ -13,6 +13,7 @@ data class ProductListResponseDto(
 data class ProductDto(
     @SerialName("id") val id: Long,
     @SerialName("name") val name: String,
+    @SerialName("reference") val reference: String? = null,
     @SerialName("price") val price: Double,
     @SerialName("active") val active: Boolean,
     @SerialName("stock") val stock: StockDto,
@@ -23,7 +24,8 @@ data class ProductDto(
 @Serializable
 data class StockDto(
     @SerialName("quantity") val quantity: Int,
-    @SerialName("warehouse_id") val warehouseId: Long? = null
+    @SerialName("warehouse_id") val warehouseId: Long? = null,
+    @SerialName("updated_at") val updatedAt: String? = null
 )
 
 @Serializable

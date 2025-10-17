@@ -5,24 +5,35 @@ import android.content.SharedPreferences
 import androidx.room.Room
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import androidx.work.WorkManager
 import com.rebuildit.prestaflow.BuildConfig
 import com.rebuildit.prestaflow.core.config.AppEnvironment
 import com.rebuildit.prestaflow.core.security.EncryptedTokenStorage
 import com.rebuildit.prestaflow.core.security.InMemoryTokenProvider
 import com.rebuildit.prestaflow.core.security.TokenStorage
 import com.rebuildit.prestaflow.data.auth.AuthRepositoryImpl
+import com.rebuildit.prestaflow.data.clients.ClientsRepositoryImpl
+import com.rebuildit.prestaflow.data.dashboard.DashboardRepositoryImpl
+import com.rebuildit.prestaflow.data.local.dao.ClientDao
 import com.rebuildit.prestaflow.data.local.dao.DashboardDao
 import com.rebuildit.prestaflow.data.local.dao.OrderDao
 import com.rebuildit.prestaflow.data.local.dao.PendingSyncDao
 import com.rebuildit.prestaflow.data.local.dao.ProductDao
+import com.rebuildit.prestaflow.data.local.dao.StockAvailabilityDao
 import com.rebuildit.prestaflow.data.local.db.PrestaFlowDatabase
+import com.rebuildit.prestaflow.data.orders.OrdersRepositoryImpl
+import com.rebuildit.prestaflow.data.products.ProductsRepositoryImpl
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.interceptor.AuthInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DefaultHeadersInterceptor
+import com.rebuildit.prestaflow.data.sync.SyncQueueRepositoryImpl
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
-import com.rebuildit.prestaflow.data.orders.OrdersRepositoryImpl
+import com.rebuildit.prestaflow.domain.clients.ClientsRepository
+import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
+import com.rebuildit.prestaflow.domain.products.ProductsRepository
+import com.rebuildit.prestaflow.domain.sync.SyncQueueRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -144,6 +155,22 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideProductsRepository(impl: ProductsRepositoryImpl): ProductsRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideDashboardRepository(impl: DashboardRepositoryImpl): DashboardRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideClientsRepository(impl: ClientsRepositoryImpl): ClientsRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideSyncQueueRepository(impl: SyncQueueRepositoryImpl): SyncQueueRepository = impl
+
+    @Provides
+    @Singleton
     fun provideDatabase(
         @ApplicationContext context: Context
     ): PrestaFlowDatabase = Room.databaseBuilder(
@@ -163,4 +190,16 @@ object AppModule {
 
     @Provides
     fun providePendingSyncDao(database: PrestaFlowDatabase): PendingSyncDao = database.pendingSyncDao()
+
+    @Provides
+    fun provideStockAvailabilityDao(database: PrestaFlowDatabase): StockAvailabilityDao =
+        database.stockAvailabilityDao()
+
+    @Provides
+    fun provideClientDao(database: PrestaFlowDatabase): ClientDao = database.clientDao()
+
+    @Provides
+    @Singleton
+    fun provideWorkManager(@ApplicationContext context: Context): WorkManager =
+        WorkManager.getInstance(context)
 }

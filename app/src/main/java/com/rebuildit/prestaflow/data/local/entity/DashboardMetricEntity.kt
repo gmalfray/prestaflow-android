@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -10,5 +11,6 @@ data class DashboardMetricEntity(
     val ordersCount: Int,
     val customersCount: Int,
     val productsCount: Int,
-    val lastUpdatedIso: String
+    val lastUpdatedIso: String,
+    @ColumnInfo(name = "chart_json") val chartJson: String
 )

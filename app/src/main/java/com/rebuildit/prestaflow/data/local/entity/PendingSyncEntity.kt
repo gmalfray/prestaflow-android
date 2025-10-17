@@ -10,6 +10,9 @@ data class PendingSyncEntity(
     val endpoint: String,
     val method: String,
     @ColumnInfo(name = "payload_json") val payloadJson: String,
+    @ColumnInfo(name = "resource_type") val resourceType: String? = null,
+    @ColumnInfo(name = "resource_id") val resourceId: Long? = null,
+    @ColumnInfo(name = "conflict_strategy") val conflictStrategy: String = "LAST_WRITE_WINS",
     @ColumnInfo(name = "attempt_count") val attemptCount: Int = 0,
     @ColumnInfo(name = "last_attempt_iso") val lastAttemptIso: String? = null,
     @ColumnInfo(name = "created_at_iso") val createdAtIso: String

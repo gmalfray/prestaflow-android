@@ -13,6 +13,9 @@ interface PendingSyncDao {
     @Query("SELECT * FROM pending_sync ORDER BY created_at_iso ASC")
     fun observeQueue(): Flow<List<PendingSyncEntity>>
 
+    @Query("SELECT * FROM pending_sync ORDER BY created_at_iso ASC")
+    suspend fun getQueue(): List<PendingSyncEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun enqueue(entity: PendingSyncEntity): Long
 

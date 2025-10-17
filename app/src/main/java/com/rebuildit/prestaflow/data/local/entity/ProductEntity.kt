@@ -12,5 +12,6 @@ data class ProductEntity(
     @ColumnInfo(name = "price_tax_incl") val priceTaxIncl: Double,
     val active: Boolean,
     @ColumnInfo(name = "stock_quantity") val stockQuantity: Int,
-    @ColumnInfo(name = "image_url") val imageUrl: String?
+    @ColumnInfo(name = "image_url") val imageUrl: String?,
+    @ColumnInfo(name = "last_updated_iso") val lastUpdatedIso: String?
 )
