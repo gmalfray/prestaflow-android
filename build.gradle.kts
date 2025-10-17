@@ -9,13 +9,13 @@ plugins {
 }
 
 // Désactiver temporairement KAPT pour révéler les vraies erreurs
-// subprojects {
-//     tasks.configureEach {
-//         if (name.contains("kapt", ignoreCase = true)) {
-//             enabled = false
-//         }
-//     }
-// }
+subprojects {
+    tasks.configureEach {
+        if (name.contains("kapt", ignoreCase = true)) {
+            enabled = false
+        }
+    }
+}
 
 tasks.register<Delete>("clean") {
     delete(layout.buildDirectory)
