@@ -162,6 +162,15 @@ Mapper couche `domain` pour convertir en modèles UI (ex. `Order`, `OrderSummary
   - Révoquer tokens compromettants via module (rotation clé API).
   - Purger queues offline si cohérence rompue (migration Room).
 
+## 11. Dépannage build Kotlin
+- Erreur `e: Could not load module <Error module>` : signal d’un jar Kotlin incompatible ou corrompu sur le classpath (souvent metadata générée par un compilateur plus récent).
+- Vérifications :
+  1. Aligner versions Kotlin/Compose dans `gradle/libs.versions.toml` et `gradle.properties` (ex : Kotlin 1.9.23 + Compose compiler 1.5.13).
+  2. Supprimer les caches ciblés `~/.gradle/caches/modules-2/files-2.1/<groupe>/<artifact>/<version>` pour les libs retrouvées dans les logs Kotlin (`/tmp/kotlin-daemon.*.log`), puis relancer `./gradlew clean assembleDebug`.
+  3. Lancer `./gradlew app:dependencyInsight --configuration <variant>CompileClasspath --dependency <lib>` pour isoler l’artifact fautif, rétrograder ou mettre à jour la dépendance.
+  4. Si besoin, désactiver temporairement des libs expérimentales (alpha/bêta) et réintroduire une à une pour identifier la source.
+- Conserver les logs de daemon (`/tmp/kotlin-daemon.*.log`) pour toute remontée à JetBrains si l’erreur persiste après nettoyage.
+
 ## Annexes & références
 - Cahier des charges Android PrestaFlow (source de vérité) — cf. ticket principal.
 - Module PrestaShop : voir `../rebuild-connector/agent.md` pour détails API, sécurité, CI.
