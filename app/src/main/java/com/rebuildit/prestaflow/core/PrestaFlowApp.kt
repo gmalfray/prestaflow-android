@@ -3,6 +3,7 @@ package com.rebuildit.prestaflow.core
 import android.app.Application
 import android.util.Log
 import com.rebuildit.prestaflow.BuildConfig
+import com.rebuildit.prestaflow.core.sync.SyncOrchestrator
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
@@ -15,11 +16,15 @@ class PrestaFlowApp : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    @Inject
+    lateinit var syncOrchestrator: SyncOrchestrator
+
     override fun onCreate() {
         super.onCreate()
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+        syncOrchestrator.start()
     }
 
     override val workManagerConfiguration: Configuration by lazy {
