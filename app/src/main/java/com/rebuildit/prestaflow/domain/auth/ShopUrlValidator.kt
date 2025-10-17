@@ -1,6 +1,6 @@
 package com.rebuildit.prestaflow.domain.auth
 
-import android.net.Uri
+import java.net.URI
 
 class ShopUrlValidator {
 
@@ -8,14 +8,27 @@ class ShopUrlValidator {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return Result.Invalid.Empty
 
-        val uri = runCatching { Uri.parse(trimmed) }.getOrNull() ?: return Result.Invalid.Malformed
+        val uri = runCatching { URI(trimmed) }.getOrNull() ?: return Result.Invalid.Malformed
 
-        val scheme = uri.scheme?.lowercase()
+        val scheme = uri.scheme?.lowercase() ?: return Result.Invalid.Malformed
         if (scheme != "https") return Result.Invalid.NonHttps
 
-        if (uri.host.isNullOrBlank()) return Result.Invalid.Malformed
+        val host = uri.host?.takeIf { it.isNotBlank() } ?: return Result.Invalid.Malformed
 
-        return Result.Valid(trimmed.removeSuffix("/"))
+        val port = if (uri.port in -1..-1) "" else ":${uri.port}"
+        val path = uri.rawPath
+            ?.takeIf { it.isNotBlank() && it != "/" }
+            ?.trimEnd('/')
+            ?: ""
+
+        val normalized = buildString {
+            append("https://")
+            append(host)
+            append(port)
+            append(path)
+        }
+
+        return Result.Valid(normalized)
     }
 
     sealed class Result {
