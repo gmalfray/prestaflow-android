@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="royal_violet_primary">#5A2D82</color>
+    <color name="royal_violet_on_primary">#FFFFFFFF</color>
+    <color name="royal_violet_primary_container">#7C4DFF</color>
+    <color name="royal_violet_background">#FFFBFF</color>
+    <color name="royal_violet_surface">#FFFBFF</color>
+    <color name="royal_violet_on_surface">#1B1B1F</color>
+    <color name="royal_violet_secondary">#6750A4</color>
+    <color name="royal_violet_error">#B3261E</color>
+    <color name="royal_violet_outline">#7F70AB</color>
+</resources>

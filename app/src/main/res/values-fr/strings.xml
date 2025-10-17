@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PrestaFlow</string>
+    <string name="app_tagline">Gestion mobile pour PrestaShop</string>
+    <string name="action_retry">Réessayer</string>
+    <string name="label_environment">Environnement</string>
+    <string name="label_last_sync">Dernière synchronisation : %1$s</string>
+    <string name="content_description_app_logo">Logo PrestaFlow</string>
+    <string name="destination_dashboard">Tableau de bord</string>
+    <string name="destination_orders">Commandes</string>
+    <string name="destination_products">Produits</string>
+    <string name="destination_clients">Clients</string>
+    <string name="destination_carts">Paniers</string>
+</resources>
