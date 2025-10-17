@@ -11,3 +11,12 @@ plugins {
 tasks.register<Delete>("clean") {
     delete(layout.buildDirectory)
 }
+
+tasks.register("testDebugUnitTest") {
+    description = "Runs unit tests for all debug variants."
+    group = "verification"
+    dependsOn(
+        ":app:testPreprodDebugUnitTest",
+        ":app:testProdDebugUnitTest"
+    )
+}
