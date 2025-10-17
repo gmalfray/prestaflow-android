@@ -36,16 +36,35 @@ app/
 
 ## ⚙️ Configuration
 
-1. Copier `google-services.json` dans `/app`
-2. Créer un fichier `.env` local :
+1. Générer le wrapper Gradle (une fois) :
    ```bash
-   API_BASE_URL=https://votreboutique.fr/module/rebuildconnector/api/
+   gradle wrapper --gradle-version 8.7
+   ```
+   > À défaut, installez Gradle localement puis exécutez `./gradlew tasks` pour vérifier la configuration.
+2. Copier `google-services.json` dans `app/` (non versionné).
+3. Créer un fichier de configuration locale (ex. `~/.gradle/gradle.properties`) à partir de `env.sample` :
+   ```properties
+   REBUILDCONNECTOR_API_BASE_URL=https://preprod.example.com/module/rebuildconnector/api/
+   REBUILDCONNECTOR_SHOP_URL=https://preprod.example.com/
+   REBUILDCONNECTOR_API_KEY=...
    FCM_PROJECT_ID=...
    ```
-3. Lancer le build :
+4. Lancer un premier build :
    ```bash
-   ./gradlew assembleDebug
+   ./gradlew assemblePreprodDebug
    ```
+
+### Variantes & saveurs
+
+- `preprodDebug` : environnement préproduction, logs & outils actifs.
+- `prodRelease` : build production (minify à activer une fois les règles ProGuard stabilisées).
+- `ENVIRONMENT_NAME` et `API_BASE_URL` sont exposés dans `BuildConfig` par flavor.
+
+### Qualité & automatisation
+
+- `./gradlew ktlintCheck ktlintFormat` pour le formatage Kotlin.
+- `./gradlew detekt` pour l’analyse statique (`config/detekt/detekt.yml`).
+- `./gradlew lintDebug` et `./gradlew testDebugUnitTest` pour la qualité Android.
 
 ## 🧠 Roadmap
 
