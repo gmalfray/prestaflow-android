@@ -93,6 +93,7 @@ curl -sS -X PATCH "https://shop.tld/module/rebuildconnector/api/orders/123/shipp
 - `ShippingUpdateRequest` : `tracking_number`, `carrier_id?`.
 - `ProductDto` : `id`, `name`, `price`, `active`, `stock`, `images`, `updated_at`, `declinations`.
 - `StockUpdateRequest` : `quantity`, `warehouse_id?`, `reason`.
+- Note Room : si l’API renvoie `warehouse_id = null`, nous stockons `-1` (`StockAvailabilityEntity.NO_WAREHOUSE_ID`) pour respecter la clé primaire composite non nulle, tout en restituant `null` côté domaine.
 - `CustomerDto` : `id`, `firstname`, `lastname`, `email (masked if needed)`, `orders_count`, `total_spent`, `last_order_at`.
 - `DashboardMetricsDto` : `turnover`, `orders_count`, `customers_count`, `products_count`, `chart: List<DataPoint>`, `period`.
 - `RankingEntryDto` : `id`, `label`, `metric`, `position`.

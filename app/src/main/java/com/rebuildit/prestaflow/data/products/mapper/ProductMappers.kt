@@ -20,7 +20,7 @@ fun ProductEntity.toDomain(): Product = Product(
 
 fun StockAvailabilityEntity.toDomain(): StockAvailability = StockAvailability(
     productId = productId,
-    warehouseId = warehouseId,
+    warehouseId = warehouseId.takeUnless { it == StockAvailabilityEntity.NO_WAREHOUSE_ID },
     quantity = quantity,
     updatedAtIso = updatedAtIso
 )
@@ -38,7 +38,7 @@ fun ProductDto.toEntity(): ProductEntity = ProductEntity(
 
 fun StockDto.toEntity(productId: Long): StockAvailabilityEntity = StockAvailabilityEntity(
     productId = productId,
-    warehouseId = warehouseId,
+    warehouseId = warehouseId ?: StockAvailabilityEntity.NO_WAREHOUSE_ID,
     quantity = quantity,
     updatedAtIso = updatedAt
 )

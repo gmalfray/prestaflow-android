@@ -92,6 +92,7 @@ class ProductsRepositoryImpl @Inject constructor(
     ) {
         withContext(ioDispatcher) {
             val now = java.time.Instant.now().toString()
+            val normalizedWarehouseId = warehouseId ?: StockAvailabilityEntity.NO_WAREHOUSE_ID
 
             productDao.getById(productId)?.let { existing ->
                 productDao.upsertProduct(
@@ -103,7 +104,7 @@ class ProductsRepositoryImpl @Inject constructor(
                 listOf(
                     StockAvailabilityEntity(
                         productId = productId,
-                        warehouseId = warehouseId,
+                        warehouseId = normalizedWarehouseId,
                         quantity = quantity,
                         updatedAtIso = now
                     )

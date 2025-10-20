@@ -23,7 +23,11 @@ import androidx.room.Index
 )
 data class StockAvailabilityEntity(
     @ColumnInfo(name = "product_id") val productId: Long,
-    @ColumnInfo(name = "warehouse_id") val warehouseId: Long?,
+    @ColumnInfo(name = "warehouse_id") val warehouseId: Long,
     val quantity: Int,
     @ColumnInfo(name = "updated_at_iso") val updatedAtIso: String?
-)
+) {
+    companion object {
+        const val NO_WAREHOUSE_ID: Long = -1L
+    }
+}
