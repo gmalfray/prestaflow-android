@@ -3,6 +3,7 @@ package com.rebuildit.prestaflow.core
 import android.app.Application
 import android.util.Log
 import com.rebuildit.prestaflow.BuildConfig
+import com.rebuildit.prestaflow.core.notifications.FcmRegistrationManager
 import com.rebuildit.prestaflow.core.sync.SyncOrchestrator
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
@@ -19,12 +20,16 @@ class PrestaFlowApp : Application(), Configuration.Provider {
     @Inject
     lateinit var syncOrchestrator: SyncOrchestrator
 
+    @Inject
+    lateinit var notificationRegistrationManager: FcmRegistrationManager
+
     override fun onCreate() {
         super.onCreate()
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
         syncOrchestrator.start()
+        notificationRegistrationManager.initialize()
     }
 
     override val workManagerConfiguration: Configuration by lazy {

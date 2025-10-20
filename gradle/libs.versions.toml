@@ -31,6 +31,8 @@ espresso = "3.5.1"
 composeTesting = "1.6.7"
 turbine = "1.0.0"
 securityCrypto = "1.1.0-alpha06"
+googleServices = "4.4.2"
+coroutinesPlayServices = "1.7.3"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -79,6 +81,7 @@ google-material = { module = "com.google.android.material:material", version.ref
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 timber-jdk = { module = "com.jakewharton.timber:timber-jdk18", version.ref = "timber" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutinesPlayServices" }
 
 # Testing
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -96,3 +99,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

@@ -10,6 +10,12 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.warn("google-services.json not found, Firebase push registration will run in limited mode.")
+}
+
 android {
     namespace = "com.rebuildit.prestaflow"
     compileSdk = 35
@@ -182,6 +188,7 @@ dependencies {
     implementation(libs.androidx.datastore)
     implementation(libs.timber)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)

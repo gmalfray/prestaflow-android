@@ -2,6 +2,10 @@ package com.rebuildit.prestaflow.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -22,6 +26,7 @@ import com.rebuildit.prestaflow.data.local.dao.PendingSyncDao
 import com.rebuildit.prestaflow.data.local.dao.ProductDao
 import com.rebuildit.prestaflow.data.local.dao.StockAvailabilityDao
 import com.rebuildit.prestaflow.data.local.db.PrestaFlowDatabase
+import com.rebuildit.prestaflow.data.notifications.NotificationsRepositoryImpl
 import com.rebuildit.prestaflow.data.orders.OrdersRepositoryImpl
 import com.rebuildit.prestaflow.data.products.ProductsRepositoryImpl
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
@@ -34,6 +39,7 @@ import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
+import com.rebuildit.prestaflow.domain.notifications.NotificationsRepository
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.sync.SyncQueueRepository
 import dagger.Module
@@ -177,6 +183,10 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideNotificationsRepository(impl: NotificationsRepositoryImpl): NotificationsRepository = impl
+
+    @Provides
+    @Singleton
     fun provideSyncQueueRepository(impl: SyncQueueRepositoryImpl): SyncQueueRepository = impl
 
     @Provides
@@ -212,4 +222,12 @@ object AppModule {
     @Singleton
     fun provideWorkManager(@ApplicationContext context: Context): WorkManager =
         WorkManager.getInstance(context)
+
+    @Provides
+    @Singleton
+    fun provideUserPreferencesDataStore(
+        @ApplicationContext context: Context
+    ): DataStore<Preferences> = PreferenceDataStoreFactory.create(
+        produceFile = { context.preferencesDataStoreFile("prestaflow_user.preferences_pb") }
+    )
 }

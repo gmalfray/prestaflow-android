@@ -4,10 +4,12 @@ import com.rebuildit.prestaflow.data.remote.dto.AuthRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.AuthResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
+import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
@@ -39,4 +41,10 @@ interface PrestaFlowApi {
 
     @GET("customers/top")
     suspend fun getTopCustomers(@Query("limit") limit: Int): CustomerListResponseDto
+
+    @POST("notifications/devices")
+    suspend fun registerDevice(@Body body: DeviceRegistrationRequestDto)
+
+    @DELETE("notifications/devices/{token}")
+    suspend fun unregisterDevice(@Path(value = "token", encoded = true) token: String)
 }
