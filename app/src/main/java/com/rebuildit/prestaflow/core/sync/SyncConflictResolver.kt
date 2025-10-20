@@ -12,7 +12,7 @@ class SyncConflictResolver @Inject constructor() {
     fun resolve(
         task: PendingSyncTask,
         responseCode: Int,
-        responseBody: String?
+        _responseBody: String?
     ): ConflictResolution {
         Timber.w("Conflict detected for ${task.resourceType}:${task.resourceId} (code=$responseCode)")
         return when (task.conflictStrategy) {

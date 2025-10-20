@@ -43,6 +43,7 @@ import java.time.Duration
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -60,6 +61,7 @@ object AppModule {
 
     @Provides
     @Singleton
+    @OptIn(ExperimentalSerializationApi::class)
     fun provideJson(): Json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false

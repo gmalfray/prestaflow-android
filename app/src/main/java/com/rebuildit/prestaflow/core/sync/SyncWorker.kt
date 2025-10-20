@@ -37,7 +37,7 @@ class SyncWorker @AssistedInject constructor(
         if (tasks.isEmpty()) return@withContext Result.success()
 
         for (task in tasks) {
-            when (val outcome = processTask(task)) {
+            when (processTask(task)) {
                 is Result.Retry -> return@withContext Result.retry()
                 is Result.Failure -> return@withContext Result.failure()
                 is Result.Success -> { /* continue with next task */ }
