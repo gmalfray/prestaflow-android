@@ -1,7 +1,7 @@
 # agent.md — PrestaFlow Android
 
 ## 1. Objectifs, périmètre et non-objectifs
-- Objectif : proposer une application Android (minSdk 26, targetSdk dernière stable) permettant la gestion complète d’une boutique PrestaShop ≥ 1.7 via le module **Rebuild Connector** (REST JSON) et, à terme, la nouvelle API PrestaShop 9.
+- Objectif : proposer une application Android (minSdk 26, targetSdk 35) permettant la gestion complète d’une boutique PrestaShop ≥ 1.7 via le module **Rebuild Connector** (REST JSON) et, à terme, la nouvelle API PrestaShop 9.
 - Périmètre MVP : authentification par clé API → JWT, onglets Dashboard/Commandes/Clients/Produits/Paniers (lecture), modification suivi expédition, gestion prix/stock/statut produit, gestion des stocks (`stock_availables`), historique clients, classements top clients/ventes, notifications push FCM (paramétrables), mode hors ligne (cache + file d’attente), FR/EN.
 - KPI : délai de traitement commandes, fiabilité notifications, rapidité MAJ stock/suivi, visibilité sur KPI (CA, commandes, top ventes).
 - Extensions prévues : thèmes « Skins » (5 palettes + Material You), analytics avancés (taux conversion, panier moyen, TVA), compatibilité PrestaShop 9, multi-boutiques, relance paniers via module dédié.
