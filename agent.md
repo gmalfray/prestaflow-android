@@ -43,6 +43,8 @@ repo-root/
 - **Google/Firebase** : `app/google-services.json` (non versionné), `FIREBASE_SERVICE_ACCOUNT` (CI pour FCM HTTP v1), Crashlytics activé.
 - **Notifications** : enregistrement du token FCM via endpoint `POST /connector/push/register` si exposé ; sinon module gère mapping.
 - **Sécurité Android** : stocker JWT + refresh (si implémenté) avec `EncryptedSharedPreferences`, device-bound key alias dans Android Keystore ; effacer en cas de logout ou rotation de clé.
+- **Module PrestaShot** : page de configuration (BO > Modules > PrestaShot) permettant de saisir la clé API et de générer un QR code encodant `{"version":1,"shopUrl":...,"apiKey":...}`. Le QR code est consommé par l’application mobile via le schéma `prestaflow://setup?data=<base64(JSON)>`; prévoir rotation manuelle de la clé en cas de révocation.
+- **QR pairing côté Android** : l’écran de connexion propose une action “Scanner un QR code” (ZXing Embedded `com.journeyapps:zxing-android-embedded:4.3.0`). Le payload est décodé, normalisé (HTTPS obligatoire) puis pré-remplit URL et clé API. En cas d’annulation ou d’échec, un message localisé est affiché.
 - **CI/CD** : secrets `PLAY_STORE_JSON`, `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`, `FIREBASE_APP_ID`, `SENTRY_DSN?`, `CRASHLYTICS_TOKEN`.
 - **Monitoring** : Crashlytics + traces réseau optionnelles (use HTTP logging interceptors conditionnés `BuildConfig.DEBUG`).
 
