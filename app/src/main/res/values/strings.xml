@@ -31,4 +31,19 @@
     <string name="error_unauthorized">Authentication failed. Check your credentials.</string>
     <string name="error_forbidden">You do not have access to this resource.</string>
     <string name="error_generic">Something went wrong. Please try again.</string>
+
+    <string name="dashboard_state_empty">No metrics available yet.</string>
+    <string name="dashboard_kpi_turnover">Turnover</string>
+    <string name="dashboard_kpi_orders">Orders</string>
+    <string name="dashboard_kpi_customers">Customers</string>
+    <string name="dashboard_kpi_products">Products</string>
+    <string name="dashboard_chart_title_turnover">Turnover trend</string>
+    <string name="dashboard_chart_empty">No chart data for the selected period.</string>
+    <string name="dashboard_period_today">Today</string>
+    <string name="dashboard_period_week">7 days</string>
+    <string name="dashboard_period_month">30 days</string>
+    <string name="dashboard_period_quarter">Quarter</string>
+    <string name="dashboard_period_year">Year</string>
+    <string name="dashboard_action_refresh">Refresh</string>
+
 </resources>

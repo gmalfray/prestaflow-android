@@ -31,4 +31,19 @@
     <string name="error_unauthorized">Échec d’authentification. Vérifiez vos identifiants.</string>
     <string name="error_forbidden">Vous n’avez pas accès à cette ressource.</string>
     <string name="error_generic">Une erreur est survenue. Réessayez.</string>
+
+    <string name="dashboard_state_empty">Aucune donnée disponible pour le moment.</string>
+    <string name="dashboard_kpi_turnover">Chiffre d’affaires</string>
+    <string name="dashboard_kpi_orders">Commandes</string>
+    <string name="dashboard_kpi_customers">Clients</string>
+    <string name="dashboard_kpi_products">Produits</string>
+    <string name="dashboard_chart_title_turnover">Évolution du chiffre d’affaires</string>
+    <string name="dashboard_chart_empty">Aucune donnée graphique pour la période sélectionnée.</string>
+    <string name="dashboard_period_today">Aujourd’hui</string>
+    <string name="dashboard_period_week">7 jours</string>
+    <string name="dashboard_period_month">30 jours</string>
+    <string name="dashboard_period_quarter">Trimestre</string>
+    <string name="dashboard_period_year">Année</string>
+    <string name="dashboard_action_refresh">Actualiser</string>
+
 </resources>
