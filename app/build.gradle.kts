@@ -192,6 +192,8 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     kapt(libs.androidx.hilt.compiler)
 
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+
     kaptTest(libs.androidx.room.compiler)
     kaptAndroidTest(libs.androidx.room.compiler)
     kaptTest(libs.hilt.compiler)

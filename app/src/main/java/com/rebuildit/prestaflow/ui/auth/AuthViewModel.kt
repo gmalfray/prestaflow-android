@@ -1,5 +1,7 @@
 package com.rebuildit.prestaflow.ui.auth
 
+import android.net.Uri
+import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.R
@@ -14,6 +16,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.text.Charsets
+import org.json.JSONObject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -30,6 +34,42 @@ class AuthViewModel @Inject constructor(
 
     fun onApiKeyChanged(value: String) {
         _uiState.update { it.copy(apiKey = value, formError = null) }
+    }
+
+    fun onQrScanned(rawValue: String) {
+        val result = parseQrContent(rawValue.trim())
+        if (result == null) {
+            _uiState.update { it.copy(formError = UiText.FromResources(R.string.auth_error_qr_invalid)) }
+            return
+        }
+
+        val (shopUrl, apiKey) = result
+        val validation = shopUrlValidator.validate(shopUrl)
+        val normalizedUrl = when (validation) {
+            is ShopUrlValidator.Result.Valid -> validation.normalizedUrl
+            is ShopUrlValidator.Result.Invalid -> {
+                val message = when (validation) {
+                    ShopUrlValidator.Result.Invalid.Empty -> UiText.FromResources(R.string.auth_error_shop_url_empty)
+                    ShopUrlValidator.Result.Invalid.Malformed -> UiText.FromResources(R.string.auth_error_shop_url_malformed)
+                    ShopUrlValidator.Result.Invalid.NonHttps -> UiText.FromResources(R.string.auth_error_shop_url_https)
+                }
+                _uiState.update { it.copy(shopUrlError = message, formError = null) }
+                return
+            }
+        }
+
+        _uiState.update {
+            it.copy(
+                shopUrl = normalizedUrl,
+                apiKey = apiKey,
+                formError = null,
+                shopUrlError = null
+            )
+        }
+    }
+
+    fun onQrScanCancelled() {
+        _uiState.update { it.copy(formError = UiText.FromResources(R.string.auth_error_qr_cancelled)) }
     }
 
     fun submit() {
@@ -82,6 +122,28 @@ class AuthViewModel @Inject constructor(
                 shopUrlError = shopUrlError
             )
         }
+    }
+
+    private fun parseQrContent(raw: String): Pair<String, String>? {
+        if (raw.isBlank()) return null
+
+        val jsonString = if (raw.startsWith("prestaflow://", ignoreCase = true)) {
+            val uri = runCatching { Uri.parse(raw) }.getOrNull() ?: return null
+            val encoded = uri.getQueryParameter("data") ?: return null
+            val decoded = runCatching { Base64.decode(encoded, Base64.DEFAULT) }.getOrElse { return null }
+            String(decoded, Charsets.UTF_8)
+        } else {
+            raw
+        }
+
+        val json = runCatching { JSONObject(jsonString) }.getOrNull() ?: return null
+        val shopUrl = json.optString("shopUrl")
+        val apiKey = json.optString("apiKey")
+        if (shopUrl.isNullOrBlank() || apiKey.isNullOrBlank()) {
+            return null
+        }
+
+        return shopUrl to apiKey
     }
 }
 

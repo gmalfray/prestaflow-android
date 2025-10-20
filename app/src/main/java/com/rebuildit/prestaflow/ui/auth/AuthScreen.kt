@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -28,6 +29,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.activity.compose.rememberLauncherForActivityResult
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.UiText
 
@@ -38,12 +42,30 @@ fun AuthRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
+        if (result == null || result.contents.isNullOrBlank()) {
+            viewModel.onQrScanCancelled()
+        } else {
+            viewModel.onQrScanned(result.contents)
+        }
+    }
+
+    val scanPrompt = stringResource(id = R.string.auth_scan_prompt)
+
     AuthScreen(
         modifier = modifier,
         state = uiState,
         onShopUrlChanged = viewModel::onShopUrlChanged,
         onApiKeyChanged = viewModel::onApiKeyChanged,
-        onSubmit = viewModel::submit
+        onSubmit = viewModel::submit,
+        onScanQr = {
+            val options = ScanOptions()
+                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                .setPrompt(scanPrompt)
+                .setBeepEnabled(false)
+                .setBarcodeImageEnabled(false)
+            scanLauncher.launch(options)
+        }
     )
 }
 
@@ -54,7 +76,8 @@ fun AuthScreen(
     state: AuthUiState,
     onShopUrlChanged: (String) -> Unit,
     onApiKeyChanged: (String) -> Unit,
-    onSubmit: () -> Unit
+    onSubmit: () -> Unit,
+    onScanQr: () -> Unit
 ) {
     Scaffold(modifier = modifier) { innerPadding ->
         Column(
@@ -109,6 +132,14 @@ fun AuthScreen(
                 enabled = state.isSubmitEnabled
             ) {
                 Text(text = stringResource(id = R.string.auth_action_connect))
+            }
+
+            OutlinedButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onScanQr,
+                enabled = !state.isLoading
+            ) {
+                Text(text = stringResource(id = R.string.auth_action_scan_qr))
             }
 
             TextButton(

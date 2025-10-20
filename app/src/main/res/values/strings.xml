@@ -19,10 +19,14 @@
     <string name="auth_field_api_key_placeholder">Paste your API key</string>
     <string name="auth_action_connect">Connect</string>
     <string name="auth_action_prefill_https">Use https:// prefix</string>
+    <string name="auth_action_scan_qr">Scan QR code</string>
     <string name="auth_error_shop_url_empty">Please enter the shop URL.</string>
     <string name="auth_error_shop_url_malformed">The shop URL looks invalid.</string>
     <string name="auth_error_shop_url_https">HTTPS is required.</string>
     <string name="auth_error_api_key_empty">Please enter the API key.</string>
+    <string name="auth_error_qr_invalid">Unable to read the QR code payload.</string>
+    <string name="auth_error_qr_cancelled">QR code scan cancelled.</string>
+    <string name="auth_scan_prompt">Point the camera at the PrestaFlow QR code</string>
     <string name="error_network_unreachable">Network unavailable. Check your connection.</string>
     <string name="error_unauthorized">Authentication failed. Check your credentials.</string>
     <string name="error_forbidden">You do not have access to this resource.</string>
