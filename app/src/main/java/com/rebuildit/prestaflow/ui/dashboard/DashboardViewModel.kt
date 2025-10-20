@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
@@ -29,7 +30,7 @@ class DashboardViewModel @Inject constructor(
 
     init {
         observeDashboard()
-        refresh(selectedPeriodFlow.value, forceRemote = true)
+        refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = false)
     }
 
     fun onPeriodSelected(period: DashboardPeriod) {
@@ -37,18 +38,17 @@ class DashboardViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 selectedPeriod = period,
-                snapshot = null,
-                isLoading = true,
+                isLoading = it.snapshot == null,
                 isRefreshing = true,
                 error = null
             )
         }
         selectedPeriodFlow.value = period
-        refresh(period, forceRemote = true)
+        refresh(period, forceRemote = true, notifyOnError = true)
     }
 
     fun onRefresh() {
-        refresh(selectedPeriodFlow.value, forceRemote = true)
+        refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = true)
     }
 
     private fun observeDashboard() {
@@ -76,26 +76,44 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private fun refresh(period: DashboardPeriod, forceRemote: Boolean) {
+    private fun refresh(period: DashboardPeriod, forceRemote: Boolean, notifyOnError: Boolean) {
         viewModelScope.launch {
             _uiState.update { current ->
                 current.copy(
                     isRefreshing = true,
                     isLoading = current.snapshot == null,
-                    error = null
+                    error = if (notifyOnError) null else current.error
                 )
             }
 
             val result = runCatching { dashboardRepository.refresh(period, forceRemote) }
-            result.onFailure { error ->
-                _uiState.update { current ->
-                    current.copy(
-                        isRefreshing = false,
-                        isLoading = false,
-                        error = networkErrorMapper.map(error)
-                    )
+            result
+                .onSuccess {
+                    _uiState.update { current ->
+                        current.copy(
+                            isRefreshing = false,
+                            isLoading = current.snapshot == null && current.error == null
+                        )
+                    }
                 }
-            }
+                .onFailure { error ->
+                    Timber.w(error, "Failed to refresh dashboard for %s", period)
+                    _uiState.update { current ->
+                        if (!notifyOnError) {
+                            current.copy(
+                                isRefreshing = false,
+                                isLoading = current.snapshot == null,
+                                error = current.error
+                            )
+                        } else {
+                            current.copy(
+                                isRefreshing = false,
+                                isLoading = false,
+                                error = networkErrorMapper.map(error)
+                            )
+                        }
+                    }
+                }
         }
     }
 }

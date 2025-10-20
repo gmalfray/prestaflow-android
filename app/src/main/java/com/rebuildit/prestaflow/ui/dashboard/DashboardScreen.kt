@@ -77,23 +77,24 @@ fun DashboardScreen(
     onRefresh: () -> Unit
 ) {
     val errorMessage = state.error?.asString()
+    val hasSnapshot = state.snapshot != null
+    val isLoading = state.isLoading && !hasSnapshot
 
     when {
-        state.isLoading && state.snapshot == null -> LoadingState(modifier)
-        state.snapshot == null && errorMessage != null -> ErrorState(
+        isLoading -> LoadingState(modifier)
+        hasSnapshot -> DashboardContent(
             modifier = modifier,
-            message = errorMessage,
-            onRetry = onRefresh
-        )
-        state.snapshot == null -> EmptyState(modifier)
-        else -> DashboardContent(
-            modifier = modifier,
-            snapshot = state.snapshot,
+            snapshot = requireNotNull(state.snapshot),
             selectedPeriod = state.selectedPeriod,
-            errorMessage = errorMessage,
             isRefreshing = state.isRefreshing,
+            errorMessage = errorMessage,
             onPeriodSelected = onPeriodSelected,
             onRefresh = onRefresh
+        )
+        else -> EmptyState(
+            modifier = modifier,
+            errorMessage = errorMessage,
+            onRetry = onRefresh
         )
     }
 }
@@ -114,34 +115,11 @@ private fun LoadingState(modifier: Modifier) {
 }
 
 @Composable
-private fun ErrorState(
+private fun EmptyState(
     modifier: Modifier,
-    message: String,
+    errorMessage: String?,
     onRetry: () -> Unit
 ) {
-    Surface(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onRetry) {
-                Text(text = stringResource(id = R.string.action_retry))
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyState(modifier: Modifier) {
     Surface(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -155,6 +133,19 @@ private fun EmptyState(modifier: Modifier) {
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (errorMessage != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(onClick = onRetry) {
+                    Text(text = stringResource(id = R.string.action_retry))
+                }
+            }
         }
     }
 }
@@ -164,8 +155,8 @@ private fun DashboardContent(
     modifier: Modifier,
     snapshot: DashboardSnapshot,
     selectedPeriod: DashboardPeriod,
-    errorMessage: String?,
     isRefreshing: Boolean,
+    errorMessage: String?,
     onPeriodSelected: (DashboardPeriod) -> Unit,
     onRefresh: () -> Unit
 ) {
