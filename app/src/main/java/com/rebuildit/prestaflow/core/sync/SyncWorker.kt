@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.rebuildit.prestaflow.core.config.AppEnvironment
+import com.rebuildit.prestaflow.core.network.ApiEndpointManager
 import com.rebuildit.prestaflow.core.sync.ConflictResolution.Drop
 import com.rebuildit.prestaflow.core.sync.ConflictResolution.Hold
 import com.rebuildit.prestaflow.core.sync.ConflictResolution.Retry
@@ -26,7 +26,7 @@ import timber.log.Timber
 class SyncWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val environment: AppEnvironment,
+    private val endpointManager: ApiEndpointManager,
     private val okHttpClient: OkHttpClient,
     private val syncQueueRepository: SyncQueueRepository,
     private val conflictResolver: SyncConflictResolver
@@ -89,7 +89,8 @@ class SyncWorker @AssistedInject constructor(
 
     private fun buildRequest(task: PendingSyncTask): Request {
         val method = task.method.uppercase()
-        val url = environment.apiBaseUrl.trimEnd('/') + "/" + task.endpoint.trimStart('/')
+        val baseUrl = endpointManager.getActiveBaseUrl().toString().trimEnd('/')
+        val url = baseUrl + "/" + task.endpoint.trimStart('/')
         val body = when (method) {
             "POST", "PUT", "PATCH" -> task.payloadJson.takeIf { it.isNotBlank() }?.toJsonRequestBody()
                 ?: "{}".toJsonRequestBody()

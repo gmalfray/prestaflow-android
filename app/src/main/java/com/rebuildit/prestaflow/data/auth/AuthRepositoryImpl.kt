@@ -1,6 +1,7 @@
 package com.rebuildit.prestaflow.data.auth
 
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.core.network.ApiEndpointManager
 import com.rebuildit.prestaflow.core.security.TokenManager
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.dto.AuthRequestDto
@@ -24,6 +25,7 @@ import timber.log.Timber
 class AuthRepositoryImpl @Inject constructor(
     private val api: PrestaFlowApi,
     private val shopUrlValidator: ShopUrlValidator,
+    private val endpointManager: ApiEndpointManager,
     private val tokenManager: TokenManager,
     private val networkErrorMapper: NetworkErrorMapper,
     private val ioDispatcher: CoroutineDispatcher
@@ -43,6 +45,14 @@ class AuthRepositoryImpl @Inject constructor(
             }
         }
 
+        val apiBaseUrl = endpointManager.buildApiBaseUrl(normalizedUrl)
+        if (apiBaseUrl == null) {
+            _authState.value = AuthState.Unauthenticated
+            return AuthResult.Failure(AuthFailure.InvalidShopUrl(ShopUrlValidator.Result.Invalid.Malformed))
+        }
+
+        endpointManager.setActiveBaseUrl(apiBaseUrl, normalizedUrl, persist = false)
+
         val response = runCatching {
             withContext(ioDispatcher) {
                 api.login(AuthRequestDto(apiKey = apiKey.trim(), shopUrl = normalizedUrl))
@@ -51,6 +61,7 @@ class AuthRepositoryImpl @Inject constructor(
 
         return response.fold(
             onSuccess = { payload ->
+                endpointManager.setActiveBaseUrl(apiBaseUrl, normalizedUrl, persist = true)
                 val token = AuthToken(
                     value = payload.token,
                     expiresAtEpochMillis = payload.expiresIn.takeIf { it > 0 }?.let {
