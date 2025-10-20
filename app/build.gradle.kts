@@ -192,6 +192,13 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     kapt(libs.androidx.hilt.compiler)
 
+    kaptTest(libs.androidx.room.compiler)
+    kaptAndroidTest(libs.androidx.room.compiler)
+    kaptTest(libs.hilt.compiler)
+    kaptAndroidTest(libs.hilt.compiler)
+    kaptTest(libs.androidx.hilt.compiler)
+    kaptAndroidTest(libs.androidx.hilt.compiler)
+
     testImplementation(libs.junit)
     testImplementation(libs.turbine)
 
