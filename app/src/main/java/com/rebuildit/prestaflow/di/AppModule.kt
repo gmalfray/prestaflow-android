@@ -33,6 +33,7 @@ import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.interceptor.AuthInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DefaultHeadersInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DynamicBaseUrlInterceptor
+import com.rebuildit.prestaflow.data.theme.ThemeRepositoryImpl
 import com.rebuildit.prestaflow.data.sync.SyncQueueRepositoryImpl
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
@@ -184,6 +185,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideNotificationsRepository(impl: NotificationsRepositoryImpl): NotificationsRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideThemeRepository(impl: ThemeRepositoryImpl): ThemeRepository = impl
 
     @Provides
     @Singleton

@@ -46,4 +46,17 @@
     <string name="dashboard_period_year">Year</string>
     <string name="dashboard_action_refresh">Refresh</string>
 
+    <string name="skin_royal">Royal Violet</string>
+    <string name="skin_lagoon">Lagoon Teal</string>
+    <string name="skin_ember">Ember Sunset</string>
+    <string name="skin_forest">Forest Canopy</string>
+    <string name="skin_slate">Slate Skyline</string>
+    <string name="skin_dynamic_color">Dynamic color</string>
+    <string name="skin_dark_follow_system">System default</string>
+    <string name="skin_dark_light">Always light</string>
+    <string name="skin_dark_dark">Always dark</string>
+    <string name="skin_selector_title">App appearance</string>
+    <string name="skin_selector_subtitle">Choose a color skin and dark mode preference</string>
+    <string name="auth_loading">Checking your credentials…</string>
+
 </resources>
