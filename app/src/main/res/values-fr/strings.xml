@@ -46,4 +46,17 @@
     <string name="dashboard_period_year">Année</string>
     <string name="dashboard_action_refresh">Actualiser</string>
 
+    <string name="skin_royal">Violet Royal</string>
+    <string name="skin_lagoon">Lagune Turquoise</string>
+    <string name="skin_ember">Coucher de Soleil</string>
+    <string name="skin_forest">Canopée</string>
+    <string name="skin_slate">Horizons Ardoise</string>
+    <string name="skin_dynamic_color">Couleur dynamique</string>
+    <string name="skin_dark_follow_system">Suivre le système</string>
+    <string name="skin_dark_light">Toujours clair</string>
+    <string name="skin_dark_dark">Toujours sombre</string>
+    <string name="skin_selector_title">Apparence de l’application</string>
+    <string name="skin_selector_subtitle">Choisissez un jeu de couleurs et la préférence de mode sombre</string>
+    <string name="auth_loading">Vérification de vos identifiants…</string>
+
 </resources>

@@ -69,14 +69,17 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
             val current = settings.first()
             val token = current.deviceToken
-            if (!enabled && token != null && current.lastSyncedToken == token) {
-                unregisterRemote(token)
-                dataStore.edit { prefs ->
-                    prefs.remove(KEY_LAST_SYNCED_TOKEN)
-                    prefs.remove(KEY_DEVICE_TOKEN)
+            when {
+                !enabled && token != null && current.lastSyncedToken == token -> {
+                    unregisterRemote(token)
+                    dataStore.edit { prefs ->
+                        prefs.remove(KEY_LAST_SYNCED_TOKEN)
+                        prefs.remove(KEY_DEVICE_TOKEN)
+                    }
                 }
-            } else if (enabled && token != null && !current.isTokenSynced) {
-                syncRegistration(token, currentDeviceId())
+                enabled && token != null && !current.isTokenSynced -> {
+                    syncRegistration(token, currentDeviceId())
+                }
             }
         }
     }

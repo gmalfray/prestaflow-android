@@ -1,12 +1,16 @@
 package com.rebuildit.prestaflow.ui.auth
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -22,14 +26,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.activity.compose.rememberLauncherForActivityResult
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.rebuildit.prestaflow.R
@@ -79,84 +89,121 @@ fun AuthScreen(
     onSubmit: () -> Unit,
     onScanQr: () -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
+    val haptic = LocalHapticFeedback.current
+
     Scaffold(modifier = modifier) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(innerPadding)
-                .padding(horizontal = 24.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = stringResource(id = R.string.auth_title),
-                style = MaterialTheme.typography.headlineLarge
-            )
-            Text(
-                text = stringResource(id = R.string.auth_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = state.shopUrl,
-                onValueChange = onShopUrlChanged,
-                label = { Text(text = stringResource(id = R.string.auth_field_shop_url)) },
-                placeholder = { Text(text = stringResource(id = R.string.auth_field_shop_url_placeholder)) },
-                singleLine = true,
-                isError = state.shopUrlError != null,
-                supportingText = state.shopUrlError?.let { error -> { ErrorText(error) } },
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.None,
-                    keyboardType = KeyboardType.Uri
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 520.dp)
+                    .align(Alignment.TopCenter)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text(
+                    text = stringResource(id = R.string.auth_title),
+                    style = MaterialTheme.typography.headlineLarge
                 )
-            )
+                Text(
+                    text = stringResource(id = R.string.auth_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = state.apiKey,
-                onValueChange = onApiKeyChanged,
-                label = { Text(text = stringResource(id = R.string.auth_field_api_key)) },
-                placeholder = { Text(text = stringResource(id = R.string.auth_field_api_key_placeholder)) },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-            )
-
-            state.formError?.let { error -> ErrorText(error) }
-
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = onSubmit,
-                enabled = state.isSubmitEnabled
-            ) {
-                Text(text = stringResource(id = R.string.auth_action_connect))
-            }
-
-            OutlinedButton(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = onScanQr,
-                enabled = !state.isLoading
-            ) {
-                Text(text = stringResource(id = R.string.auth_action_scan_qr))
-            }
-
-            TextButton(
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                contentPadding = PaddingValues(0.dp),
-                enabled = !state.isLoading,
-                onClick = { onShopUrlChanged("https://") }
-            ) {
-                Text(text = stringResource(id = R.string.auth_action_prefill_https))
-            }
-
-            if (state.isLoading) {
-                CircularProgressIndicator(
+                OutlinedTextField(
                     modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 16.dp)
+                        .fillMaxWidth()
+                        .semantics { contentDescription = stringResource(id = R.string.auth_field_shop_url) },
+                    value = state.shopUrl,
+                    onValueChange = onShopUrlChanged,
+                    label = { Text(text = stringResource(id = R.string.auth_field_shop_url)) },
+                    placeholder = { Text(text = stringResource(id = R.string.auth_field_shop_url_placeholder)) },
+                    singleLine = true,
+                    isError = state.shopUrlError != null,
+                    supportingText = state.shopUrlError?.let { { ErrorText(it) } },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.None,
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(onNext = {
+                        focusManager.moveFocus(FocusDirection.Down)
+                    })
                 )
+
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = stringResource(id = R.string.auth_field_api_key) },
+                    value = state.apiKey,
+                    onValueChange = onApiKeyChanged,
+                    label = { Text(text = stringResource(id = R.string.auth_field_api_key)) },
+                    placeholder = { Text(text = stringResource(id = R.string.auth_field_api_key_placeholder)) },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = {
+                        focusManager.clearFocus(force = true)
+                        if (state.isSubmitEnabled) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onSubmit()
+                        }
+                    })
+                )
+
+                state.formError?.let { error -> ErrorText(error) }
+
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onSubmit()
+                    },
+                    enabled = state.isSubmitEnabled
+                ) {
+                    Text(text = stringResource(id = R.string.auth_action_connect))
+                }
+
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onScanQr()
+                    },
+                    enabled = !state.isLoading
+                ) {
+                    Text(text = stringResource(id = R.string.auth_action_scan_qr))
+                }
+
+                TextButton(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    contentPadding = PaddingValues(0.dp),
+                    enabled = !state.isLoading,
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onShopUrlChanged("https://")
+                    }
+                ) {
+                    Text(text = stringResource(id = R.string.auth_action_prefill_https))
+                }
+
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(top = 16.dp)
+                            .semantics { contentDescription = stringResource(id = R.string.auth_loading) }
+                    )
+                }
             }
         }
     }
