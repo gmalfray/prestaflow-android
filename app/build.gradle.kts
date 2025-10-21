@@ -245,12 +245,13 @@ android.applicationVariants.all {
 tasks.register("jacocoTestReport") {
     description = "Generate Jacoco coverage reports for all debug variants"
     group = "verification"
+    notCompatibleWithConfigurationCache("Logs project-specific paths at execution time.")
     
     dependsOn(
-        "jacocoTestPreprodDebugUnitTest",
+        "testPreprodDebugUnitTest",
         "jacocoPreprodDebugTestReport",
-        "jacocoTestProdDebugUnitTest",
-        "jaccooProdDebugTestReport"
+        "testProdDebugUnitTest",
+        "jacocoProdDebugTestReport"
     )
     
     doLast {
@@ -258,9 +259,9 @@ tasks.register("jacocoTestReport") {
         println("║           📊 Coverage Reports Generated                  ║")
         println("╚═══════════════════════════════════════════════════════════╝")
         println("\n📁 Preprod Debug:")
-        println("   file://${layout.buildDirectory.get()}/reports/jacoco/jaccooPreprodDebugTestReport/html/index.html")
+        println("   file://${layout.buildDirectory.get()}/reports/jacoco/jacocoPreprodDebugTestReport/html/index.html")
         println("\n📁 Prod Debug:")
-        println("   file://${layout.buildDirectory.get()}/reports/jacoco/jaccooProdDebugTestReport/html/index.html\n")
+        println("   file://${layout.buildDirectory.get()}/reports/jacoco/jacocoProdDebugTestReport/html/index.html\n")
     }
 }
 
