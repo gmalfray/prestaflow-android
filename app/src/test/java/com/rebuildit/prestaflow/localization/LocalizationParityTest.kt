@@ -10,9 +10,8 @@ class LocalizationParityTest {
 
     @Test
     fun `english and french strings have matching keys`() {
-        val projectDir = File(".").absoluteFile
-        val english = loadStrings(File(projectDir, "app/src/main/res/values/strings.xml"))
-        val french = loadStrings(File(projectDir, "app/src/main/res/values-fr/strings.xml"))
+        val english = loadStrings(resolveResource("src/main/res/values/strings.xml"))
+        val french = loadStrings(resolveResource("src/main/res/values-fr/strings.xml"))
         assertEquals(
             "French translation file should contain the same string keys as the default locale",
             english.keys,
@@ -36,5 +35,17 @@ class LocalizationParityTest {
             }
         }
         return map
+    }
+
+    private fun resolveResource(relativePath: String): File {
+        val candidates = listOf(
+            File(relativePath),
+            File("app/$relativePath"),
+            File("../$relativePath"),
+            File("../app/$relativePath")
+        ).map { it.absoluteFile.normalize() }
+
+        return candidates.firstOrNull { it.exists() }
+            ?: throw IllegalStateException("Unable to locate resource file for path '$relativePath' from ${File(".").absolutePath}")
     }
 }
