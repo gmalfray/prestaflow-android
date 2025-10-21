@@ -2,7 +2,7 @@ package com.rebuildit.prestaflow.localization
 
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
-import kotlin.test.assertEquals
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.w3c.dom.Element
 
@@ -14,9 +14,9 @@ class LocalizationParityTest {
         val english = loadStrings(File(projectDir, "app/src/main/res/values/strings.xml"))
         val french = loadStrings(File(projectDir, "app/src/main/res/values-fr/strings.xml"))
         assertEquals(
+            "French translation file should contain the same string keys as the default locale",
             english.keys,
-            french.keys,
-            "French translation file should contain the same string keys as the default locale"
+            french.keys
         )
     }
 
