@@ -53,6 +53,15 @@ tasks.register("jacocoTestReport") {
     }
 }
 
+tasks.register("lintDebug") {
+    description = "Run Android lint on all debug product flavors."
+    group = "verification"
+    dependsOn(
+        ":app:lintPreprodDebug",
+        ":app:lintProdDebug"
+    )
+}
+
 // Tâche de vérification de qualité globale
 tasks.register("qualityCheck") {
     description = "Run all quality checks (tests, lint, detekt)"
@@ -60,7 +69,7 @@ tasks.register("qualityCheck") {
     
     dependsOn(
         "testDebugUnitTest",
-        ":app:lintDebug",
+        "lintDebug",
         ":app:detekt"
     )
     
