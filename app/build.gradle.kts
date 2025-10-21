@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
+    id("jacoco")
 }
 
 if (file("google-services.json").exists()) {
@@ -44,6 +45,8 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             isDebuggable = true
+            enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
         }
         release {
             isMinifyEnabled = false
@@ -106,6 +109,7 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            isReturnDefaultValues = true
             all { test ->
                 test.systemProperty("robolectric.logging", "stdout")
             }
@@ -144,6 +148,178 @@ detekt {
     config.from(files("$rootDir/config/detekt/detekt.yml"))
     buildUponDefaultConfig = true
     autoCorrect = false
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Configuration JaCoCo pour la couverture de code
+// ═══════════════════════════════════════════════════════════════
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+// Créer des tâches JaCoCo pour chaque variant
+android.applicationVariants.all {
+    val variantName = name
+    val variantCapitalized = variantName.replaceFirstChar { it.uppercase() }
+    val testTaskName = "test${variantCapitalized}UnitTest"
+    
+    tasks.register<JacocoReport>("jacoco${variantCapitalized}TestReport") {
+        description = "Generate Jacoco coverage report for $variantName variant"
+        group = "verification"
+        
+        dependsOn(testTaskName)
+        
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+            csv.required.set(false)
+        }
+        
+        val javaTree = fileTree("${layout.buildDirectory.get()}/intermediates/javac/$variantName/classes") {
+            exclude(
+                "**/R.class",
+                "**/R\$*.class",
+                "**/BuildConfig.*",
+                "**/Manifest*.*",
+                "**/*Test*.*",
+                "android/**/*.*"
+            )
+        }
+        
+        val kotlinTree = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/$variantName") {
+            exclude(
+                "**/R.class",
+                "**/R\$*.class",
+                "**/BuildConfig.*",
+                "**/Manifest*.*",
+                "**/*Test*.*",
+                "android/**/*.*",
+                "**/*\$Lambda$*.*",
+                "**/*\$inlined$*.*",
+                // Exclusions Dagger/Hilt
+                "**/di/**",
+                "**/*_Factory.*",
+                "**/*_MembersInjector.*",
+                "**/*Module.*",
+                "**/*Module\$*.*",
+                "**/*Dagger*.*",
+                "**/*Hilt*.*",
+                "**/*_HiltModules*.*",
+                "**/*_ComponentTreeDeps*.*",
+                "**/*_Provide*Factory*.*",
+                // Exclusions générées
+                "**/databinding/**",
+                "**/android/databinding/**",
+                "**/androidx/databinding/**",
+                "**/BR.*",
+                "**/DataBindingInfo.*"
+            )
+        }
+        
+        classDirectories.setFrom(files(javaTree, kotlinTree))
+        
+        executionData.setFrom(
+            fileTree(layout.buildDirectory) {
+                include("jacoco/$testTaskName.exec")
+            }
+        )
+        
+        sourceDirectories.setFrom(
+            files(
+                "$projectDir/src/main/java",
+                "$projectDir/src/main/kotlin",
+                "$projectDir/src/$variantName/java",
+                "$projectDir/src/$variantName/kotlin"
+            )
+        )
+        
+        doLast {
+            val reportPath = reports.html.outputLocation.get().asFile.absolutePath
+            println("✅ Coverage report generated: file://$reportPath/index.html")
+        }
+    }
+}
+
+// Tâche globale pour générer tous les rapports de couverture
+tasks.register("jacocoTestReport") {
+    description = "Generate Jacoco coverage reports for all debug variants"
+    group = "verification"
+    
+    dependsOn(
+        "jacocoTestPreprodDebugUnitTest",
+        "jacocoPreprodDebugTestReport",
+        "jacocoTestProdDebugUnitTest",
+        "jaccooProdDebugTestReport"
+    )
+    
+    doLast {
+        println("\n╔═══════════════════════════════════════════════════════════╗")
+        println("║           📊 Coverage Reports Generated                  ║")
+        println("╚═══════════════════════════════════════════════════════════╝")
+        println("\n📁 Preprod Debug:")
+        println("   file://${layout.buildDirectory.get()}/reports/jacoco/jaccooPreprodDebugTestReport/html/index.html")
+        println("\n📁 Prod Debug:")
+        println("   file://${layout.buildDirectory.get()}/reports/jacoco/jaccooProdDebugTestReport/html/index.html\n")
+    }
+}
+
+// Tâche de vérification de couverture minimale
+tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    description = "Verify minimum code coverage thresholds"
+    group = "verification"
+    
+    dependsOn("jacocoTestReport")
+    
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.30".toBigDecimal() // 30% de couverture minimale
+            }
+        }
+        
+        rule {
+            enabled = true
+            element = "CLASS"
+            
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.20".toBigDecimal()
+            }
+            
+            excludes = listOf(
+                "*.di.*",
+                "*.BuildConfig",
+                "*.*Test",
+                "*.R",
+                "*.R\$*",
+                "*.*Module",
+                "*.*Dagger*",
+                "*.*Hilt*"
+            )
+        }
+    }
+}
+
+// Améliorer les logs des tests
+tasks.withType<Test> {
+    testLogging {
+        events("passed", "skipped", "failed", "standardOut", "standardError")
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+    
+    doFirst {
+        println("\n🧪 Running tests for ${this.name}...")
+    }
+    
+    doLast {
+        println("✅ Tests completed for ${this.name}")
+        println("   Results: ${this.reports.html.outputLocation.get().asFile.absolutePath}\n")
+    }
 }
 
 dependencies {

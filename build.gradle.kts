@@ -9,14 +9,19 @@ plugins {
     alias(libs.plugins.google.services) apply false
 }
 
-// Désactiver temporairement KAPT pour révéler les vraies erreurs
-// subprojects {
-//     tasks.configureEach {
-//         if (name.contains("kapt", ignoreCase = true)) {
-//             enabled = false
-//         }
-//     }
-// }
+// Configuration globale pour tous les sous-projets
+subprojects {
+    // Appliquer JaCoCo à tous les modules
+    afterEvaluate {
+        if (plugins.hasPlugin("com.android.application") || plugins.hasPlugin("com.android.library")) {
+            apply(plugin = "jacoco")
+            
+            extensions.configure<JacocoPluginExtension> {
+                toolVersion = "0.8.11"
+            }
+        }
+    }
+}
 
 tasks.register<Delete>("clean") {
     delete(layout.buildDirectory)
@@ -29,4 +34,102 @@ tasks.register("testDebugUnitTest") {
         ":app:testPreprodDebugUnitTest",
         ":app:testProdDebugUnitTest"
     )
+}
+
+// Tâche pour générer tous les rapports de couverture
+tasks.register("jacocoTestReport") {
+    description = "Generate Jacoco coverage reports for all debug variants."
+    group = "verification"
+    dependsOn("testDebugUnitTest")
+    
+    doLast {
+        println("\n╔═══════════════════════════════════════════════════════════╗")
+        println("║         ✅ Coverage Reports Generated                    ║")
+        println("╚═══════════════════════════════════════════════════════════╝")
+        println("\n📊 Open the HTML reports in your browser:")
+        println("   • Preprod Debug")
+        println("   • Prod Debug")
+        println("\n💡 Tip: Use './gradlew jacocoTestCoverageVerification' to check coverage thresholds\n")
+    }
+}
+
+// Tâche de vérification de qualité globale
+tasks.register("qualityCheck") {
+    description = "Run all quality checks (tests, lint, detekt)"
+    group = "verification"
+    
+    dependsOn(
+        "testDebugUnitTest",
+        ":app:lintDebug",
+        ":app:detekt"
+    )
+    
+    doLast {
+        println("\n╔═══════════════════════════════════════════════════════════╗")
+        println("║              ✅ Quality Check Completed                  ║")
+        println("╚═══════════════════════════════════════════════════════════╝")
+        println("\n✨ All quality checks passed successfully!\n")
+    }
+}
+
+// Tâche pour afficher un résumé du projet
+tasks.register("projectInfo") {
+    description = "Display project information"
+    group = "help"
+    
+    doLast {
+        println("""
+            
+            ╔═══════════════════════════════════════════════════════════╗
+            ║              PrestaFlow Android Project                  ║
+            ╚═══════════════════════════════════════════════════════════╝
+            
+            📦 Project: ${rootProject.name}
+            🏗️  Gradle: ${gradle.gradleVersion}
+            ☕ Java: ${System.getProperty("java.version")}
+            🎯 Kotlin: 1.9.23
+            
+            🚀 Available tasks:
+               • ./gradlew assembleDebug          - Build debug APKs
+               • ./gradlew testDebugUnitTest      - Run all unit tests
+               • ./gradlew jacocoTestReport       - Generate coverage reports
+               • ./gradlew qualityCheck           - Run all quality checks
+               • ./gradlew lintDebug              - Run lint analysis
+               • ./gradlew detekt                 - Run static code analysis
+               • ./gradlew ktlintCheck            - Check code style
+               • ./gradlew clean                  - Clean build artifacts
+            
+            📱 Build variants:
+               • preprodDebug
+               • prodDebug
+               • preprodRelease
+               • prodRelease
+            
+            🔗 More info: https://github.com/yourrepo/prestaflow-android
+            
+        """.trimIndent())
+    }
+}
+
+// Tâche pour nettoyer en profondeur
+tasks.register<Delete>("cleanAll") {
+    description = "Clean all build artifacts including caches"
+    group = "build"
+    
+    delete(
+        layout.buildDirectory,
+        fileTree(rootDir) { include("**/.gradle") },
+        fileTree(rootDir) { include("**/build") }
+    )
+    
+    doLast {
+        println("\n✨ All build artifacts and caches cleaned!\n")
+    }
+}
+
+// Configuration pour afficher les warnings Gradle
+gradle.projectsEvaluated {
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.addAll(listOf("-Xlint:unchecked", "-Xlint:deprecation"))
+    }
 }

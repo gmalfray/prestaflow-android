@@ -34,6 +34,7 @@ securityCrypto = "1.1.0-alpha06"
 googleServices = "4.4.2"
 coroutinesPlayServices = "1.7.3"
 material3Window = "1.2.1"
+jacoco = "0.8.11"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
