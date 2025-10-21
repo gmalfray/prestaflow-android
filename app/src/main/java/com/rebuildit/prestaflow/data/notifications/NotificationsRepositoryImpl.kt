@@ -80,6 +80,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 enabled && token != null && !current.isTokenSynced -> {
                     syncRegistration(token, currentDeviceId())
                 }
+                else -> Unit
             }
         }
     }

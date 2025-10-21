@@ -106,6 +106,12 @@ fun AuthScreen(
                     .padding(horizontal = 24.dp, vertical = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
+                val shopUrlLabel = stringResource(id = R.string.auth_field_shop_url)
+                val shopUrlPlaceholder = stringResource(id = R.string.auth_field_shop_url_placeholder)
+                val apiKeyLabel = stringResource(id = R.string.auth_field_api_key)
+                val apiKeyPlaceholder = stringResource(id = R.string.auth_field_api_key_placeholder)
+                val loadingDescription = stringResource(id = R.string.auth_loading)
+
                 Text(
                     text = stringResource(id = R.string.auth_title),
                     style = MaterialTheme.typography.headlineLarge
@@ -119,14 +125,19 @@ fun AuthScreen(
                 OutlinedTextField(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = stringResource(id = R.string.auth_field_shop_url) },
+                        .semantics { contentDescription = shopUrlLabel },
                     value = state.shopUrl,
                     onValueChange = onShopUrlChanged,
-                    label = { Text(text = stringResource(id = R.string.auth_field_shop_url)) },
-                    placeholder = { Text(text = stringResource(id = R.string.auth_field_shop_url_placeholder)) },
+                    label = { Text(text = shopUrlLabel) },
+                    placeholder = { Text(text = shopUrlPlaceholder) },
                     singleLine = true,
                     isError = state.shopUrlError != null,
-                    supportingText = state.shopUrlError?.let { { ErrorText(it) } },
+                    supportingText = {
+                        val error = state.shopUrlError
+                        if (error != null) {
+                            ErrorText(error)
+                        }
+                    },
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.None,
                         keyboardType = KeyboardType.Uri,
@@ -140,11 +151,11 @@ fun AuthScreen(
                 OutlinedTextField(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = stringResource(id = R.string.auth_field_api_key) },
+                        .semantics { contentDescription = apiKeyLabel },
                     value = state.apiKey,
                     onValueChange = onApiKeyChanged,
-                    label = { Text(text = stringResource(id = R.string.auth_field_api_key)) },
-                    placeholder = { Text(text = stringResource(id = R.string.auth_field_api_key_placeholder)) },
+                    label = { Text(text = apiKeyLabel) },
+                    placeholder = { Text(text = apiKeyPlaceholder) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
@@ -160,7 +171,10 @@ fun AuthScreen(
                     })
                 )
 
-                state.formError?.let { error -> ErrorText(error) }
+                val formError = state.formError
+                if (formError != null) {
+                    ErrorText(formError)
+                }
 
                 Button(
                     modifier = Modifier.fillMaxWidth(),
@@ -201,7 +215,7 @@ fun AuthScreen(
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
                             .padding(top = 16.dp)
-                            .semantics { contentDescription = stringResource(id = R.string.auth_loading) }
+                            .semantics { contentDescription = loadingDescription }
                     )
                 }
             }

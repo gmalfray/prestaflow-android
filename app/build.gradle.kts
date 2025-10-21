@@ -338,6 +338,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material3.windowsizeclass)
     implementation(libs.androidx.compose.material.iconsExtended)
     implementation(libs.google.material)
     implementation(libs.androidx.compose.ui.tooling.preview)

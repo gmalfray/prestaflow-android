@@ -19,6 +19,7 @@ import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
@@ -52,10 +53,13 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val windowSizeClass = calculateWindowSizeClass(activity = this)
-        setContent { PrestaFlowApp(windowSizeClass) }
+        setContent {
+            val windowSizeClass = calculateWindowSizeClass(activity = this@MainActivity)
+            PrestaFlowApp(windowSizeClass)
+        }
     }
 }
 
@@ -85,7 +89,7 @@ private fun LoadingScreen() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
     val navController = rememberNavController()
@@ -101,50 +105,7 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
     }
 
     val useNavigationRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
-
-    val navigationItems: @Composable (Boolean) -> Unit = { isRail ->
-        destinations.forEach { destination ->
-            val selected = navBackStackEntry?.destination?.route == destination.route
-            val label = stringResource(id = destination.labelRes)
-            val onItemClick = {
-                if (!selected) {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    navController.navigate(destination.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            }
-            if (isRail) {
-                NavigationRailItem(
-                    selected = selected,
-                    onClick = onItemClick,
-                    icon = {
-                        Icon(
-                            imageVector = destination.icon,
-                            contentDescription = label
-                        )
-                    },
-                    label = { Text(text = label) }
-                )
-            } else {
-                NavigationBarItem(
-                    selected = selected,
-                    onClick = onItemClick,
-                    label = { Text(text = label) },
-                    icon = {
-                        Icon(
-                            imageVector = destination.icon,
-                            contentDescription = label
-                        )
-                    }
-                )
-            }
-        }
-    }
+    val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
         topBar = {
@@ -152,7 +113,35 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
         },
         bottomBar = {
             if (!useNavigationRail) {
-                NavigationBar { navigationItems(false) }
+                NavigationBar {
+                    destinations.forEach { destination ->
+                        val selected = currentRoute == destination.route
+                        val label = stringResource(id = destination.labelRes)
+                        val onItemClick = {
+                            if (!selected) {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        }
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = onItemClick,
+                            label = { Text(text = label) },
+                            icon = {
+                                Icon(
+                                    imageVector = destination.icon,
+                                    contentDescription = label
+                                )
+                            }
+                        )
+                    }
+                }
             }
         }
     ) { innerPadding ->
@@ -165,7 +154,33 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
             if (useNavigationRail) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     NavigationRail(modifier = Modifier.padding(vertical = 12.dp)) {
-                        navigationItems(true)
+                        destinations.forEach { destination ->
+                            val selected = currentRoute == destination.route
+                            val label = stringResource(id = destination.labelRes)
+                            val onItemClick = {
+                                if (!selected) {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    navController.navigate(destination.route) {
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            }
+                            NavigationRailItem(
+                                selected = selected,
+                                onClick = onItemClick,
+                                icon = {
+                                    Icon(
+                                        imageVector = destination.icon,
+                                        contentDescription = label
+                                    )
+                                },
+                                label = { Text(text = label) }
+                            )
+                        }
                     }
                     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                         PrestaFlowNavGraph(
@@ -186,6 +201,7 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
 
 @Preview(showBackground = true)
 @Composable
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 private fun AuthenticatedShellPreview() {
     val windowSize = WindowSizeClass.calculateFromSize(DpSize(360.dp, 640.dp))
     PrestaFlowTheme { AuthenticatedShell(windowSize) }

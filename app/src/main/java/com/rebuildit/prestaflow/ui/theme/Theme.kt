@@ -1,49 +1,30 @@
 package com.rebuildit.prestaflow.ui.theme
 
 import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalContext
-
-private val LightColors = lightColorScheme(
-    primary = RoyalVioletPrimary,
-    onPrimary = RoyalVioletOnPrimary,
-    primaryContainer = RoyalVioletPrimaryContainer,
-    secondary = RoyalVioletSecondary,
-    onSecondary = RoyalVioletOnSecondary,
-    error = RoyalVioletError,
-    background = RoyalVioletBackground,
-    onBackground = RoyalVioletOnBackground
-)
-
-private val DarkColors = darkColorScheme(
-    primary = RoyalVioletPrimaryDark,
-    onPrimary = RoyalVioletOnPrimaryDark,
-    primaryContainer = RoyalVioletPrimaryContainerDark,
-    secondary = RoyalVioletSecondaryDark,
-    onSecondary = RoyalVioletOnSecondaryDark,
-    error = RoyalVioletErrorDark,
-    background = RoyalVioletBackgroundDark,
-    onBackground = RoyalVioletOnBackgroundDark
-)
+import com.rebuildit.prestaflow.domain.theme.DarkThemeConfig
+import com.rebuildit.prestaflow.domain.theme.ThemeSettings
 
 @Composable
 fun PrestaFlowTheme(
-    useDynamicColor: Boolean = true,
-    darkTheme: Boolean = androidx.compose.foundation.isSystemInDarkTheme(),
+    settings: ThemeSettings = ThemeSettings(),
     content: @Composable () -> Unit
 ) {
+    val darkTheme = resolveDarkTheme(settings.darkThemeConfig)
+    val dynamicColorEnabled = settings.useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
     val colorScheme = when {
-        useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        dynamicColorEnabled -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColors
-        else -> LightColors
+        else -> settings.skin.colorScheme(darkTheme)
     }
 
     MaterialTheme(
@@ -51,4 +32,12 @@ fun PrestaFlowTheme(
         typography = AppTypography,
         content = content
     )
+}
+
+@Composable
+@ReadOnlyComposable
+private fun resolveDarkTheme(config: DarkThemeConfig): Boolean = when (config) {
+    DarkThemeConfig.DARK -> true
+    DarkThemeConfig.LIGHT -> false
+    DarkThemeConfig.FOLLOW_SYSTEM -> isSystemInDarkTheme()
 }
