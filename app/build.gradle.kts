@@ -311,14 +311,15 @@ tasks.withType<Test> {
         showStackTraces = true
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
-    
+    val htmlReportDir = reports.html.outputLocation
+
     doFirst {
         println("\n🧪 Running tests for ${this.name}...")
     }
     
     doLast {
         println("✅ Tests completed for ${this.name}")
-        println("   Results: ${this.reports.html.outputLocation.get().asFile.absolutePath}\n")
+        println("   Results: ${htmlReportDir.get().asFile.absolutePath}\n")
     }
 }
 
