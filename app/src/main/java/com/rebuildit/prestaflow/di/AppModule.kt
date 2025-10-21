@@ -34,6 +34,7 @@ import com.rebuildit.prestaflow.data.remote.interceptor.AuthInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DefaultHeadersInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DynamicBaseUrlInterceptor
 import com.rebuildit.prestaflow.data.theme.ThemeRepositoryImpl
+import com.rebuildit.prestaflow.domain.theme.ThemeRepository 
 import com.rebuildit.prestaflow.data.sync.SyncQueueRepositoryImpl
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
