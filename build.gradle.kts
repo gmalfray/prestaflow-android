@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.google.services) apply false
+    id("org.owasp.dependencycheck") version "9.0.9"
 }
 
 // Configuration globale pour tous les sous-projets
@@ -25,6 +26,29 @@ subprojects {
 
 tasks.register<Delete>("clean") {
     delete(layout.buildDirectory)
+}
+
+dependencyCheck {
+    outputDirectory = layout.buildDirectory.dir("reports/dependency-check").get().asFile.absolutePath
+    formats = listOf("HTML", "JSON")
+}
+
+val nvdApiKey: String? = (findProperty("dependencyCheck.nvd.apiKey") as? String)?.takeIf { it.isNotBlank() }
+    ?: System.getenv("NVD_API_KEY")?.takeIf { it.isNotBlank() }
+
+dependencyCheck {
+    nvdApiKey?.let { nvd.apiKey = it }
+}
+
+tasks.withType<org.owasp.dependencycheck.gradle.tasks.AbstractAnalyze>().configureEach {
+    notCompatibleWithConfigurationCache("DependencyCheck plugin accesses project model during execution.")
+    doFirst {
+        if (nvdApiKey == null) {
+            throw GradleException(
+                "NVD API key not configured. Set the 'NVD_API_KEY' environment variable or define 'dependencyCheck.nvd.apiKey=<your-key>' in gradle.properties."
+            )
+        }
+    }
 }
 
 tasks.register("testDebugUnitTest") {
