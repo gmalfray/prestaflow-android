@@ -34,6 +34,10 @@ class ProductsRepositoryImpl @Inject constructor(
     private val json: Json
 ) : ProductsRepository {
 
+    private companion object {
+        private const val FETCH_LIMIT = 200
+    }
+
     override fun observeProducts(): Flow<List<Product>> =
         productDao.observeProducts().map { entities ->
             entities.map { it.toDomain() }
@@ -49,7 +53,11 @@ class ProductsRepositoryImpl @Inject constructor(
 
     override suspend fun refresh(forceRemote: Boolean) {
         withContext(ioDispatcher) {
-            val result = runCatching { api.getProducts() }
+            val result = runCatching {
+                api.getProducts(
+                    mapOf("limit" to FETCH_LIMIT.toString())
+                )
+            }
             result.fold(
                 onSuccess = { payload ->
                     val productEntities = payload.products.map { it.toEntity() }
@@ -67,7 +75,10 @@ class ProductsRepositoryImpl @Inject constructor(
 
     override suspend fun refreshProduct(productId: Long, forceRemote: Boolean) {
         withContext(ioDispatcher) {
-            val filters = mapOf("id" to productId.toString())
+            val filters = mapOf(
+                "id" to productId.toString(),
+                "limit" to FETCH_LIMIT.toString()
+            )
             val result = runCatching { api.getProducts(filters) }
             result.fold(
                 onSuccess = { payload ->
