@@ -8,6 +8,7 @@ import javax.inject.Singleton
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import timber.log.Timber
 
 @Singleton
 class ApiEndpointManager @Inject constructor(
@@ -32,14 +33,27 @@ class ApiEndpointManager @Inject constructor(
     fun buildApiBaseUrl(shopUrl: String): HttpUrl? {
         val sanitized = shopUrl.trim().trimEnd('/')
         if (sanitized.isEmpty()) {
+            Timber.w("buildApiBaseUrl: empty shopUrl input")
             return null
         }
         val candidate = "$sanitized/module/rebuildconnector/api/"
-        return candidate.toHttpUrlOrNull()
+        val result = candidate.toHttpUrlOrNull()
+        if (result == null) {
+            Timber.w("buildApiBaseUrl: unable to parse candidate=%s", candidate)
+        } else {
+            Timber.d("buildApiBaseUrl: shopUrl=%s => apiBaseUrl=%s", sanitized, result)
+        }
+        return result
     }
 
     fun setActiveBaseUrl(baseUrl: HttpUrl, shopUrl: String, persist: Boolean) {
         activeBaseUrl = baseUrl
+        Timber.i(
+            "setActiveBaseUrl: baseUrl=%s, shopUrl=%s, persist=%s",
+            baseUrl,
+            shopUrl,
+            persist
+        )
         if (persist) {
             activeShopUrl = shopUrl
             sharedPreferences.edit {
@@ -52,6 +66,7 @@ class ApiEndpointManager @Inject constructor(
     fun clearOverride() {
         activeBaseUrl = defaultBaseUrl
         activeShopUrl = null
+        Timber.i("clearOverride: reverting to default baseUrl=%s", defaultBaseUrl)
         sharedPreferences.edit {
             remove(KEY_BASE_URL)
             remove(KEY_SHOP_URL)

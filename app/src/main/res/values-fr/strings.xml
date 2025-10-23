@@ -31,6 +31,7 @@
     <string name="error_unauthorized">Échec d’authentification. Vérifiez vos identifiants.</string>
     <string name="error_forbidden">Vous n’avez pas accès à cette ressource.</string>
     <string name="error_generic">Une erreur est survenue. Réessayez.</string>
+    <string name="error_http_with_code">Le serveur a renvoyé le code HTTP %1$d. Vérifiez la configuration de la boutique et réessayez.</string>
 
     <string name="dashboard_state_empty">Aucune donnée disponible pour le moment.</string>
     <string name="dashboard_kpi_turnover">Chiffre d’affaires</string>

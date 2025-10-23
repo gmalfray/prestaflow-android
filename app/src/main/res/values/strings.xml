@@ -31,6 +31,7 @@
     <string name="error_unauthorized">Authentication failed. Check your credentials.</string>
     <string name="error_forbidden">You do not have access to this resource.</string>
     <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="error_http_with_code">The server returned HTTP %1$d. Check your shop configuration and try again.</string>
 
     <string name="dashboard_state_empty">No metrics available yet.</string>
     <string name="dashboard_kpi_turnover">Turnover</string>

@@ -5,6 +5,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.Interceptor
 import okhttp3.Response
+import timber.log.Timber
 
 @Singleton
 class DynamicBaseUrlInterceptor @Inject constructor(
@@ -36,6 +37,11 @@ class DynamicBaseUrlInterceptor @Inject constructor(
         }
 
         val newUrl = newUrlBuilder.build()
+        Timber.d(
+            "DynamicBaseUrlInterceptor: overriding %s -> %s",
+            originalUrl,
+            newUrl
+        )
         val newRequest = request.newBuilder().url(newUrl).build()
         return chain.proceed(newRequest)
     }
