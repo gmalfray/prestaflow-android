@@ -6,6 +6,7 @@
 - KPI : délai de traitement commandes, fiabilité notifications, rapidité MAJ stock/suivi, visibilité sur KPI (CA, commandes, top ventes).
 - Extensions prévues : thèmes « Skins » (5 palettes + Material You), analytics avancés (taux conversion, panier moyen, TVA), compatibilité PrestaShop 9, multi-boutiques, relance paniers via module dédié.
 - Hors périmètre actuel : automatisations marketing, relance paniers, multi-boutiques (reportées), édition d’images avancée (post-MVP).
+- État courant (avril 2025) : l’onglet **Tableau de bord** consomme l’API 1.1.2 et affiche les KPI locaux; les onglets Commandes / Produits / Clients / Paniers sont encore des placeholders Compose (écrans à livrer) et aucun écran “Paramètres” n’existe pour l’instant.
 - Rôle de l’assistant : garantir la conformité au cahier des charges, documenter dépendances Android ↔ Rebuild Connector, tracer questions en suspens (cf. §13 du cahier), maintenir la cohérence FR/EN (i18n).
 
 ## 2. Arborescence du dépôt
@@ -49,30 +50,28 @@ repo-root/
 - **Monitoring** : Crashlytics + traces réseau optionnelles (use HTTP logging interceptors conditionnés `BuildConfig.DEBUG`).
 
 ## 4. Endpoints REST Rebuild Connector (principal) & compatibilité
-Base : `https://<boutique>/module/rebuildconnector/api`
+Base API : `https://<boutique>/module/rebuildconnector/api` (module ≥ **1.1.2**). Les réponses sont plates : pas de clé `data`, mais des objets ou tableaux nommés (`orders`, `products`, `customers`, …).
 
 | Méthode | Endpoint | Usage App | Notes |
 |---------|----------|-----------|-------|
-| POST | `/connector/login` | Auth via clé API → JWT court (scopes) | Réponse contient `token`, `expires_in`, `scopes`. Refresh via relogin (rotation). |
-| GET | `/orders` | Liste paginée, filtres état/date | Paramètres : `limit`, `offset`, `filter[state]`, `sort=-date_add`, `search`. |
-| GET | `/orders/{id}` | Détail complet | Inclut produits, client, adresses, tracking. |
-| PATCH | `/orders/{id}/status` | Changement état (workflow) | Corps `{ "status": "shipped", "comment": "..." }`. |
-| PATCH | `/orders/{id}/shipping` | Ajout/édition tracking + transporteur | Corps `{ "tracking_number": "...", "carrier_id": 5 }`. Scanner code-barres/code 2D via caméra. |
-| GET | `/products` | Catalogue | Support `filter[active]=1`, `search`, `limit`, `offset`. |
-| GET | `/products/{id}` | Détail produit | Prix, descriptions, déclinaisons, images. |
-| PATCH | `/products/{id}` | MAJ prix, statut actif | Corps partiel, valider double-check. |
-| PATCH | `/products/{id}/stock` | MAJ stock dispo | Corps `{ "quantity": 42, "warehouse_id": null }`. |
-| GET | `/stock/availables` | Suivi multi-entrepôts | Optionnel, utile pour vues stock. |
-| GET | `/customers` | Liste + stats commandes | Filtrage par segment, date dernière commande. |
-| GET | `/customers/{id}` | Historique commandes | Exposer top produits client. |
-| GET | `/orders/{id}/history` | Timeline états utilisateur | Pour écran activité. |
-| GET | `/dashboard/metrics` | KPI CA, commandes, clients | `period=day|week|month|year`, `from`, `to`. |
-| GET | `/reports?resource=bestsellers` | Classement top ventes | Graphs + top 5. |
-| GET | `/reports?resource=bestcustomers` | Classement top clients | Param `limit`. |
-| GET | `/baskets` | Paniers (lecture) | Paginé, filtrage `abandoned_since_days`. |
-| GET | `/baskets/{id}` | Détail panier | Utilisé pour info service client. |
+| POST | `/connector/login` | Auth via clé API → JWT court | Réponse `{ "token": "...", "access_token": "...", "expires_in": 3600, "scopes": [] }`. |
+| GET | `/orders` | Liste paginée des commandes | Query `limit`, `offset`, `status`, `search`, `date_from`, `date_to`. Réponse `{ "orders": [ { "id", "reference", "status", "total_paid", "currency", "date_upd", "customer": { "firstname", "lastname" } } ] }`. |
+| GET | `/orders/{id}` | Détail commande | Réponse `{ "order": { ... } }` (structure historique complète inchangée). |
+| PATCH | `/orders/{id}/status` | Changer l’état | Corps `{ "status": "<name|id>" }`. |
+| PATCH | `/orders/{id}/shipping` | Mettre à jour tracking | Corps `{ "tracking_number": "...", "carrier_id": 3? }`. |
+| GET | `/products` | Catalogue produits | Réponse `{ "products": [ { "id", "name", "reference", "price", "active", "stock": { "quantity", "warehouse_id", "updated_at" }, "images": [{ "id", "url" }], "updated_at" } ] }`. |
+| GET | `/products/{id}` | Détail produit | Même schéma via `{ "product": { ... } }`. |
+| PATCH | `/products/{id}` | MAJ prix/statut | Champs pris en charge : `price_tax_excl`, `active`. |
+| PATCH | `/products/{id}/stock` | MAJ stock disponible | Corps `{ "quantity": 42, "warehouse_id": null }`. |
+| GET | `/customers` | Liste clients + stats commandes | Réponse `{ "customers": [ { "id", "firstname", "lastname", "email", "orders_count", "total_spent", "last_order_at" } ], "pagination": {...} }`. |
+| GET | `/customers/{id}` | Détail client | Réponse `{ "customer": { ... , "orders": [...] } }`. |
+| GET | `/dashboard/metrics?period=month` | KPI Dashboard | Réponse `{ "turnover", "orders_count", "customers_count", "products_count", "currency", "chart": [{ "label", "turnover", "orders", "customers" }] }`. |
+| GET | `/reports?resource=bestsellers` | Top ventes | Réponse `{ "products": [ { "product_id", "quantity", "total_tax_incl" … } ] }`. |
+| GET | `/reports?resource=bestcustomers` | Top clients | Réponse `{ "customers": [ { "id", "firstname", "lastname", "total_spent", "last_order_at" } ] }`. |
+| GET | `/customers/top` | Alias used par l’app pour le widget “Meilleurs clients” | Réponse identique à `resource=bestcustomers`. |
+| GET | `/baskets` | (future) liste paniers | Réponse `{ "baskets": [...] }` – endpoints disponibles côté module mais UI encore non implémentée. |
 
-Fallback optionnel : feature flag pour utiliser l’ancien webservice (`mobassistantconnector?call_function=...`) via un adapter HTTP si activé côté boutique. L’app doit détecter la dispo via `/connector/info`.
+Fallback legacy (`mobassistantconnector`) conservé comme plan B, mais désactivé par défaut. L’app détecte la compatibilité en appelant `/connector/login`; si 404 ou 410, afficher un message orientant vers la mise à jour du module.
 
 ### Exemples `curl`
 ```bash
@@ -89,19 +88,21 @@ curl -sS -X PATCH "https://shop.tld/module/rebuildconnector/api/orders/123/shipp
 ```
 
 ## 5. DTO / Schémas principaux (Kotlin data classes)
-- `OrderDto` : `id`, `reference`, `status`, `payment`, `currency`, `total_paid`, `date_add`, `customer_id`, `carrier`, `tracking_number`, `products: List<OrderItemDto>`, `history: List<OrderHistoryDto>`.
-- `OrderItemDto` : `product_id`, `name`, `sku`, `quantity`, `price_unit`, `image_url`.
-- `OrderHistoryDto` : `status`, `changed_by`, `changed_at`, `message`.
-- `ShippingUpdateRequest` : `tracking_number`, `carrier_id?`.
-- `ProductDto` : `id`, `name`, `price`, `active`, `stock`, `images`, `updated_at`, `declinations`.
-- `StockUpdateRequest` : `quantity`, `warehouse_id?`, `reason`.
-- Note Room : si l’API renvoie `warehouse_id = null`, nous stockons `-1` (`StockAvailabilityEntity.NO_WAREHOUSE_ID`) pour respecter la clé primaire composite non nulle, tout en restituant `null` côté domaine.
-- `CustomerDto` : `id`, `firstname`, `lastname`, `email (masked if needed)`, `orders_count`, `total_spent`, `last_order_at`.
-- `DashboardMetricsDto` : `turnover`, `orders_count`, `customers_count`, `products_count`, `chart: List<DataPoint>`, `period`.
-- `RankingEntryDto` : `id`, `label`, `metric`, `position`.
-- `BasketDto` : `id`, `last_update`, `total`, `is_converted`, `items: List<BasketItemDto>`.
-- `AuthResponse` : `token`, `expires_in`, `scopes`, `refresh_before`.
-- `OfflineSyncEntity` (Room) : `id`, `endpoint`, `method`, `payload`, `retries`, `lastAttempt`, `status`.
+- `OrderListDto` : `orders: List<OrderDto>`.
+- `OrderDto` : `id`, `reference`, `status`, `total_paid`, `currency`, `dateUpdated`, `customer: OrderCustomerDto`.
+- `OrderCustomerDto` : `firstName`, `lastName`.
+- `OrderDetailDto` (via `/orders/{id}`) : même structure que legacy (produits, history, shipping). Mapper à enrichir lors de l’implémentation de l’écran détail.
+- `ProductListResponseDto` : `products: List<ProductDto>`, `pagination`.
+- `ProductDto` : `id`, `name`, `reference`, `price`, `active`, `stock: StockDto`, `images: List<ImageDto>`, `updatedAt`.
+- `StockDto` : `quantity`, `warehouseId`, `updatedAt`.
+- `CustomerListResponseDto` : `customers`, `pagination`.
+- `CustomerDto` : `id`, `firstName`, `lastName`, `email`, `ordersCount`, `totalSpent`, `lastOrderAt`.
+- `DashboardMetricsDto` : `turnover`, `ordersCount`, `customersCount`, `productsCount`, `chart: List<ChartPointDto>`, `period`.
+- `ChartPointDto` : `label`, `orders`, `customers`, `turnover`.
+- `Reports` : `Best sellers` réutilise `ProductsService::getBestSellers` → DTO maison (mapper à ajouter côté app), `Best customers` → `CustomerDto`.
+- `AuthResponseDto` : `token`, `expiresIn`, `scopes` (l’app lit `access_token` aliasé côté module).
+- `StockUpdateRequestDto` : `quantity`, `warehouseId`, `reason?`.
+- `DeviceRegistrationRequestDto` : `token`, `topics`, `deviceId`, `platform`.
 
 Mapper couche `domain` pour convertir en modèles UI (ex. `Order`, `OrderSummary`, `DashboardCard`).
 
