@@ -14,11 +14,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -113,7 +115,15 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
         },
         bottomBar = {
             if (!useNavigationRail) {
-                NavigationBar {
+                val navigationBarContainerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
+                val navigationBarItemColors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                NavigationBar(containerColor = navigationBarContainerColor) {
                     destinations.forEach { destination ->
                         val selected = currentRoute == destination.route
                         val label = stringResource(id = destination.labelRes)
@@ -129,20 +139,21 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
                                 }
                             }
                         }
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = onItemClick,
-                            label = { Text(text = label) },
-                            icon = {
-                                Icon(
-                                    imageVector = destination.icon,
-                                    contentDescription = label
-                                )
-                            }
-                        )
+                            NavigationBarItem(
+                                selected = selected,
+                                onClick = onItemClick,
+                                label = { Text(text = label) },
+                                icon = {
+                                    Icon(
+                                        imageVector = destination.icon,
+                                        contentDescription = label
+                                    )
+                                },
+                                colors = navigationBarItemColors
+                            )
+                        }
                     }
                 }
-            }
         }
     ) { innerPadding ->
         Surface(
