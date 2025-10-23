@@ -59,5 +59,16 @@
     <string name="skin_selector_title">App appearance</string>
     <string name="skin_selector_subtitle">Choose a color skin and dark mode preference</string>
     <string name="auth_loading">Checking your credentials…</string>
+    <string name="orders_list_empty">No orders yet.</string>
+    <string name="orders_status_unknown">Status unavailable</string>
+    <string name="orders_last_updated">Updated %1$s</string>
+    <string name="products_list_empty">No products available.</string>
+    <string name="products_status_active">Active</string>
+    <string name="products_status_inactive">Inactive</string>
+    <string name="products_stock_label">%1$d in stock</string>
+    <string name="clients_list_empty">No customers yet.</string>
+    <string name="clients_total_spent">Spent %1$s</string>
+    <string name="clients_last_order">Last order %1$s</string>
+    <string name="clients_orders_count">%1$d orders</string>
 
 </resources>

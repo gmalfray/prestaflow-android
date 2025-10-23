@@ -46,6 +46,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartPoint
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
@@ -467,12 +468,6 @@ private fun DashboardPeriodRow(
             }
         }
     }
-}
-
-@Composable
-private fun UiText.asString(): String = when (this) {
-    is UiText.Dynamic -> value
-    is UiText.FromResources -> stringResource(id = resId, *args.toTypedArray())
 }
 
 @Composable

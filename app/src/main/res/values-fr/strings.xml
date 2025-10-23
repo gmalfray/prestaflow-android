@@ -59,5 +59,16 @@
     <string name="skin_selector_title">Apparence de l’application</string>
     <string name="skin_selector_subtitle">Choisissez un jeu de couleurs et la préférence de mode sombre</string>
     <string name="auth_loading">Vérification de vos identifiants…</string>
+    <string name="orders_list_empty">Aucune commande pour le moment.</string>
+    <string name="orders_status_unknown">Statut indisponible</string>
+    <string name="orders_last_updated">Mise à jour le %1$s</string>
+    <string name="products_list_empty">Aucun produit disponible.</string>
+    <string name="products_status_active">Actif</string>
+    <string name="products_status_inactive">Inactif</string>
+    <string name="products_stock_label">%1$d en stock</string>
+    <string name="clients_list_empty">Aucun client pour l’instant.</string>
+    <string name="clients_total_spent">Montant dépensé %1$s</string>
+    <string name="clients_last_order">Dernière commande %1$s</string>
+    <string name="clients_orders_count">%1$d commandes</string>
 
 </resources>

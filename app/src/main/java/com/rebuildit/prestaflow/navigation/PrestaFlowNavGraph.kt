@@ -14,6 +14,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.rebuildit.prestaflow.ui.dashboard.DashboardRoute
+import com.rebuildit.prestaflow.ui.orders.OrdersRoute
+import com.rebuildit.prestaflow.ui.products.ProductsRoute
+import com.rebuildit.prestaflow.ui.clients.ClientsRoute
 
 @Composable
 fun PrestaFlowNavGraph(
@@ -26,9 +29,9 @@ fun PrestaFlowNavGraph(
         modifier = modifier
     ) {
         composable(AppDestination.Dashboard.route) { DashboardRoute() }
-        composable(AppDestination.Orders.route) { PlaceholderScreen(AppDestination.Orders) }
-        composable(AppDestination.Products.route) { PlaceholderScreen(AppDestination.Products) }
-        composable(AppDestination.Clients.route) { PlaceholderScreen(AppDestination.Clients) }
+        composable(AppDestination.Orders.route) { OrdersRoute() }
+        composable(AppDestination.Products.route) { ProductsRoute() }
+        composable(AppDestination.Clients.route) { ClientsRoute() }
         composable(AppDestination.Carts.route) { PlaceholderScreen(AppDestination.Carts) }
     }
 }
