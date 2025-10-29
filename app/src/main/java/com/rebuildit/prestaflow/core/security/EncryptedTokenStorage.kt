@@ -33,7 +33,11 @@ class EncryptedTokenStorage @Inject constructor(
     }
 
     override fun clear() {
-        sharedPreferences.edit { clear() }
+        sharedPreferences.edit {
+            remove(KEY_TOKEN_VALUE)
+            remove(KEY_TOKEN_EXPIRY)
+            remove(KEY_TOKEN_SCOPES)
+        }
     }
 
     private companion object {
