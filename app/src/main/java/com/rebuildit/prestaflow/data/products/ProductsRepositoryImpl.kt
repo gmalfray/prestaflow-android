@@ -1,12 +1,15 @@
 package com.rebuildit.prestaflow.data.products
 
+import androidx.room.withTransaction
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.data.local.dao.ProductDao
 import com.rebuildit.prestaflow.data.local.dao.StockAvailabilityDao
+import com.rebuildit.prestaflow.data.local.db.PrestaFlowDatabase
 import com.rebuildit.prestaflow.data.local.entity.StockAvailabilityEntity
 import com.rebuildit.prestaflow.data.products.mapper.toDomain
 import com.rebuildit.prestaflow.data.products.mapper.toEntity
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
+import com.rebuildit.prestaflow.data.remote.dto.ProductDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.model.Product
@@ -28,6 +31,7 @@ class ProductsRepositoryImpl @Inject constructor(
     private val api: PrestaFlowApi,
     private val productDao: ProductDao,
     private val stockAvailabilityDao: StockAvailabilityDao,
+    private val database: PrestaFlowDatabase,
     private val syncQueueRepository: SyncQueueRepository,
     private val networkErrorMapper: NetworkErrorMapper,
     private val ioDispatcher: CoroutineDispatcher,
@@ -53,17 +57,19 @@ class ProductsRepositoryImpl @Inject constructor(
 
     override suspend fun refresh(forceRemote: Boolean) {
         withContext(ioDispatcher) {
-            val result = runCatching {
-                api.getProducts(
-                    mapOf("limit" to FETCH_LIMIT.toString())
-                )
-            }
+            val result = runCatching { fetchAllProducts() }
             result.fold(
-                onSuccess = { payload ->
-                    val productEntities = payload.products.map { it.toEntity() }
-                    productDao.upsertProducts(productEntities)
-                    val stockEntities = payload.products.map { it.stock.toEntity(it.id) }
-                    stockAvailabilityDao.upsertAll(stockEntities)
+                onSuccess = { products ->
+                    val productEntities = products.map { it.toEntity() }
+                    val stockEntities = products.map { it.stock.toEntity(it.id) }
+                    database.withTransaction {
+                        productDao.clear()
+                        if (productEntities.isNotEmpty()) {
+                            productDao.upsertProducts(productEntities)
+                            stockAvailabilityDao.upsertAll(stockEntities)
+                        }
+                    }
+                    Timber.d("Products refresh succeeded (count=%d)", productEntities.size)
                 },
                 onFailure = { error ->
                     Timber.w(networkErrorMapper.map(error).toString())
@@ -147,5 +153,42 @@ class ProductsRepositoryImpl @Inject constructor(
                 }
             )
         }
+    }
+
+    private suspend fun fetchAllProducts(): List<ProductDto> {
+        val collected = mutableListOf<ProductDto>()
+        var offset = 0
+        var hasNext = true
+        while (hasNext) {
+            val filters = mutableMapOf("limit" to FETCH_LIMIT.toString())
+            if (offset > 0) {
+                filters["offset"] = offset.toString()
+            }
+            val response = api.getProducts(filters)
+            if (response.products.isEmpty()) {
+                Timber.d("Products page fetched with no items, stopping iteration (offset=%d)", offset)
+                break
+            }
+            collected += response.products
+
+            val pagination = response.pagination
+            val pageCount = pagination?.count ?: response.products.size
+            val nextOffset = when {
+                pagination?.offset != null -> pagination.offset + pageCount
+                pageCount > 0 -> offset + pageCount
+                else -> offset
+            }
+            Timber.d(
+                "Products page fetched (offset=%d, count=%d, hasNext=%s, nextOffset=%d)",
+                pagination?.offset ?: offset,
+                pageCount,
+                pagination?.hasNext,
+                nextOffset
+            )
+
+            hasNext = pagination?.hasNext == true && pageCount > 0 && nextOffset > offset
+            offset = nextOffset
+        }
+        return collected
     }
 }
