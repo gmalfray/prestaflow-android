@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "48abbe4c40e9452303e1c301dfa70df1",
+    "identityHash": "c5bdaace595973b97a6264c5671a326f",
     "entities": [
       {
         "tableName": "orders",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `reference` TEXT NOT NULL, `status` TEXT NOT NULL, `total_paid` REAL NOT NULL, `currency` TEXT NOT NULL, `customer_name` TEXT NOT NULL, `updated_at_iso` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `reference` TEXT NOT NULL, `status` TEXT NOT NULL, `total_paid` REAL NOT NULL, `currency` TEXT NOT NULL, `customer_name` TEXT NOT NULL, `updated_at_iso` TEXT NOT NULL, `items_json` TEXT, `shipping_json` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -49,6 +49,18 @@
             "columnName": "updated_at_iso",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "itemsJson",
+            "columnName": "items_json",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "shippingJson",
+            "columnName": "shipping_json",
+            "affinity": "TEXT",
+            "notNull": false
           }
         ],
         "primaryKey": {
@@ -388,7 +400,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '48abbe4c40e9452303e1c301dfa70df1')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c5bdaace595973b97a6264c5671a326f')"
     ]
   }
 }
