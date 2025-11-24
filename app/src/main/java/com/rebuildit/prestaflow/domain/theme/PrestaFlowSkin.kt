@@ -5,5 +5,6 @@ enum class PrestaFlowSkin {
     LAGOON,
     EMBER,
     FOREST,
-    SLATE
+    SLATE,
+    SOFT
 }

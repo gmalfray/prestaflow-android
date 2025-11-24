@@ -272,6 +272,58 @@ private val palettes: Map<PrestaFlowSkin, SkinPalette> = mapOf(
             onSurfaceVariant = SlateDarkOnSurfaceVariant,
             outline = SlateDarkOutline
         )
+    ),
+    PrestaFlowSkin.SOFT to SkinPalette(
+        light = lightColorScheme(
+            primary = SoftLightPrimary,
+            onPrimary = SoftLightOnPrimary,
+            primaryContainer = SoftLightPrimaryContainer,
+            onPrimaryContainer = SoftLightOnPrimaryContainer,
+            secondary = SoftLightSecondary,
+            onSecondary = SoftLightOnSecondary,
+            secondaryContainer = SoftLightSecondaryContainer,
+            onSecondaryContainer = SoftLightOnSecondaryContainer,
+            tertiary = SoftLightTertiary,
+            onTertiary = SoftLightOnTertiary,
+            tertiaryContainer = SoftLightTertiaryContainer,
+            onTertiaryContainer = SoftLightOnTertiaryContainer,
+            error = SoftLightError,
+            onError = SoftLightOnError,
+            errorContainer = SoftLightErrorContainer,
+            onErrorContainer = SoftLightOnErrorContainer,
+            background = SoftLightBackground,
+            onBackground = SoftLightOnBackground,
+            surface = SoftLightSurface,
+            onSurface = SoftLightOnSurface,
+            surfaceVariant = SoftLightSurfaceVariant,
+            onSurfaceVariant = SoftLightOnSurfaceVariant,
+            outline = SoftLightOutline
+        ),
+        dark = darkColorScheme(
+            primary = SoftDarkPrimary,
+            onPrimary = SoftDarkOnPrimary,
+            primaryContainer = SoftDarkPrimaryContainer,
+            onPrimaryContainer = SoftDarkOnPrimaryContainer,
+            secondary = SoftDarkSecondary,
+            onSecondary = SoftDarkOnSecondary,
+            secondaryContainer = SoftDarkSecondaryContainer,
+            onSecondaryContainer = SoftDarkOnSecondaryContainer,
+            tertiary = SoftDarkTertiary,
+            onTertiary = SoftDarkOnTertiary,
+            tertiaryContainer = SoftDarkTertiaryContainer,
+            onTertiaryContainer = SoftDarkOnTertiaryContainer,
+            error = SoftDarkError,
+            onError = SoftDarkOnError,
+            errorContainer = SoftDarkErrorContainer,
+            onErrorContainer = SoftDarkOnErrorContainer,
+            background = SoftDarkBackground,
+            onBackground = SoftDarkOnBackground,
+            surface = SoftDarkSurface,
+            onSurface = SoftDarkOnSurface,
+            surfaceVariant = SoftDarkSurfaceVariant,
+            onSurfaceVariant = SoftDarkOnSurfaceVariant,
+            outline = SoftDarkOutline
+        )
     )
 )
 
@@ -282,6 +334,7 @@ fun PrestaFlowSkin.displayNameRes(): Int = when (this) {
     PrestaFlowSkin.EMBER -> R.string.skin_ember
     PrestaFlowSkin.FOREST -> R.string.skin_forest
     PrestaFlowSkin.SLATE -> R.string.skin_slate
+    PrestaFlowSkin.SOFT -> R.string.skin_soft
 }
 
 internal fun PrestaFlowSkin.colorScheme(darkTheme: Boolean): ColorScheme {

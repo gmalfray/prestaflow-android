@@ -50,8 +50,9 @@
     <string name="skin_royal">Royal Violet</string>
     <string name="skin_lagoon">Lagoon Teal</string>
     <string name="skin_ember">Ember Sunset</string>
-    <string name="skin_forest">Forest Canopy</string>
-    <string name="skin_slate">Slate Skyline</string>
+    <string name="skin_forest">Forest</string>
+    <string name="skin_slate">Slate</string>
+    <string name="skin_soft">Soft &amp; Friendly</string>
     <string name="skin_dynamic_color">Dynamic color</string>
     <string name="skin_dark_follow_system">System default</string>
     <string name="skin_dark_light">Always light</string>
