@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.rebuildit.prestaflow.ui.dashboard.DashboardRoute
 import com.rebuildit.prestaflow.ui.orders.OrdersRoute
 import com.rebuildit.prestaflow.ui.orders.OrderDetailRoute
@@ -43,6 +44,9 @@ fun PrestaFlowNavGraph(
             route = "${AppDestination.Orders.route}/{orderId}",
             arguments = listOf(
                 navArgument("orderId") { type = NavType.LongType }
+            ),
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "prestaflow://orders/{orderId}" }
             )
         ) {
             OrderDetailRoute(

@@ -8,4 +8,5 @@ interface OrdersRepository {
     suspend fun refresh(forceRemote: Boolean = false)
     fun getOrder(orderId: Long): Flow<Order?>
     suspend fun refreshOrder(orderId: Long)
+    suspend fun registerToken(token: String)
 }

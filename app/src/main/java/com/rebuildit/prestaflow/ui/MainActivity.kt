@@ -43,6 +43,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.domain.auth.AuthState
 import com.rebuildit.prestaflow.navigation.AppDestination
@@ -55,11 +58,24 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class, ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             val windowSizeClass = calculateWindowSizeClass(activity = this@MainActivity)
+            
+            // Request notification permission on Android 13+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                val permissionState = com.google.accompanist.permissions.rememberPermissionState(
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                )
+                LaunchedEffect(Unit) {
+                    if (!permissionState.status.isGranted) {
+                        permissionState.launchPermissionRequest()
+                    }
+                }
+            }
+            
             PrestaFlowApp(windowSizeClass)
         }
     }

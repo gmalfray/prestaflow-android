@@ -51,4 +51,6 @@ interface PrestaFlowApi {
 
     @DELETE("notifications/devices/{token}")
     suspend fun unregisterDevice(@Path(value = "token", encoded = true) token: String)
+    @POST("connector/push/register")
+    suspend fun registerPushToken(@Body request: DeviceRegistrationRequestDto)
 }
