@@ -72,4 +72,15 @@
     <string name="clients_last_order">Last order %1$s</string>
     <string name="clients_orders_count">%1$d orders</string>
 
+    <string name="product_detail_title">Product Details</string>
+    <string name="product_reference_label">Reference: %1$s</string>
+    <string name="product_price_section">Price</string>
+    <string name="product_price_label">Price</string>
+    <string name="product_update_price">Update Price</string>
+    <string name="product_stock_section">Stock</string>
+    <string name="product_stock_quantity_label">Quantity</string>
+    <string name="product_update_stock">Update Stock</string>
+    <string name="product_status_section">Status</string>
+    <string name="dismiss">Dismiss</string>
+
 </resources>

@@ -53,7 +53,23 @@ fun PrestaFlowNavGraph(
                 onBackClick = { navController.popBackStack() }
             )
         }
-        composable(AppDestination.Products.route) { ProductsRoute() }
+        composable(AppDestination.Products.route) {
+            ProductsRoute(
+                onProductClick = { productId ->
+                    navController.navigate("${AppDestination.Products.route}/$productId")
+                }
+            )
+        }
+        composable(
+            route = "${AppDestination.Products.route}/{productId}",
+            arguments = listOf(
+                navArgument("productId") { type = NavType.LongType }
+            )
+        ) {
+            com.rebuildit.prestaflow.ui.products.ProductDetailRoute(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
         composable(AppDestination.Clients.route) { ClientsRoute() }
         composable(AppDestination.Carts.route) { PlaceholderScreen(AppDestination.Carts) }
     }

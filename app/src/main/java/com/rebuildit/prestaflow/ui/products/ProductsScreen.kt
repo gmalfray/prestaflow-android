@@ -47,6 +47,7 @@ import java.time.format.FormatStyle
 
 @Composable
 fun ProductsRoute(
+    onProductClick: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProductsViewModel = hiltViewModel()
 ) {
@@ -54,7 +55,8 @@ fun ProductsRoute(
     ProductsScreen(
         modifier = modifier,
         state = state,
-        onRefresh = viewModel::onRefresh
+        onRefresh = viewModel::onRefresh,
+        onProductClick = onProductClick
     )
 }
 
@@ -62,6 +64,7 @@ fun ProductsRoute(
 fun ProductsScreen(
     state: ProductsUiState,
     onRefresh: () -> Unit,
+    onProductClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val errorMessage = state.error?.asString()
@@ -74,7 +77,8 @@ fun ProductsScreen(
             products = state.products,
             isRefreshing = state.isRefreshing,
             errorMessage = errorMessage,
-            onRefresh = onRefresh
+            onRefresh = onRefresh,
+            onProductClick = onProductClick
         )
     }
 }
@@ -134,7 +138,8 @@ private fun ProductList(
     products: List<Product>,
     isRefreshing: Boolean,
     errorMessage: String?,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onProductClick: (Long) -> Unit
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
@@ -157,7 +162,8 @@ private fun ProductList(
                 ProductCard(
                     product = product,
                     currencyFormatter = currencyFormatter,
-                    dateFormatter = dateFormatter
+                    dateFormatter = dateFormatter,
+                    onClick = { onProductClick(product.id) }
                 )
             }
         }
@@ -168,7 +174,8 @@ private fun ProductList(
 private fun ProductCard(
     product: Product,
     currencyFormatter: NumberFormat,
-    dateFormatter: DateTimeFormatter
+    dateFormatter: DateTimeFormatter,
+    onClick: () -> Unit
 ) {
     val priceText = remember(product.price) {
         currencyFormatter.format(product.price)
@@ -179,7 +186,8 @@ private fun ProductCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        onClick = onClick
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
