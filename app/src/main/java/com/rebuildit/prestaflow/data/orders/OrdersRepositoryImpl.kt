@@ -79,7 +79,8 @@ class OrdersRepositoryImpl @Inject constructor(
                 api.registerPushToken(
                     DeviceRegistrationRequestDto(
                         token = token,
-                        deviceId = deviceId
+                        deviceId = deviceId,
+                        platform = "android"
                     )
                 )
             }.onFailure { error ->
