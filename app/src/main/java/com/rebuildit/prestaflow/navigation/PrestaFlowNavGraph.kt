@@ -70,7 +70,26 @@ fun PrestaFlowNavGraph(
                 onBackClick = { navController.popBackStack() }
             )
         }
-        composable(AppDestination.Clients.route) { ClientsRoute() }
+        composable(AppDestination.Clients.route) {
+            ClientsRoute(
+                onClientClick = { clientId ->
+                    navController.navigate("${AppDestination.Clients.route}/$clientId")
+                }
+            )
+        }
+        composable(
+            route = "${AppDestination.Clients.route}/{clientId}",
+            arguments = listOf(
+                navArgument("clientId") { type = NavType.LongType }
+            )
+        ) {
+            com.rebuildit.prestaflow.ui.clients.ClientDetailRoute(
+                onBackClick = { navController.popBackStack() },
+                onOrderClick = { orderId ->
+                    navController.navigate("${AppDestination.Orders.route}/$orderId")
+                }
+            )
+        }
         composable(AppDestination.Carts.route) { PlaceholderScreen(AppDestination.Carts) }
     }
 }

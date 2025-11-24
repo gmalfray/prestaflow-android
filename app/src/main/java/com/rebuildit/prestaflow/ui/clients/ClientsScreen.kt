@@ -47,6 +47,7 @@ import java.time.format.FormatStyle
 
 @Composable
 fun ClientsRoute(
+    onClientClick: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ClientsViewModel = hiltViewModel()
 ) {
@@ -54,7 +55,8 @@ fun ClientsRoute(
     ClientsScreen(
         modifier = modifier,
         state = state,
-        onRefresh = viewModel::onRefresh
+        onRefresh = viewModel::onRefresh,
+        onClientClick = onClientClick
     )
 }
 
@@ -62,6 +64,7 @@ fun ClientsRoute(
 fun ClientsScreen(
     state: ClientsUiState,
     onRefresh: () -> Unit,
+    onClientClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val errorMessage = state.error?.asString()
@@ -74,7 +77,8 @@ fun ClientsScreen(
             clients = state.clients,
             isRefreshing = state.isRefreshing,
             errorMessage = errorMessage,
-            onRefresh = onRefresh
+            onRefresh = onRefresh,
+            onClientClick = onClientClick
         )
     }
 }
@@ -134,7 +138,8 @@ private fun ClientList(
     clients: List<Client>,
     isRefreshing: Boolean,
     errorMessage: String?,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onClientClick: (Long) -> Unit
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
@@ -157,7 +162,8 @@ private fun ClientList(
                 ClientCard(
                     client = client,
                     currencyFormatter = currencyFormatter,
-                    dateFormatter = dateFormatter
+                    dateFormatter = dateFormatter,
+                    onClick = { onClientClick(client.id) }
                 )
             }
         }
@@ -168,7 +174,8 @@ private fun ClientList(
 private fun ClientCard(
     client: Client,
     currencyFormatter: NumberFormat,
-    dateFormatter: DateTimeFormatter
+    dateFormatter: DateTimeFormatter,
+    onClick: () -> Unit
 ) {
     val totalSpent = remember(client.totalSpent) { currencyFormatter.format(client.totalSpent) }
     val lastOrderAt = remember(client.lastOrderAtIso) {
@@ -177,7 +184,8 @@ private fun ClientCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        onClick = onClick
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(

@@ -72,6 +72,12 @@
     <string name="clients_last_order">Last order %1$s</string>
     <string name="clients_orders_count">%1$d orders</string>
 
+    <string name="client_detail_title">Customer Details</string>
+    <string name="client_stats_section">Statistics</string>
+    <string name="client_total_spent_label">Total Spent</string>
+    <string name="client_orders_count_label">Orders</string>
+    <string name="client_order_history_title">Order History</string>
+
     <string name="product_detail_title">Product Details</string>
     <string name="product_reference_label">Reference: %1$s</string>
     <string name="product_price_section">Price</string>
