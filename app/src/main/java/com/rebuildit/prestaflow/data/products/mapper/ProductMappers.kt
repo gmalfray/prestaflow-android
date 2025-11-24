@@ -5,18 +5,29 @@ import com.rebuildit.prestaflow.data.local.entity.StockAvailabilityEntity
 import com.rebuildit.prestaflow.data.remote.dto.ProductDto
 import com.rebuildit.prestaflow.data.remote.dto.StockDto
 import com.rebuildit.prestaflow.domain.products.model.Product
+import com.rebuildit.prestaflow.domain.products.model.ProductImage
+import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.domain.products.model.StockAvailability
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
-fun ProductEntity.toDomain(): Product = Product(
-    id = id,
-    name = name,
-    sku = sku,
-    priceTaxIncl = priceTaxIncl,
-    active = active,
-    stockQuantity = stockQuantity,
-    imageUrl = imageUrl,
-    lastUpdatedIso = lastUpdatedIso
-)
+private val json = Json { ignoreUnknownKeys = true }
+
+fun ProductEntity.toDomain(): Product {
+    val stock = json.decodeFromString<ProductStock>(stockJson)
+    val images = json.decodeFromString<List<ProductImage>>(imagesJson)
+    
+    return Product(
+        id = id,
+        name = name,
+        reference = reference,
+        price = price,
+        active = active,
+        stock = stock,
+        images = images,
+        updatedAt = updatedAt
+    )
+}
 
 fun StockAvailabilityEntity.toDomain(): StockAvailability = StockAvailability(
     productId = productId,
@@ -25,16 +36,21 @@ fun StockAvailabilityEntity.toDomain(): StockAvailability = StockAvailability(
     updatedAtIso = updatedAtIso
 )
 
-fun ProductDto.toEntity(): ProductEntity = ProductEntity(
-    id = id,
-    name = name,
-    sku = reference,
-    priceTaxIncl = price,
-    active = active,
-    stockQuantity = stock.quantity,
-    imageUrl = images.firstOrNull()?.url,
-    lastUpdatedIso = updatedAt
-)
+fun ProductDto.toEntity(): ProductEntity {
+    val stockJson = json.encodeToString(stock)
+    val imagesJson = json.encodeToString(images)
+    
+    return ProductEntity(
+        id = id,
+        name = name,
+        reference = reference ?: "",
+        price = price,
+        active = active,
+        stockJson = stockJson,
+        imagesJson = imagesJson,
+        updatedAt = updatedAt ?: java.time.Instant.now().toString()
+    )
+}
 
 fun StockDto.toEntity(productId: Long): StockAvailabilityEntity = StockAvailabilityEntity(
     productId = productId,

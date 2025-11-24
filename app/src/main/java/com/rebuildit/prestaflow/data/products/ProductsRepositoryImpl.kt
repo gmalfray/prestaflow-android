@@ -101,6 +101,32 @@ class ProductsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updatePrice(productId: Long, price: Double) {
+        withContext(ioDispatcher) {
+            productDao.getById(productId)?.let { existing ->
+                productDao.upsertProduct(
+                    existing.copy(
+                        price = price,
+                        updatedAt = java.time.Instant.now().toString()
+                    )
+                )
+            }
+        }
+    }
+
+    override suspend fun updateStatus(productId: Long, active: Boolean) {
+        withContext(ioDispatcher) {
+            productDao.getById(productId)?.let { existing ->
+                productDao.upsertProduct(
+                    existing.copy(
+                        active = active,
+                        updatedAt = java.time.Instant.now().toString()
+                    )
+                )
+            }
+        }
+    }
+
     override suspend fun updateStock(
         productId: Long,
         quantity: Int,
@@ -112,8 +138,15 @@ class ProductsRepositoryImpl @Inject constructor(
             val normalizedWarehouseId = warehouseId ?: StockAvailabilityEntity.NO_WAREHOUSE_ID
 
             productDao.getById(productId)?.let { existing ->
+                val updatedStock = json.decodeFromString<com.rebuildit.prestaflow.domain.products.model.ProductStock>(existing.stockJson).copy(
+                    quantity = quantity,
+                    updatedAt = now
+                )
                 productDao.upsertProduct(
-                    existing.copy(stockQuantity = quantity, lastUpdatedIso = now)
+                    existing.copy(
+                        stockJson = json.encodeToString(updatedStock),
+                        updatedAt = now
+                    )
                 )
             }
 

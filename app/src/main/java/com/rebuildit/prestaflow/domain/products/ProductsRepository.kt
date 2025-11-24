@@ -16,4 +16,6 @@ interface ProductsRepository {
         warehouseId: Long? = null,
         reason: String? = null
     )
+    suspend fun updatePrice(productId: Long, price: Double)
+    suspend fun updateStatus(productId: Long, active: Boolean)
 }

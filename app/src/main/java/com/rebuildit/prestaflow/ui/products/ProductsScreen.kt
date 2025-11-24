@@ -170,11 +170,11 @@ private fun ProductCard(
     currencyFormatter: NumberFormat,
     dateFormatter: DateTimeFormatter
 ) {
-    val priceText = remember(product.priceTaxIncl) {
-        currencyFormatter.format(product.priceTaxIncl)
+    val priceText = remember(product.price) {
+        currencyFormatter.format(product.price)
     }
-    val updatedAt = remember(product.lastUpdatedIso) {
-        formatProductTimestamp(product.lastUpdatedIso, dateFormatter)
+    val updatedAt = remember(product.updatedAt) {
+        formatProductTimestamp(product.updatedAt, dateFormatter)
     }
 
     Card(
@@ -190,9 +190,9 @@ private fun ProductCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            if (!product.sku.isNullOrBlank()) {
+            if (product.reference.isNotBlank()) {
                 Text(
-                    text = product.sku,
+                    text = product.reference,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -214,7 +214,7 @@ private fun ProductCard(
             }
 
             Text(
-                text = stringResource(id = R.string.products_stock_label, product.stockQuantity),
+                text = stringResource(id = R.string.products_stock_label, product.stock.quantity),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )

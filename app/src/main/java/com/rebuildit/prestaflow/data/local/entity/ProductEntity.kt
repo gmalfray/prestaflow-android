@@ -8,10 +8,10 @@ import androidx.room.PrimaryKey
 data class ProductEntity(
     @PrimaryKey val id: Long,
     val name: String,
-    val sku: String?,
-    @ColumnInfo(name = "price_tax_incl") val priceTaxIncl: Double,
+    val reference: String,
+    val price: Double,
     val active: Boolean,
-    @ColumnInfo(name = "stock_quantity") val stockQuantity: Int,
-    @ColumnInfo(name = "image_url") val imageUrl: String?,
-    @ColumnInfo(name = "last_updated_iso") val lastUpdatedIso: String?
+    @ColumnInfo(name = "stock_json") val stockJson: String,
+    @ColumnInfo(name = "images_json") val imagesJson: String,
+    @ColumnInfo(name = "updated_at") val updatedAt: String
 )
