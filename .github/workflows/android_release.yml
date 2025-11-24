@@ -40,6 +40,10 @@ jobs:
         run: |
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > release.keystore
 
+      - name: Decode google-services.json
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > app/google-services.json
+
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
