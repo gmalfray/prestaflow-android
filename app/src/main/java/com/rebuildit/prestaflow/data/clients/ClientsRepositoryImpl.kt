@@ -43,4 +43,24 @@ class ClientsRepositoryImpl @Inject constructor(
             )
         }
     }
+
+    override fun observeClient(clientId: Long): Flow<Client?> =
+        clientDao.observeClient(clientId).map { it?.toDomain() }
+
+    override suspend fun refreshClient(clientId: Long, forceRemote: Boolean) {
+        withContext(ioDispatcher) {
+            val result = runCatching { api.getCustomer(clientId) }
+            result.fold(
+                onSuccess = { response ->
+                    val timestamp = java.time.Instant.now().toString()
+                    val entity = response.customer.toEntity(timestamp)
+                    clientDao.upsert(entity)
+                },
+                onFailure = { error ->
+                    Timber.w(networkErrorMapper.map(error).toString())
+                    if (forceRemote) throw error
+                }
+            )
+        }
+    }
 }

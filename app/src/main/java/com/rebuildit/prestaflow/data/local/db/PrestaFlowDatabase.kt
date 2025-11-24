@@ -24,7 +24,7 @@ import com.rebuildit.prestaflow.data.local.entity.StockAvailabilityEntity
         StockAvailabilityEntity::class,
         ClientEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class PrestaFlowDatabase : RoomDatabase() {

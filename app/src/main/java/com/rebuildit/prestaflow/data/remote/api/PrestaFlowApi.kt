@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.data.remote.api
 
 import com.rebuildit.prestaflow.data.remote.dto.AuthRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.AuthResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.CustomerDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
 import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
@@ -45,6 +46,9 @@ interface PrestaFlowApi {
 
     @GET("customers/top")
     suspend fun getTopCustomers(@Query("limit") limit: Int): CustomerListResponseDto
+
+    @GET("customers/{id}")
+    suspend fun getCustomer(@Path("id") customerId: Long): CustomerDetailResponseDto
 
     @POST("notifications/devices")
     suspend fun registerDevice(@Body body: DeviceRegistrationRequestDto)
