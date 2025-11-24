@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -48,34 +49,36 @@ import java.util.Currency
 
 @Composable
 fun OrdersRoute(
-    modifier: Modifier = Modifier,
+    onOrderClick: (Long) -> Unit,
     viewModel: OrdersViewModel = hiltViewModel()
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     OrdersScreen(
-        modifier = modifier,
-        state = state,
-        onRefresh = viewModel::onRefresh
+        uiState = uiState,
+        onRefresh = { forceRemote -> viewModel.refresh(forceRemote, notifyOnError = true) },
+        onOrderClick = onOrderClick
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdersScreen(
-    state: OrdersUiState,
-    onRefresh: () -> Unit,
+    uiState: OrdersUiState,
+    onRefresh: (Boolean) -> Unit,
+    onOrderClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val errorMessage = state.error?.asString()
+    val errorMessage = uiState.error?.asString()
 
     when {
-        state.isLoading && state.orders.isEmpty() -> LoadingState(modifier)
-        state.orders.isEmpty() -> EmptyState(modifier, errorMessage, onRefresh)
+        uiState.orders.isEmpty() -> EmptyState(modifier, errorMessage) { onRefresh(true) }
         else -> OrdersList(
             modifier = modifier,
-            orders = state.orders,
-            isRefreshing = state.isRefreshing,
+            orders = uiState.orders,
+            isRefreshing = uiState.isRefreshing,
             errorMessage = errorMessage,
-            onRefresh = onRefresh
+            onRefresh = { onRefresh(true) },
+            onOrderClick = onOrderClick
         )
     }
 }
@@ -135,7 +138,8 @@ private fun OrdersList(
     orders: List<Order>,
     isRefreshing: Boolean,
     errorMessage: String?,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onOrderClick: (Long) -> Unit
 ) {
     val dateFormatter = rememberDateFormatter()
 
@@ -156,7 +160,7 @@ private fun OrdersList(
             items(orders, key = { it.id }) { order ->
                 OrderCard(
                     order = order,
-                    dateFormatter = dateFormatter
+                    onClick = { onOrderClick(order.id) }
                 )
             }
         }
@@ -187,8 +191,9 @@ private fun ErrorRow(message: String, onRefresh: () -> Unit) {
 @Composable
 private fun OrderCard(
     order: Order,
-    dateFormatter: DateTimeFormatter
+    onClick: () -> Unit
 ) {
+    val dateFormatter = rememberDateFormatter()
     val amountText = remember(order.totalPaid, order.currency) {
         formatCurrency(order.totalPaid, order.currency)
     }
@@ -197,6 +202,7 @@ private fun OrderCard(
     }
 
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {

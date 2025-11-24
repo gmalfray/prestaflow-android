@@ -48,7 +48,7 @@ class OrdersViewModel @Inject constructor(
         }
     }
 
-    private fun refresh(forceRemote: Boolean, notifyOnError: Boolean) {
+    fun refresh(forceRemote: Boolean, notifyOnError: Boolean) {
         viewModelScope.launch {
             _uiState.update { current ->
                 current.copy(

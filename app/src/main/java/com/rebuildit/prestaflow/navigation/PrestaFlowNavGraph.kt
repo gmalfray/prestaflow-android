@@ -13,8 +13,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.rebuildit.prestaflow.ui.dashboard.DashboardRoute
 import com.rebuildit.prestaflow.ui.orders.OrdersRoute
+import com.rebuildit.prestaflow.ui.orders.OrderDetailRoute
 import com.rebuildit.prestaflow.ui.products.ProductsRoute
 import com.rebuildit.prestaflow.ui.clients.ClientsRoute
 
@@ -29,7 +32,23 @@ fun PrestaFlowNavGraph(
         modifier = modifier
     ) {
         composable(AppDestination.Dashboard.route) { DashboardRoute() }
-        composable(AppDestination.Orders.route) { OrdersRoute() }
+        composable(AppDestination.Orders.route) {
+            OrdersRoute(
+                onOrderClick = { orderId ->
+                    navController.navigate("${AppDestination.Orders.route}/$orderId")
+                }
+            )
+        }
+        composable(
+            route = "${AppDestination.Orders.route}/{orderId}",
+            arguments = listOf(
+                navArgument("orderId") { type = NavType.LongType }
+            )
+        ) {
+            OrderDetailRoute(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
         composable(AppDestination.Products.route) { ProductsRoute() }
         composable(AppDestination.Clients.route) { ClientsRoute() }
         composable(AppDestination.Carts.route) { PlaceholderScreen(AppDestination.Carts) }
