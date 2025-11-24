@@ -12,5 +12,7 @@ data class OrderEntity(
     @ColumnInfo(name = "total_paid") val totalPaid: Double,
     val currency: String,
     @ColumnInfo(name = "customer_name") val customerName: String,
-    @ColumnInfo(name = "updated_at_iso") val updatedAtIso: String
+    @ColumnInfo(name = "updated_at_iso") val updatedAtIso: String,
+    @ColumnInfo(name = "items_json") val itemsJson: String? = null,
+    @ColumnInfo(name = "shipping_json") val shippingJson: String? = null
 )

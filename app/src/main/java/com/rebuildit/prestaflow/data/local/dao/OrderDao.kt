@@ -13,6 +13,9 @@ interface OrderDao {
     @Query("SELECT * FROM orders ORDER BY updated_at_iso DESC")
     fun observeOrders(): Flow<List<OrderEntity>>
 
+    @Query("SELECT * FROM orders WHERE id = :orderId")
+    fun observeOrder(orderId: Long): Flow<OrderEntity?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertOrders(entities: List<OrderEntity>)
 

@@ -27,6 +27,10 @@ class OrdersRepositoryImpl @Inject constructor(
         entities.map { it.toDomain() }
     }
 
+    override fun getOrder(orderId: Long): Flow<Order?> = orderDao.observeOrder(orderId).map { entity ->
+        entity?.toDomain()
+    }
+
     override suspend fun refresh(forceRemote: Boolean) {
         withContext(ioDispatcher) {
             val filters = mapOf("sort" to "-date_add", "limit" to "50")
@@ -39,6 +43,22 @@ class OrdersRepositoryImpl @Inject constructor(
                 onFailure = { error ->
                     Timber.w(networkErrorMapper.map(error).toString())
                     if (forceRemote) throw error
+                }
+            )
+        }
+    }
+
+    override suspend fun refreshOrder(orderId: Long) {
+        withContext(ioDispatcher) {
+            val result = runCatching { api.getOrder(orderId) }
+            result.fold(
+                onSuccess = { payload ->
+                    val entity = payload.order.toEntity()
+                    orderDao.upsertOrders(listOf(entity))
+                },
+                onFailure = { error ->
+                    Timber.w(networkErrorMapper.map(error).toString())
+                    throw error
                 }
             )
         }
