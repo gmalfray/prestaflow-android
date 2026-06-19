@@ -39,14 +39,14 @@ import com.rebuildit.prestaflow.ui.theme.displayNameRes
 @Composable
 fun SettingsRoute(
     onLogoutClick: () -> Unit,
-    themeViewModel: ThemeViewModel = hiltViewModel()
+    themeViewModel: ThemeViewModel = hiltViewModel(),
 ) {
     val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
     SettingsScreen(
         settings = themeState.settings,
         onSkinSelected = themeViewModel::selectSkin,
         onDarkThemeSelected = themeViewModel::setDarkThemeConfig,
-        onLogoutClick = onLogoutClick
+        onLogoutClick = onLogoutClick,
     )
 }
 
@@ -56,7 +56,7 @@ fun SettingsScreen(
     settings: ThemeSettings,
     onSkinSelected: (PrestaFlowSkin) -> Unit,
     onDarkThemeSelected: (DarkThemeConfig) -> Unit,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -72,7 +72,7 @@ fun SettingsScreen(
                 }) {
                     Text(
                         stringResource(R.string.settings_logout_confirm),
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
@@ -80,34 +80,35 @@ fun SettingsScreen(
                 TextButton(onClick = { showLogoutDialog = false }) {
                     Text(stringResource(R.string.settings_logout_cancel))
                 }
-            }
+            },
         )
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Apparence — sélecteur de skin
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = stringResource(R.string.settings_appearance_title),
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
                     text = stringResource(R.string.skin_selector_subtitle),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 SkinSelectorGrid(
                     currentSkin = settings.skin,
                     useDynamicColor = settings.useDynamicColor,
-                    onSkinSelected = onSkinSelected
+                    onSkinSelected = onSkinSelected,
                 )
 
                 HorizontalDivider()
@@ -115,11 +116,11 @@ fun SettingsScreen(
                 // Mode sombre
                 Text(
                     text = stringResource(R.string.settings_dark_mode_title),
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
                 )
                 DarkModeSelector(
                     current = settings.darkThemeConfig,
-                    onSelected = onDarkThemeSelected
+                    onSelected = onDarkThemeSelected,
                 )
             }
         }
@@ -130,10 +131,11 @@ fun SettingsScreen(
         Button(
             onClick = { showLogoutDialog = true },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer
-            )
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                ),
         ) {
             Text(stringResource(R.string.settings_logout))
         }
@@ -144,7 +146,7 @@ fun SettingsScreen(
 private fun SkinSelectorGrid(
     currentSkin: PrestaFlowSkin,
     useDynamicColor: Boolean,
-    onSkinSelected: (PrestaFlowSkin) -> Unit
+    onSkinSelected: (PrestaFlowSkin) -> Unit,
 ) {
     val skins = PrestaFlowSkin.values().toList()
     val rows = skins.chunked(2)
@@ -152,7 +154,7 @@ private fun SkinSelectorGrid(
         rows.forEach { rowSkins ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 rowSkins.forEach { skin ->
                     FilterChip(
@@ -161,10 +163,10 @@ private fun SkinSelectorGrid(
                         label = {
                             Text(
                                 text = stringResource(skin.displayNameRes()),
-                                maxLines = 1
+                                maxLines = 1,
                             )
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                 }
                 if (rowSkins.size == 1) {
@@ -178,23 +180,24 @@ private fun SkinSelectorGrid(
 @Composable
 private fun DarkModeSelector(
     current: DarkThemeConfig,
-    onSelected: (DarkThemeConfig) -> Unit
+    onSelected: (DarkThemeConfig) -> Unit,
 ) {
-    val options = listOf(
-        DarkThemeConfig.FOLLOW_SYSTEM to stringResource(R.string.skin_dark_follow_system),
-        DarkThemeConfig.LIGHT to stringResource(R.string.skin_dark_light),
-        DarkThemeConfig.DARK to stringResource(R.string.skin_dark_dark)
-    )
+    val options =
+        listOf(
+            DarkThemeConfig.FOLLOW_SYSTEM to stringResource(R.string.skin_dark_follow_system),
+            DarkThemeConfig.LIGHT to stringResource(R.string.skin_dark_light),
+            DarkThemeConfig.DARK to stringResource(R.string.skin_dark_dark),
+        )
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         options.forEach { (config, label) ->
             FilterChip(
                 selected = current == config,
                 onClick = { onSelected(config) },
                 label = { Text(label, maxLines = 1) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
     }

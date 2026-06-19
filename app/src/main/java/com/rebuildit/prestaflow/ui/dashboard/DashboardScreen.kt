@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
-import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartPoint
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
@@ -59,14 +58,14 @@ import java.time.format.FormatStyle
 @Composable
 fun DashboardRoute(
     modifier: Modifier = Modifier,
-    viewModel: DashboardViewModel = hiltViewModel()
+    viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     DashboardScreen(
         modifier = modifier.fillMaxSize(),
         state = state,
         onPeriodSelected = viewModel::onPeriodSelected,
-        onRefresh = viewModel::onRefresh
+        onRefresh = viewModel::onRefresh,
     )
 }
 
@@ -75,7 +74,7 @@ fun DashboardScreen(
     modifier: Modifier = Modifier,
     state: DashboardUiState,
     onPeriodSelected: (DashboardPeriod) -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
 ) {
     val errorMessage = state.error?.asString()
     val hasSnapshot = state.snapshot != null
@@ -83,20 +82,22 @@ fun DashboardScreen(
 
     when {
         isLoading -> LoadingState(modifier)
-        hasSnapshot -> DashboardContent(
-            modifier = modifier,
-            snapshot = requireNotNull(state.snapshot),
-            selectedPeriod = state.selectedPeriod,
-            isRefreshing = state.isRefreshing,
-            errorMessage = errorMessage,
-            onPeriodSelected = onPeriodSelected,
-            onRefresh = onRefresh
-        )
-        else -> EmptyState(
-            modifier = modifier,
-            errorMessage = errorMessage,
-            onRetry = onRefresh
-        )
+        hasSnapshot ->
+            DashboardContent(
+                modifier = modifier,
+                snapshot = requireNotNull(state.snapshot),
+                selectedPeriod = state.selectedPeriod,
+                isRefreshing = state.isRefreshing,
+                errorMessage = errorMessage,
+                onPeriodSelected = onPeriodSelected,
+                onRefresh = onRefresh,
+            )
+        else ->
+            EmptyState(
+                modifier = modifier,
+                errorMessage = errorMessage,
+                onRetry = onRefresh,
+            )
     }
 }
 
@@ -104,11 +105,12 @@ fun DashboardScreen(
 private fun LoadingState(modifier: Modifier) {
     Surface(modifier = modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             CircularProgressIndicator()
         }
@@ -119,20 +121,21 @@ private fun LoadingState(modifier: Modifier) {
 private fun EmptyState(
     modifier: Modifier,
     errorMessage: String?,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             Text(
                 text = stringResource(id = R.string.dashboard_state_empty),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             if (errorMessage != null) {
@@ -140,7 +143,7 @@ private fun EmptyState(
                 Text(
                     text = errorMessage,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Button(onClick = onRetry) {
@@ -161,7 +164,7 @@ private fun DashboardContent(
     isRefreshing: Boolean,
     errorMessage: String?,
     onPeriodSelected: (DashboardPeriod) -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
 ) {
     val currencyFormatter = rememberCurrencyFormatter()
     val numberFormatter = rememberNumberFormatter()
@@ -176,14 +179,14 @@ private fun DashboardContent(
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item {
             DashboardPeriodRow(
                 selectedPeriod = selectedPeriod,
                 onPeriodSelected = onPeriodSelected,
                 onRefresh = onRefresh,
-                isRefreshing = isRefreshing
+                isRefreshing = isRefreshing,
             )
         }
 
@@ -195,37 +198,39 @@ private fun DashboardContent(
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Outlined.Refresh,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        labelColor = MaterialTheme.colorScheme.onErrorContainer
-                    )
+                    colors =
+                        AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            labelColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ),
                 )
             }
         }
 
         item {
             DashboardKpiGrid(
-                items = listOf(
-                    DashboardKpi(
-                        title = stringResource(id = R.string.dashboard_kpi_turnover),
-                        value = turnoverText
+                items =
+                    listOf(
+                        DashboardKpi(
+                            title = stringResource(id = R.string.dashboard_kpi_turnover),
+                            value = turnoverText,
+                        ),
+                        DashboardKpi(
+                            title = stringResource(id = R.string.dashboard_kpi_orders),
+                            value = ordersText,
+                        ),
+                        DashboardKpi(
+                            title = stringResource(id = R.string.dashboard_kpi_customers),
+                            value = customersText,
+                        ),
+                        DashboardKpi(
+                            title = stringResource(id = R.string.dashboard_kpi_products),
+                            value = productsText,
+                        ),
                     ),
-                    DashboardKpi(
-                        title = stringResource(id = R.string.dashboard_kpi_orders),
-                        value = ordersText
-                    ),
-                    DashboardKpi(
-                        title = stringResource(id = R.string.dashboard_kpi_customers),
-                        value = customersText
-                    ),
-                    DashboardKpi(
-                        title = stringResource(id = R.string.dashboard_kpi_products),
-                        value = productsText
-                    )
-                )
             )
         }
 
@@ -237,28 +242,31 @@ private fun DashboardContent(
             Text(
                 text = stringResource(id = R.string.label_last_sync, lastUpdatedText),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
 
 @Composable
-private fun DashboardKpiGrid(items: List<DashboardKpi>, modifier: Modifier = Modifier) {
+private fun DashboardKpiGrid(
+    items: List<DashboardKpi>,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         items.chunked(2).forEach { rowItems ->
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 rowItems.forEach { item ->
                     KpiCard(
                         modifier = Modifier.weight(1f),
                         title = item.title,
-                        value = item.value
+                        value = item.value,
                     )
                 }
                 if (rowItems.size == 1) {
@@ -273,26 +281,27 @@ private fun DashboardKpiGrid(items: List<DashboardKpi>, modifier: Modifier = Mod
 private fun KpiCard(
     modifier: Modifier = Modifier,
     title: String,
-    value: String
+    value: String,
 ) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
             )
         }
     }
@@ -301,21 +310,22 @@ private fun KpiCard(
 @Composable
 private fun DashboardChartCard(
     points: List<DashboardChartPoint>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            ),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = stringResource(id = R.string.dashboard_chart_title_turnover),
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
             TurnoverChart(points = points, height = 180.dp)
         }
@@ -327,13 +337,13 @@ private fun DashboardChartCard(
 private fun TurnoverChart(
     points: List<DashboardChartPoint>,
     height: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (points.isEmpty()) {
         Text(
             text = stringResource(id = R.string.dashboard_chart_empty),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         return
     }
@@ -343,9 +353,10 @@ private fun TurnoverChart(
     val axisColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
 
     Canvas(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(height)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(height),
     ) {
         val maxValue = points.maxOf { it.turnover }.takeIf { it > 0.0 } ?: 1.0
         val verticalPadding = size.height * 0.1f
@@ -356,44 +367,47 @@ private fun TurnoverChart(
             color = axisColor,
             start = Offset(x = 0f, y = size.height - verticalPadding),
             end = Offset(x = size.width, y = size.height - verticalPadding),
-            strokeWidth = 1.dp.toPx()
+            strokeWidth = 1.dp.toPx(),
         )
 
-        val linePoints = points.mapIndexed { index, point ->
-            val normalized = (point.turnover / maxValue).coerceIn(0.0, 1.0)
-            val x = stepX * index
-            val y = size.height - verticalPadding - (usableHeight * normalized.toFloat())
-            Offset(x, y)
-        }
-
-        val linePath = Path().apply {
-            linePoints.firstOrNull()?.let { moveTo(it.x, it.y) }
-            linePoints.drop(1).forEach { lineTo(it.x, it.y) }
-        }
-
-        val fillPath = Path().apply {
-            linePoints.firstOrNull()?.let { firstPoint ->
-                moveTo(firstPoint.x, size.height - verticalPadding)
-                linePoints.forEach { lineTo(it.x, it.y) }
-                linePoints.lastOrNull()?.let { lastPoint ->
-                    lineTo(lastPoint.x, size.height - verticalPadding)
-                }
-                close()
+        val linePoints =
+            points.mapIndexed { index, point ->
+                val normalized = (point.turnover / maxValue).coerceIn(0.0, 1.0)
+                val x = stepX * index
+                val y = size.height - verticalPadding - (usableHeight * normalized.toFloat())
+                Offset(x, y)
             }
-        }
+
+        val linePath =
+            Path().apply {
+                linePoints.firstOrNull()?.let { moveTo(it.x, it.y) }
+                linePoints.drop(1).forEach { lineTo(it.x, it.y) }
+            }
+
+        val fillPath =
+            Path().apply {
+                linePoints.firstOrNull()?.let { firstPoint ->
+                    moveTo(firstPoint.x, size.height - verticalPadding)
+                    linePoints.forEach { lineTo(it.x, it.y) }
+                    linePoints.lastOrNull()?.let { lastPoint ->
+                        lineTo(lastPoint.x, size.height - verticalPadding)
+                    }
+                    close()
+                }
+            }
 
         drawPath(path = fillPath, color = fillColor)
         drawPath(
             path = linePath,
             color = lineColor,
-            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
         )
 
         linePoints.forEach { point ->
             drawCircle(
                 color = lineColor,
                 radius = 4.dp.toPx(),
-                center = point
+                center = point,
             )
         }
     }
@@ -401,14 +415,14 @@ private fun TurnoverChart(
     if (points.size >= 2) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             val labels = listOf(points.first().label, points.last().label)
             labels.forEach { label ->
                 Text(
                     text = label,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -416,7 +430,7 @@ private fun TurnoverChart(
         Text(
             text = points.first().label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -427,30 +441,32 @@ private fun DashboardPeriodRow(
     selectedPeriod: DashboardPeriod,
     onPeriodSelected: (DashboardPeriod) -> Unit,
     onRefresh: () -> Unit,
-    isRefreshing: Boolean
+    isRefreshing: Boolean,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         SingleChoiceSegmentedButtonRow {
             val periods = DashboardPeriod.values()
             periods.forEachIndexed { index, period ->
-                val text = when (period) {
-                    DashboardPeriod.TODAY -> stringResource(id = R.string.dashboard_period_today)
-                    DashboardPeriod.WEEK -> stringResource(id = R.string.dashboard_period_week)
-                    DashboardPeriod.MONTH -> stringResource(id = R.string.dashboard_period_month)
-                    DashboardPeriod.QUARTER -> stringResource(id = R.string.dashboard_period_quarter)
-                    DashboardPeriod.YEAR -> stringResource(id = R.string.dashboard_period_year)
-                }
+                val text =
+                    when (period) {
+                        DashboardPeriod.TODAY -> stringResource(id = R.string.dashboard_period_today)
+                        DashboardPeriod.WEEK -> stringResource(id = R.string.dashboard_period_week)
+                        DashboardPeriod.MONTH -> stringResource(id = R.string.dashboard_period_month)
+                        DashboardPeriod.QUARTER -> stringResource(id = R.string.dashboard_period_quarter)
+                        DashboardPeriod.YEAR -> stringResource(id = R.string.dashboard_period_year)
+                    }
                 SegmentedButton(
-                    shape = SegmentedButtonDefaults.itemShape(
-                        index = index,
-                        count = periods.size
-                    ),
+                    shape =
+                        SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = periods.size,
+                        ),
                     onClick = { onPeriodSelected(period) },
-                    selected = period == selectedPeriod
+                    selected = period == selectedPeriod,
                 ) {
                     Text(text = text)
                 }
@@ -461,12 +477,12 @@ private fun DashboardPeriodRow(
             if (isRefreshing) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp
+                    strokeWidth = 2.dp,
                 )
             } else {
                 Icon(
                     imageVector = Icons.Outlined.Refresh,
-                    contentDescription = stringResource(id = R.string.dashboard_action_refresh)
+                    contentDescription = stringResource(id = R.string.dashboard_action_refresh),
                 )
             }
         }
@@ -497,5 +513,5 @@ private fun formatLastUpdated(isoString: String): String {
 
 private data class DashboardKpi(
     val title: String,
-    val value: String
+    val value: String,
 )

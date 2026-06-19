@@ -44,14 +44,14 @@ import java.time.format.FormatStyle
 fun CartsRoute(
     onCartClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: CartsViewModel = hiltViewModel()
+    viewModel: CartsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     CartsScreen(
         modifier = modifier,
         state = state,
         onRefresh = viewModel::onRefresh,
-        onCartClick = onCartClick
+        onCartClick = onCartClick,
     )
 }
 
@@ -60,26 +60,28 @@ fun CartsScreen(
     state: CartsUiState,
     onRefresh: () -> Unit,
     onCartClick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val errorMessage = state.error?.asString()
 
     when {
         state.isLoading && state.carts.isEmpty() -> LoadingState(modifier)
-        state.carts.isEmpty() -> EmptyState(
-            message = stringResource(R.string.carts_list_empty),
-            modifier = modifier,
-            errorMessage = errorMessage,
-            onRefresh = onRefresh
-        )
-        else -> CartsList(
-            modifier = modifier,
-            carts = state.carts,
-            isRefreshing = state.isRefreshing,
-            errorMessage = errorMessage,
-            onRefresh = onRefresh,
-            onCartClick = onCartClick
-        )
+        state.carts.isEmpty() ->
+            EmptyState(
+                message = stringResource(R.string.carts_list_empty),
+                modifier = modifier,
+                errorMessage = errorMessage,
+                onRefresh = onRefresh,
+            )
+        else ->
+            CartsList(
+                modifier = modifier,
+                carts = state.carts,
+                isRefreshing = state.isRefreshing,
+                errorMessage = errorMessage,
+                onRefresh = onRefresh,
+                onCartClick = onCartClick,
+            )
     }
 }
 
@@ -91,7 +93,7 @@ private fun CartsList(
     isRefreshing: Boolean,
     errorMessage: String?,
     onRefresh: () -> Unit,
-    onCartClick: (Int) -> Unit
+    onCartClick: (Int) -> Unit,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         AnimatedVisibility(visible = isRefreshing, enter = fadeIn(), exit = fadeOut()) {
@@ -105,7 +107,7 @@ private fun CartsList(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(carts, key = { it.id }) { cart ->
                 CartCard(cart = cart, onClick = { onCartClick(cart.id) })
@@ -118,26 +120,28 @@ private fun CartsList(
 @Composable
 private fun CartCard(
     cart: CartSummary,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
-    val totalText = remember(cart.totalTaxIncl, cart.currencyIso) {
-        formatCurrency(cart.totalTaxIncl, cart.currencyIso)
-    }
-    val updatedAt = remember(cart.updatedAtIso) {
-        formatTimestamp(cart.updatedAtIso, dateFormatter)
-    }
+    val totalText =
+        remember(cart.totalTaxIncl, cart.currencyIso) {
+            formatCurrency(cart.totalTaxIncl, cart.currencyIso)
+        }
+    val updatedAt =
+        remember(cart.updatedAtIso) {
+            formatTimestamp(cart.updatedAtIso, dateFormatter)
+        }
 
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = cart.customerName.ifBlank { stringResource(R.string.carts_customer_guest) },
@@ -145,44 +149,44 @@ private fun CartCard(
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 Text(
                     text = totalText,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = stringResource(R.string.carts_items_count, cart.itemsCount),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (cart.hasOrder) {
                     Badge(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     ) {
                         Text(
                             text = stringResource(R.string.carts_has_order),
-                            style = MaterialTheme.typography.labelSmall
+                            style = MaterialTheme.typography.labelSmall,
                         )
                     }
                 } else {
                     Badge(
                         containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
                     ) {
                         Text(
                             text = stringResource(R.string.carts_abandoned),
-                            style = MaterialTheme.typography.labelSmall
+                            style = MaterialTheme.typography.labelSmall,
                         )
                     }
                 }
@@ -192,7 +196,7 @@ private fun CartCard(
                 Text(
                     text = updatedAt,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

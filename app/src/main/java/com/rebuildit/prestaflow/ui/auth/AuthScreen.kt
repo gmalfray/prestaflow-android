@@ -48,17 +48,18 @@ import com.rebuildit.prestaflow.core.ui.UiText
 @Composable
 fun AuthRoute(
     modifier: Modifier = Modifier,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
-        if (result == null || result.contents.isNullOrBlank()) {
-            viewModel.onQrScanCancelled()
-        } else {
-            viewModel.onQrScanned(result.contents)
+    val scanLauncher =
+        rememberLauncherForActivityResult(ScanContract()) { result ->
+            if (result == null || result.contents.isNullOrBlank()) {
+                viewModel.onQrScanCancelled()
+            } else {
+                viewModel.onQrScanned(result.contents)
+            }
         }
-    }
 
     val scanPrompt = stringResource(id = R.string.auth_scan_prompt)
 
@@ -69,13 +70,14 @@ fun AuthRoute(
         onApiKeyChanged = viewModel::onApiKeyChanged,
         onSubmit = viewModel::submit,
         onScanQr = {
-            val options = ScanOptions()
-                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                .setPrompt(scanPrompt)
-                .setBeepEnabled(false)
-                .setBarcodeImageEnabled(false)
+            val options =
+                ScanOptions()
+                    .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                    .setPrompt(scanPrompt)
+                    .setBeepEnabled(false)
+                    .setBarcodeImageEnabled(false)
             scanLauncher.launch(options)
-        }
+        },
     )
 }
 
@@ -88,24 +90,26 @@ fun AuthScreen(
     onShopUrlChanged: (String) -> Unit,
     onApiKeyChanged: (String) -> Unit,
     onSubmit: () -> Unit,
-    onScanQr: () -> Unit
+    onScanQr: () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
 
     Scaffold(modifier = modifier) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
         ) {
             Column(
-                modifier = Modifier
-                    .widthIn(max = 520.dp)
-                    .align(Alignment.TopCenter)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                modifier =
+                    Modifier
+                        .widthIn(max = 520.dp)
+                        .align(Alignment.TopCenter)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 val shopUrlLabel = stringResource(id = R.string.auth_field_shop_url)
                 val shopUrlPlaceholder = stringResource(id = R.string.auth_field_shop_url_placeholder)
@@ -115,18 +119,19 @@ fun AuthScreen(
 
                 Text(
                     text = stringResource(id = R.string.auth_title),
-                    style = MaterialTheme.typography.headlineLarge
+                    style = MaterialTheme.typography.headlineLarge,
                 )
                 Text(
                     text = stringResource(id = R.string.auth_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 OutlinedTextField(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics { contentDescription = shopUrlLabel },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .semantics { contentDescription = shopUrlLabel },
                     value = state.shopUrl,
                     onValueChange = onShopUrlChanged,
                     label = { Text(text = shopUrlLabel) },
@@ -139,37 +144,42 @@ fun AuthScreen(
                             ErrorText(error)
                         }
                     },
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.None,
-                        keyboardType = KeyboardType.Uri,
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions(onNext = {
-                        focusManager.moveFocus(FocusDirection.Down)
-                    })
+                    keyboardOptions =
+                        KeyboardOptions(
+                            capitalization = KeyboardCapitalization.None,
+                            keyboardType = KeyboardType.Uri,
+                            imeAction = ImeAction.Next,
+                        ),
+                    keyboardActions =
+                        KeyboardActions(onNext = {
+                            focusManager.moveFocus(FocusDirection.Down)
+                        }),
                 )
 
                 OutlinedTextField(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics { contentDescription = apiKeyLabel },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .semantics { contentDescription = apiKeyLabel },
                     value = state.apiKey,
                     onValueChange = onApiKeyChanged,
                     label = { Text(text = apiKeyLabel) },
                     placeholder = { Text(text = apiKeyPlaceholder) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(onDone = {
-                        focusManager.clearFocus(force = true)
-                        if (state.isSubmitEnabled) {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onSubmit()
-                        }
-                    })
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done,
+                        ),
+                    keyboardActions =
+                        KeyboardActions(onDone = {
+                            focusManager.clearFocus(force = true)
+                            if (state.isSubmitEnabled) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onSubmit()
+                            }
+                        }),
                 )
 
                 val formError = state.formError
@@ -183,7 +193,7 @@ fun AuthScreen(
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onSubmit()
                     },
-                    enabled = state.isSubmitEnabled
+                    enabled = state.isSubmitEnabled,
                 ) {
                     Text(text = stringResource(id = R.string.auth_action_connect))
                 }
@@ -194,7 +204,7 @@ fun AuthScreen(
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onScanQr()
                     },
-                    enabled = !state.isLoading
+                    enabled = !state.isLoading,
                 ) {
                     Text(text = stringResource(id = R.string.auth_action_scan_qr))
                 }
@@ -206,17 +216,18 @@ fun AuthScreen(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onShopUrlChanged("https://")
-                    }
+                    },
                 ) {
                     Text(text = stringResource(id = R.string.auth_action_prefill_https))
                 }
 
                 if (state.isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(top = 16.dp)
-                            .semantics { contentDescription = loadingDescription }
+                        modifier =
+                            Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .padding(top = 16.dp)
+                                .semantics { contentDescription = loadingDescription },
                     )
                 }
             }
@@ -226,14 +237,15 @@ fun AuthScreen(
 
 @Composable
 private fun ErrorText(message: UiText) {
-    val text = when (message) {
-        is UiText.Dynamic -> message.value
-        is UiText.FromResources -> stringResource(id = message.resId, *message.args.toTypedArray())
-    }
+    val text =
+        when (message) {
+            is UiText.Dynamic -> message.value
+            is UiText.FromResources -> stringResource(id = message.resId, *message.args.toTypedArray())
+        }
 
     Text(
         text = text,
         color = MaterialTheme.colorScheme.error,
-        style = MaterialTheme.typography.bodyMedium
+        style = MaterialTheme.typography.bodyMedium,
     )
 }

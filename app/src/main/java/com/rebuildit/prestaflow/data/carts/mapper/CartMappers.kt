@@ -20,7 +20,7 @@ fun CartListItemDto.toDomain(): CartSummary {
         itemsCount = itemsCount,
         hasOrder = hasOrder,
         createdAtIso = dates?.createdAt,
-        updatedAtIso = dates?.updatedAt
+        updatedAtIso = dates?.updatedAt,
     )
 }
 
@@ -39,15 +39,16 @@ fun CartDetailDto.toDomain(): CartDetail {
         hasOrder = hasOrder,
         createdAtIso = dates?.createdAt,
         updatedAtIso = dates?.updatedAt,
-        products = products.map { it.toDomain() }
+        products = products.map { it.toDomain() },
     )
 }
 
-fun CartProductDto.toDomain(): CartProduct = CartProduct(
-    productId = productId,
-    name = name.orEmpty(),
-    reference = reference,
-    quantity = quantity,
-    totalTaxIncl = totalTaxIncl,
-    imageUrl = image
-)
+fun CartProductDto.toDomain(): CartProduct =
+    CartProduct(
+        productId = productId,
+        name = name.orEmpty(),
+        reference = reference,
+        quantity = quantity,
+        totalTaxIncl = totalTaxIncl,
+        imageUrl = image,
+    )

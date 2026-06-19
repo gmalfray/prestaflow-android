@@ -9,94 +9,104 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderStatusUpdateRequestDto
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
-class OrdersRepositoryImpl @Inject constructor(
-    private val api: PrestaFlowApi,
-    private val orderDao: OrderDao,
-    private val networkErrorMapper: NetworkErrorMapper,
-    private val ioDispatcher: CoroutineDispatcher
-) : OrdersRepository {
+class OrdersRepositoryImpl
+    @Inject
+    constructor(
+        private val api: PrestaFlowApi,
+        private val orderDao: OrderDao,
+        private val networkErrorMapper: NetworkErrorMapper,
+        private val ioDispatcher: CoroutineDispatcher,
+    ) : OrdersRepository {
+        override fun observeOrders(): Flow<List<Order>> =
+            orderDao.observeOrders().map { entities ->
+                entities.map { it.toDomain() }
+            }
 
-    override fun observeOrders(): Flow<List<Order>> = orderDao.observeOrders().map { entities ->
-        entities.map { it.toDomain() }
-    }
+        override fun getOrder(orderId: Long): Flow<Order?> =
+            orderDao.observeOrder(orderId).map { entity ->
+                entity?.toDomain()
+            }
 
-    override fun getOrder(orderId: Long): Flow<Order?> = orderDao.observeOrder(orderId).map { entity ->
-        entity?.toDomain()
-    }
-
-    override suspend fun refresh(forceRemote: Boolean) {
-        withContext(ioDispatcher) {
-            val filters = mapOf("sort" to "-date_add", "limit" to "50")
-            val result = runCatching { api.getOrders(filters) }
-            result.fold(
-                onSuccess = { payload ->
-                    val entities = payload.orders.map { it.toEntity() }
-                    orderDao.upsertOrders(entities)
-                },
-                onFailure = { error ->
-                    Timber.w(networkErrorMapper.map(error).toString())
-                    if (forceRemote) throw error
-                }
-            )
-        }
-    }
-
-    override suspend fun refreshOrder(orderId: Long) {
-        withContext(ioDispatcher) {
-            val result = runCatching { api.getOrder(orderId) }
-            result.fold(
-                onSuccess = { payload ->
-                    val entity = payload.order.toEntity()
-                    orderDao.upsertOrders(listOf(entity))
-                },
-                onFailure = { error ->
-                    Timber.w(networkErrorMapper.map(error).toString())
-                    throw error
-                }
-            )
-        }
-    }
-
-    override suspend fun updateOrderStatus(orderId: Long, status: String) {
-        withContext(ioDispatcher) {
-            runCatching {
-                api.updateOrderStatus(orderId, OrderStatusUpdateRequestDto(status = status))
-            }.fold(
-                onSuccess = { refreshOrder(orderId) },
-                onFailure = { error ->
-                    Timber.w(networkErrorMapper.map(error).toString())
-                    throw error
-                }
-            )
-        }
-    }
-
-    override suspend fun updateOrderShipping(orderId: Long, trackingNumber: String, carrierId: Long?) {
-        withContext(ioDispatcher) {
-            runCatching {
-                api.updateOrderShipping(
-                    orderId,
-                    OrderShippingUpdateRequestDto(
-                        trackingNumber = trackingNumber,
-                        carrierId = carrierId
-                    )
+        override suspend fun refresh(forceRemote: Boolean) {
+            withContext(ioDispatcher) {
+                val filters = mapOf("sort" to "-date_add", "limit" to "50")
+                val result = runCatching { api.getOrders(filters) }
+                result.fold(
+                    onSuccess = { payload ->
+                        val entities = payload.orders.map { it.toEntity() }
+                        orderDao.upsertOrders(entities)
+                    },
+                    onFailure = { error ->
+                        Timber.w(networkErrorMapper.map(error).toString())
+                        if (forceRemote) throw error
+                    },
                 )
-            }.fold(
-                onSuccess = { refreshOrder(orderId) },
-                onFailure = { error ->
-                    Timber.w(networkErrorMapper.map(error).toString())
-                    throw error
-                }
-            )
+            }
+        }
+
+        override suspend fun refreshOrder(orderId: Long) {
+            withContext(ioDispatcher) {
+                val result = runCatching { api.getOrder(orderId) }
+                result.fold(
+                    onSuccess = { payload ->
+                        val entity = payload.order.toEntity()
+                        orderDao.upsertOrders(listOf(entity))
+                    },
+                    onFailure = { error ->
+                        Timber.w(networkErrorMapper.map(error).toString())
+                        throw error
+                    },
+                )
+            }
+        }
+
+        override suspend fun updateOrderStatus(
+            orderId: Long,
+            status: String,
+        ) {
+            withContext(ioDispatcher) {
+                runCatching {
+                    api.updateOrderStatus(orderId, OrderStatusUpdateRequestDto(status = status))
+                }.fold(
+                    onSuccess = { refreshOrder(orderId) },
+                    onFailure = { error ->
+                        Timber.w(networkErrorMapper.map(error).toString())
+                        throw error
+                    },
+                )
+            }
+        }
+
+        override suspend fun updateOrderShipping(
+            orderId: Long,
+            trackingNumber: String,
+            carrierId: Long?,
+        ) {
+            withContext(ioDispatcher) {
+                runCatching {
+                    api.updateOrderShipping(
+                        orderId,
+                        OrderShippingUpdateRequestDto(
+                            trackingNumber = trackingNumber,
+                            carrierId = carrierId,
+                        ),
+                    )
+                }.fold(
+                    onSuccess = { refreshOrder(orderId) },
+                    onFailure = { error ->
+                        Timber.w(networkErrorMapper.map(error).toString())
+                        throw error
+                    },
+                )
+            }
         }
     }
-}

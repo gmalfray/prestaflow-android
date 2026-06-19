@@ -7,29 +7,30 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class TokenManager @Inject constructor(
-    private val storage: TokenStorage,
-    private val inMemoryTokenProvider: InMemoryTokenProvider
-) {
+class TokenManager
+    @Inject
+    constructor(
+        private val storage: TokenStorage,
+        private val inMemoryTokenProvider: InMemoryTokenProvider,
+    ) {
+        private val _tokenFlow = MutableStateFlow(storage.read())
+        val tokenFlow: StateFlow<AuthToken?> = _tokenFlow
 
-    private val _tokenFlow = MutableStateFlow(storage.read())
-    val tokenFlow: StateFlow<AuthToken?> = _tokenFlow
+        init {
+            inMemoryTokenProvider.updateToken(_tokenFlow.value?.value)
+        }
 
-    init {
-        inMemoryTokenProvider.updateToken(_tokenFlow.value?.value)
-    }
+        fun currentToken(): AuthToken? = _tokenFlow.value
 
-    fun currentToken(): AuthToken? = _tokenFlow.value
-
-    fun update(token: AuthToken?) {
-        if (token == null) {
-            storage.clear()
-            _tokenFlow.value = null
-            inMemoryTokenProvider.clear()
-        } else {
-            storage.persist(token)
-            _tokenFlow.value = token
-            inMemoryTokenProvider.updateToken(token.value)
+        fun update(token: AuthToken?) {
+            if (token == null) {
+                storage.clear()
+                _tokenFlow.value = null
+                inMemoryTokenProvider.clear()
+            } else {
+                storage.persist(token)
+                _tokenFlow.value = token
+                inMemoryTokenProvider.updateToken(token.value)
+            }
         }
     }
-}

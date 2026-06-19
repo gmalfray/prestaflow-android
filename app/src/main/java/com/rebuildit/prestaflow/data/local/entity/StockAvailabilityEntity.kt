@@ -13,19 +13,19 @@ import androidx.room.Index
             entity = ProductEntity::class,
             parentColumns = ["id"],
             childColumns = ["product_id"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index("product_id"),
-        Index("warehouse_id")
-    ]
+        Index("warehouse_id"),
+    ],
 )
 data class StockAvailabilityEntity(
     @ColumnInfo(name = "product_id") val productId: Long,
     @ColumnInfo(name = "warehouse_id") val warehouseId: Long,
     val quantity: Int,
-    @ColumnInfo(name = "updated_at_iso") val updatedAtIso: String?
+    @ColumnInfo(name = "updated_at_iso") val updatedAtIso: String?,
 ) {
     companion object {
         const val NO_WAREHOUSE_ID: Long = -1L

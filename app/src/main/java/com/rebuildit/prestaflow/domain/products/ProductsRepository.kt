@@ -6,16 +6,32 @@ import kotlinx.coroutines.flow.Flow
 
 interface ProductsRepository {
     fun observeProducts(): Flow<List<Product>>
+
     fun observeProduct(productId: Long): Flow<Product?>
+
     fun observeStockAvailabilities(productId: Long): Flow<List<StockAvailability>>
+
     suspend fun refresh(forceRemote: Boolean = false)
-    suspend fun refreshProduct(productId: Long, forceRemote: Boolean = false)
+
+    suspend fun refreshProduct(
+        productId: Long,
+        forceRemote: Boolean = false,
+    )
+
     suspend fun updateStock(
         productId: Long,
         quantity: Int,
         warehouseId: Long? = null,
-        reason: String? = null
+        reason: String? = null,
     )
-    suspend fun updatePrice(productId: Long, price: Double)
-    suspend fun updateStatus(productId: Long, active: Boolean)
+
+    suspend fun updatePrice(
+        productId: Long,
+        price: Double,
+    )
+
+    suspend fun updateStatus(
+        productId: Long,
+        active: Boolean,
+    )
 }

@@ -12,7 +12,7 @@ data class CartSummary(
     val itemsCount: Int,
     val hasOrder: Boolean,
     val createdAtIso: String?,
-    val updatedAtIso: String?
+    val updatedAtIso: String?,
 )
 
 /**
@@ -29,7 +29,7 @@ data class CartDetail(
     val hasOrder: Boolean,
     val createdAtIso: String?,
     val updatedAtIso: String?,
-    val products: List<CartProduct>
+    val products: List<CartProduct>,
 )
 
 /**
@@ -41,5 +41,5 @@ data class CartProduct(
     val reference: String?,
     val quantity: Int,
     val totalTaxIncl: Double,
-    val imageUrl: String?
+    val imageUrl: String?,
 )

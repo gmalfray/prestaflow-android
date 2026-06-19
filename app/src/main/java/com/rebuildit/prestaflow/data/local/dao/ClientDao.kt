@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ClientDao {
-
     @Query("SELECT * FROM clients ORDER BY total_spent DESC LIMIT :limit")
     fun observeTopClients(limit: Int): Flow<List<ClientEntity>>
 

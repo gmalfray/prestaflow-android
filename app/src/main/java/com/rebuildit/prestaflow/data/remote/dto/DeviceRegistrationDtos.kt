@@ -9,11 +9,11 @@ data class DeviceRegistrationRequestDto(
     @SerialName("device_id") val deviceId: String? = null,
     @SerialName("platform") val platform: String,
     @SerialName("topics") val topics: List<String> = emptyList(),
-    @SerialName("do_not_disturb") val doNotDisturb: DoNotDisturbDto? = null
+    @SerialName("do_not_disturb") val doNotDisturb: DoNotDisturbDto? = null,
 )
 
 @Serializable
 data class DoNotDisturbDto(
     @SerialName("start") val start: String,
-    @SerialName("end") val end: String
+    @SerialName("end") val end: String,
 )

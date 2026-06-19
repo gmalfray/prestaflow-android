@@ -14,5 +14,5 @@ data class ClientEntity(
     @ColumnInfo(name = "total_spent") val totalSpent: Double,
     @ColumnInfo(name = "last_order_iso") val lastOrderIso: String?,
     @ColumnInfo(name = "orders_json") val ordersJson: String = "[]",
-    @ColumnInfo(name = "last_synced_iso") val lastSyncedIso: String
+    @ColumnInfo(name = "last_synced_iso") val lastSyncedIso: String,
 )

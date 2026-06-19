@@ -34,25 +34,23 @@ import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.interceptor.AuthInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DefaultHeadersInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DynamicBaseUrlInterceptor
-import com.rebuildit.prestaflow.data.theme.ThemeRepositoryImpl
-import com.rebuildit.prestaflow.domain.theme.ThemeRepository 
 import com.rebuildit.prestaflow.data.sync.SyncQueueRepositoryImpl
+import com.rebuildit.prestaflow.data.theme.ThemeRepositoryImpl
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
 import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
-import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.notifications.NotificationsRepository
+import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.sync.SyncQueueRepository
+import com.rebuildit.prestaflow.domain.theme.ThemeRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import java.time.Duration
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -62,11 +60,12 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.time.Duration
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-
     @Provides
     @Singleton
     fun provideEnvironment(): AppEnvironment = AppEnvironment.fromBuildConfig()
@@ -74,12 +73,13 @@ object AppModule {
     @Provides
     @Singleton
     @OptIn(ExperimentalSerializationApi::class)
-    fun provideJson(): Json = Json {
-        ignoreUnknownKeys = true
-        explicitNulls = false
-        isLenient = false
-        prettyPrint = BuildConfig.DEBUG
-    }
+    fun provideJson(): Json =
+        Json {
+            ignoreUnknownKeys = true
+            explicitNulls = false
+            isLenient = false
+            prettyPrint = BuildConfig.DEBUG
+        }
 
     @Provides
     @Singleton
@@ -87,8 +87,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideAuthInterceptor(tokenProvider: InMemoryTokenProvider): AuthInterceptor =
-        AuthInterceptor(tokenProvider)
+    fun provideAuthInterceptor(tokenProvider: InMemoryTokenProvider): AuthInterceptor = AuthInterceptor(tokenProvider)
 
     @Provides
     @Singleton
@@ -99,7 +98,7 @@ object AppModule {
     fun provideOkHttpClient(
         dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor,
         authInterceptor: AuthInterceptor,
-        defaultHeadersInterceptor: DefaultHeadersInterceptor
+        defaultHeadersInterceptor: DefaultHeadersInterceptor,
     ): OkHttpClient =
         OkHttpClient.Builder()
             .connectTimeout(Duration.ofSeconds(30))
@@ -110,9 +109,10 @@ object AppModule {
             .addInterceptor(authInterceptor)
             .apply {
                 if (BuildConfig.DEBUG) {
-                    val logging = HttpLoggingInterceptor().apply {
-                        level = HttpLoggingInterceptor.Level.BODY
-                    }
+                    val logging =
+                        HttpLoggingInterceptor().apply {
+                            level = HttpLoggingInterceptor.Level.BODY
+                        }
                     addInterceptor(logging)
                 }
             }
@@ -123,7 +123,7 @@ object AppModule {
     fun provideRetrofit(
         json: Json,
         client: OkHttpClient,
-        endpointManager: ApiEndpointManager
+        endpointManager: ApiEndpointManager,
     ): Retrofit =
         Retrofit.Builder()
             .baseUrl(endpointManager.getActiveBaseUrl())
@@ -133,8 +133,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun providePrestaFlowApi(retrofit: Retrofit): PrestaFlowApi =
-        retrofit.create(PrestaFlowApi::class.java)
+    fun providePrestaFlowApi(retrofit: Retrofit): PrestaFlowApi = retrofit.create(PrestaFlowApi::class.java)
 
     @Provides
     @Singleton
@@ -144,17 +143,18 @@ object AppModule {
     @Provides
     @Singleton
     fun provideEncryptedSharedPreferences(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): SharedPreferences {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
+        val masterKey =
+            MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
         return EncryptedSharedPreferences.create(
             context,
             "prestaflow_secure_prefs",
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
     }
 
@@ -205,12 +205,13 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDatabase(
-        @ApplicationContext context: Context
-    ): PrestaFlowDatabase = Room.databaseBuilder(
-        context,
-        PrestaFlowDatabase::class.java,
-        "prestaflow.db"
-    ).fallbackToDestructiveMigration().build()
+        @ApplicationContext context: Context,
+    ): PrestaFlowDatabase =
+        Room.databaseBuilder(
+            context,
+            PrestaFlowDatabase::class.java,
+            "prestaflow.db",
+        ).fallbackToDestructiveMigration().build()
 
     @Provides
     fun provideOrderDao(database: PrestaFlowDatabase): OrderDao = database.orderDao()
@@ -225,22 +226,23 @@ object AppModule {
     fun providePendingSyncDao(database: PrestaFlowDatabase): PendingSyncDao = database.pendingSyncDao()
 
     @Provides
-    fun provideStockAvailabilityDao(database: PrestaFlowDatabase): StockAvailabilityDao =
-        database.stockAvailabilityDao()
+    fun provideStockAvailabilityDao(database: PrestaFlowDatabase): StockAvailabilityDao = database.stockAvailabilityDao()
 
     @Provides
     fun provideClientDao(database: PrestaFlowDatabase): ClientDao = database.clientDao()
 
     @Provides
     @Singleton
-    fun provideWorkManager(@ApplicationContext context: Context): WorkManager =
-        WorkManager.getInstance(context)
+    fun provideWorkManager(
+        @ApplicationContext context: Context,
+    ): WorkManager = WorkManager.getInstance(context)
 
     @Provides
     @Singleton
     fun provideUserPreferencesDataStore(
-        @ApplicationContext context: Context
-    ): DataStore<Preferences> = PreferenceDataStoreFactory.create(
-        produceFile = { context.preferencesDataStoreFile("prestaflow_user.preferences_pb") }
-    )
+        @ApplicationContext context: Context,
+    ): DataStore<Preferences> =
+        PreferenceDataStoreFactory.create(
+            produceFile = { context.preferencesDataStoreFile("prestaflow_user.preferences_pb") },
+        )
 }

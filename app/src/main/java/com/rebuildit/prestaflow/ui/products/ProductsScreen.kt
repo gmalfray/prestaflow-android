@@ -41,14 +41,14 @@ import java.time.format.FormatStyle
 fun ProductsRoute(
     onProductClick: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: ProductsViewModel = hiltViewModel()
+    viewModel: ProductsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ProductsScreen(
         modifier = modifier,
         state = state,
         onRefresh = viewModel::onRefresh,
-        onProductClick = onProductClick
+        onProductClick = onProductClick,
     )
 }
 
@@ -57,26 +57,28 @@ fun ProductsScreen(
     state: ProductsUiState,
     onRefresh: () -> Unit,
     onProductClick: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val errorMessage = state.error?.asString()
 
     when {
         state.isLoading && state.products.isEmpty() -> LoadingState(modifier)
-        state.products.isEmpty() -> EmptyState(
-            message = stringResource(R.string.products_list_empty),
-            modifier = modifier,
-            errorMessage = errorMessage,
-            onRefresh = onRefresh
-        )
-        else -> ProductList(
-            modifier = modifier,
-            products = state.products,
-            isRefreshing = state.isRefreshing,
-            errorMessage = errorMessage,
-            onRefresh = onRefresh,
-            onProductClick = onProductClick
-        )
+        state.products.isEmpty() ->
+            EmptyState(
+                message = stringResource(R.string.products_list_empty),
+                modifier = modifier,
+                errorMessage = errorMessage,
+                onRefresh = onRefresh,
+            )
+        else ->
+            ProductList(
+                modifier = modifier,
+                products = state.products,
+                isRefreshing = state.isRefreshing,
+                errorMessage = errorMessage,
+                onRefresh = onRefresh,
+                onProductClick = onProductClick,
+            )
     }
 }
 
@@ -88,7 +90,7 @@ private fun ProductList(
     isRefreshing: Boolean,
     errorMessage: String?,
     onRefresh: () -> Unit,
-    onProductClick: (Long) -> Unit
+    onProductClick: (Long) -> Unit,
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
@@ -105,14 +107,14 @@ private fun ProductList(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(products, key = { it.id }) { product ->
                 ProductCard(
                     product = product,
                     currencyFormatter = currencyFormatter,
                     dateFormatter = dateFormatter,
-                    onClick = { onProductClick(product.id) }
+                    onClick = { onProductClick(product.id) },
                 )
             }
         }
@@ -124,19 +126,21 @@ private fun ProductCard(
     product: Product,
     currencyFormatter: NumberFormat,
     dateFormatter: DateTimeFormatter,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    val priceText = remember(product.price) {
-        currencyFormatter.format(product.price)
-    }
-    val updatedAt = remember(product.updatedAt) {
-        formatTimestamp(product.updatedAt, dateFormatter)
-    }
+    val priceText =
+        remember(product.price) {
+            currencyFormatter.format(product.price)
+        }
+    val updatedAt =
+        remember(product.updatedAt) {
+            formatTimestamp(product.updatedAt, dateFormatter)
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        onClick = onClick
+        onClick = onClick,
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
@@ -144,14 +148,14 @@ private fun ProductCard(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
 
             if (product.reference.isNotBlank()) {
                 Text(
                     text = product.reference,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -159,28 +163,29 @@ private fun ProductCard(
                 Text(
                     text = priceText,
                     style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    text = stringResource(
-                        id = if (product.active) R.string.products_status_active else R.string.products_status_inactive
-                    ),
+                    text =
+                        stringResource(
+                            id = if (product.active) R.string.products_status_active else R.string.products_status_inactive,
+                        ),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (product.active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (product.active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             Text(
                 text = stringResource(id = R.string.products_stock_label, product.stock.quantity),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             if (updatedAt != null) {
                 Text(
                     text = updatedAt,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

@@ -17,47 +17,48 @@ import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
-class ClientDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
-    private val clientsRepository: ClientsRepository,
-    private val networkErrorMapper: NetworkErrorMapper
-) : ViewModel() {
+class ClientDetailViewModel
+    @Inject
+    constructor(
+        savedStateHandle: SavedStateHandle,
+        private val clientsRepository: ClientsRepository,
+        private val networkErrorMapper: NetworkErrorMapper,
+    ) : ViewModel() {
+        private val clientId: Long = checkNotNull(savedStateHandle["clientId"])
 
-    private val clientId: Long = checkNotNull(savedStateHandle["clientId"])
+        private val _uiState = MutableStateFlow(ClientDetailUiState())
+        val uiState: StateFlow<ClientDetailUiState> = _uiState.asStateFlow()
 
-    private val _uiState = MutableStateFlow(ClientDetailUiState())
-    val uiState: StateFlow<ClientDetailUiState> = _uiState.asStateFlow()
+        init {
+            observeClient()
+            refreshClient()
+        }
 
-    init {
-        observeClient()
-        refreshClient()
-    }
-
-    private fun observeClient() {
-        viewModelScope.launch {
-            clientsRepository.observeClient(clientId).collect { client ->
-                _uiState.update { it.copy(client = client, isLoading = false) }
+        private fun observeClient() {
+            viewModelScope.launch {
+                clientsRepository.observeClient(clientId).collect { client ->
+                    _uiState.update { it.copy(client = client, isLoading = false) }
+                }
             }
         }
-    }
 
-    private fun refreshClient() {
-        viewModelScope.launch {
-            runCatching { clientsRepository.refreshClient(clientId, forceRemote = true) }
-                .onFailure { error ->
-                    Timber.w(error, "Failed to refresh client $clientId")
-                    _uiState.update { it.copy(error = networkErrorMapper.map(error)) }
-                }
+        private fun refreshClient() {
+            viewModelScope.launch {
+                runCatching { clientsRepository.refreshClient(clientId, forceRemote = true) }
+                    .onFailure { error ->
+                        Timber.w(error, "Failed to refresh client $clientId")
+                        _uiState.update { it.copy(error = networkErrorMapper.map(error)) }
+                    }
+            }
+        }
+
+        fun clearError() {
+            _uiState.update { it.copy(error = null) }
         }
     }
-
-    fun clearError() {
-        _uiState.update { it.copy(error = null) }
-    }
-}
 
 data class ClientDetailUiState(
     val client: Client? = null,
     val isLoading: Boolean = true,
-    val error: UiText? = null
+    val error: UiText? = null,
 )

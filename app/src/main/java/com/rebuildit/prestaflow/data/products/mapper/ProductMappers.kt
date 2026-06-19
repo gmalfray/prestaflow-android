@@ -16,7 +16,7 @@ private val json = Json { ignoreUnknownKeys = true }
 fun ProductEntity.toDomain(): Product {
     val stock = json.decodeFromString<ProductStock>(stockJson)
     val images = json.decodeFromString<List<ProductImage>>(imagesJson)
-    
+
     return Product(
         id = id,
         name = name,
@@ -25,21 +25,22 @@ fun ProductEntity.toDomain(): Product {
         active = active,
         stock = stock,
         images = images,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
     )
 }
 
-fun StockAvailabilityEntity.toDomain(): StockAvailability = StockAvailability(
-    productId = productId,
-    warehouseId = warehouseId.takeUnless { it == StockAvailabilityEntity.NO_WAREHOUSE_ID },
-    quantity = quantity,
-    updatedAtIso = updatedAtIso
-)
+fun StockAvailabilityEntity.toDomain(): StockAvailability =
+    StockAvailability(
+        productId = productId,
+        warehouseId = warehouseId.takeUnless { it == StockAvailabilityEntity.NO_WAREHOUSE_ID },
+        quantity = quantity,
+        updatedAtIso = updatedAtIso,
+    )
 
 fun ProductDto.toEntity(): ProductEntity {
     val stockJson = json.encodeToString(stock)
     val imagesJson = json.encodeToString(images)
-    
+
     return ProductEntity(
         id = id,
         name = name,
@@ -48,13 +49,14 @@ fun ProductDto.toEntity(): ProductEntity {
         active = active,
         stockJson = stockJson,
         imagesJson = imagesJson,
-        updatedAt = updatedAt ?: java.time.Instant.now().toString()
+        updatedAt = updatedAt ?: java.time.Instant.now().toString(),
     )
 }
 
-fun StockDto.toEntity(productId: Long): StockAvailabilityEntity = StockAvailabilityEntity(
-    productId = productId,
-    warehouseId = warehouseId ?: StockAvailabilityEntity.NO_WAREHOUSE_ID,
-    quantity = quantity,
-    updatedAtIso = updatedAt
-)
+fun StockDto.toEntity(productId: Long): StockAvailabilityEntity =
+    StockAvailabilityEntity(
+        productId = productId,
+        warehouseId = warehouseId ?: StockAvailabilityEntity.NO_WAREHOUSE_ID,
+        quantity = quantity,
+        updatedAtIso = updatedAt,
+    )

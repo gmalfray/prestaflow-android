@@ -11,18 +11,18 @@ data class Product(
     val active: Boolean,
     val stock: ProductStock,
     val images: List<ProductImage>,
-    val updatedAt: String
+    val updatedAt: String,
 )
 
 @Serializable
 data class ProductStock(
     val quantity: Int,
     val warehouseId: Long? = null,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
 )
 
 @Serializable
 data class ProductImage(
     val id: Long,
-    val url: String
+    val url: String,
 )

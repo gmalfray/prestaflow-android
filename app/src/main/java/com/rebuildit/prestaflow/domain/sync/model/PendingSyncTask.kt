@@ -10,5 +10,5 @@ data class PendingSyncTask(
     val attemptCount: Int,
     val lastAttemptIso: String?,
     val createdAtIso: String,
-    val conflictStrategy: ConflictStrategy = ConflictStrategy.LAST_WRITE_WINS
+    val conflictStrategy: ConflictStrategy = ConflictStrategy.LAST_WRITE_WINS,
 )

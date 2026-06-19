@@ -22,16 +22,21 @@ import com.rebuildit.prestaflow.data.local.entity.StockAvailabilityEntity
         DashboardMetricEntity::class,
         PendingSyncEntity::class,
         StockAvailabilityEntity::class,
-        ClientEntity::class
+        ClientEntity::class,
     ],
     version = 5,
-    exportSchema = true
+    exportSchema = true,
 )
 abstract class PrestaFlowDatabase : RoomDatabase() {
     abstract fun orderDao(): OrderDao
+
     abstract fun productDao(): ProductDao
+
     abstract fun dashboardDao(): DashboardDao
+
     abstract fun pendingSyncDao(): PendingSyncDao
+
     abstract fun stockAvailabilityDao(): StockAvailabilityDao
+
     abstract fun clientDao(): ClientDao
 }

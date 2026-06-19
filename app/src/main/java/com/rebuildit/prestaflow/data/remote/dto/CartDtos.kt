@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class CartListResponseDto(
-    @SerialName("data") val data: List<CartListItemDto> = emptyList()
+    @SerialName("data") val data: List<CartListItemDto> = emptyList(),
 )
 
 /**
@@ -18,7 +18,7 @@ data class CartListResponseDto(
  */
 @Serializable
 data class CartDetailResponseDto(
-    @SerialName("data") val data: CartDetailDto? = null
+    @SerialName("data") val data: CartDetailDto? = null,
 )
 
 /**
@@ -33,7 +33,7 @@ data class CartListItemDto(
     @SerialName("totals") val totals: CartTotalsDto? = null,
     @SerialName("items_count") val itemsCount: Int = 0,
     @SerialName("has_order") val hasOrder: Boolean = false,
-    @SerialName("dates") val dates: CartDatesDto? = null
+    @SerialName("dates") val dates: CartDatesDto? = null,
 )
 
 /**
@@ -48,7 +48,7 @@ data class CartDetailDto(
     @SerialName("items_count") val itemsCount: Int = 0,
     @SerialName("has_order") val hasOrder: Boolean = false,
     @SerialName("dates") val dates: CartDatesDto? = null,
-    @SerialName("products") val products: List<CartProductDto> = emptyList()
+    @SerialName("products") val products: List<CartProductDto> = emptyList(),
 )
 
 @Serializable
@@ -56,25 +56,25 @@ data class CartCustomerDto(
     @SerialName("id") val id: Int? = null,
     @SerialName("firstname") val firstname: String? = null,
     @SerialName("lastname") val lastname: String? = null,
-    @SerialName("email") val email: String? = null
+    @SerialName("email") val email: String? = null,
 )
 
 @Serializable
 data class CartCurrencyDto(
     @SerialName("id") val id: Int? = null,
-    @SerialName("iso") val iso: String? = null
+    @SerialName("iso") val iso: String? = null,
 )
 
 @Serializable
 data class CartTotalsDto(
     @SerialName("tax_excl") val taxExcl: Double? = null,
-    @SerialName("tax_incl") val taxIncl: Double? = null
+    @SerialName("tax_incl") val taxIncl: Double? = null,
 )
 
 @Serializable
 data class CartDatesDto(
     @SerialName("created_at") val createdAt: String? = null,
-    @SerialName("updated_at") val updatedAt: String? = null
+    @SerialName("updated_at") val updatedAt: String? = null,
 )
 
 @Serializable
@@ -86,5 +86,5 @@ data class CartProductDto(
     @SerialName("quantity") val quantity: Int = 0,
     @SerialName("total_tax_incl") val totalTaxIncl: Double = 0.0,
     @SerialName("total_tax_excl") val totalTaxExcl: Double = 0.0,
-    @SerialName("image") val image: String? = null
+    @SerialName("image") val image: String? = null,
 )

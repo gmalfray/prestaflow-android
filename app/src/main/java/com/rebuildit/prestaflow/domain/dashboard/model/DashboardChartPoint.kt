@@ -4,5 +4,5 @@ data class DashboardChartPoint(
     val label: String,
     val orders: Int,
     val customers: Int,
-    val turnover: Double
+    val turnover: Double,
 )

@@ -30,24 +30,28 @@ import com.rebuildit.prestaflow.R
  * Barre d'erreur en haut d'une liste, avec message et bouton retry.
  */
 @Composable
-fun ErrorRow(message: String, onRefresh: () -> Unit) {
+fun ErrorRow(
+    message: String,
+    onRefresh: () -> Unit,
+) {
     val retryDesc = stringResource(R.string.content_description_retry)
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
         IconButton(
             onClick = onRefresh,
-            modifier = Modifier.semantics { contentDescription = retryDesc }
+            modifier = Modifier.semantics { contentDescription = retryDesc },
         ) {
             Icon(imageVector = Icons.Outlined.Refresh, contentDescription = null)
         }
@@ -74,21 +78,22 @@ fun EmptyState(
     message: String,
     modifier: Modifier = Modifier,
     errorMessage: String? = null,
-    onRefresh: (() -> Unit)? = null
+    onRefresh: (() -> Unit)? = null,
 ) {
     val retryDesc = stringResource(R.string.content_description_retry)
     Surface(modifier = modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             if (errorMessage != null) {
@@ -96,13 +101,13 @@ fun EmptyState(
                 Text(
                     text = errorMessage,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
                 if (onRefresh != null) {
                     Spacer(modifier = Modifier.height(12.dp))
                     IconButton(
                         onClick = onRefresh,
-                        modifier = Modifier.semantics { contentDescription = retryDesc }
+                        modifier = Modifier.semantics { contentDescription = retryDesc },
                     ) {
                         Icon(imageVector = Icons.Outlined.Refresh, contentDescription = null)
                     }
@@ -119,20 +124,22 @@ fun EmptyState(
 fun NotFoundState(
     message: String,
     modifier: Modifier = Modifier,
-    @Suppress("UnusedParameter") onBackClick: () -> Unit // Conservé pour compatibilité future
+    // Conservé pour compatibilité future de l'API
+    @Suppress("UnusedParameter") onBackClick: () -> Unit,
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

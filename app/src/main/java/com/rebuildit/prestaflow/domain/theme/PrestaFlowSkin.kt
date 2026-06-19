@@ -6,5 +6,5 @@ enum class PrestaFlowSkin {
     EMBER,
     FOREST,
     SLATE,
-    SOFT
+    SOFT,
 }

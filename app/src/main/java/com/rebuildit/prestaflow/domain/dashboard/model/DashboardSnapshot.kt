@@ -7,5 +7,5 @@ data class DashboardSnapshot(
     val customersCount: Int,
     val productsCount: Int,
     val chart: List<DashboardChartPoint>,
-    val lastUpdatedIso: String
+    val lastUpdatedIso: String,
 )

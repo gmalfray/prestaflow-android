@@ -5,18 +5,17 @@ import com.google.firebase.messaging.RemoteMessage
 import com.rebuildit.prestaflow.core.notifications.FcmRegistrationManager
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import dagger.hilt.android.AndroidEntryPoint
-import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import timber.log.Timber
+import java.io.IOException
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
-
     @Inject
     lateinit var ordersRepository: OrdersRepository
 

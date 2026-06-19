@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CustomerListResponseDto(
     @SerialName("customers") val customers: List<CustomerDto>,
-    @SerialName("pagination") val pagination: PaginationDto? = null
+    @SerialName("pagination") val pagination: PaginationDto? = null,
 )
 
 @Serializable
@@ -17,12 +17,12 @@ data class CustomerDto(
     @SerialName("email") val email: String,
     @SerialName("orders_count") val ordersCount: Int,
     @SerialName("total_spent") val totalSpent: Double,
-    @SerialName("last_order_at") val lastOrderAt: String? = null
+    @SerialName("last_order_at") val lastOrderAt: String? = null,
 )
 
 @Serializable
 data class CustomerDetailResponseDto(
-    @SerialName("customer") val customer: CustomerDetailDto
+    @SerialName("customer") val customer: CustomerDetailDto,
 )
 
 @Serializable
@@ -34,7 +34,7 @@ data class CustomerDetailDto(
     @SerialName("orders_count") val ordersCount: Int,
     @SerialName("total_spent") val totalSpent: Double,
     @SerialName("last_order_at") val lastOrderAt: String? = null,
-    @SerialName("orders") val orders: List<CustomerOrderDto> = emptyList()
+    @SerialName("orders") val orders: List<CustomerOrderDto> = emptyList(),
 )
 
 /**
@@ -49,5 +49,5 @@ data class CustomerOrderDto(
     @SerialName("status") val status: String = "",
     @SerialName("total_paid") val totalPaid: Double = 0.0,
     @SerialName("currency") val currency: String = "",
-    @SerialName("date_upd") val dateUpdated: String? = null
+    @SerialName("date_upd") val dateUpdated: String? = null,
 )

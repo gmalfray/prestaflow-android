@@ -12,10 +12,11 @@ import kotlinx.serialization.json.Json
 private val json = Json { ignoreUnknownKeys = true }
 
 fun ClientEntity.toDomain(): Client {
-    val orders = runCatching {
-        json.decodeFromString<List<ClientOrder>>(ordersJson)
-    }.getOrDefault(emptyList())
-    
+    val orders =
+        runCatching {
+            json.decodeFromString<List<ClientOrder>>(ordersJson)
+        }.getOrDefault(emptyList())
+
     return Client(
         id = id,
         firstName = firstName,
@@ -24,25 +25,26 @@ fun ClientEntity.toDomain(): Client {
         ordersCount = ordersCount,
         totalSpent = totalSpent,
         lastOrderAtIso = lastOrderIso,
-        orders = orders
+        orders = orders,
     )
 }
 
-fun CustomerDto.toEntity(lastSyncedIso: String): ClientEntity = ClientEntity(
-    id = id,
-    firstName = firstName,
-    lastName = lastName,
-    email = email,
-    ordersCount = ordersCount,
-    totalSpent = totalSpent,
-    lastOrderIso = lastOrderAt,
-    ordersJson = "[]",
-    lastSyncedIso = lastSyncedIso
-)
+fun CustomerDto.toEntity(lastSyncedIso: String): ClientEntity =
+    ClientEntity(
+        id = id,
+        firstName = firstName,
+        lastName = lastName,
+        email = email,
+        ordersCount = ordersCount,
+        totalSpent = totalSpent,
+        lastOrderIso = lastOrderAt,
+        ordersJson = "[]",
+        lastSyncedIso = lastSyncedIso,
+    )
 
 fun CustomerDetailDto.toEntity(lastSyncedIso: String): ClientEntity {
     val ordersJson = json.encodeToString(orders.map { it.toDomain() })
-    
+
     return ClientEntity(
         id = id,
         firstName = firstName,
@@ -52,15 +54,16 @@ fun CustomerDetailDto.toEntity(lastSyncedIso: String): ClientEntity {
         totalSpent = totalSpent,
         lastOrderIso = lastOrderAt,
         ordersJson = ordersJson,
-        lastSyncedIso = lastSyncedIso
+        lastSyncedIso = lastSyncedIso,
     )
 }
 
-fun CustomerOrderDto.toDomain(): ClientOrder = ClientOrder(
-    id = id,
-    reference = reference,
-    status = status,
-    totalPaid = totalPaid,
-    currency = currency,
-    dateAdded = dateUpdated
-)
+fun CustomerOrderDto.toDomain(): ClientOrder =
+    ClientOrder(
+        id = id,
+        reference = reference,
+        status = status,
+        totalPaid = totalPaid,
+        currency = currency,
+        dateAdded = dateUpdated,
+    )

@@ -1,13 +1,12 @@
 package com.rebuildit.prestaflow.localization
 
-import java.io.File
-import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.w3c.dom.Element
+import java.io.File
+import javax.xml.parsers.DocumentBuilderFactory
 
 class LocalizationParityTest {
-
     @Test
     fun `english and french strings have matching keys`() {
         val english = loadStrings(resolveResource("src/main/res/values/strings.xml"))
@@ -15,14 +14,15 @@ class LocalizationParityTest {
         assertEquals(
             "French translation file should contain the same string keys as the default locale",
             english.keys,
-            french.keys
+            french.keys,
         )
     }
 
     private fun loadStrings(file: File): Map<String, String> {
-        val builder = DocumentBuilderFactory.newInstance().apply {
-            isNamespaceAware = true
-        }.newDocumentBuilder()
+        val builder =
+            DocumentBuilderFactory.newInstance().apply {
+                isNamespaceAware = true
+            }.newDocumentBuilder()
         val doc = builder.parse(file)
         val resources = doc.documentElement
         val map = mutableMapOf<String, String>()
@@ -38,12 +38,13 @@ class LocalizationParityTest {
     }
 
     private fun resolveResource(relativePath: String): File {
-        val candidates = listOf(
-            File(relativePath),
-            File("app/$relativePath"),
-            File("../$relativePath"),
-            File("../app/$relativePath")
-        ).map { it.absoluteFile.normalize() }
+        val candidates =
+            listOf(
+                File(relativePath),
+                File("app/$relativePath"),
+                File("../$relativePath"),
+                File("../app/$relativePath"),
+            ).map { it.absoluteFile.normalize() }
 
         return candidates.firstOrNull { it.exists() }
             ?: throw IllegalStateException("Unable to locate resource file for path '$relativePath' from ${File(".").absolutePath}")

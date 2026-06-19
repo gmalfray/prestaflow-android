@@ -7,19 +7,21 @@ import com.rebuildit.prestaflow.domain.carts.model.CartDetail
 import com.rebuildit.prestaflow.domain.carts.model.CartSummary
 import javax.inject.Inject
 
-class CartsRepositoryImpl @Inject constructor(
-    private val api: PrestaFlowApi
-) : CartsRepository {
+class CartsRepositoryImpl
+    @Inject
+    constructor(
+        private val api: PrestaFlowApi,
+    ) : CartsRepository {
+        override suspend fun getCarts(abandonedSinceDays: Int): List<CartSummary> {
+            val response =
+                api.getBaskets(
+                    abandonedSinceDays = if (abandonedSinceDays > 0) abandonedSinceDays else null,
+                )
+            return response.data.map { it.toDomain() }
+        }
 
-    override suspend fun getCarts(abandonedSinceDays: Int): List<CartSummary> {
-        val response = api.getBaskets(
-            abandonedSinceDays = if (abandonedSinceDays > 0) abandonedSinceDays else null
-        )
-        return response.data.map { it.toDomain() }
+        override suspend fun getCartById(cartId: Int): CartDetail? {
+            val response = api.getBasketById(cartId)
+            return response.data?.toDomain()
+        }
     }
-
-    override suspend fun getCartById(cartId: Int): CartDetail? {
-        val response = api.getBasketById(cartId)
-        return response.data?.toDomain()
-    }
-}

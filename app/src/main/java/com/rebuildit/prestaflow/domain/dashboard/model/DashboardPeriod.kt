@@ -5,5 +5,5 @@ enum class DashboardPeriod(val queryValue: String) {
     WEEK("week"),
     MONTH("month"),
     QUARTER("quarter"),
-    YEAR("year")
+    YEAR("year"),
 }

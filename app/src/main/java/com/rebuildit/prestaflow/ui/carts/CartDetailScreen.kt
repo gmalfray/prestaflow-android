@@ -50,13 +50,13 @@ import java.time.format.FormatStyle
 fun CartDetailRoute(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CartDetailViewModel = hiltViewModel()
+    viewModel: CartDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     CartDetailScreen(
         modifier = modifier,
         state = state,
-        onBackClick = onBackClick
+        onBackClick = onBackClick,
     )
 }
 
@@ -66,7 +66,7 @@ fun CartDetailRoute(
 fun CartDetailScreen(
     state: CartDetailUiState,
     onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val backDesc = stringResource(R.string.content_description_back)
     val retryDesc = stringResource(R.string.content_description_retry)
@@ -78,53 +78,56 @@ fun CartDetailScreen(
                 title = {
                     Text(
                         state.cart?.let { stringResource(R.string.carts_detail_title) }
-                            ?: stringResource(R.string.carts_detail_title)
+                            ?: stringResource(R.string.carts_detail_title),
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = backDesc
+                            contentDescription = backDesc,
                         )
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         when {
             state.isLoading -> LoadingState(Modifier.padding(padding))
             state.error != null && state.cart == null -> {
                 Column(
-                    modifier = Modifier
-                        .padding(padding)
-                        .fillMaxSize(),
+                    modifier =
+                        Modifier
+                            .padding(padding)
+                            .fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
                         text = state.error.asString(),
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     IconButton(
                         onClick = onBackClick,
-                        modifier = Modifier.semantics { contentDescription = retryDesc }
+                        modifier = Modifier.semantics { contentDescription = retryDesc },
                     ) {
                         Icon(Icons.Outlined.Refresh, contentDescription = null)
                     }
                 }
             }
-            state.cart != null -> CartDetailContent(
-                cart = state.cart,
-                modifier = Modifier.padding(padding)
-            )
-            else -> NotFoundState(
-                message = stringResource(R.string.carts_detail_not_found),
-                modifier = Modifier.padding(padding),
-                onBackClick = onBackClick
-            )
+            state.cart != null ->
+                CartDetailContent(
+                    cart = state.cart,
+                    modifier = Modifier.padding(padding),
+                )
+            else ->
+                NotFoundState(
+                    message = stringResource(R.string.carts_detail_not_found),
+                    modifier = Modifier.padding(padding),
+                    onBackClick = onBackClick,
+                )
         }
     }
 }
@@ -133,76 +136,81 @@ fun CartDetailScreen(
 @Composable
 private fun CartDetailContent(
     cart: CartDetail,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
-    val totalText = remember(cart.totalTaxIncl, cart.currencyIso) {
-        formatCurrency(cart.totalTaxIncl, cart.currencyIso)
-    }
-    val updatedAt = remember(cart.updatedAtIso) {
-        formatTimestamp(cart.updatedAtIso, dateFormatter)
-    }
+    val totalText =
+        remember(cart.totalTaxIncl, cart.currencyIso) {
+            formatCurrency(cart.totalTaxIncl, cart.currencyIso)
+        }
+    val updatedAt =
+        remember(cart.updatedAtIso) {
+            formatTimestamp(cart.updatedAtIso, dateFormatter)
+        }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // En-tête panier
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = cart.customerName.ifBlank { stringResource(R.string.carts_customer_guest) },
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 if (cart.customerEmail != null) {
                     Text(
                         text = cart.customerEmail,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
                         text = stringResource(R.string.carts_total_incl, totalText),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Text(
                         text = stringResource(R.string.carts_items_count, cart.itemsCount),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
                 if (updatedAt != null) {
                     Text(
                         text = updatedAt,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
                 Text(
-                    text = if (cart.hasOrder) {
-                        stringResource(R.string.carts_has_order)
-                    } else {
-                        stringResource(R.string.carts_abandoned)
-                    },
+                    text =
+                        if (cart.hasOrder) {
+                            stringResource(R.string.carts_has_order)
+                        } else {
+                            stringResource(R.string.carts_abandoned)
+                        },
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (cart.hasOrder) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    }
+                    color =
+                        if (cart.hasOrder) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
                 )
             }
         }
@@ -213,7 +221,7 @@ private fun CartDetailContent(
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
                     Text(
                         text = stringResource(R.string.carts_products_section),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     cart.products.forEachIndexed { index, product ->
@@ -231,38 +239,39 @@ private fun CartDetailContent(
 @Composable
 private fun CartProductRow(
     product: CartProduct,
-    currencyIso: String
+    currencyIso: String,
 ) {
-    val totalText = remember(product.totalTaxIncl, currencyIso) {
-        formatCurrency(product.totalTaxIncl, currencyIso)
-    }
+    val totalText =
+        remember(product.totalTaxIncl, currencyIso) {
+            formatCurrency(product.totalTaxIncl, currencyIso)
+        }
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = product.name,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
             if (!product.reference.isNullOrBlank()) {
                 Text(
                     text = product.reference,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
                 text = stringResource(R.string.order_detail_qty_label, product.quantity),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Text(
             text = totalText,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
     }
 }

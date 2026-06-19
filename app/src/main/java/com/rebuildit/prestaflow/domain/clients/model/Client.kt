@@ -11,12 +11,13 @@ data class Client(
     val ordersCount: Int,
     val totalSpent: Double,
     val lastOrderAtIso: String?,
-    val orders: List<ClientOrder> = emptyList()
+    val orders: List<ClientOrder> = emptyList(),
 ) {
     val fullName: String
-        get() = listOf(firstName, lastName)
-            .filter { it.isNotBlank() }
-            .joinToString(" ")
+        get() =
+            listOf(firstName, lastName)
+                .filter { it.isNotBlank() }
+                .joinToString(" ")
 }
 
 @Serializable
@@ -26,5 +27,5 @@ data class ClientOrder(
     val status: String,
     val totalPaid: Double,
     val currency: String,
-    val dateAdded: String? = null
+    val dateAdded: String? = null,
 )

@@ -60,13 +60,14 @@ import com.rebuildit.prestaflow.ui.theme.ThemeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 /** Destinations affichées dans la barre de navigation inférieure / rail. */
-private val navBarDestinations = listOf(
-    AppDestination.Dashboard,
-    AppDestination.Orders,
-    AppDestination.Products,
-    AppDestination.Clients,
-    AppDestination.Carts
-)
+private val navBarDestinations =
+    listOf(
+        AppDestination.Dashboard,
+        AppDestination.Orders,
+        AppDestination.Products,
+        AppDestination.Clients,
+        AppDestination.Carts,
+    )
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -78,9 +79,10 @@ class MainActivity : ComponentActivity() {
 
             // Request notification permission on Android 13+
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                val permissionState = rememberPermissionState(
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                )
+                val permissionState =
+                    rememberPermissionState(
+                        android.Manifest.permission.POST_NOTIFICATIONS,
+                    )
                 LaunchedEffect(Unit) {
                     if (!permissionState.status.isGranted) {
                         permissionState.launchPermissionRequest()
@@ -104,10 +106,11 @@ private fun PrestaFlowApp(windowSizeClass: WindowSizeClass) {
 
         when (authState) {
             AuthState.Loading -> LoadingScreen()
-            is AuthState.Authenticated -> AuthenticatedShell(
-                windowSizeClass = windowSizeClass,
-                onLogout = rootViewModel::logout
-            )
+            is AuthState.Authenticated ->
+                AuthenticatedShell(
+                    windowSizeClass = windowSizeClass,
+                    onLogout = rootViewModel::logout,
+                )
             AuthState.Unauthenticated -> AuthRoute()
         }
     }
@@ -127,7 +130,7 @@ private fun LoadingScreen() {
 @Composable
 private fun AuthenticatedShell(
     windowSizeClass: WindowSizeClass,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -154,26 +157,27 @@ private fun AuthenticatedShell(
                             navController.navigate(AppDestination.Settings.route) {
                                 launchSingleTop = true
                             }
-                        }
+                        },
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Settings,
-                            contentDescription = settingsLabel
+                            contentDescription = settingsLabel,
                         )
                     }
-                }
+                },
             )
         },
         bottomBar = {
             if (!useNavigationRail) {
                 val navigationBarContainerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
-                val navigationBarItemColors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                val navigationBarItemColors =
+                    NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 NavigationBar(containerColor = navigationBarContainerColor) {
                     navBarDestinations.forEach { destination ->
                         val selected = currentRoute == destination.route
@@ -197,21 +201,22 @@ private fun AuthenticatedShell(
                             icon = {
                                 Icon(
                                     imageVector = destination.icon,
-                                    contentDescription = label
+                                    contentDescription = label,
                                 )
                             },
-                            colors = navigationBarItemColors
+                            colors = navigationBarItemColors,
                         )
                     }
                 }
             }
-        }
+        },
     ) { innerPadding ->
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            color = MaterialTheme.colorScheme.background
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            color = MaterialTheme.colorScheme.background,
         ) {
             if (useNavigationRail) {
                 Row(modifier = Modifier.fillMaxSize()) {
@@ -237,10 +242,10 @@ private fun AuthenticatedShell(
                                 icon = {
                                     Icon(
                                         imageVector = destination.icon,
-                                        contentDescription = label
+                                        contentDescription = label,
                                     )
                                 },
-                                label = { Text(text = label) }
+                                label = { Text(text = label) },
                             )
                         }
                     }
@@ -248,7 +253,7 @@ private fun AuthenticatedShell(
                         PrestaFlowNavGraph(
                             navController = navController,
                             onLogout = onLogout,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                 }
@@ -256,7 +261,7 @@ private fun AuthenticatedShell(
                 PrestaFlowNavGraph(
                     navController = navController,
                     onLogout = onLogout,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }

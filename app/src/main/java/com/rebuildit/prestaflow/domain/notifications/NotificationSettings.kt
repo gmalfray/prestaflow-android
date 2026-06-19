@@ -7,7 +7,7 @@ data class NotificationSettings(
     val topics: List<String> = emptyList(),
     val deviceToken: String? = null,
     val lastSyncedToken: String? = null,
-    val doNotDisturb: DoNotDisturb = DoNotDisturb()
+    val doNotDisturb: DoNotDisturb = DoNotDisturb(),
 ) {
     val isTokenSynced: Boolean
         get() = deviceToken != null && deviceToken == lastSyncedToken
@@ -16,5 +16,5 @@ data class NotificationSettings(
 data class DoNotDisturb(
     val enabled: Boolean = false,
     val start: LocalTime? = null,
-    val end: LocalTime? = null
+    val end: LocalTime? = null,
 )

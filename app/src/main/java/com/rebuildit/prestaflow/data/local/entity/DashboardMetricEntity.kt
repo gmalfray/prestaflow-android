@@ -12,5 +12,5 @@ data class DashboardMetricEntity(
     val customersCount: Int,
     val productsCount: Int,
     val lastUpdatedIso: String,
-    @ColumnInfo(name = "chart_json") val chartJson: String
+    @ColumnInfo(name = "chart_json") val chartJson: String,
 )

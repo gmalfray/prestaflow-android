@@ -46,7 +46,7 @@ android {
             // Configuration from environment variables (CI) or local.properties
             val keystorePath = System.getenv("KEYSTORE_FILE") ?: project.findProperty("KEYSTORE_FILE") as? String ?: "../release.keystore"
             val keystoreFile = file(keystorePath)
-            
+
             // Only configure if keystore exists
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
@@ -69,7 +69,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
             // Use signing config only if keystore is available
             val releaseSigningConfig = signingConfigs.findByName("release")
@@ -136,12 +136,13 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-        freeCompilerArgs = freeCompilerArgs + listOf(
-            "-Xcontext-receivers",
-            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-            "-opt-in=kotlinx.coroutines.FlowPreview",
-            "-opt-in=kotlin.ExperimentalStdlibApi"
-        )
+        freeCompilerArgs = freeCompilerArgs +
+            listOf(
+                "-Xcontext-receivers",
+                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+                "-opt-in=kotlinx.coroutines.FlowPreview",
+                "-opt-in=kotlin.ExperimentalStdlibApi",
+            )
     }
 }
 
@@ -181,77 +182,79 @@ android.applicationVariants.all {
     val variantName = name
     val variantCapitalized = variantName.replaceFirstChar { it.uppercase() }
     val testTaskName = "test${variantCapitalized}UnitTest"
-    
+
     tasks.register<JacocoReport>("jacoco${variantCapitalized}TestReport") {
         description = "Generate Jacoco coverage report for $variantName variant"
         group = "verification"
-        
+
         dependsOn(testTaskName)
-        
+
         reports {
             xml.required.set(true)
             html.required.set(true)
             csv.required.set(false)
         }
-        
-        val javaTree = fileTree("${layout.buildDirectory.get()}/intermediates/javac/$variantName/classes") {
-            exclude(
-                "**/R.class",
-                "**/R\$*.class",
-                "**/BuildConfig.*",
-                "**/Manifest*.*",
-                "**/*Test*.*",
-                "android/**/*.*"
-            )
-        }
-        
-        val kotlinTree = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/$variantName") {
-            exclude(
-                "**/R.class",
-                "**/R\$*.class",
-                "**/BuildConfig.*",
-                "**/Manifest*.*",
-                "**/*Test*.*",
-                "android/**/*.*",
-                "**/*\$Lambda$*.*",
-                "**/*\$inlined$*.*",
-                // Exclusions Dagger/Hilt
-                "**/di/**",
-                "**/*_Factory.*",
-                "**/*_MembersInjector.*",
-                "**/*Module.*",
-                "**/*Module\$*.*",
-                "**/*Dagger*.*",
-                "**/*Hilt*.*",
-                "**/*_HiltModules*.*",
-                "**/*_ComponentTreeDeps*.*",
-                "**/*_Provide*Factory*.*",
-                // Exclusions générées
-                "**/databinding/**",
-                "**/android/databinding/**",
-                "**/androidx/databinding/**",
-                "**/BR.*",
-                "**/DataBindingInfo.*"
-            )
-        }
-        
+
+        val javaTree =
+            fileTree("${layout.buildDirectory.get()}/intermediates/javac/$variantName/classes") {
+                exclude(
+                    "**/R.class",
+                    "**/R\$*.class",
+                    "**/BuildConfig.*",
+                    "**/Manifest*.*",
+                    "**/*Test*.*",
+                    "android/**/*.*",
+                )
+            }
+
+        val kotlinTree =
+            fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/$variantName") {
+                exclude(
+                    "**/R.class",
+                    "**/R\$*.class",
+                    "**/BuildConfig.*",
+                    "**/Manifest*.*",
+                    "**/*Test*.*",
+                    "android/**/*.*",
+                    "**/*\$Lambda$*.*",
+                    "**/*\$inlined$*.*",
+                    // Exclusions Dagger/Hilt
+                    "**/di/**",
+                    "**/*_Factory.*",
+                    "**/*_MembersInjector.*",
+                    "**/*Module.*",
+                    "**/*Module\$*.*",
+                    "**/*Dagger*.*",
+                    "**/*Hilt*.*",
+                    "**/*_HiltModules*.*",
+                    "**/*_ComponentTreeDeps*.*",
+                    "**/*_Provide*Factory*.*",
+                    // Exclusions générées
+                    "**/databinding/**",
+                    "**/android/databinding/**",
+                    "**/androidx/databinding/**",
+                    "**/BR.*",
+                    "**/DataBindingInfo.*",
+                )
+            }
+
         classDirectories.setFrom(files(javaTree, kotlinTree))
-        
+
         executionData.setFrom(
             fileTree(layout.buildDirectory) {
                 include("jacoco/$testTaskName.exec")
-            }
+            },
         )
-        
+
         sourceDirectories.setFrom(
             files(
                 "$projectDir/src/main/java",
                 "$projectDir/src/main/kotlin",
                 "$projectDir/src/$variantName/java",
-                "$projectDir/src/$variantName/kotlin"
-            )
+                "$projectDir/src/$variantName/kotlin",
+            ),
         )
-        
+
         doLast {
             val reportPath = reports.html.outputLocation.get().asFile.absolutePath
             println("✅ Coverage report generated: file://$reportPath/index.html")
@@ -264,14 +267,14 @@ tasks.register("jacocoTestReport") {
     description = "Generate Jacoco coverage reports for all debug variants"
     group = "verification"
     notCompatibleWithConfigurationCache("Logs project-specific paths at execution time.")
-    
+
     dependsOn(
         "testPreprodDebugUnitTest",
         "jacocoPreprodDebugTestReport",
         "testProdDebugUnitTest",
-        "jacocoProdDebugTestReport"
+        "jacocoProdDebugTestReport",
     )
-    
+
     doLast {
         println("\n╔═══════════════════════════════════════════════════════════╗")
         println("║           📊 Coverage Reports Generated                  ║")
@@ -287,36 +290,37 @@ tasks.register("jacocoTestReport") {
 tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     description = "Verify minimum code coverage thresholds"
     group = "verification"
-    
+
     dependsOn("jacocoTestReport")
-    
+
     violationRules {
         rule {
             limit {
                 minimum = "0.30".toBigDecimal() // 30% de couverture minimale
             }
         }
-        
+
         rule {
             enabled = true
             element = "CLASS"
-            
+
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
                 minimum = "0.20".toBigDecimal()
             }
-            
-            excludes = listOf(
-                "*.di.*",
-                "*.BuildConfig",
-                "*.*Test",
-                "*.R",
-                "*.R\$*",
-                "*.*Module",
-                "*.*Dagger*",
-                "*.*Hilt*"
-            )
+
+            excludes =
+                listOf(
+                    "*.di.*",
+                    "*.BuildConfig",
+                    "*.*Test",
+                    "*.R",
+                    "*.R\$*",
+                    "*.*Module",
+                    "*.*Dagger*",
+                    "*.*Hilt*",
+                )
         }
     }
 }
@@ -335,7 +339,7 @@ tasks.withType<Test> {
     doFirst {
         println("\n🧪 Running tests for ${this.name}...")
     }
-    
+
     doLast {
         println("✅ Tests completed for ${this.name}")
         println("   Results: ${htmlReportDir.get().asFile.absolutePath}\n")

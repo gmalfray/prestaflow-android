@@ -12,5 +12,5 @@ data class PaginationDto(
     @SerialName("offset") val offset: Int? = null,
     @SerialName("count") val count: Int? = null,
     @SerialName("total") val total: Int? = null,
-    @SerialName("has_next") val hasNext: Boolean? = null
+    @SerialName("has_next") val hasNext: Boolean? = null,
 )

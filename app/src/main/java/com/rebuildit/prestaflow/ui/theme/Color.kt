@@ -295,4 +295,3 @@ val SoftDarkOnSurface = Color(0xFFDEE4E2)
 val SoftDarkSurfaceVariant = Color(0xFF3F4946)
 val SoftDarkOnSurfaceVariant = Color(0xFFBEC9C5)
 val SoftDarkOutline = Color(0xFF89938F)
-

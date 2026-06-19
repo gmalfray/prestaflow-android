@@ -9,10 +9,6 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import com.rebuildit.prestaflow.core.connectivity.ConnectivityMonitor
 import com.rebuildit.prestaflow.domain.sync.SyncQueueRepository
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,49 +17,56 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
-class SyncOrchestrator @Inject constructor(
-    private val queueRepository: SyncQueueRepository,
-    private val connectivityMonitor: ConnectivityMonitor,
-    private val workManager: WorkManager
-) {
+class SyncOrchestrator
+    @Inject
+    constructor(
+        private val queueRepository: SyncQueueRepository,
+        private val connectivityMonitor: ConnectivityMonitor,
+        private val workManager: WorkManager,
+    ) {
+        @Suppress("InjectDispatcher") // Scope singleton interne : Dispatchers.Default volontaire (coordination, pas I/O)
+        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        private val started = AtomicBoolean(false)
 
-    @Suppress("InjectDispatcher") // Scope singleton interne : Dispatchers.Default volontaire (coordination, pas I/O)
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val started = AtomicBoolean(false)
-
-    fun start() {
-        if (!started.compareAndSet(false, true)) return
-        scope.launch {
-            combine(
-                queueRepository.observeQueue(),
-                connectivityMonitor.isConnected
-            ) { queue, connected -> queue.isNotEmpty() && connected }
-                .distinctUntilChanged()
-                .collectLatest { shouldSync ->
-                    if (shouldSync) {
-                        scheduleSync()
+        fun start() {
+            if (!started.compareAndSet(false, true)) return
+            scope.launch {
+                combine(
+                    queueRepository.observeQueue(),
+                    connectivityMonitor.isConnected,
+                ) { queue, connected -> queue.isNotEmpty() && connected }
+                    .distinctUntilChanged()
+                    .collectLatest { shouldSync ->
+                        if (shouldSync) {
+                            scheduleSync()
+                        }
                     }
-                }
+            }
+        }
+
+        fun scheduleSync() {
+            Timber.d("Scheduling sync work")
+            val constraints =
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            val request =
+                OneTimeWorkRequestBuilder<SyncWorker>()
+                    .setConstraints(constraints)
+                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_DELAY_SECONDS, TimeUnit.SECONDS)
+                    .build()
+            workManager.enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, request)
+        }
+
+        companion object {
+            private const val UNIQUE_WORK_NAME = "prestaflow_sync_queue"
+            private const val BACKOFF_DELAY_SECONDS = 15L
         }
     }
-
-    fun scheduleSync() {
-        Timber.d("Scheduling sync work")
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val request = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setConstraints(constraints)
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_DELAY_SECONDS, TimeUnit.SECONDS)
-            .build()
-        workManager.enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, request)
-    }
-
-    companion object {
-        private const val UNIQUE_WORK_NAME = "prestaflow_sync_queue"
-        private const val BACKOFF_DELAY_SECONDS = 15L
-    }
-}

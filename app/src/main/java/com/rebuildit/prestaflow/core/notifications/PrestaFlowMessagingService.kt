@@ -3,15 +3,13 @@ package com.rebuildit.prestaflow.core.notifications
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import timber.log.Timber
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class PrestaFlowMessagingService : FirebaseMessagingService() {
-
     @Inject
     lateinit var registrationManager: FcmRegistrationManager
-
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)

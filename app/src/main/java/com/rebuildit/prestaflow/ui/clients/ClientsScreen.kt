@@ -40,14 +40,14 @@ import java.time.format.FormatStyle
 fun ClientsRoute(
     onClientClick: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: ClientsViewModel = hiltViewModel()
+    viewModel: ClientsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ClientsScreen(
         modifier = modifier,
         state = state,
         onRefresh = viewModel::onRefresh,
-        onClientClick = onClientClick
+        onClientClick = onClientClick,
     )
 }
 
@@ -56,26 +56,28 @@ fun ClientsScreen(
     state: ClientsUiState,
     onRefresh: () -> Unit,
     onClientClick: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val errorMessage = state.error?.asString()
 
     when {
         state.isLoading && state.clients.isEmpty() -> LoadingState(modifier)
-        state.clients.isEmpty() -> EmptyState(
-            message = stringResource(R.string.clients_list_empty),
-            modifier = modifier,
-            errorMessage = errorMessage,
-            onRefresh = onRefresh
-        )
-        else -> ClientList(
-            modifier = modifier,
-            clients = state.clients,
-            isRefreshing = state.isRefreshing,
-            errorMessage = errorMessage,
-            onRefresh = onRefresh,
-            onClientClick = onClientClick
-        )
+        state.clients.isEmpty() ->
+            EmptyState(
+                message = stringResource(R.string.clients_list_empty),
+                modifier = modifier,
+                errorMessage = errorMessage,
+                onRefresh = onRefresh,
+            )
+        else ->
+            ClientList(
+                modifier = modifier,
+                clients = state.clients,
+                isRefreshing = state.isRefreshing,
+                errorMessage = errorMessage,
+                onRefresh = onRefresh,
+                onClientClick = onClientClick,
+            )
     }
 }
 
@@ -87,7 +89,7 @@ private fun ClientList(
     isRefreshing: Boolean,
     errorMessage: String?,
     onRefresh: () -> Unit,
-    onClientClick: (Long) -> Unit
+    onClientClick: (Long) -> Unit,
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
@@ -104,14 +106,14 @@ private fun ClientList(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(clients, key = { it.id }) { client ->
                 ClientCard(
                     client = client,
                     currencyFormatter = currencyFormatter,
                     dateFormatter = dateFormatter,
-                    onClick = { onClientClick(client.id) }
+                    onClick = { onClientClick(client.id) },
                 )
             }
         }
@@ -123,17 +125,18 @@ private fun ClientCard(
     client: Client,
     currencyFormatter: NumberFormat,
     dateFormatter: DateTimeFormatter,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val totalSpent = remember(client.totalSpent) { currencyFormatter.format(client.totalSpent) }
-    val lastOrderAt = remember(client.lastOrderAtIso) {
-        formatTimestamp(client.lastOrderAtIso, dateFormatter)
-    }
+    val lastOrderAt =
+        remember(client.lastOrderAtIso) {
+            formatTimestamp(client.lastOrderAtIso, dateFormatter)
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        onClick = onClick
+        onClick = onClick,
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
@@ -141,7 +144,7 @@ private fun ClientCard(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
 
             if (client.email.isNotBlank()) {
@@ -150,27 +153,27 @@ private fun ClientCard(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
             Text(
                 text = stringResource(id = R.string.clients_total_spent, totalSpent),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             Text(
                 text = stringResource(id = R.string.clients_orders_count, client.ordersCount),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             if (lastOrderAt != null) {
                 Text(
                     text = stringResource(id = R.string.clients_last_order, lastOrderAt),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

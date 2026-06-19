@@ -13,5 +13,5 @@ data class ProductEntity(
     val active: Boolean,
     @ColumnInfo(name = "stock_json") val stockJson: String,
     @ColumnInfo(name = "images_json") val imagesJson: String,
-    @ColumnInfo(name = "updated_at") val updatedAt: String
+    @ColumnInfo(name = "updated_at") val updatedAt: String,
 )

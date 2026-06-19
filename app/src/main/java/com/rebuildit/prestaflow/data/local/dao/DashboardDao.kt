@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DashboardDao {
-
     @Query("SELECT * FROM dashboard_metrics WHERE period = :period LIMIT 1")
     fun observeByPeriod(period: String): Flow<DashboardMetricEntity?>
 

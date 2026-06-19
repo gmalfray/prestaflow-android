@@ -6,5 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 interface DashboardRepository {
     fun observeDashboard(period: DashboardPeriod): Flow<DashboardSnapshot?>
-    suspend fun refresh(period: DashboardPeriod, forceRemote: Boolean = false)
+
+    suspend fun refresh(
+        period: DashboardPeriod,
+        forceRemote: Boolean = false,
+    )
 }

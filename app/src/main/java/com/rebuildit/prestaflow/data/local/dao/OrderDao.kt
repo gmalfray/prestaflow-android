@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface OrderDao {
-
     @Query("SELECT * FROM orders ORDER BY updated_at_iso DESC")
     fun observeOrders(): Flow<List<OrderEntity>>
 

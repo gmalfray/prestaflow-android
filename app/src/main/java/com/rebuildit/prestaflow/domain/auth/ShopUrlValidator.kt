@@ -3,7 +3,6 @@ package com.rebuildit.prestaflow.domain.auth
 import java.net.URI
 
 class ShopUrlValidator {
-
     @Suppress("ReturnCount") // Validation en séquence : chaque early-return représente une condition d'échec distincte
     fun validate(input: String): Result {
         val trimmed = input.trim()
@@ -17,17 +16,19 @@ class ShopUrlValidator {
         val host = uri.host?.takeIf { it.isNotBlank() } ?: return Result.Invalid.Malformed
 
         val port = if (uri.port in -1..-1) "" else ":${uri.port}"
-        val path = uri.rawPath
-            ?.takeIf { it.isNotBlank() && it != "/" }
-            ?.trimEnd('/')
-            .orEmpty()
+        val path =
+            uri.rawPath
+                ?.takeIf { it.isNotBlank() && it != "/" }
+                ?.trimEnd('/')
+                .orEmpty()
 
-        val normalized = buildString {
-            append("https://")
-            append(host)
-            append(port)
-            append(path)
-        }
+        val normalized =
+            buildString {
+                append("https://")
+                append(host)
+                append(port)
+                append(path)
+            }
 
         return Result.Valid(normalized)
     }
@@ -37,7 +38,9 @@ class ShopUrlValidator {
 
         sealed class Invalid : Result() {
             data object Empty : Invalid()
+
             data object Malformed : Invalid()
+
             data object NonHttps : Invalid()
         }
     }

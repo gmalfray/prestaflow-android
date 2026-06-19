@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface StockAvailabilityDao {
-
     @Query("SELECT * FROM stock_availabilities WHERE product_id = :productId ORDER BY warehouse_id ASC")
     fun observeForProduct(productId: Long): Flow<List<StockAvailabilityEntity>>
 

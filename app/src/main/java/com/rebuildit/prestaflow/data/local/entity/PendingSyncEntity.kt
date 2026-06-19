@@ -15,5 +15,5 @@ data class PendingSyncEntity(
     @ColumnInfo(name = "conflict_strategy") val conflictStrategy: String = "LAST_WRITE_WINS",
     @ColumnInfo(name = "attempt_count") val attemptCount: Int = 0,
     @ColumnInfo(name = "last_attempt_iso") val lastAttemptIso: String? = null,
-    @ColumnInfo(name = "created_at_iso") val createdAtIso: String
+    @ColumnInfo(name = "created_at_iso") val createdAtIso: String,
 )

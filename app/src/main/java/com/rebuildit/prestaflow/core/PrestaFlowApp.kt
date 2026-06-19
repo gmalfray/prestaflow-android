@@ -2,18 +2,17 @@ package com.rebuildit.prestaflow.core
 
 import android.app.Application
 import android.util.Log
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import com.rebuildit.prestaflow.BuildConfig
 import com.rebuildit.prestaflow.core.notifications.FcmRegistrationManager
 import com.rebuildit.prestaflow.core.sync.SyncOrchestrator
-import androidx.hilt.work.HiltWorkerFactory
-import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 import javax.inject.Inject
 
 @HiltAndroidApp
 class PrestaFlowApp : Application(), Configuration.Provider {
-
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 

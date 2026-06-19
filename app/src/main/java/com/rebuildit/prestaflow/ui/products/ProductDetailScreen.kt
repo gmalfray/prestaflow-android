@@ -25,7 +25,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,13 +45,12 @@ import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.NotFoundState
-import java.text.NumberFormat
 
 @Composable
 fun ProductDetailRoute(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ProductDetailViewModel = hiltViewModel()
+    viewModel: ProductDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -63,7 +61,7 @@ fun ProductDetailRoute(
         onUpdatePrice = viewModel::onUpdatePrice,
         onUpdateStock = viewModel::onUpdateStock,
         onToggleStatus = viewModel::onToggleStatus,
-        onClearError = viewModel::clearError
+        onClearError = viewModel::clearError,
     )
 }
 
@@ -77,7 +75,7 @@ fun ProductDetailScreen(
     onUpdateStock: (Int) -> Unit,
     onToggleStatus: () -> Unit,
     onClearError: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val errorMessage = state.error?.asString()
@@ -99,29 +97,31 @@ fun ProductDetailScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = backDesc
+                            contentDescription = backDesc,
                         )
                     }
-                }
+                },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         when {
             state.isLoading -> LoadingState(Modifier.padding(padding))
-            state.product != null -> ProductContent(
-                modifier = Modifier.padding(padding),
-                product = state.product,
-                isUpdating = state.isUpdating,
-                onUpdatePrice = onUpdatePrice,
-                onUpdateStock = onUpdateStock,
-                onToggleStatus = onToggleStatus
-            )
-            else -> NotFoundState(
-                message = stringResource(R.string.product_not_found),
-                modifier = Modifier.padding(padding),
-                onBackClick = onBackClick
-            )
+            state.product != null ->
+                ProductContent(
+                    modifier = Modifier.padding(padding),
+                    product = state.product,
+                    isUpdating = state.isUpdating,
+                    onUpdatePrice = onUpdatePrice,
+                    onUpdateStock = onUpdateStock,
+                    onToggleStatus = onToggleStatus,
+                )
+            else ->
+                NotFoundState(
+                    message = stringResource(R.string.product_not_found),
+                    modifier = Modifier.padding(padding),
+                    onBackClick = onBackClick,
+                )
         }
     }
 }
@@ -134,17 +134,18 @@ private fun ProductContent(
     onUpdatePrice: (Double) -> Unit,
     onUpdateStock: (Int) -> Unit,
     onToggleStatus: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var priceText by remember(product.price) { mutableStateOf(product.price.toString()) }
     var stockText by remember(product.stock.quantity) { mutableStateOf(product.stock.quantity.toString()) }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Image
         if (product.images.isNotEmpty()) {
@@ -152,9 +153,10 @@ private fun ProductContent(
                 AsyncImage(
                     model = product.images.first().url,
                     contentDescription = product.name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
                 )
             }
         }
@@ -164,13 +166,13 @@ private fun ProductContent(
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = product.name,
-                    style = MaterialTheme.typography.headlineSmall
+                    style = MaterialTheme.typography.headlineSmall,
                 )
                 if (product.reference.isNotBlank()) {
                     Text(
                         text = stringResource(R.string.product_reference_label, product.reference),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -181,7 +183,7 @@ private fun ProductContent(
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = stringResource(R.string.product_price_section),
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
                 OutlinedTextField(
                     value = priceText,
@@ -189,14 +191,14 @@ private fun ProductContent(
                     label = { Text(stringResource(R.string.product_price_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isUpdating
+                    enabled = !isUpdating,
                 )
                 Button(
                     onClick = {
                         priceText.toDoubleOrNull()?.let { onUpdatePrice(it) }
                     },
                     enabled = !isUpdating && priceText.toDoubleOrNull() != null,
-                    modifier = Modifier.align(Alignment.End)
+                    modifier = Modifier.align(Alignment.End),
                 ) {
                     Text(stringResource(R.string.product_update_price))
                 }
@@ -208,7 +210,7 @@ private fun ProductContent(
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = stringResource(R.string.product_stock_section),
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
                 OutlinedTextField(
                     value = stockText,
@@ -216,14 +218,14 @@ private fun ProductContent(
                     label = { Text(stringResource(R.string.product_stock_quantity_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isUpdating
+                    enabled = !isUpdating,
                 )
                 Button(
                     onClick = {
                         stockText.toIntOrNull()?.let { onUpdateStock(it) }
                     },
                     enabled = !isUpdating && stockText.toIntOrNull() != null,
-                    modifier = Modifier.align(Alignment.End)
+                    modifier = Modifier.align(Alignment.End),
                 ) {
                     Text(stringResource(R.string.product_update_stock))
                 }
@@ -233,30 +235,35 @@ private fun ProductContent(
         // Status Toggle Card
         Card(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
                     Text(
                         text = stringResource(R.string.product_status_section),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                     Text(
-                        text = stringResource(
-                            if (product.active) R.string.products_status_active
-                            else R.string.products_status_inactive
-                        ),
+                        text =
+                            stringResource(
+                                if (product.active) {
+                                    R.string.products_status_active
+                                } else {
+                                    R.string.products_status_inactive
+                                },
+                            ),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Switch(
                     checked = product.active,
                     onCheckedChange = { onToggleStatus() },
-                    enabled = !isUpdating
+                    enabled = !isUpdating,
                 )
             }
         }

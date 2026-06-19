@@ -11,7 +11,10 @@ import java.util.Currency
  * Formate un montant en devise avec le symbole correspondant à [currencyCode].
  * Retourne la valeur brute formatée par défaut si le code devise est invalide.
  */
-fun formatCurrency(amount: Double, currencyCode: String): String {
+fun formatCurrency(
+    amount: Double,
+    currencyCode: String,
+): String {
     val formatter = NumberFormat.getCurrencyInstance()
     runCatching { formatter.currency = Currency.getInstance(currencyCode) }
     return formatter.format(amount)
@@ -22,12 +25,16 @@ fun formatCurrency(amount: Double, currencyCode: String): String {
  * Retourne null si [value] est null/vide, ou la valeur brute si le parsing échoue.
  */
 @Suppress("ReturnCount") // Tentatives successives de parsing de formats datetime différents
-fun formatTimestamp(value: String?, formatter: DateTimeFormatter): String? {
+fun formatTimestamp(
+    value: String?,
+    formatter: DateTimeFormatter,
+): String? {
     if (value.isNullOrBlank()) return null
     val zone = ZoneId.systemDefault()
 
-    val fromInstant = runCatching { Instant.parse(value) }
-        .map { instant -> instant.atZone(zone).format(formatter) }
+    val fromInstant =
+        runCatching { Instant.parse(value) }
+            .map { instant -> instant.atZone(zone).format(formatter) }
     if (fromInstant.isSuccess) {
         return fromInstant.getOrThrow()
     }

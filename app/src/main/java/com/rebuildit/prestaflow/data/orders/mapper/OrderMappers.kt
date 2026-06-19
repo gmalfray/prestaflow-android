@@ -14,23 +14,25 @@ import kotlinx.serialization.json.Json
 import timber.log.Timber
 
 fun OrderEntity.toDomain(): Order {
-    val itemsList = itemsJson?.let {
-        try {
-            Json.decodeFromString<List<OrderItem>>(it)
-        } catch (e: SerializationException) {
-            Timber.w(e, "Failed to deserialize order items from cached JSON")
-            emptyList()
-        }
-    }.orEmpty()
+    val itemsList =
+        itemsJson?.let {
+            try {
+                Json.decodeFromString<List<OrderItem>>(it)
+            } catch (e: SerializationException) {
+                Timber.w(e, "Failed to deserialize order items from cached JSON")
+                emptyList()
+            }
+        }.orEmpty()
 
-    val shippingInfo = shippingJson?.let {
-        try {
-            Json.decodeFromString<OrderShipping>(it)
-        } catch (e: SerializationException) {
-            Timber.w(e, "Failed to deserialize order shipping from cached JSON")
-            null
+    val shippingInfo =
+        shippingJson?.let {
+            try {
+                Json.decodeFromString<OrderShipping>(it)
+            } catch (e: SerializationException) {
+                Timber.w(e, "Failed to deserialize order shipping from cached JSON")
+                null
+            }
         }
-    }
 
     return Order(
         id = id,
@@ -41,7 +43,7 @@ fun OrderEntity.toDomain(): Order {
         customerName = customerName,
         updatedAtIso = updatedAtIso,
         items = itemsList,
-        shipping = shippingInfo
+        shipping = shippingInfo,
     )
 }
 
@@ -49,31 +51,34 @@ fun OrderEntity.toDomain(): Order {
  * Maps the FLAT order row returned by the list endpoint (`formatOrderRow`).
  * The list endpoint does not carry items/shipping so the JSON columns stay null.
  */
-fun OrderListItemDto.toEntity(): OrderEntity = OrderEntity(
-    id = id,
-    reference = reference,
-    status = status,
-    totalPaid = totalPaid,
-    currency = currency,
-    customerName = "${customer.firstName} ${customer.lastName}".trim(),
-    updatedAtIso = dateUpdated.orEmpty(),
-    itemsJson = null,
-    shippingJson = null
-)
+fun OrderListItemDto.toEntity(): OrderEntity =
+    OrderEntity(
+        id = id,
+        reference = reference,
+        status = status,
+        totalPaid = totalPaid,
+        currency = currency,
+        customerName = "${customer.firstName} ${customer.lastName}".trim(),
+        updatedAtIso = dateUpdated.orEmpty(),
+        itemsJson = null,
+        shippingJson = null,
+    )
 
 /**
  * Maps the NESTED order object returned by the detail endpoint (`getOrderById`).
  */
 fun OrderDto.toEntity(): OrderEntity {
-    val itemsJsonStr = items?.let { dtos ->
-        val domainItems = dtos.map { it.toDomain() }
-        Json.encodeToString(domainItems)
-    }
+    val itemsJsonStr =
+        items?.let { dtos ->
+            val domainItems = dtos.map { it.toDomain() }
+            Json.encodeToString(domainItems)
+        }
 
-    val shippingJsonStr = shipping?.let { dto ->
-        val domainShipping = dto.toDomain()
-        Json.encodeToString(domainShipping)
-    }
+    val shippingJsonStr =
+        shipping?.let { dto ->
+            val domainShipping = dto.toDomain()
+            Json.encodeToString(domainShipping)
+        }
 
     return OrderEntity(
         id = id,
@@ -84,20 +89,22 @@ fun OrderDto.toEntity(): OrderEntity {
         customerName = "${customer.firstName} ${customer.lastName}".trim(),
         updatedAtIso = dates?.updatedAt.orEmpty(),
         itemsJson = itemsJsonStr,
-        shippingJson = shippingJsonStr
+        shippingJson = shippingJsonStr,
     )
 }
 
-fun OrderItemDto.toDomain() = OrderItem(
-    productId = productId,
-    name = name,
-    reference = reference,
-    quantity = quantity,
-    price = priceTaxIncl
-)
+fun OrderItemDto.toDomain() =
+    OrderItem(
+        productId = productId,
+        name = name,
+        reference = reference,
+        quantity = quantity,
+        price = priceTaxIncl,
+    )
 
-fun OrderShippingDto.toDomain() = OrderShipping(
-    carrierId = carrierId,
-    carrierName = carrierName,
-    trackingNumber = trackingNumber
-)
+fun OrderShippingDto.toDomain() =
+    OrderShipping(
+        carrierId = carrierId,
+        carrierName = carrierName,
+        trackingNumber = trackingNumber,
+    )

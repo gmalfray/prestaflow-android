@@ -4,5 +4,5 @@ data class StockAvailability(
     val productId: Long,
     val warehouseId: Long?,
     val quantity: Int,
-    val updatedAtIso: String?
+    val updatedAtIso: String?,
 )

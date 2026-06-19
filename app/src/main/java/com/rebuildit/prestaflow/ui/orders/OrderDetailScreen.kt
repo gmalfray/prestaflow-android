@@ -59,7 +59,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderItem
-import com.rebuildit.prestaflow.domain.orders.model.OrderShipping
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import java.time.format.DateTimeFormatter
@@ -68,7 +67,7 @@ import java.time.format.FormatStyle
 @Composable
 fun OrderDetailRoute(
     onBackClick: () -> Unit,
-    viewModel: OrderDetailViewModel = hiltViewModel()
+    viewModel: OrderDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val actionState by viewModel.actionState.collectAsStateWithLifecycle()
@@ -78,7 +77,7 @@ fun OrderDetailRoute(
         onBackClick = onBackClick,
         onUpdateStatus = viewModel::updateStatus,
         onUpdateTracking = viewModel::updateTracking,
-        onConsumeFeedback = viewModel::consumeActionFeedback
+        onConsumeFeedback = viewModel::consumeActionFeedback,
     )
 }
 
@@ -92,7 +91,7 @@ fun OrderDetailScreen(
     onBackClick: () -> Unit,
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
-    onConsumeFeedback: () -> Unit = {}
+    onConsumeFeedback: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val backDesc = stringResource(R.string.content_description_back)
@@ -114,22 +113,24 @@ fun OrderDetailScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = backDesc
+                            contentDescription = backDesc,
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    ),
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             when (state) {
                 OrderDetailUiState.Loading -> {
@@ -141,20 +142,20 @@ fun OrderDetailScreen(
                     Column(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Text(
                             text = stringResource(R.string.order_detail_error),
                             color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
                         )
                         IconButton(
                             onClick = onBackClick,
-                            modifier = Modifier.semantics { contentDescription = retryDesc }
+                            modifier = Modifier.semantics { contentDescription = retryDesc },
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Refresh,
-                                contentDescription = null
+                                contentDescription = null,
                             )
                         }
                     }
@@ -165,7 +166,7 @@ fun OrderDetailScreen(
                         order = state.order,
                         actionInProgress = actionState.inProgress,
                         onUpdateStatus = onUpdateStatus,
-                        onUpdateTracking = onUpdateTracking
+                        onUpdateTracking = onUpdateTracking,
                     )
                 }
             }
@@ -179,7 +180,7 @@ fun OrderDetailContent(
     order: Order,
     actionInProgress: Boolean = false,
     onUpdateStatus: (String) -> Unit = {},
-    onUpdateTracking: (String) -> Unit = {}
+    onUpdateTracking: (String) -> Unit = {},
 ) {
     var showStatusDialog by remember { mutableStateOf(false) }
     var showTrackingDialog by remember { mutableStateOf(false) }
@@ -195,7 +196,7 @@ fun OrderDetailContent(
                 showStatusDialog = false
                 onUpdateStatus(it)
             },
-            onDismiss = { showStatusDialog = false }
+            onDismiss = { showStatusDialog = false },
         )
     }
 
@@ -210,18 +211,19 @@ fun OrderDetailContent(
                 showTrackingDialog = false
                 onUpdateTracking(it)
             },
-            onDismiss = { showTrackingDialog = false }
+            onDismiss = { showTrackingDialog = false },
         )
     }
 
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Header Card
         SoftCard {
@@ -229,13 +231,13 @@ fun OrderDetailContent(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = order.reference,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                     StatusBadge(status = order.status)
                 }
@@ -243,7 +245,7 @@ fun OrderDetailContent(
                 Text(
                     text = formatTimestamp(order.updatedAtIso, dateFormatter) ?: order.updatedAtIso,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -251,12 +253,12 @@ fun OrderDetailContent(
         // Customer Card
         SectionCard(
             title = stringResource(R.string.order_detail_customer_section),
-            icon = Icons.Outlined.Person
+            icon = Icons.Outlined.Person,
         ) {
             Text(
                 text = order.customerName,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
         }
 
@@ -264,17 +266,17 @@ fun OrderDetailContent(
         if (order.shipping != null) {
             SectionCard(
                 title = stringResource(R.string.order_detail_shipping_section),
-                icon = Icons.Outlined.LocalShipping
+                icon = Icons.Outlined.LocalShipping,
             ) {
                 Text(
                     text = order.shipping.carrierName,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
                 if (order.shipping.trackingNumber != null) {
                     Text(
                         text = stringResource(R.string.order_detail_tracking_display, order.shipping.trackingNumber),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.secondary,
                     )
                 }
             }
@@ -284,7 +286,7 @@ fun OrderDetailContent(
         if (order.items.isNotEmpty()) {
             SectionCard(
                 title = stringResource(R.string.order_detail_items_section, order.items.size),
-                icon = Icons.Outlined.ShoppingBag
+                icon = Icons.Outlined.ShoppingBag,
             ) {
                 order.items.forEach { item ->
                     OrderItemRow(item = item, currency = order.currency)
@@ -297,27 +299,29 @@ fun OrderDetailContent(
 
         // Totals Card
         SoftCard(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                ),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = stringResource(R.string.order_detail_total_paid),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Text(
                     text = formatCurrency(order.totalPaid, order.currency),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
         }
@@ -325,19 +329,19 @@ fun OrderDetailContent(
         // Actions
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             OutlinedButton(
                 onClick = { showStatusDialog = true },
                 enabled = !actionInProgress,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Text(stringResource(R.string.order_detail_change_status))
             }
             Button(
                 onClick = { showTrackingDialog = true },
                 enabled = !actionInProgress,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Text(stringResource(R.string.order_detail_tracking_button))
             }
@@ -355,7 +359,7 @@ private fun TextInputDialog(
     confirmLabel: String,
     cancelLabel: String,
     onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var value by remember { mutableStateOf(initialValue) }
     AlertDialog(
@@ -366,13 +370,13 @@ private fun TextInputDialog(
                 value = value,
                 onValueChange = { value = it },
                 label = { Text(label) },
-                singleLine = true
+                singleLine = true,
             )
         },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(value) },
-                enabled = value.isNotBlank()
+                enabled = value.isNotBlank(),
             ) {
                 Text(confirmLabel)
             }
@@ -381,7 +385,7 @@ private fun TextInputDialog(
             TextButton(onClick = onDismiss) {
                 Text(cancelLabel)
             }
-        }
+        },
     )
 }
 
@@ -389,7 +393,7 @@ private fun TextInputDialog(
 fun SectionCard(
     title: String,
     icon: ImageVector,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     SoftCard {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -398,13 +402,13 @@ fun SectionCard(
                     imageVector = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
                 Spacer(modifier = Modifier.size(8.dp))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -416,17 +420,18 @@ fun SectionCard(
 @Composable
 fun SoftCard(
     modifier: Modifier = Modifier,
-    colors: CardColors = CardDefaults.cardColors(
-        containerColor = MaterialTheme.colorScheme.surface
-    ),
-    content: @Composable () -> Unit
+    colors: CardColors =
+        CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    content: @Composable () -> Unit,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = colors,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        content = { content() }
+        content = { content() },
     )
 }
 
@@ -434,44 +439,48 @@ fun SoftCard(
 fun StatusBadge(status: String) {
     val badgeDesc = status
     Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.secondaryContainer)
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .semantics { contentDescription = badgeDesc }
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.secondaryContainer)
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .semantics { contentDescription = badgeDesc },
     ) {
         Text(
             text = status,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
     }
 }
 
 @Composable
-fun OrderItemRow(item: OrderItem, currency: String) {
+fun OrderItemRow(
+    item: OrderItem,
+    currency: String,
+) {
     val qtyLabel = stringResource(R.string.order_detail_qty_label, item.quantity)
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.name,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
             Text(
                 text = qtyLabel,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Text(
             text = formatCurrency(item.price, currency),
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
     }
 }
