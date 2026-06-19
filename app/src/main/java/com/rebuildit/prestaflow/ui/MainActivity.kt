@@ -126,7 +126,8 @@ private fun LoadingScreen() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
-@Suppress("LongMethod") // Shell responsive avec BottomNavigation et NavigationRail selon windowSizeClass
+// Shell responsive : BottomNavigation en compact, NavigationRail en medium/expanded, two-pane commandes en expanded
+@Suppress("LongMethod")
 @Composable
 private fun AuthenticatedShell(
     windowSizeClass: WindowSizeClass,
@@ -253,6 +254,7 @@ private fun AuthenticatedShell(
                         PrestaFlowNavGraph(
                             navController = navController,
                             onLogout = onLogout,
+                            windowSizeClass = windowSizeClass,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -261,6 +263,7 @@ private fun AuthenticatedShell(
                 PrestaFlowNavGraph(
                     navController = navController,
                     onLogout = onLogout,
+                    windowSizeClass = windowSizeClass,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
