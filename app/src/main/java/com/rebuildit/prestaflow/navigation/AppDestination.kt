@@ -6,6 +6,7 @@ import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.automirrored.outlined.ListAlt
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rebuildit.prestaflow.R
@@ -19,5 +20,6 @@ enum class AppDestination(
     Orders("orders", R.string.destination_orders, Icons.AutoMirrored.Outlined.ListAlt),
     Products("products", R.string.destination_products, Icons.Outlined.Inventory2),
     Clients("clients", R.string.destination_clients, Icons.Outlined.Group),
-    Carts("carts", R.string.destination_carts, Icons.Outlined.ShoppingCart)
+    Carts("carts", R.string.destination_carts, Icons.Outlined.ShoppingCart),
+    Settings("settings", R.string.destination_settings, Icons.Outlined.Settings)
 }

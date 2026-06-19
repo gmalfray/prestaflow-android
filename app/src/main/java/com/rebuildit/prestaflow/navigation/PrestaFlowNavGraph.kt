@@ -1,29 +1,28 @@
 package com.rebuildit.prestaflow.navigation
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
-import com.rebuildit.prestaflow.ui.dashboard.DashboardRoute
-import com.rebuildit.prestaflow.ui.orders.OrdersRoute
-import com.rebuildit.prestaflow.ui.orders.OrderDetailRoute
-import com.rebuildit.prestaflow.ui.products.ProductsRoute
+import com.rebuildit.prestaflow.ui.carts.CartDetailRoute
+import com.rebuildit.prestaflow.ui.carts.CartsRoute
+import com.rebuildit.prestaflow.ui.clients.ClientDetailRoute
 import com.rebuildit.prestaflow.ui.clients.ClientsRoute
+import com.rebuildit.prestaflow.ui.dashboard.DashboardRoute
+import com.rebuildit.prestaflow.ui.orders.OrderDetailRoute
+import com.rebuildit.prestaflow.ui.orders.OrdersRoute
+import com.rebuildit.prestaflow.ui.products.ProductDetailRoute
+import com.rebuildit.prestaflow.ui.products.ProductsRoute
+import com.rebuildit.prestaflow.ui.settings.SettingsRoute
 
 @Composable
 fun PrestaFlowNavGraph(
+    onLogout: () -> Unit,
     navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier
 ) {
@@ -66,7 +65,7 @@ fun PrestaFlowNavGraph(
                 navArgument("productId") { type = NavType.LongType }
             )
         ) {
-            com.rebuildit.prestaflow.ui.products.ProductDetailRoute(
+            ProductDetailRoute(
                 onBackClick = { navController.popBackStack() }
             )
         }
@@ -83,29 +82,32 @@ fun PrestaFlowNavGraph(
                 navArgument("clientId") { type = NavType.LongType }
             )
         ) {
-            com.rebuildit.prestaflow.ui.clients.ClientDetailRoute(
+            ClientDetailRoute(
                 onBackClick = { navController.popBackStack() },
                 onOrderClick = { orderId ->
                     navController.navigate("${AppDestination.Orders.route}/$orderId")
                 }
             )
         }
-        composable(AppDestination.Carts.route) { PlaceholderScreen(AppDestination.Carts) }
-    }
-}
-
-@Composable
-private fun PlaceholderScreen(destination: AppDestination) {
-    Scaffold { paddingValues ->
-        Surface(
-            color = MaterialTheme.colorScheme.background,
-            modifier = Modifier.padding(paddingValues)
-        ) {
-            Text(
-                text = stringResource(id = destination.labelRes),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(all = 24.dp)
+        composable(AppDestination.Carts.route) {
+            CartsRoute(
+                onCartClick = { cartId ->
+                    navController.navigate("${AppDestination.Carts.route}/$cartId")
+                }
             )
+        }
+        composable(
+            route = "${AppDestination.Carts.route}/{cartId}",
+            arguments = listOf(
+                navArgument("cartId") { type = NavType.IntType }
+            )
+        ) {
+            CartDetailRoute(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(AppDestination.Settings.route) {
+            SettingsRoute(onLogoutClick = onLogout)
         }
     }
 }

@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -56,6 +59,15 @@ import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import com.rebuildit.prestaflow.ui.theme.ThemeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
+/** Destinations affichées dans la barre de navigation inférieure / rail. */
+private val navBarDestinations = listOf(
+    AppDestination.Dashboard,
+    AppDestination.Orders,
+    AppDestination.Products,
+    AppDestination.Clients,
+    AppDestination.Carts
+)
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class, ExperimentalPermissionsApi::class)
@@ -63,10 +75,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val windowSizeClass = calculateWindowSizeClass(activity = this@MainActivity)
-            
+
             // Request notification permission on Android 13+
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                val permissionState = com.google.accompanist.permissions.rememberPermissionState(
+                val permissionState = rememberPermissionState(
                     android.Manifest.permission.POST_NOTIFICATIONS
                 )
                 LaunchedEffect(Unit) {
@@ -75,7 +87,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            
+
             PrestaFlowApp(windowSizeClass)
         }
     }
@@ -92,7 +104,10 @@ private fun PrestaFlowApp(windowSizeClass: WindowSizeClass) {
 
         when (authState) {
             AuthState.Loading -> LoadingScreen()
-            is AuthState.Authenticated -> AuthenticatedShell(windowSizeClass)
+            is AuthState.Authenticated -> AuthenticatedShell(
+                windowSizeClass = windowSizeClass,
+                onLogout = rootViewModel::logout
+            )
             AuthState.Unauthenticated -> AuthRoute()
         }
     }
@@ -109,9 +124,11 @@ private fun LoadingScreen() {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
-private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
+private fun AuthenticatedShell(
+    windowSizeClass: WindowSizeClass,
+    onLogout: () -> Unit
+) {
     val navController = rememberNavController()
-    val destinations = remember { AppDestination.values().toList() }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val haptics = LocalHapticFeedback.current
 
@@ -119,15 +136,32 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
 
     LaunchedEffect(navBackStackEntry) {
         val route = navBackStackEntry?.destination?.route
-        currentTitle = destinations.find { it.route == route }?.labelRes ?: R.string.app_name
+        currentTitle = AppDestination.values().find { it.route == route }?.labelRes ?: R.string.app_name
     }
 
     val useNavigationRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
     val currentRoute = navBackStackEntry?.destination?.route
+    val settingsLabel = stringResource(R.string.destination_settings)
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(title = { Text(text = stringResource(id = currentTitle)) })
+            CenterAlignedTopAppBar(
+                title = { Text(text = stringResource(id = currentTitle)) },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            navController.navigate(AppDestination.Settings.route) {
+                                launchSingleTop = true
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = settingsLabel
+                        )
+                    }
+                }
+            )
         },
         bottomBar = {
             if (!useNavigationRail) {
@@ -140,7 +174,7 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 NavigationBar(containerColor = navigationBarContainerColor) {
-                    destinations.forEach { destination ->
+                    navBarDestinations.forEach { destination ->
                         val selected = currentRoute == destination.route
                         val label = stringResource(id = destination.labelRes)
                         val onItemClick = {
@@ -155,21 +189,21 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
                                 }
                             }
                         }
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = onItemClick,
-                                label = { Text(text = label) },
-                                icon = {
-                                    Icon(
-                                        imageVector = destination.icon,
-                                        contentDescription = label
-                                    )
-                                },
-                                colors = navigationBarItemColors
-                            )
-                        }
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = onItemClick,
+                            label = { Text(text = label) },
+                            icon = {
+                                Icon(
+                                    imageVector = destination.icon,
+                                    contentDescription = label
+                                )
+                            },
+                            colors = navigationBarItemColors
+                        )
                     }
                 }
+            }
         }
     ) { innerPadding ->
         Surface(
@@ -181,7 +215,7 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
             if (useNavigationRail) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     NavigationRail(modifier = Modifier.padding(vertical = 12.dp)) {
-                        destinations.forEach { destination ->
+                        navBarDestinations.forEach { destination ->
                             val selected = currentRoute == destination.route
                             val label = stringResource(id = destination.labelRes)
                             val onItemClick = {
@@ -212,6 +246,7 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
                     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                         PrestaFlowNavGraph(
                             navController = navController,
+                            onLogout = onLogout,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -219,6 +254,7 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
             } else {
                 PrestaFlowNavGraph(
                     navController = navController,
+                    onLogout = onLogout,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -231,5 +267,7 @@ private fun AuthenticatedShell(windowSizeClass: WindowSizeClass) {
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 private fun AuthenticatedShellPreview() {
     val windowSize = WindowSizeClass.calculateFromSize(DpSize(360.dp, 640.dp))
-    PrestaFlowTheme { AuthenticatedShell(windowSize) }
+    PrestaFlowTheme {
+        AuthenticatedShell(windowSize, onLogout = {})
+    }
 }
