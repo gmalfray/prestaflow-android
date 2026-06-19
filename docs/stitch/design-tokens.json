@@ -1,0 +1,130 @@
+{
+  "colorMode": "LIGHT",
+  "font": "PLUS_JAKARTA_SANS",
+  "roundness": "ROUND_EIGHT",
+  "customColor": "#c99587",
+  "headlineFont": "PLUS_JAKARTA_SANS",
+  "bodyFont": "PLUS_JAKARTA_SANS",
+  "labelFont": "PLUS_JAKARTA_SANS",
+  "namedColors": {
+    "background": "#fcf9f8",
+    "error": "#ba1a1a",
+    "error_container": "#ffdad6",
+    "inverse_on_surface": "#f3f0f0",
+    "inverse_primary": "#f2baab",
+    "inverse_surface": "#303030",
+    "on_background": "#1b1c1c",
+    "on_error": "#ffffff",
+    "on_error_container": "#93000a",
+    "on_primary": "#ffffff",
+    "on_primary_container": "#532e24",
+    "on_primary_fixed": "#31130a",
+    "on_primary_fixed_variant": "#643d32",
+    "on_secondary": "#ffffff",
+    "on_secondary_container": "#69615a",
+    "on_secondary_fixed": "#201b15",
+    "on_secondary_fixed_variant": "#4d453f",
+    "on_surface": "#1b1c1c",
+    "on_surface_variant": "#514440",
+    "on_tertiary": "#ffffff",
+    "on_tertiary_container": "#3b3732",
+    "on_tertiary_fixed": "#1f1b17",
+    "on_tertiary_fixed_variant": "#4b4641",
+    "outline": "#837470",
+    "outline_variant": "#d5c2be",
+    "primary": "#7f5448",
+    "primary_container": "#c99587",
+    "primary_fixed": "#ffdbd1",
+    "primary_fixed_dim": "#f2baab",
+    "secondary": "#655d56",
+    "secondary_container": "#e9ded4",
+    "secondary_fixed": "#ece0d7",
+    "secondary_fixed_dim": "#d0c5bc",
+    "surface": "#fcf9f8",
+    "surface_bright": "#fcf9f8",
+    "surface_container": "#f0eded",
+    "surface_container_high": "#eae7e7",
+    "surface_container_highest": "#e4e2e1",
+    "surface_container_low": "#f6f3f2",
+    "surface_container_lowest": "#ffffff",
+    "surface_dim": "#dcd9d9",
+    "surface_tint": "#7f5448",
+    "surface_variant": "#e4e2e1",
+    "tertiary": "#635d58",
+    "tertiary_container": "#a7a099",
+    "tertiary_fixed": "#eae1da",
+    "tertiary_fixed_dim": "#cdc5be"
+  },
+  "designMd": "---\nname: Artisanal Material\ncolors:\n  surface: '#fcf9f8'\n  surface-dim: '#dcd9d9'\n  surface-bright: '#fcf9f8'\n  surface-container-lowest: '#ffffff'\n  surface-container-low: '#f6f3f2'\n  surface-container: '#f0eded'\n  surface-container-high: '#eae7e7'\n  surface-container-highest: '#e4e2e1'\n  on-surface: '#1b1c1c'\n  on-surface-variant: '#514440'\n  inverse-surface: '#303030'\n  inverse-on-surface: '#f3f0f0'\n  outline: '#837470'\n  outline-variant: '#d5c2be'\n  surface-tint: '#7f5448'\n  primary: '#7f5448'\n  on-primary: '#ffffff'\n  primary-container: '#c99587'\n  on-primary-container: '#532e24'\n  inverse-primary: '#f2baab'\n  secondary: '#655d56'\n  on-secondary: '#ffffff'\n  secondary-container: '#e9ded4'\n  on-secondary-container: '#69615a'\n  tertiary: '#635d58'\n  on-tertiary: '#ffffff'\n  tertiary-container: '#a7a099'\n  on-tertiary-container: '#3b3732'\n  error: '#ba1a1a'\n  on-error: '#ffffff'\n  error-container: '#ffdad6'\n  on-error-container: '#93000a'\n  primary-fixed: '#ffdbd1'\n  primary-fixed-dim: '#f2baab'\n  on-primary-fixed: '#31130a'\n  on-primary-fixed-variant: '#643d32'\n  secondary-fixed: '#ece0d7'\n  secondary-fixed-dim: '#d0c5bc'\n  on-secondary-fixed: '#201b15'\n  on-secondary-fixed-variant: '#4d453f'\n  tertiary-fixed: '#eae1da'\n  tertiary-fixed-dim: '#cdc5be'\n  on-tertiary-fixed: '#1f1b17'\n  on-tertiary-fixed-variant: '#4b4641'\n  background: '#fcf9f8'\n  on-background: '#1b1c1c'\n  surface-variant: '#e4e2e1'\ntypography:\n  display-kpi:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 42px\n    fontWeight: '700'\n    lineHeight: 52px\n    letterSpacing: -1px\n  headline-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 28px\n    fontWeight: '700'\n    lineHeight: 36px\n  headline-md:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 22px\n    fontWeight: '600'\n    lineHeight: 28px\n  title-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 18px\n    fontWeight: '600'\n    lineHeight: 24px\n  body-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 16px\n    fontWeight: '400'\n    lineHeight: 24px\n  body-md:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 14px\n    fontWeight: '400'\n    lineHeight: 20px\n  label-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 12px\n    fontWeight: '600'\n    lineHeight: 16px\n    letterSpacing: 0.5px\n  label-md:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 11px\n    fontWeight: '500'\n    lineHeight: 16px\nrounded:\n  sm: 0.25rem\n  DEFAULT: 0.5rem\n  md: 0.75rem\n  lg: 1rem\n  xl: 1.5rem\n  full: 9999px\nspacing:\n  base: 4px\n  xs: 4px\n  sm: 8px\n  md: 16px\n  lg: 24px\n  xl: 32px\n  edge-margin: 20px\n  gutter: 16px\n---\n\n## Brand & Style\n\nThe brand personality is **warm, crafted, and professional**, specifically tailored for French craft and haberdashery entrepreneurs. The UI balances the precision required for inventory management with the tactile, organic feel of handmade goods.\n\nThis design system utilizes the **Material 3 (Material You)** framework as its foundation, evolving it into a \"Crafted Minimalism\" style. It emphasizes:\n- **Airy Composition:** Generous whitespace and high-contrast typography to reduce cognitive load during shop management.\n- **Warmth:** A palette inspired by natural fibers, clay, and linen.\n- **Precision:** Clean geometric lines and clear data visualization to maintain a sense of professional authority.\n- **Tactility:** Soft surfaces and large touch targets that feel as approachable as the physical goods the users handle.\n\n## Colors\n\nThe palette is rooted in earth tones, providing a sophisticated backdrop for colorful craft products.\n\n- **Primary (#C99587):** A dusty terracotta rose used for key actions, active states, and brand highlights. It evokes a sense of artisanal heritage.\n- **Secondary (#D1C6BD):** Warm beige used for tonal shifts, secondary buttons, and subtle structural elements.\n- **Background (#FAF7F4):** A warm off-white that prevents the \"clinical\" feel of pure white, providing a soft paper-like canvas.\n- **Surface (#FFFFFF):** Used exclusively for elevated cards and modals to create clear visual separation from the background.\n- **Status Colors:** High-saturation tones for Success, Danger, and Warning ensure critical shop alerts are immediately legible.\n\n## Typography\n\nThe typography system uses **Plus Jakarta Sans** for its modern geometric clarity and friendly open counters.\n\n- **KPI Numbers:** Use `display-kpi` for critical metrics like daily revenue or stock counts. These should be bold and impactful.\n- **Hierarchy:** Titles use semi-bold or bold weights to anchor the eye, while body text remains light and airy to maintain the professional aesthetic.\n- **French Localization:** Ensure line-heights accommodate common French diacritics (é, à, ç) without clipping.\n- **Labels:** Small labels use a slightly increased letter spacing and semi-bold weight for legibility on mobile screens.\n\n## Layout & Spacing\n\nThis design system follows a **fluid-width mobile layout** based on a 4px baseline grid.\n\n- **Margins:** Standard horizontal screen margins are set to **20px** to provide an airy, premium feel that avoids content crowding the screen edges.\n- **Vertical Rhythm:** Use **24px (lg)** spacing between major sections and **16px (md)** between related card elements.\n- **Safe Areas:** Adhere to Android system bars and the gesture navigation area, ensuring the bottom navigation bar is padded correctly.\n\n## Elevation & Depth\n\nElevation follows a **Tonal Layering** approach combined with **Ambient Shadows**.\n\n- **Level 0 (Background):** Used for the main app canvas (#FAF7F4).\n- **Level 1 (Cards):** Surface color (#FFFFFF) with a soft, diffused shadow (Y: 4px, Blur: 12px, 5% Opacity of Primary Color) to create a gentle \"lift.\"\n- **Active States:** When a card is pressed, the shadow deepens slightly, and a subtle Primary tint is applied to the surface.\n- **Floating Action Buttons (FAB):** Higher elevation with a more pronounced shadow to signify the primary action (e.g., \"Nouvelle Commande\").\n\n## Shapes\n\nThe shape language is defined by high-radius curves that reflect the softness of textiles.\n\n- **Primary Cards:** Use a **20dp** corner radius. This is the signature element of the design system.\n- **Buttons:** Fully rounded (pill-shaped) for the main CTA, while secondary inputs use the standard **8dp** (Soft) radius.\n- **Selection Controls:** Checkboxes and radio buttons use soft-rounded corners to maintain harmony with the card language.\n\n## Components\n\n### Bottom Navigation\nA persistent bar with 5 items. Icons are outlined when inactive and filled with the Primary color when active.\n1. **Tableau de bord** (Dashboard)\n2. **Commandes** (Orders)\n3. **Produits** (Products)\n4. **Clients** (Customers)\n5. **Réglages** (Settings)\n\n### Cards\nLarge containers with a 20dp radius. Cards should use `title-lg` for headers and `display-kpi` for primary data points. Content within cards uses 16px internal padding.\n\n### Buttons\n- **Primary:** Pill-shaped, Primary color background, White text.\n- **Secondary:** Pill-shaped, Secondary color background, Neutral text.\n- **Tertiary:** Text-only with 600 weight, Primary color.\n\n### Input Fields\nFilled style (Material 3) with a very light Secondary tint (#F2EDE9) and a bottom-stroke that thickens on focus. Labels use `label-md`.\n\n### Chips\nUsed for order statuses (e.g., \"En attente\", \"Expédié\"). Small, 8dp radius, using muted versions of Success, Danger, and Warning colors for backgrounds with dark-toned text.\n\n### Lists\nClean rows with 72dp height for product lists, including a 48dp rounded-square thumbnail (8dp radius) for product images.",
+  "colorVariant": "FIDELITY",
+  "overridePrimaryColor": "#c99587",
+  "overrideSecondaryColor": "#d1c6bd",
+  "overrideTertiaryColor": "#7a746e",
+  "overrideNeutralColor": "#2b2b2b",
+  "spacingScale": 2,
+  "typography": {
+    "body-lg": {
+      "fontFamily": "Plus Jakarta Sans",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "24px"
+    },
+    "body-md": {
+      "fontFamily": "Plus Jakarta Sans",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "lineHeight": "20px"
+    },
+    "display-kpi": {
+      "fontFamily": "Plus Jakarta Sans",
+      "fontSize": "42px",
+      "fontWeight": "700",
+      "lineHeight": "52px",
+      "letterSpacing": "-1px"
+    },
+    "headline-lg": {
+      "fontFamily": "Plus Jakarta Sans",
+      "fontSize": "28px",
+      "fontWeight": "700",
+      "lineHeight": "36px"
+    },
+    "headline-md": {
+      "fontFamily": "Plus Jakarta Sans",
+      "fontSize": "22px",
+      "fontWeight": "600",
+      "lineHeight": "28px"
+    },
+    "label-lg": {
+      "fontFamily": "Plus Jakarta Sans",
+      "fontSize": "12px",
+      "fontWeight": "600",
+      "lineHeight": "16px",
+      "letterSpacing": "0.5px"
+    },
+    "label-md": {
+      "fontFamily": "Plus Jakarta Sans",
+      "fontSize": "11px",
+      "fontWeight": "500",
+      "lineHeight": "16px"
+    },
+    "title-lg": {
+      "fontFamily": "Plus Jakarta Sans",
+      "fontSize": "18px",
+      "fontWeight": "600",
+      "lineHeight": "24px"
+    }
+  },
+  "spacing": {
+    "base": "4px",
+    "edge-margin": "20px",
+    "gutter": "16px",
+    "lg": "24px",
+    "md": "16px",
+    "sm": "8px",
+    "xl": "32px",
+    "xs": "4px"
+  },
+  "headlineFontFamily": "Plus Jakarta Sans",
+  "bodyFontFamily": "Plus Jakarta Sans",
+  "labelFontFamily": "Plus Jakarta Sans"
+}

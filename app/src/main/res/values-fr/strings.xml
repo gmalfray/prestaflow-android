@@ -34,24 +34,33 @@
     <string name="error_http_with_code">Le serveur a renvoyé le code HTTP %1$d. Vérifiez la configuration de la boutique et réessayez.</string>
 
     <string name="dashboard_state_empty">Aucune donnée disponible pour le moment.</string>
-    <string name="dashboard_kpi_turnover">Chiffre d’affaires</string>
+    <string name="dashboard_kpi_turnover">Chiffre d\’affaires</string>
     <string name="dashboard_kpi_orders">Commandes</string>
-    <string name="dashboard_kpi_customers">Clients</string>
+    <string name="dashboard_kpi_customers">Nouveaux clients</string>
     <string name="dashboard_kpi_products">Produits</string>
-    <string name="dashboard_chart_title_turnover">Évolution du chiffre d’affaires</string>
+    <string name="dashboard_kpi_avg_cart">Panier moyen</string>
+    <string name="dashboard_chart_title_turnover">Chiffre d\’affaires</string>
     <string name="dashboard_chart_empty">Aucune donnée graphique pour la période sélectionnée.</string>
-    <string name="dashboard_period_today">Aujourd’hui</string>
+    <string name="dashboard_chart_total_period">Total période</string>
+    <string name="dashboard_chart_vs_yesterday">vs hier</string>
+    <string name="dashboard_period_today">Aujourd\’hui</string>
     <string name="dashboard_period_week">7 jours</string>
     <string name="dashboard_period_month">30 jours</string>
     <string name="dashboard_period_quarter">Trimestre</string>
     <string name="dashboard_period_year">Année</string>
     <string name="dashboard_action_refresh">Actualiser</string>
     <!-- Accessibilité : description du graphique. Args : 1=valeur formatée, 2=tendance -->
-    <string name="dashboard_chart_content_description">Chiffre d\'affaires sur la période : %1$s, tendance : %2$s</string>
+    <string name="dashboard_chart_content_description">Chiffre d\’affaires sur la période : %1$s, tendance : %2$s</string>
     <string name="dashboard_chart_trend_rising">en hausse</string>
     <string name="dashboard_chart_trend_falling">en baisse</string>
     <string name="dashboard_chart_trend_stable">stable</string>
+    <string name="dashboard_greeting">Bonjour</string>
+    <string name="dashboard_recent_orders">Commandes récentes</string>
+    <string name="dashboard_see_all">Voir tout</string>
+    <string name="dashboard_content_description_refresh">Actualiser le tableau de bord</string>
+    <string name="dashboard_content_description_kpi_card">%1$s : %2$s</string>
 
+    <string name="skin_terracotta">Terracotta</string>
     <string name="skin_royal">Violet Royal</string>
     <string name="skin_lagoon">Lagune Turquoise</string>
     <string name="skin_ember">Coucher de Soleil</string>
@@ -68,14 +77,26 @@
     <string name="orders_list_empty">Aucune commande pour le moment.</string>
     <string name="orders_status_unknown">Statut indisponible</string>
     <string name="orders_last_updated">Mise à jour le %1$s</string>
+    <string name="orders_list_section_title">Commandes récentes</string>
+    <string name="orders_list_count">%1$d au total</string>
+    <string name="orders_action_open">Ouvrir la commande</string>
+    <string name="orders_customer_unknown">Client inconnu</string>
     <string name="products_list_empty">Aucun produit disponible.</string>
     <string name="products_status_active">Actif</string>
     <string name="products_status_inactive">Inactif</string>
-    <string name="products_stock_label">%1$d en stock</string>
-    <string name="clients_list_empty">Aucun client pour l’instant.</string>
+    <string name="products_stock_label">Stock : %1$d</string>
+    <string name="products_list_section_title">Inventaire des articles</string>
+    <string name="products_stats_total">Total produits</string>
+    <string name="products_stats_low_stock">Stock faible</string>
+    <string name="products_action_open">Ouvrir le produit</string>
+    <string name="clients_list_empty">Aucun client pour l\’instant.</string>
     <string name="clients_total_spent">Montant dépensé %1$s</string>
     <string name="clients_last_order">Dernière commande %1$s</string>
     <string name="clients_orders_count">%1$d commandes</string>
+    <string name="clients_list_section_title">Clients fidèles</string>
+    <string name="clients_stats_total">Total clients</string>
+    <string name="clients_stats_new_month">Nouveaux (mois)</string>
+    <string name="clients_action_open">Ouvrir le client</string>
 
     <string name="client_detail_title">Détails du client</string>
     <string name="client_stats_section">Statistiques</string>
@@ -98,7 +119,8 @@
     <string name="orders_detail_pane_placeholder">Sélectionnez une commande pour afficher ses détails.</string>
 
     <!-- Écran Détail commande -->
-    <string name="order_detail_title">Détails de la commande</string>
+    <string name="order_detail_title">Détail commande</string>
+    <string name="order_detail_reference_label">Référence</string>
     <string name="order_detail_error">Erreur lors du chargement de la commande</string>
     <string name="order_detail_retry">Réessayer</string>
     <string name="order_detail_change_status">Changer le statut</string>
@@ -127,8 +149,9 @@
     <!-- Écran Réglages -->
     <string name="destination_settings">Réglages</string>
     <string name="settings_appearance_title">Apparence</string>
+    <string name="settings_theme_label">Thème</string>
     <string name="settings_dark_mode_title">Mode sombre</string>
-    <string name="settings_logout">Se déconnecter</string>
+    <string name="settings_logout">Déconnexion</string>
     <string name="settings_logout_confirm_title">Se déconnecter ?</string>
     <string name="settings_logout_confirm_message">Vous devrez vous reconnecter à votre boutique.</string>
     <string name="settings_logout_confirm">Se déconnecter</string>

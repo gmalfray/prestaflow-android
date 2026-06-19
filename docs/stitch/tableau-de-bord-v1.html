@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PrestaFlow - Tableau de Bord</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#f0eded",
+                    "on-primary-fixed-variant": "#643d32",
+                    "tertiary-fixed-dim": "#cdc5be",
+                    "tertiary-container": "#a7a099",
+                    "on-primary-container": "#532e24",
+                    "surface-tint": "#7f5448",
+                    "primary-fixed": "#ffdbd1",
+                    "background": "#fcf9f8",
+                    "on-error-container": "#93000a",
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#514440",
+                    "on-tertiary-fixed-variant": "#4b4641",
+                    "on-primary-fixed": "#31130a",
+                    "primary-container": "#c99587",
+                    "secondary-container": "#e9ded4",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-container": "#3b3732",
+                    "primary": "#7f5448",
+                    "surface": "#fcf9f8",
+                    "surface-bright": "#fcf9f8",
+                    "on-secondary-fixed": "#201b15",
+                    "on-secondary-fixed-variant": "#4d453f",
+                    "on-surface": "#1b1c1c",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-container": "#69615a",
+                    "inverse-on-surface": "#f3f0f0",
+                    "surface-container-high": "#eae7e7",
+                    "on-secondary": "#ffffff",
+                    "outline-variant": "#d5c2be",
+                    "on-primary": "#ffffff",
+                    "on-background": "#1b1c1c",
+                    "tertiary-fixed": "#eae1da",
+                    "surface-variant": "#e4e2e1",
+                    "surface-dim": "#dcd9d9",
+                    "secondary-fixed": "#ece0d7",
+                    "tertiary": "#635d58",
+                    "outline": "#837470",
+                    "surface-container-highest": "#e4e2e1",
+                    "secondary-fixed-dim": "#d0c5bc",
+                    "secondary": "#655d56",
+                    "primary-fixed-dim": "#f2baab",
+                    "on-tertiary-fixed": "#1f1b17",
+                    "inverse-primary": "#f2baab",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#f6f3f2",
+                    "inverse-surface": "#303030",
+                    "on-tertiary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px",
+                    "card": "20px"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "md": "16px",
+                    "sm": "8px",
+                    "xs": "4px",
+                    "edge-margin": "20px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "display-kpi": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "title-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "600"}],
+                    "display-kpi": ["42px", {"lineHeight": "52px", "letterSpacing": "-1px", "fontWeight": "700"}],
+                    "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["11px", {"lineHeight": "16px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #fcf9f8;
+            color: #1b1c1c;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-shadow {
+            box-shadow: 0 4px 12px rgba(127, 84, 72, 0.05);
+        }
+        .graph-bar {
+            transition: height 1s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="pb-24">
+<!-- TopAppBar -->
+<header class="sticky top-0 flex justify-between items-center px-edge-margin py-md w-full bg-background/80 backdrop-blur-md z-50">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<h1 class="font-headline-lg text-headline-lg text-primary font-bold">PrestaFlow</h1>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</div>
+</header>
+<main class="px-edge-margin space-y-lg mt-md">
+<!-- Hero KPI Card -->
+<section class="animate-fade-in" style="animation-delay: 0.1s;">
+<div class="bg-surface-container-lowest p-lg rounded-card custom-shadow border border-surface-container">
+<p class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-xs">Chiffre d'affaires aujourd'hui</p>
+<div class="flex items-baseline gap-sm">
+<span class="font-display-kpi text-display-kpi text-primary">1 240,50 €</span>
+<span class="text-emerald-600 font-label-lg flex items-center">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+                        +12%
+                    </span>
+</div>
+</div>
+</section>
+<!-- KPI Grid -->
+<section class="grid grid-cols-2 gap-md animate-fade-in" style="animation-delay: 0.2s;">
+<div class="bg-surface-container-lowest p-md rounded-card custom-shadow border border-surface-container">
+<p class="font-label-md text-label-md text-on-surface-variant mb-xs">Commandes</p>
+<p class="font-headline-md text-headline-md text-on-surface">24</p>
+<p class="font-label-md text-label-md text-on-primary-fixed-variant mt-xs">8 en attente</p>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-card custom-shadow border border-surface-container">
+<p class="font-label-md text-label-md text-on-surface-variant mb-xs">Taux Conv.</p>
+<p class="font-headline-md text-headline-md text-on-surface">3.8%</p>
+<p class="font-label-md text-label-md text-on-primary-fixed-variant mt-xs">Stable</p>
+</div>
+</section>
+<!-- Artisanal Sales Chart -->
+<section class="bg-surface-container-lowest p-lg rounded-card custom-shadow border border-surface-container animate-fade-in" style="animation-delay: 0.3s;">
+<div class="flex justify-between items-center mb-lg">
+<h3 class="font-title-lg text-title-lg text-on-surface">Ventes de la semaine</h3>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="more_vert">more_vert</span>
+</div>
+<div class="flex items-end justify-between h-32 gap-sm">
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-secondary-container rounded-t-lg graph-bar" style="height: 40%"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">L</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-secondary-container rounded-t-lg graph-bar" style="height: 65%"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">M</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-secondary-container rounded-t-lg graph-bar" style="height: 55%"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">M</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-secondary-container rounded-t-lg graph-bar" style="height: 85%"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">J</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-primary-container rounded-t-lg graph-bar" style="height: 100%"></div>
+<span class="font-label-md text-label-md text-on-surface-variant font-bold">V</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-secondary-container rounded-t-lg graph-bar" style="height: 30%"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">S</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-secondary-container rounded-t-lg graph-bar" style="height: 20%"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">D</span>
+</div>
+</div>
+</section>
+<!-- Stock Alerts -->
+<section class="space-y-md animate-fade-in" style="animation-delay: 0.4s;">
+<div class="flex justify-between items-center">
+<h3 class="font-title-lg text-title-lg text-on-surface">Alertes stocks</h3>
+<button class="text-primary font-label-lg">Voir tout</button>
+</div>
+<div class="bg-surface-container-lowest rounded-card custom-shadow border border-surface-container overflow-hidden">
+<!-- Product 1 -->
+<div class="flex items-center gap-md p-md border-b border-surface-container">
+<div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="A macro photograph of a roll of luxurious deep red velvet ribbon with a soft, tactile texture. The lighting is warm and directional, emphasizing the craft and haberdashery aesthetic. The composition is clean and minimalist, set against a light cream background that matches the brand's terracotta and beige palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8jcup7oAei1RmWcf2Ehv0BVOpHSLm53-OVMHEzfVQjG_SbEbCB7NohDlT4mnF36BLGlamvQQa7Fe79bBLGMrgSaWYItJiLhku99hSxefYEThTa-Me49AFH3roQS7s9cxdyhtjnTjZxVHJRr3eQowH4EUL30QiUaVMAOS6sX-XCxCqKJVoANQOhqJSlDcr2AJin7R0gRMFwGL1cRvGqiSbtBxJrEVH4ZKki6BLTajZGBOH-s2XJvwRCYba-IBVUtE6moMrrfBS0Lw"/>
+</div>
+<div class="flex-1">
+<p class="font-body-lg text-body-lg text-on-surface">Ruban velours rouge</p>
+<p class="font-label-md text-label-md text-on-surface-variant">2 m restant</p>
+</div>
+<div class="px-sm py-1 bg-error-container text-on-error-container rounded-full font-label-md">
+                        Critique
+                    </div>
+</div>
+<!-- Product 2 -->
+<div class="flex items-center gap-md p-md border-b border-surface-container">
+<div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="A professional close-up shot of a pack of metallic sewing needles, size number five, resting on a textured linen fabric. The scene is bright and airy, reflecting a modern light-mode studio environment. The metallic surface of the needles reflects soft warm light, consistent with the terracotta and clay tones of the brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUQcNguXlUuA9B71c94sizFeaVxZ-hz2dWbR2-w3Qd1wMexd8DQMABA3gVV1yFjU8yEl71bXUv0Lnc6KBvCabDt9iAmhk8AXA_ZeJDafcBBqPM_jB4vltulZMXEWvBWumqfVgxsKhU3qOM3h8sWgMPclhuRbNApRlOGrMti5i3T3wtgxBnjuGTJh1yEuQjGSrHyzbqnnRHyyONryJhDrFIJhe9CHihCn3skVRTp1hy6gjIopi-7lkN2OhBfgZLXzjKMdvpESoNKY8"/>
+</div>
+<div class="flex-1">
+<p class="font-body-lg text-body-lg text-on-surface">Aiguilles n°5</p>
+<p class="font-label-md text-label-md text-on-surface-variant">5 packs restants</p>
+</div>
+<div class="px-sm py-1 bg-secondary-container text-on-secondary-container rounded-full font-label-md">
+                        Faible
+                    </div>
+</div>
+<!-- Product 3 -->
+<div class="flex items-center gap-md p-md">
+<div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="An artistic arrangement of natural wooden buttons on a beige cotton background. The lighting is soft and diffuse, highlighting the organic, handcrafted quality of the products. The overall atmosphere is warm and professional, suitable for a craft entrepreneur's inventory dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0Ch7ItLoQwN97FEV1f7gmY8pF4eQ0A3MJCqr4ACVjWIuWNvEQe1QJHNoaF9gkEKz-6c7okijT5JXxZxdT8A9UXztwhK2jrxGtZa-57HcsYBV19Z9sq1M_brXxjvB1Zt2dZ2loUqMjBN-Cwe_FORcXkvpL3zi1N1PVBSB0v1AEKek9JIht4QOsUHVnkbhRm7_hBFAi_vofspZY10rE60GPY1bVcPQ9a5WT0nN2Na3k21oyCmA_T5nOEd_7iK6jVxPzfxOHmwyyMgs"/>
+</div>
+<div class="flex-1">
+<p class="font-body-lg text-body-lg text-on-surface">Boutons bois olivier</p>
+<p class="font-label-md text-label-md text-on-surface-variant">12 unités restantes</p>
+</div>
+<div class="px-sm py-1 bg-secondary-container text-on-secondary-container rounded-full font-label-md">
+                        Faible
+                    </div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB for New Order (Implicitly allowed by brand/context on Home/Dashboard) -->
+<button class="fixed right-edge-margin bottom-28 w-14 h-14 bg-primary text-on-primary rounded-2xl shadow-xl flex items-center justify-center active:scale-95 transition-transform duration-150 z-40">
+<span class="material-symbols-outlined" data-icon="add" style="font-variation-settings: 'wght' 600;">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-edge-margin pb-6 pt-3 bg-surface dark:bg-surface-container shadow-lg border-t border-surface-container-high/50 backdrop-blur-md">
+<!-- Dashboard (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-1 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-lg text-label-lg mt-0.5">Tableau de bord</span>
+</a>
+<!-- Orders -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
+<span class="font-label-lg text-label-lg mt-0.5">Commandes</span>
+</a>
+<!-- Products -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-lg text-label-lg mt-0.5">Produits</span>
+</a>
+<!-- Customers -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-lg text-label-lg mt-0.5">Clients</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-lg text-label-lg mt-0.5">Réglages</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for the chart
+        document.addEventListener('DOMContentLoaded', () => {
+            const bars = document.querySelectorAll('.graph-bar');
+            bars.forEach(bar => {
+                const finalHeight = bar.style.height;
+                bar.style.height = '0px';
+                setTimeout(() => {
+                    bar.style.height = finalHeight;
+                }, 300);
+            });
+        });
+    </script>
+</body></html>

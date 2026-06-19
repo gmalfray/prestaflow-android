@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#f0eded",
+                        "on-primary-fixed-variant": "#643d32",
+                        "tertiary-fixed-dim": "#cdc5be",
+                        "tertiary-container": "#a7a099",
+                        "on-primary-container": "#532e24",
+                        "surface-tint": "#7f5448",
+                        "primary-fixed": "#ffdbd1",
+                        "background": "#fcf9f8",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#514440",
+                        "on-tertiary-fixed-variant": "#4b4641",
+                        "on-primary-fixed": "#31130a",
+                        "primary-container": "#c99587",
+                        "secondary-container": "#e9ded4",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-container": "#3b3732",
+                        "primary": "#7f5448",
+                        "surface": "#fcf9f8",
+                        "surface-bright": "#fcf9f8",
+                        "on-secondary-fixed": "#201b15",
+                        "on-secondary-fixed-variant": "#4d453f",
+                        "on-surface": "#1b1c1c",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#69615a",
+                        "inverse-on-surface": "#f3f0f0",
+                        "surface-container-high": "#eae7e7",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#d5c2be",
+                        "on-primary": "#ffffff",
+                        "on-background": "#1b1c1c",
+                        "tertiary-fixed": "#eae1da",
+                        "surface-variant": "#e4e2e1",
+                        "surface-dim": "#dcd9d9",
+                        "secondary-fixed": "#ece0d7",
+                        "tertiary": "#635d58",
+                        "outline": "#837470",
+                        "surface-container-highest": "#e4e2e1",
+                        "secondary-fixed-dim": "#d0c5bc",
+                        "secondary": "#655d56",
+                        "primary-fixed-dim": "#f2baab",
+                        "on-tertiary-fixed": "#1f1b17",
+                        "inverse-primary": "#f2baab",
+                        "on-error": "#ffffff",
+                        "surface-container-low": "#f6f3f2",
+                        "inverse-surface": "#303030",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "edge-margin": "20px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "display-kpi": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "title-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "600"}],
+                        "display-kpi": ["42px", {"lineHeight": "52px", "letterSpacing": "-1px", "fontWeight": "700"}],
+                        "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["11px", {"lineHeight": "16px", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #FAF7F4;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .client-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .client-card:active {
+            transform: scale(0.98);
+        }
+        .glass-search {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface">
+<!-- Top AppBar -->
+<header class="sticky top-0 flex justify-between items-center px-edge-margin py-md w-full bg-background/80 backdrop-blur-md z-50">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary cursor-pointer">menu</span>
+<h1 class="font-headline-lg text-headline-lg text-primary font-bold">PrestaFlow</h1>
+</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">notifications</span>
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A warm, professional profile portrait of a French artisan woman in her 40s, wearing a linen apron, in a bright workshop filled with sewing threads and textiles. Soft natural morning light, cinematic depth of field, high-end photography style consistent with a premium craft brand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiN8j2KbFUBMPdY7-pNLunkkkOuN_gSRHV9m5uXHP1h6bMH_oO-VfaUlg3zexxIa8Lmz5m_onAfDZ_vo3oHkvftMsQOJ2Q3Hgfh66i4g-RlNu_xerd-0gZBRMlveiyoHc_K5SEu2wXGit0dtkTXxhxOmQq57PFu6GiC7SOlbSXRDwmPlUbo3_bYFEJiycqMMP3N_OZqFx1bS9Vnoi1eYiFkKXquVbyaHO9BxlIVZmnZlj9NXfq580a6ahEBazTpYBRkljmaQJw71k"/>
+</div>
+</div>
+</header>
+<main class="pb-32 px-edge-margin pt-md">
+<!-- Header & Search -->
+<section class="mb-lg">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-md">Clients</h2>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant">search</span>
+</div>
+<input class="w-full bg-secondary-container/30 border-none rounded-xl py-3 pl-11 pr-md focus:ring-2 focus:ring-primary/20 text-body-md placeholder:text-on-surface-variant/60 glass-search" placeholder="Rechercher un client" type="text"/>
+</div>
+</section>
+<!-- KPI Cards (Bento Style) -->
+<section class="grid grid-cols-2 gap-md mb-lg">
+<div class="bg-surface-container-lowest p-md rounded-[20px] shadow-sm flex flex-col gap-xs">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total Clients</span>
+<span class="font-display-kpi text-display-kpi text-primary">1,284</span>
+</div>
+<div class="bg-primary-container/10 p-md rounded-[20px] shadow-sm flex flex-col gap-xs">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Nouveaux (Mois)</span>
+<span class="font-display-kpi text-display-kpi text-on-primary-container">42</span>
+</div>
+</section>
+<!-- Client List -->
+<section class="flex flex-col gap-md">
+<div class="flex justify-between items-center mb-sm">
+<h3 class="font-title-lg text-title-lg text-on-surface">Clients fidèles</h3>
+<span class="font-label-lg text-label-lg text-primary cursor-pointer">Tout voir</span>
+</div>
+<!-- Client Item 1 -->
+<div class="client-card bg-surface-container-lowest p-md rounded-[20px] shadow-sm flex items-center justify-between border border-transparent hover:border-primary-container/30 transition-all">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A close-up portrait of a cheerful elderly woman with silver hair, wearing a colorful knitted scarf, in a sunlit French living room. High-quality portrait photography, soft warm tones, artisanal and crafted aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiccMXZvLGdap6ii4nxGGptMS6C2e8v1jXJ65eA7WjYD7NzO80uEC_Obbez65jaPqbr13DDbFvF1vU-7p5J448gtHDCNbMoTol5t-hTDkRnCeG26_EourHP-Atsw2UsGIBqmk0XmNqKXRik4s4l506sPFdJ1p1YpPRLX_UecJ6tfzDVAJej2BzR5c_PsmXorLhV4Lt2rh_1_vhGhALHFMUWfzldWtZTlazc9m6Po4wrD5mr_aUI7QIUxR9PVjRtP76oAGSadEGoGQ"/>
+</div>
+<div class="flex flex-col">
+<span class="font-title-lg text-title-lg text-on-surface">Marie Lefebvre</span>
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span> Lyon
+                        </span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-sm">
+<div class="bg-secondary-container px-3 py-1 rounded-full">
+<span class="font-label-md text-label-md text-on-secondary-container">18 commandes</span>
+</div>
+<button class="text-primary font-semibold text-body-md flex items-center gap-1 hover:underline">
+                        Détails <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Client Item 2 -->
+<div class="client-card bg-surface-container-lowest p-md rounded-[20px] shadow-sm flex items-center justify-between border border-transparent hover:border-primary-container/30 transition-all">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-secondary-fixed flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A portrait of a young man with glasses, looking thoughtful, in a creative studio environment with rolls of fabric and drafting tools visible in the background. Modern artisan aesthetic, natural linen colors, professional studio lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrk_tdl4SIDrzmsJz6kqqlGA9wW0IIiRskufTfUKa362HOJSYhY02wdk05yH7FBOZOSI1t8UHxZ0nJlkPugd-okzaSf0d7h_UdtVrJtR-2VBINeuKUbIB6utj7Q3Hwqx_pqRwGaN26kLDB8XnQ7syAt0GtcxpkgBWqLOCTKWxJEyTNMWurrGGL_56TJFyjrScFkMwsX74yroUSM7YxWDjEtjMswKIgq4iTF0lIFkQHHUMMzoHnOgePw8s8UM0cqUnXuD_7RBi2cTg"/>
+</div>
+<div class="flex flex-col">
+<span class="font-title-lg text-title-lg text-on-surface">Thomas Dubois</span>
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span> Paris
+                        </span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-sm">
+<div class="bg-secondary-container px-3 py-1 rounded-full">
+<span class="font-label-md text-label-md text-on-secondary-container">12 commandes</span>
+</div>
+<button class="text-primary font-semibold text-body-md flex items-center gap-1 hover:underline">
+                        Détails <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Client Item 3 -->
+<div class="client-card bg-surface-container-lowest p-md rounded-[20px] shadow-sm flex items-center justify-between border border-transparent hover:border-primary-container/30 transition-all">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A smiling woman in her 30s with braided hair, wearing a mustard yellow wool sweater, holding a handmade ceramic mug. Warm, cozy domestic interior in Bordeaux, soft lighting, artisanal vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_yQ72fIRdewfdpQjd-mpBpVx4vm4byxiObHNDyEo9WBED4AFtAJebEGHgoTxhtZNurEFqGP41xq4ojWSAt0Qc6Pvpt7pn6lc54KqqUYMOTAmjQ0FA6B5llz8GWXWaCQBR-IpPrlAUxwbPi7GQB4H7Rq1j6FyaukdebK74BPyOoUt30i6bHQ5izyB8VnxlYQ-Qdy-Y0g2eGOIkShgpFMSqSCB8L58r9K_XNTo1A_lk_F1kJn3U-rBGcYxVgIdjKkTUaDyyrWOLuSw"/>
+</div>
+<div class="flex flex-col">
+<span class="font-title-lg text-title-lg text-on-surface">Chloé Martin</span>
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span> Bordeaux
+                        </span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-sm">
+<div class="bg-secondary-container px-3 py-1 rounded-full">
+<span class="font-label-md text-label-md text-on-secondary-container">25 commandes</span>
+</div>
+<button class="text-primary font-semibold text-body-md flex items-center gap-1 hover:underline">
+                        Détails <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Client Item 4 -->
+<div class="client-card bg-surface-container-lowest p-md rounded-[20px] shadow-sm flex items-center justify-between border border-transparent hover:border-primary-container/30 transition-all">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed-dim flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A middle-aged man with a beard and a beret, looking friendly, in a traditional French carpentry workshop. Authentic craft atmosphere, wood textures, warm amber lighting, cinematic quality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfWzzyevF9nTbMvxS7ipyBGOGVV1RAoyOnqjZAFUBFQrmjyPO6Yw_DRIgMinGEBvE6cIFgeeEjD2Z5HUxfFOQSWKzZCWF-oNdRcaSEipzwtb4JH2PbS86nfwoz2fQfeBq5CyvPjNtTVCZt7MMmSHW0PyTuk_zcPy4uYrXlBVO5X1fSuzsCD919LkZVmuoxbutS4Wowt3QdE-YHaPFAHOKkAq1kR-6HllRrtJh6YoiPVuoOQ6DNGa17u3XSXjemWgy5UgEyvL2XyWQ"/>
+</div>
+<div class="flex flex-col">
+<span class="font-title-lg text-title-lg text-on-surface">Jean-Pierre Petit</span>
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span> Nantes
+                        </span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-sm">
+<div class="bg-secondary-container px-3 py-1 rounded-full">
+<span class="font-label-md text-label-md text-on-secondary-container">8 commandes</span>
+</div>
+<button class="text-primary font-semibold text-body-md flex items-center gap-1 hover:underline">
+                        Détails <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary text-on-primary rounded-2xl shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-40">
+<span class="material-symbols-outlined">person_add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-edge-margin pb-4 pt-2 bg-surface dark:bg-surface-container shadow-lg">
+<!-- Tableau de bord -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors px-5 py-1" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-lg text-label-lg">Tableau de bord</span>
+</a>
+<!-- Commandes -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors px-5 py-1" href="#">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span class="font-label-lg text-label-lg">Commandes</span>
+</a>
+<!-- Produits -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors px-5 py-1" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-lg text-label-lg">Produits</span>
+</a>
+<!-- Clients (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-label-lg text-label-lg">Clients</span>
+</a>
+<!-- Réglages -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors px-5 py-1" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-lg text-label-lg">Réglages</span>
+</a>
+</nav>
+<script>
+        // Simple search filter interaction simulation
+        const searchInput = document.querySelector('input');
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.client-card');
+            
+            cards.forEach(card => {
+                const name = card.querySelector('.font-title-lg').textContent.toLowerCase();
+                if (name.includes(term)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body></html>

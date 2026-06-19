@@ -3,39 +3,64 @@ package com.rebuildit.prestaflow.ui.products
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.products.model.Product
+import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
-import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import com.rebuildit.prestaflow.ui.components.SectionHeader
+import com.rebuildit.prestaflow.ui.theme.Dimensions
+import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
+
+/** Seuil de stock faible — produit signalé en badge rouge sous ce seuil (inclus). */
+private const val LOW_STOCK_THRESHOLD = 5
 
 @Composable
 fun ProductsRoute(
@@ -82,7 +107,7 @@ fun ProductsScreen(
     }
 }
 
-@Suppress("LongParameterList") // Composable liste : modifier + data + états + callbacks requis par l'architecture screen/content
+@Suppress("LongParameterList")
 @Composable
 private fun ProductList(
     modifier: Modifier,
@@ -93,101 +118,335 @@ private fun ProductList(
     onProductClick: (Long) -> Unit,
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
-    val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
+    val lowStockCount = remember(products) { products.count { it.stock.quantity <= LOW_STOCK_THRESHOLD } }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        AnimatedVisibility(visible = isRefreshing, enter = fadeIn(), exit = fadeOut()) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-        }
-
-        if (errorMessage != null) {
-            ErrorRow(message = errorMessage, onRefresh = onRefresh)
-        }
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            items(products, key = { it.id }) { product ->
-                ProductCard(
-                    product = product,
-                    currencyFormatter = currencyFormatter,
-                    dateFormatter = dateFormatter,
-                    onClick = { onProductClick(product.id) },
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            AnimatedVisibility(visible = isRefreshing, enter = fadeIn(), exit = fadeOut()) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainer,
                 )
+            }
+            if (errorMessage != null) {
+                ErrorRow(message = errorMessage, onRefresh = onRefresh)
+            }
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding =
+                    PaddingValues(
+                        horizontal = Dimensions.screenEdgeMargin,
+                        vertical = Dimensions.spacingL,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+            ) {
+                // KPI stats : total produits + stock faible
+                item {
+                    ProductsStatsRow(
+                        totalCount = products.size,
+                        lowStockCount = lowStockCount,
+                    )
+                }
+
+                item { Spacer(modifier = Modifier.height(Dimensions.spacingXs)) }
+
+                // En-tête de section
+                item {
+                    SectionHeader(
+                        title = stringResource(R.string.products_list_section_title),
+                    )
+                }
+
+                // Carte conteneur avec toutes les lignes produit
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                            ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    ) {
+                        Column {
+                            products.forEachIndexed { index, product ->
+                                ProductRow(
+                                    product = product,
+                                    currencyFormatter = currencyFormatter,
+                                    onClick = { onProductClick(product.id) },
+                                )
+                                if (index < products.lastIndex) {
+                                    HorizontalDivider(
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        thickness = 1.dp,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ─── KPI stats produits ───────────────────────────────────────────────────────
+
+@Composable
+private fun ProductsStatsRow(
+    totalCount: Int,
+    lowStockCount: Int,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.gutter),
+    ) {
+        // Total produits
+        StatCard(
+            modifier = Modifier.weight(1f),
+            label = stringResource(R.string.products_stats_total),
+            value = totalCount.toString(),
+        )
+        // Stock faible
+        StatCard(
+            modifier = Modifier.weight(1f),
+            label = stringResource(R.string.products_stats_low_stock),
+            value = lowStockCount.toString(),
+            isAlert = lowStockCount > 0,
+        )
+    }
+}
+
+@Composable
+private fun StatCard(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    isAlert: Boolean = false,
+) {
+    val bgColor =
+        if (isAlert) {
+            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLowest
+        }
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimensions.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = label.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color =
+                        if (isAlert) {
+                            MaterialTheme.colorScheme.onErrorContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                )
+                if (isAlert) {
+                    Icon(
+                        imageVector = Icons.Outlined.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineMedium,
+                color =
+                    if (isAlert) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+            )
+        }
+    }
+}
+
+// ─── Ligne produit ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun ProductRow(
+    product: Product,
+    currencyFormatter: NumberFormat,
+    onClick: () -> Unit,
+) {
+    val priceText = remember(product.price) { currencyFormatter.format(product.price) }
+    val isLowStock = product.stock.quantity <= LOW_STOCK_THRESHOLD
+    val stockText = stringResource(R.string.products_stock_label, product.stock.quantity)
+
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(
+                    onClickLabel = stringResource(R.string.products_action_open),
+                    role = Role.Button,
+                    onClick = onClick,
+                )
+                .semantics { role = Role.Button }
+                .padding(Dimensions.cardPadding),
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Miniature produit (48dp, radius 8dp)
+        ProductThumbnail(
+            imageUrl = product.images.firstOrNull()?.url,
+            contentDescription = product.name,
+        )
+
+        // Contenu
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = product.name,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = priceText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                // Badge stock faible ou affichage stock normal
+                if (isLowStock) {
+                    StockBadge(text = stockText, isLow = true)
+                } else {
+                    Text(
+                        text = stockText,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ProductCard(
-    product: Product,
-    currencyFormatter: NumberFormat,
-    dateFormatter: DateTimeFormatter,
-    onClick: () -> Unit,
+private fun ProductThumbnail(
+    imageUrl: String?,
+    contentDescription: String,
 ) {
-    val priceText =
-        remember(product.price) {
-            currencyFormatter.format(product.price)
+    val shape = RoundedCornerShape(Dimensions.chipCornerRadius)
+    if (imageUrl != null) {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            modifier =
+                Modifier
+                    .size(48.dp)
+                    .clip(shape)
+                    .background(MaterialTheme.colorScheme.surfaceContainer),
+        )
+    } else {
+        Box(
+            modifier =
+                Modifier
+                    .size(48.dp)
+                    .clip(shape)
+                    .background(MaterialTheme.colorScheme.surfaceContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "?",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
-    val updatedAt =
-        remember(product.updatedAt) {
-            formatTimestamp(product.updatedAt, dateFormatter)
-        }
+    }
+}
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        onClick = onClick,
+@Composable
+private fun StockBadge(
+    text: String,
+    isLow: Boolean,
+) {
+    val bgColor = if (isLow) Color(0xFFFFDAD6) else MaterialTheme.colorScheme.surfaceContainer
+    val textColor =
+        if (isLow) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+    Box(
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(Dimensions.chipCornerRadius))
+                .background(bgColor)
+                .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = product.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = textColor,
+        )
+    }
+}
 
-            if (product.reference.isNotBlank()) {
-                Text(
-                    text = product.reference,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+// ─── Previews ─────────────────────────────────────────────────────────────────
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    text = priceText,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    text =
-                        stringResource(
-                            id = if (product.active) R.string.products_status_active else R.string.products_status_inactive,
+@Preview(showBackground = true, name = "Produits — liste")
+@Composable
+private fun PreviewProductsList() {
+    PrestaFlowTheme {
+        ProductsScreen(
+            state =
+                ProductsUiState(
+                    products =
+                        listOf(
+                            Product(
+                                id = 1L,
+                                name = "Boutons Céramique Beige",
+                                reference = "BTN-001",
+                                price = 12.50,
+                                active = true,
+                                stock = ProductStock(quantity = 45),
+                                images = emptyList(),
+                                updatedAt = "2026-06-19T10:00:00Z",
+                            ),
+                            Product(
+                                id = 2L,
+                                name = "Fil Coton Bio \"Sauge\"",
+                                reference = "FIL-042",
+                                price = 4.20,
+                                active = true,
+                                stock = ProductStock(quantity = 4),
+                                images = emptyList(),
+                                updatedAt = "2026-06-18T10:00:00Z",
+                            ),
                         ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (product.active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Text(
-                text = stringResource(id = R.string.products_stock_label, product.stock.quantity),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            if (updatedAt != null) {
-                Text(
-                    text = updatedAt,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+                    isLoading = false,
+                    isRefreshing = false,
+                ),
+            onRefresh = {},
+            onProductClick = {},
+        )
     }
 }

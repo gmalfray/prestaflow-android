@@ -1,0 +1,82 @@
+package com.rebuildit.prestaflow.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Terracotta skin — charte boutique Pense Bonheur (refonte Stitch).
+// Tokens alignés sur design-tokens.json (Google Stitch, couleur de marque #c99587).
+// primary = #7f5448 (brun terracotta profond), primaryContainer = #c99587 (rose terracotta).
+// Fond chaud #fcf9f8, cartes surface_container_lowest = #ffffff.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Light ────────────────────────────────────────────────────────────────────
+val TerracottaLightPrimary = Color(0xFF7F5448)
+val TerracottaLightOnPrimary = Color(0xFFFFFFFF)
+val TerracottaLightPrimaryContainer = Color(0xFFC99587)
+val TerracottaLightOnPrimaryContainer = Color(0xFF532E24)
+val TerracottaLightInversePrimary = Color(0xFFF2BAAB)
+val TerracottaLightSecondary = Color(0xFF655D56)
+val TerracottaLightOnSecondary = Color(0xFFFFFFFF)
+val TerracottaLightSecondaryContainer = Color(0xFFE9DED4)
+val TerracottaLightOnSecondaryContainer = Color(0xFF69615A)
+val TerracottaLightTertiary = Color(0xFF635D58)
+val TerracottaLightOnTertiary = Color(0xFFFFFFFF)
+val TerracottaLightTertiaryContainer = Color(0xFFA7A099)
+val TerracottaLightOnTertiaryContainer = Color(0xFF3B3732)
+val TerracottaLightError = Color(0xFFBA1A1A)
+val TerracottaLightOnError = Color(0xFFFFFFFF)
+val TerracottaLightErrorContainer = Color(0xFFFFDAD6)
+val TerracottaLightOnErrorContainer = Color(0xFF93000A)
+val TerracottaLightBackground = Color(0xFFFCF9F8)
+val TerracottaLightOnBackground = Color(0xFF1B1C1C)
+val TerracottaLightSurface = Color(0xFFFCF9F8)
+val TerracottaLightOnSurface = Color(0xFF1B1C1C)
+val TerracottaLightSurfaceVariant = Color(0xFFE4E2E1)
+val TerracottaLightOnSurfaceVariant = Color(0xFF514440)
+val TerracottaLightSurfaceContainer = Color(0xFFF0EDED)
+val TerracottaLightSurfaceContainerLow = Color(0xFFF6F3F2)
+val TerracottaLightSurfaceContainerHigh = Color(0xFFEAE7E7)
+val TerracottaLightSurfaceContainerHighest = Color(0xFFE4E2E1)
+val TerracottaLightSurfaceContainerLowest = Color(0xFFFFFFFF)
+val TerracottaLightSurfaceBright = Color(0xFFFCF9F8)
+val TerracottaLightSurfaceDim = Color(0xFFDCD9D9)
+val TerracottaLightSurfaceTint = Color(0xFF7F5448)
+val TerracottaLightInverseSurface = Color(0xFF303030)
+val TerracottaLightInverseOnSurface = Color(0xFFF3F0F0)
+val TerracottaLightOutline = Color(0xFF837470)
+val TerracottaLightOutlineVariant = Color(0xFFD5C2BE)
+
+// ── Dark ─────────────────────────────────────────────────────────────────────
+// Palette dark dérivée du tonal Stitch (inverse de la palette light M3).
+val TerracottaDarkPrimary = Color(0xFFF2BAAB)
+val TerracottaDarkOnPrimary = Color(0xFF4A231A)
+val TerracottaDarkPrimaryContainer = Color(0xFF7F5448)
+val TerracottaDarkOnPrimaryContainer = Color(0xFFFFDBD1)
+val TerracottaDarkInversePrimary = Color(0xFF7F5448)
+val TerracottaDarkSecondary = Color(0xFFD0C5BC)
+val TerracottaDarkOnSecondary = Color(0xFF362F2A)
+val TerracottaDarkSecondaryContainer = Color(0xFF4D453F)
+val TerracottaDarkOnSecondaryContainer = Color(0xFFECE0D7)
+val TerracottaDarkTertiary = Color(0xFFCDC5BE)
+val TerracottaDarkOnTertiary = Color(0xFF34302B)
+val TerracottaDarkTertiaryContainer = Color(0xFF4B4641)
+val TerracottaDarkOnTertiaryContainer = Color(0xFFEAE1DA)
+val TerracottaDarkError = Color(0xFFFFB4AB)
+val TerracottaDarkOnError = Color(0xFF690005)
+val TerracottaDarkErrorContainer = Color(0xFF93000A)
+val TerracottaDarkOnErrorContainer = Color(0xFFFFDAD6)
+val TerracottaDarkBackground = Color(0xFF131314)
+val TerracottaDarkOnBackground = Color(0xFFE4E2E1)
+val TerracottaDarkSurface = Color(0xFF131314)
+val TerracottaDarkOnSurface = Color(0xFFE4E2E1)
+val TerracottaDarkSurfaceVariant = Color(0xFF514440)
+val TerracottaDarkOnSurfaceVariant = Color(0xFFD5C2BE)
+val TerracottaDarkSurfaceContainer = Color(0xFF201F20)
+val TerracottaDarkSurfaceContainerLow = Color(0xFF1B1C1C)
+val TerracottaDarkSurfaceContainerHigh = Color(0xFF2A2B2B)
+val TerracottaDarkSurfaceContainerHighest = Color(0xFF353535)
+val TerracottaDarkSurfaceContainerLowest = Color(0xFF0E0E0F)
+val TerracottaDarkInverseSurface = Color(0xFFE4E2E1)
+val TerracottaDarkInverseOnSurface = Color(0xFF303030)
+val TerracottaDarkOutline = Color(0xFF9F8D89)
+val TerracottaDarkOutlineVariant = Color(0xFF514440)

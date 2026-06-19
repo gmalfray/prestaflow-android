@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PrestaFlow - Tableau de Bord</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#f0eded",
+                    "on-primary-fixed-variant": "#643d32",
+                    "tertiary-fixed-dim": "#cdc5be",
+                    "tertiary-container": "#a7a099",
+                    "on-primary-container": "#532e24",
+                    "surface-tint": "#7f5448",
+                    "primary-fixed": "#ffdbd1",
+                    "background": "#FAF7F4",
+                    "on-error-container": "#93000a",
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#514440",
+                    "on-tertiary-fixed-variant": "#4b4641",
+                    "on-primary-fixed": "#31130a",
+                    "primary-container": "#c99587",
+                    "secondary-container": "#e9ded4",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-container": "#3b3732",
+                    "primary": "#7f5448",
+                    "surface": "#fcf9f8",
+                    "surface-bright": "#fcf9f8",
+                    "on-secondary-fixed": "#201b15",
+                    "on-secondary-fixed-variant": "#4d453f",
+                    "on-surface": "#1b1c1c",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-container": "#69615a",
+                    "inverse-on-surface": "#f3f0f0",
+                    "surface-container-high": "#eae7e7",
+                    "on-secondary": "#ffffff",
+                    "outline-variant": "#d5c2be",
+                    "on-primary": "#ffffff",
+                    "on-background": "#1b1c1c",
+                    "tertiary-fixed": "#eae1da",
+                    "surface-variant": "#e4e2e1",
+                    "surface-dim": "#dcd9d9",
+                    "secondary-fixed": "#ece0d7",
+                    "tertiary": "#635d58",
+                    "outline": "#837470",
+                    "surface-container-highest": "#e4e2e1",
+                    "secondary-fixed-dim": "#d0c5bc",
+                    "secondary": "#655d56",
+                    "primary-fixed-dim": "#f2baab",
+                    "on-tertiary-fixed": "#1f1b17",
+                    "inverse-primary": "#f2baab",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#f6f3f2",
+                    "inverse-surface": "#303030",
+                    "on-tertiary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px",
+                    "card": "20px"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "md": "16px",
+                    "sm": "8px",
+                    "xs": "4px",
+                    "edge-margin": "20px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "display-kpi": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "title-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "600"}],
+                    "display-kpi": ["42px", {"lineHeight": "52px", "letterSpacing": "-1px", "fontWeight": "700"}],
+                    "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["11px", {"lineHeight": "16px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #FAF7F4;
+            color: #1b1c1c;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-shadow {
+            box-shadow: 0 4px 20px rgba(127, 84, 72, 0.08);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        .chart-gradient {
+            background: linear-gradient(180deg, rgba(201, 149, 135, 0.3) 0%, rgba(201, 149, 135, 0) 100%);
+        }
+    </style>
+</head>
+<body class="pb-32">
+<!-- Top Header -->
+<header class="sticky top-0 px-edge-margin py-lg bg-[#FAF7F4]/90 backdrop-blur-md z-50 space-y-md">
+<div class="flex justify-between items-center">
+<div>
+<p class="text-on-surface-variant font-body-md">Bonjour 👋</p>
+<h1 class="text-headline-md font-bold text-on-surface">Pense Bonheur</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center bg-surface-container-lowest rounded-full custom-shadow border border-surface-container">
+<span class="material-symbols-outlined text-primary" data-icon="refresh">refresh</span>
+</button>
+</div>
+<!-- Period Selector -->
+<div class="flex gap-sm overflow-x-auto no-scrollbar">
+<button class="px-lg py-sm bg-primary text-on-primary rounded-full font-label-lg whitespace-nowrap">Aujourd'hui</button>
+<button class="px-lg py-sm bg-surface-container-lowest text-on-surface-variant border border-surface-container rounded-full font-label-lg whitespace-nowrap">7 jours</button>
+<button class="px-lg py-sm bg-surface-container-lowest text-on-surface-variant border border-surface-container rounded-full font-label-lg whitespace-nowrap">30 jours</button>
+</div>
+</header>
+<main class="px-edge-margin space-y-lg">
+<!-- KPI Grid (2x2) -->
+<section class="grid grid-cols-2 gap-md animate-fade-in" style="animation-delay: 0.1s;">
+<!-- Card 1 -->
+<div class="bg-white p-md rounded-card custom-shadow flex flex-col justify-between aspect-square">
+<div class="flex justify-between items-start">
+<div class="p-sm bg-primary-container/20 rounded-xl">
+<span class="material-symbols-outlined text-primary" data-icon="payments">payments</span>
+</div>
+<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold">+12%</span>
+</div>
+<div>
+<p class="text-on-surface-variant text-[11px] font-semibold uppercase tracking-tight mb-1 leading-none">Chiffre d'affaires</p>
+<p class="text-title-lg font-bold text-on-surface">1 240,50 €</p>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white p-md rounded-card custom-shadow flex flex-col justify-between aspect-square">
+<div class="p-sm bg-primary-container/20 rounded-xl w-fit">
+<span class="material-symbols-outlined text-primary" data-icon="shopping_bag">shopping_bag</span>
+</div>
+<div>
+<p class="text-on-surface-variant text-[11px] font-semibold uppercase tracking-tight mb-1 leading-none">Commandes</p>
+<p class="text-title-lg font-bold text-on-surface">38</p>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white p-md rounded-card custom-shadow flex flex-col justify-between aspect-square">
+<div class="p-sm bg-primary-container/20 rounded-xl w-fit">
+<span class="material-symbols-outlined text-primary" data-icon="analytics">analytics</span>
+</div>
+<div>
+<p class="text-on-surface-variant text-[11px] font-semibold uppercase tracking-tight mb-1 leading-none">Panier moyen</p>
+<p class="text-title-lg font-bold text-on-surface">32,60 €</p>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-white p-md rounded-card custom-shadow flex flex-col justify-between aspect-square">
+<div class="p-sm bg-primary-container/20 rounded-xl w-fit">
+<span class="material-symbols-outlined text-primary" data-icon="person_add">person_add</span>
+</div>
+<div>
+<p class="text-on-surface-variant text-[11px] font-semibold uppercase tracking-tight mb-1 leading-none">Nouveaux clients</p>
+<p class="text-title-lg font-bold text-on-surface">9</p>
+</div>
+</div>
+</section>
+<!-- Main Chart Card -->
+<section class="bg-white p-lg rounded-card custom-shadow animate-fade-in" style="animation-delay: 0.2s;">
+<div class="flex justify-between items-center mb-lg">
+<div>
+<h3 class="font-title-lg text-on-surface">Chiffre d'affaires</h3>
+<div class="flex items-center gap-xs mt-1">
+<span class="text-emerald-600 font-label-lg flex items-center">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+                            +12.4%
+                        </span>
+<span class="text-on-surface-variant text-label-md">vs hier</span>
+</div>
+</div>
+<div class="text-right">
+<p class="text-headline-md font-bold text-primary">8 450,00 €</p>
+<p class="text-label-md text-on-surface-variant">Total période</p>
+</div>
+</div>
+<!-- Mock Area Chart -->
+<div class="relative h-40 w-full">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<defs>
+<lineargradient id="chartFill" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#c99587" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#c99587" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,80 Q10,75 20,60 T40,40 T60,65 T80,30 T100,50 L100,100 L0,100 Z" fill="url(#chartFill)"></path>
+<path d="M0,80 Q10,75 20,60 T40,40 T60,65 T80,30 T100,50" fill="none" stroke="#7f5448" stroke-linecap="round" stroke-width="2.5"></path>
+</svg>
+</div>
+</section>
+<!-- Recent Orders Section -->
+<section class="space-y-md animate-fade-in" style="animation-delay: 0.3s;">
+<div class="flex justify-between items-center">
+<h3 class="font-title-lg text-on-surface">Commandes récentes</h3>
+<button class="text-primary font-label-lg">Voir tout</button>
+</div>
+<div class="bg-white rounded-card custom-shadow overflow-hidden divide-y divide-surface-container">
+<!-- Order 1 -->
+<div class="flex items-center gap-md p-md">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center font-bold text-on-secondary-container">ML</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-bold text-on-surface">Marie L.</p>
+<p class="text-label-md text-on-surface-variant">#ORD-8492</p>
+</div>
+<p class="font-bold text-on-surface">45,00 €</p>
+</div>
+<div class="mt-2">
+<span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wide">Payée</span>
+</div>
+</div>
+</div>
+<!-- Order 2 -->
+<div class="flex items-center gap-md p-md">
+<div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center font-bold text-primary">TD</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-bold text-on-surface">Thomas D.</p>
+<p class="text-label-md text-on-surface-variant">#ORD-8491</p>
+</div>
+<p class="font-bold text-on-surface">82,30 €</p>
+</div>
+<div class="mt-2">
+<span class="px-3 py-1 bg-primary text-on-primary rounded-full text-[10px] font-bold uppercase tracking-wide">Expédiée</span>
+</div>
+</div>
+</div>
+<!-- Order 3 -->
+<div class="flex items-center gap-md p-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface-variant">SB</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-bold text-on-surface">Sophie B.</p>
+<p class="text-label-md text-on-surface-variant">#ORD-8490</p>
+</div>
+<p class="font-bold text-on-surface">24,15 €</p>
+</div>
+<div class="mt-2">
+<span class="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold uppercase tracking-wide">En attente</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB for New Order -->
+<button class="fixed right-edge-margin bottom-28 w-14 h-14 bg-primary text-on-primary rounded-2xl shadow-xl flex items-center justify-center active:scale-95 transition-transform duration-150 z-40">
+<span class="material-symbols-outlined" data-icon="add" style="font-variation-settings: 'wght' 600;">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-edge-margin pb-6 pt-3 bg-surface/90 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] border-t border-surface-container-high/50 backdrop-blur-md">
+<!-- Dashboard (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container/30 text-primary rounded-full px-5 py-1.5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-lg text-[10px] mt-0.5">Tableau de bord</span>
+</a>
+<!-- Orders -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
+<span class="font-label-lg text-[10px] mt-0.5">Commandes</span>
+</a>
+<!-- Products -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-lg text-[10px] mt-0.5">Produits</span>
+</a>
+<!-- Customers -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-lg text-[10px] mt-0.5">Clients</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-lg text-[10px] mt-0.5">Réglages</span>
+</a>
+</nav>
+</body></html>
