@@ -5,10 +5,12 @@ import com.google.firebase.messaging.RemoteMessage
 import com.rebuildit.prestaflow.core.notifications.FcmRegistrationManager
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -46,8 +48,10 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
                 scope.launch {
                     try {
                         ordersRepository.refreshOrder(orderId)
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to refresh order $orderId from push")
+                    } catch (e: IOException) {
+                        Timber.e(e, "Network error refreshing order $orderId from push")
+                    } catch (e: HttpException) {
+                        Timber.e(e, "HTTP error refreshing order $orderId from push (code=${e.code()})")
                     }
                 }
             }

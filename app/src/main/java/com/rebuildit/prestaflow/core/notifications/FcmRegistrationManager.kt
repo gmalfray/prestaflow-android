@@ -97,7 +97,10 @@ class FcmRegistrationManager @Inject constructor(
         } catch (error: IllegalStateException) {
             Timber.w(error, "Firebase already initialized with different context")
             true
-        } catch (error: Exception) {
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // FirebaseApp.initializeApp peut lancer divers RuntimeException non documentés
+            error: Exception
+        ) {
             Timber.w(error, "Failed to initialize FirebaseApp")
             false
         }

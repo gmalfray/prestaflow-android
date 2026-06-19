@@ -8,14 +8,17 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderShippingDto
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderItem
 import com.rebuildit.prestaflow.domain.orders.model.OrderShipping
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import timber.log.Timber
 
 fun OrderEntity.toDomain(): Order {
     val itemsList = itemsJson?.let {
         try {
             Json.decodeFromString<List<OrderItem>>(it)
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            Timber.w(e, "Failed to deserialize order items from cached JSON")
             emptyList()
         }
     }.orEmpty()
@@ -23,7 +26,8 @@ fun OrderEntity.toDomain(): Order {
     val shippingInfo = shippingJson?.let {
         try {
             Json.decodeFromString<OrderShipping>(it)
-        } catch (e: Exception) {
+        } catch (e: SerializationException) {
+            Timber.w(e, "Failed to deserialize order shipping from cached JSON")
             null
         }
     }
