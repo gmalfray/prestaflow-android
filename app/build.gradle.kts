@@ -26,8 +26,8 @@ android {
         applicationId = "com.rebuildit.prestaflow"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.1.3"
+        versionCode = 5
+        versionName = "0.1.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -49,16 +49,19 @@ android {
 
             // Only configure if keystore exists
             if (keystoreFile.exists()) {
-                // .trim() guards against a stray space/newline pasted into the secret,
-                // which on a PKCS12 keystore surfaces as "Given final block not properly padded".
-                val storePw = (System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as? String)?.trim()
+                // trim()+ifBlank guard against (a) a stray space/newline pasted into a secret and
+                // (b) an unset GitHub secret rendering as an EMPTY env var ("") rather than null —
+                // both surface as "Given final block not properly padded" on a PKCS12 keystore.
+                val storePw = (System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as? String)
+                    ?.trim()?.ifBlank { null }
                 storeFile = keystoreFile
                 storePassword = storePw
-                keyAlias = (System.getenv("SIGNING_KEY_ALIAS") ?: project.findProperty("SIGNING_KEY_ALIAS") as? String ?: "prestaflow").trim()
+                keyAlias = (System.getenv("SIGNING_KEY_ALIAS") ?: project.findProperty("SIGNING_KEY_ALIAS") as? String ?: "prestaflow")
+                    .trim().ifBlank { "prestaflow" }
                 // Falls back to the store password when the key password is not provided
                 // (standard case: keystore and key share the same password).
-                keyPassword = (System.getenv("SIGNING_KEY_PASSWORD")
-                    ?: project.findProperty("SIGNING_KEY_PASSWORD") as? String)?.trim()
+                keyPassword = (System.getenv("SIGNING_KEY_PASSWORD") ?: project.findProperty("SIGNING_KEY_PASSWORD") as? String)
+                    ?.trim()?.ifBlank { null }
                     ?: storePw
             }
         }
