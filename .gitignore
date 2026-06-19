@@ -46,3 +46,6 @@ Thumbs.db
 
 # Claude Code local config & subagents (infra recon — keep out of this public repo)
 .claude/
+
+# Kotlin compiler session artifacts
+.kotlin/
