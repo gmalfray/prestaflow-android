@@ -21,6 +21,7 @@ fun formatCurrency(amount: Double, currencyCode: String): String {
  * Tente de parser et de formater un timestamp ISO ou "yyyy-MM-dd HH:mm:ss".
  * Retourne null si [value] est null/vide, ou la valeur brute si le parsing échoue.
  */
+@Suppress("ReturnCount") // Tentatives successives de parsing de formats datetime différents
 fun formatTimestamp(value: String?, formatter: DateTimeFormatter): String? {
     if (value.isNullOrBlank()) return null
     val zone = ZoneId.systemDefault()

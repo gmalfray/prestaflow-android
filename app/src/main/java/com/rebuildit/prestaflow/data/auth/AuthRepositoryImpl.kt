@@ -34,6 +34,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val _authState = MutableStateFlow(initialState())
     override val authState: StateFlow<AuthState> = _authState
 
+    @Suppress("ReturnCount") // Validation URL + échecs réseau distincts : early-returns intentionnels
     override suspend fun login(shopUrl: String, apiKey: String): AuthResult {
         _authState.value = AuthState.Loading
 

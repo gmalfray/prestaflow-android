@@ -124,6 +124,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    @Suppress("ReturnCount") // Parsing défensif QR code : early-returns sur chaque étape de décodage/validation
     private fun parseQrContent(raw: String): Pair<String, String>? {
         if (raw.isBlank()) return null
 

@@ -56,6 +56,7 @@ class ConnectivityMonitor @Inject constructor(
         }
     }
 
+    @Suppress("ReturnCount") // Guard clauses sur network/capabilities nullable : pattern idiomatique Android
     private fun isCurrentlyConnected(): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false

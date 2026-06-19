@@ -4,6 +4,7 @@ import java.net.URI
 
 class ShopUrlValidator {
 
+    @Suppress("ReturnCount") // Validation en séquence : chaque early-return représente une condition d'échec distincte
     fun validate(input: String): Result {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return Result.Invalid.Empty

@@ -70,6 +70,7 @@ class FcmRegistrationManager @Inject constructor(
         }
     }
 
+    @Suppress("ReturnCount") // Séquence guard-clause : null-check token existant, null-check fetch
     private suspend fun ensureDeviceToken(settings: NotificationSettings): String? {
         val existing = settings.deviceToken
         if (existing != null) return existing
