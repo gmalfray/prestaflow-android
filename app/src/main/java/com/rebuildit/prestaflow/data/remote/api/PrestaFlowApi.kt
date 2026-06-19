@@ -92,8 +92,8 @@ interface PrestaFlowApi {
         @Query("abandoned_since_days") abandonedSinceDays: Int? = null,
     ): CartListResponseDto
 
-    @GET("baskets")
+    @GET("baskets/{id}")
     suspend fun getBasketById(
-        @Query("id_cart") cartId: Int,
+        @Path("id") cartId: Int,
     ): CartDetailResponseDto
 }

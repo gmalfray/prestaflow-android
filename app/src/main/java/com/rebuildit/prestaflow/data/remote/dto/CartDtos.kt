@@ -13,7 +13,7 @@ data class CartListResponseDto(
 )
 
 /**
- * Réponse détail panier — GET /baskets?id_cart=X
+ * Réponse détail panier — GET /baskets/{id}
  * Enveloppe {"data": {...}}
  */
 @Serializable
