@@ -2,25 +2,27 @@ package com.rebuildit.prestaflow.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.rebuildit.prestaflow.R
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Typographie Terracotta — alignée sur design-tokens.json (Google Stitch).
-// Police cible : Plus Jakarta Sans. Les assets .ttf doivent être déposés dans
-// res/font/ et référencés ici pour activer la police personnalisée.
-// En attendant : FontFamily.Default (sans-serif système), poids/tailles Stitch.
+// Police : Plus Jakarta Sans (OFL), assets statiques embarqués dans res/font/.
+// Licence : docs/fonts/PlusJakartaSans-OFL.txt.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// TODO : remplacer par FontFamily créée depuis les assets Plus Jakarta Sans
-//   val PlusJakartaSans = FontFamily(
-//       Font(R.font.plus_jakarta_sans_regular, FontWeight.Normal),
-//       Font(R.font.plus_jakarta_sans_medium, FontWeight.Medium),
-//       Font(R.font.plus_jakarta_sans_semibold, FontWeight.SemiBold),
-//       Font(R.font.plus_jakarta_sans_bold, FontWeight.Bold),
-//   )
-private val AppFontFamily = FontFamily.Default
+private val PlusJakartaSans =
+    FontFamily(
+        Font(R.font.plus_jakarta_sans_regular, FontWeight.Normal),
+        Font(R.font.plus_jakarta_sans_medium, FontWeight.Medium),
+        Font(R.font.plus_jakarta_sans_semibold, FontWeight.SemiBold),
+        Font(R.font.plus_jakarta_sans_bold, FontWeight.Bold),
+    )
+
+private val AppFontFamily = PlusJakartaSans
 
 /**
  * Échelle typographique M3 mappée sur les tokens Stitch.
