@@ -1,40 +1,36 @@
 [versions]
-agp = "8.3.1"
-kotlin = "1.9.23"
-composeBom = "2024.05.00"
-composeCompiler = "1.5.13"
-androidxCore = "1.12.0"
-androidxLifecycle = "2.7.0"
-lifecycleRuntimeCompose = "2.7.0"
-lifecycleViewmodelCompose = "2.7.0"
-activityCompose = "1.9.0"
-navigationCompose = "2.7.7"
-material3 = "1.2.1"
+agp = "8.7.3"
+kotlin = "2.0.21"
+composeBom = "2025.01.00"
+androidxCore = "1.15.0"
+androidxLifecycle = "2.8.7"
+lifecycleRuntimeCompose = "2.8.7"
+lifecycleViewmodelCompose = "2.8.7"
+activityCompose = "1.9.3"
+navigationCompose = "2.8.5"
 material = "1.12.0"
-work = "2.9.0"
+work = "2.10.0"
 room = "2.6.1"
-hilt = "2.50"
+hilt = "2.52"
 androidxHilt = "1.2.0"
 retrofit = "2.11.0"
 okhttpBom = "4.12.0"
-serialization = "1.6.2"
-accompanist = "0.34.0"
-coil = "2.5.0"
-datastore = "1.0.0"
+serialization = "1.7.3"
+accompanist = "0.36.0"
+coil = "2.7.0"
+datastore = "1.1.1"
 timber = "5.0.1"
-firebaseBom = "33.1.1"
+firebaseBom = "33.7.0"
 ktlint = "12.1.1"
-detekt = "1.23.5"
+detekt = "1.23.7"
 junit = "4.13.2"
-androidxTestExt = "1.1.5"
-espresso = "3.5.1"
-composeTesting = "1.6.7"
-turbine = "1.0.0"
+androidxTestExt = "1.2.1"
+espresso = "3.6.1"
+turbine = "1.2.0"
 securityCrypto = "1.1.0-alpha06"
 googleServices = "4.4.2"
-coroutinesPlayServices = "1.7.3"
-material3Window = "1.2.1"
-jacoco = "0.8.11"
+coroutinesPlayServices = "1.9.0"
+jacoco = "0.8.12"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -84,19 +80,20 @@ turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 timber-jdk = { module = "com.jakewharton.timber:timber-jdk18", version.ref = "timber" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutinesPlayServices" }
-androidx-compose-material3-windowsizeclass = { module = "androidx.compose.material3:material3-window-size-class", version.ref = "material3Window" }
+androidx-compose-material3-windowsizeclass = { module = "androidx.compose.material3:material3-window-size-class" }
 
 # Testing
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-test-ext = { module = "androidx.test.ext:junit", version.ref = "androidxTestExt" }
 espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
-compose-ui-test = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "composeTesting" }
-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "composeTesting" }
+compose-ui-test = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

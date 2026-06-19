@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.kapt) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.hilt) apply false
@@ -18,7 +19,7 @@ subprojects {
             apply(plugin = "jacoco")
             
             extensions.configure<JacocoPluginExtension> {
-                toolVersion = "0.8.11"
+                toolVersion = "0.8.12"
             }
         }
     }
@@ -120,7 +121,7 @@ tasks.register("projectInfo") {
             📦 Project: ${rootProject.name}
             🏗️  Gradle: ${gradle.gradleVersion}
             ☕ Java: ${System.getProperty("java.version")}
-            🎯 Kotlin: 1.9.23
+            🎯 Kotlin: 2.0.21
             
             🚀 Available tasks:
                • ./gradlew assembleDebug          - Build debug APKs

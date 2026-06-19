@@ -27,7 +27,7 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Install Android SDK Platform 35
+      - name: Install Android SDK Platform 36
         run: |
           mkdir -p ~/.android && touch ~/.android/repositories.cfg
           mkdir -p "$ANDROID_SDK_ROOT"
@@ -35,7 +35,7 @@ jobs:
           unzip -q /tmp/cmdline-tools.zip -d /tmp/android-cmdline-tools
           mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools/latest"
           mv /tmp/android-cmdline-tools/cmdline-tools/* "$ANDROID_SDK_ROOT/cmdline-tools/latest/"
-          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" "platforms;android-35" "build-tools;35.0.0"
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" "platforms;android-36" "build-tools;36.0.0"
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
       - name: Decode google-services.json
