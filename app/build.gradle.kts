@@ -26,8 +26,8 @@ android {
         applicationId = "com.rebuildit.prestaflow"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.1.2"
+        versionCode = 4
+        versionName = "0.1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -49,15 +49,17 @@ android {
 
             // Only configure if keystore exists
             if (keystoreFile.exists()) {
+                // .trim() guards against a stray space/newline pasted into the secret,
+                // which on a PKCS12 keystore surfaces as "Given final block not properly padded".
+                val storePw = (System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as? String)?.trim()
                 storeFile = keystoreFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as? String
-                keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: project.findProperty("SIGNING_KEY_ALIAS") as? String ?: "prestaflow"
+                storePassword = storePw
+                keyAlias = (System.getenv("SIGNING_KEY_ALIAS") ?: project.findProperty("SIGNING_KEY_ALIAS") as? String ?: "prestaflow").trim()
                 // Falls back to the store password when the key password is not provided
                 // (standard case: keystore and key share the same password).
-                keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
-                    ?: project.findProperty("SIGNING_KEY_PASSWORD") as? String
-                    ?: System.getenv("KEYSTORE_PASSWORD")
-                    ?: project.findProperty("KEYSTORE_PASSWORD") as? String
+                keyPassword = (System.getenv("SIGNING_KEY_PASSWORD")
+                    ?: project.findProperty("SIGNING_KEY_PASSWORD") as? String)?.trim()
+                    ?: storePw
             }
         }
     }

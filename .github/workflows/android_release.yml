@@ -43,10 +43,28 @@ jobs:
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > app/google-services.json
 
       - name: Decrypt keystore
-        continue-on-error: true
         run: |
           if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "${{ github.workspace }}/release.keystore"
+            # tr strips any stray whitespace/newline that may have crept into the secret on paste
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '[:space:]' | base64 -d > "${{ github.workspace }}/release.keystore"
+          fi
+
+      - name: Verify keystore
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+        run: |
+          KS="${{ github.workspace }}/release.keystore"
+          if [ ! -f "$KS" ]; then echo "::error::keystore not decoded (ANDROID_KEYSTORE_BASE64 missing?)"; exit 1; fi
+          echo "Keystore size: $(wc -c < "$KS") bytes"
+          PW="$(printf '%s' "$KEYSTORE_PASSWORD" | tr -d '[:space:]')"
+          ALIAS="$(printf '%s' "$SIGNING_KEY_ALIAS" | tr -d '[:space:]')"
+          if keytool -list -keystore "$KS" -storepass "$PW" -alias "$ALIAS" >/dev/null 2>&1; then
+            echo "✅ Keystore OK: password and alias '$ALIAS' are valid"
+          else
+            echo "::error::Keystore unreadable — KEYSTORE_PASSWORD wrong, alias wrong, or ANDROID_KEYSTORE_BASE64 corrupted/truncated"
+            keytool -list -keystore "$KS" -storepass "$PW" 2>&1 | head -8 || true
+            exit 1
           fi
 
       - name: Grant execute permission for gradlew
