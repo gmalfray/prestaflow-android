@@ -84,11 +84,19 @@
     <string name="products_list_empty">Aucun produit disponible.</string>
     <string name="products_status_active">Actif</string>
     <string name="products_status_inactive">Inactif</string>
-    <string name="products_stock_label">%1$d en stock</string>
-    <string name="clients_list_empty">Aucun client pour l’instant.</string>
+    <string name="products_stock_label">Stock : %1$d</string>
+    <string name="products_list_section_title">Inventaire des articles</string>
+    <string name="products_stats_total">Total produits</string>
+    <string name="products_stats_low_stock">Stock faible</string>
+    <string name="products_action_open">Ouvrir le produit</string>
+    <string name="clients_list_empty">Aucun client pour l\’instant.</string>
     <string name="clients_total_spent">Montant dépensé %1$s</string>
     <string name="clients_last_order">Dernière commande %1$s</string>
     <string name="clients_orders_count">%1$d commandes</string>
+    <string name="clients_list_section_title">Clients fidèles</string>
+    <string name="clients_stats_total">Total clients</string>
+    <string name="clients_stats_new_month">Nouveaux (mois)</string>
+    <string name="clients_action_open">Ouvrir le client</string>
 
     <string name="client_detail_title">Détails du client</string>
     <string name="client_stats_section">Statistiques</string>
