@@ -1,13 +1,38 @@
 package com.rebuildit.prestaflow.ui.products
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -19,6 +44,8 @@ import coil.compose.AsyncImage
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.products.model.Product
+import com.rebuildit.prestaflow.ui.components.LoadingState
+import com.rebuildit.prestaflow.ui.components.NotFoundState
 import java.text.NumberFormat
 
 @Composable
@@ -51,7 +78,16 @@ fun ProductDetailScreen(
     onClearError: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
     val errorMessage = state.error?.asString()
+    val backDesc = stringResource(R.string.content_description_back)
+
+    LaunchedEffect(errorMessage) {
+        if (errorMessage != null) {
+            snackbarHostState.showSnackbar(errorMessage)
+            onClearError()
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -60,27 +96,18 @@ fun ProductDetailScreen(
                 title = { Text(state.product?.name ?: stringResource(R.string.product_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = backDesc
+                        )
                     }
                 }
             )
         },
-        snackbarHost = {
-            if (errorMessage != null) {
-                Snackbar(
-                    action = {
-                        TextButton(onClick = onClearError) {
-                            Text(stringResource(R.string.dismiss))
-                        }
-                    }
-                ) {
-                    Text(errorMessage)
-                }
-            }
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         when {
-            state.isLoading -> LoadingContent(Modifier.padding(padding))
+            state.isLoading -> LoadingState(Modifier.padding(padding))
             state.product != null -> ProductContent(
                 modifier = Modifier.padding(padding),
                 product = state.product,
@@ -89,14 +116,12 @@ fun ProductDetailScreen(
                 onUpdateStock = onUpdateStock,
                 onToggleStatus = onToggleStatus
             )
+            else -> NotFoundState(
+                message = stringResource(R.string.product_not_found),
+                modifier = Modifier.padding(padding),
+                onBackClick = onBackClick
+            )
         }
-    }
-}
-
-@Composable
-private fun LoadingContent(modifier: Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
     }
 }
 
@@ -109,7 +134,6 @@ private fun ProductContent(
     onToggleStatus: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
     var priceText by remember(product.price) { mutableStateOf(product.price.toString()) }
     var stockText by remember(product.stock.quantity) { mutableStateOf(product.stock.quantity.toString()) }
 

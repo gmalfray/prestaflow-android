@@ -1,12 +1,28 @@
 package com.rebuildit.prestaflow.ui.clients
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -17,10 +33,10 @@ import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.clients.model.Client
 import com.rebuildit.prestaflow.domain.clients.model.ClientOrder
+import com.rebuildit.prestaflow.ui.components.LoadingState
+import com.rebuildit.prestaflow.ui.components.NotFoundState
+import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import java.text.NumberFormat
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -51,49 +67,47 @@ fun ClientDetailScreen(
     onClearError: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
     val errorMessage = state.error?.asString()
+    val backDesc = stringResource(R.string.content_description_back)
+
+    LaunchedEffect(errorMessage) {
+        if (errorMessage != null) {
+            snackbarHostState.showSnackbar(errorMessage)
+            onClearError()
+        }
+    }
 
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
+            androidx.compose.material3.TopAppBar(
                 title = { Text(state.client?.fullName ?: stringResource(R.string.client_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = backDesc
+                        )
                     }
                 }
             )
         },
-        snackbarHost = {
-            if (errorMessage != null) {
-                Snackbar(
-                    action = {
-                        TextButton(onClick = onClearError) {
-                            Text(stringResource(R.string.dismiss))
-                        }
-                    }
-                ) {
-                    Text(errorMessage)
-                }
-            }
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         when {
-            state.isLoading -> LoadingContent(Modifier.padding(padding))
+            state.isLoading -> LoadingState(Modifier.padding(padding))
             state.client != null -> ClientContent(
                 modifier = Modifier.padding(padding),
                 client = state.client,
                 onOrderClick = onOrderClick
             )
+            else -> NotFoundState(
+                message = stringResource(R.string.client_not_found),
+                modifier = Modifier.padding(padding),
+                onBackClick = onBackClick
+            )
         }
-    }
-}
-
-@Composable
-private fun LoadingContent(modifier: Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
     }
 }
 
@@ -175,7 +189,7 @@ private fun ClientContent(
                 text = stringResource(R.string.client_order_history_title),
                 style = MaterialTheme.typography.titleMedium
             )
-            
+
             client.orders.forEach { order ->
                 OrderHistoryCard(
                     order = order,
@@ -240,26 +254,4 @@ private fun OrderHistoryCard(
             }
         }
     }
-}
-
-private fun formatTimestamp(value: String?, formatter: DateTimeFormatter): String? {
-    if (value.isNullOrBlank()) return null
-    val zone = ZoneId.systemDefault()
-
-    val fromInstant = runCatching { Instant.parse(value) }
-        .map { instant -> instant.atZone(zone).format(formatter) }
-    if (fromInstant.isSuccess) {
-        return fromInstant.getOrThrow()
-    }
-
-    val patterns = listOf("yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss")
-    patterns.forEach { pattern ->
-        runCatching {
-            LocalDateTime.parse(value, DateTimeFormatter.ofPattern(pattern))
-        }.map { localDateTime ->
-            return localDateTime.atZone(zone).format(formatter)
-        }
-    }
-
-    return value
 }

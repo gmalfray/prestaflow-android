@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -47,9 +48,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,8 +60,10 @@ import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderItem
 import com.rebuildit.prestaflow.domain.orders.model.OrderShipping
-import java.text.NumberFormat
-import java.util.Currency
+import com.rebuildit.prestaflow.ui.components.formatCurrency
+import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 @Composable
 fun OrderDetailRoute(
@@ -89,6 +93,7 @@ fun OrderDetailScreen(
     onConsumeFeedback: () -> Unit = {}
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    val backDesc = stringResource(R.string.content_description_back)
 
     LaunchedEffect(actionState.message, actionState.error) {
         val feedback = actionState.error ?: actionState.message
@@ -102,10 +107,13 @@ fun OrderDetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Order Details") }, // Should be localized
+                title = { Text(stringResource(R.string.order_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = backDesc
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -125,13 +133,31 @@ fun OrderDetailScreen(
                 OrderDetailUiState.Loading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
+
                 OrderDetailUiState.Error -> {
-                    Text(
-                        text = "Error loading order",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    val retryDesc = stringResource(R.string.content_description_retry)
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.order_detail_error),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier.semantics { contentDescription = retryDesc }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Refresh,
+                                contentDescription = null
+                            )
+                        }
+                    }
                 }
+
                 is OrderDetailUiState.Success -> {
                     OrderDetailContent(
                         order = state.order,
@@ -157,10 +183,11 @@ fun OrderDetailContent(
 
     if (showStatusDialog) {
         TextInputDialog(
-            title = "Change status",
-            label = "Status",
+            title = stringResource(R.string.order_detail_change_status),
+            label = stringResource(R.string.order_detail_status_label),
             initialValue = order.status,
-            confirmLabel = "Update",
+            confirmLabel = stringResource(R.string.order_detail_status_update),
+            cancelLabel = stringResource(R.string.order_detail_cancel),
             onConfirm = {
                 showStatusDialog = false
                 onUpdateStatus(it)
@@ -171,10 +198,11 @@ fun OrderDetailContent(
 
     if (showTrackingDialog) {
         TextInputDialog(
-            title = "Tracking number",
-            label = "Tracking number",
+            title = stringResource(R.string.order_detail_tracking_title),
+            label = stringResource(R.string.order_detail_tracking_label),
             initialValue = order.shipping?.trackingNumber.orEmpty(),
-            confirmLabel = "Save",
+            confirmLabel = stringResource(R.string.order_detail_tracking_save),
+            cancelLabel = stringResource(R.string.order_detail_cancel),
             onConfirm = {
                 showTrackingDialog = false
                 onUpdateTracking(it)
@@ -182,6 +210,9 @@ fun OrderDetailContent(
             onDismiss = { showTrackingDialog = false }
         )
     }
+
+    val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -207,7 +238,7 @@ fun OrderDetailContent(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = order.updatedAtIso, // Format this properly
+                    text = formatTimestamp(order.updatedAtIso, dateFormatter) ?: order.updatedAtIso,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -216,7 +247,7 @@ fun OrderDetailContent(
 
         // Customer Card
         SectionCard(
-            title = "Customer",
+            title = stringResource(R.string.order_detail_customer_section),
             icon = Icons.Outlined.Person
         ) {
             Text(
@@ -224,13 +255,12 @@ fun OrderDetailContent(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium
             )
-            // Add email if available in model
         }
 
         // Shipping Card
         if (order.shipping != null) {
             SectionCard(
-                title = "Shipping",
+                title = stringResource(R.string.order_detail_shipping_section),
                 icon = Icons.Outlined.LocalShipping
             ) {
                 Text(
@@ -239,7 +269,7 @@ fun OrderDetailContent(
                 )
                 if (order.shipping.trackingNumber != null) {
                     Text(
-                        text = "Tracking: ${order.shipping.trackingNumber}",
+                        text = stringResource(R.string.order_detail_tracking_display, order.shipping.trackingNumber),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -250,7 +280,7 @@ fun OrderDetailContent(
         // Items Card
         if (order.items.isNotEmpty()) {
             SectionCard(
-                title = "Items (${order.items.size})",
+                title = stringResource(R.string.order_detail_items_section, order.items.size),
                 icon = Icons.Outlined.ShoppingBag
             ) {
                 order.items.forEach { item ->
@@ -276,7 +306,7 @@ fun OrderDetailContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Total Paid",
+                    text = stringResource(R.string.order_detail_total_paid),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -299,14 +329,14 @@ fun OrderDetailContent(
                 enabled = !actionInProgress,
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Change status")
+                Text(stringResource(R.string.order_detail_change_status))
             }
             Button(
                 onClick = { showTrackingDialog = true },
                 enabled = !actionInProgress,
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Tracking")
+                Text(stringResource(R.string.order_detail_tracking_button))
             }
         }
     }
@@ -318,6 +348,7 @@ private fun TextInputDialog(
     label: String,
     initialValue: String,
     confirmLabel: String,
+    cancelLabel: String,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -343,7 +374,7 @@ private fun TextInputDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(cancelLabel)
             }
         }
     )
@@ -387,7 +418,7 @@ fun SoftCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp), // Soft corners
+        shape = RoundedCornerShape(16.dp),
         colors = colors,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         content = { content() }
@@ -396,11 +427,13 @@ fun SoftCard(
 
 @Composable
 fun StatusBadge(status: String) {
+    val badgeDesc = status
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(MaterialTheme.colorScheme.secondaryContainer)
             .padding(horizontal = 12.dp, vertical = 6.dp)
+            .semantics { contentDescription = badgeDesc }
     ) {
         Text(
             text = status,
@@ -413,6 +446,7 @@ fun StatusBadge(status: String) {
 
 @Composable
 fun OrderItemRow(item: OrderItem, currency: String) {
+    val qtyLabel = stringResource(R.string.order_detail_qty_label, item.quantity)
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
@@ -424,7 +458,7 @@ fun OrderItemRow(item: OrderItem, currency: String) {
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text = "Qty: ${item.quantity}",
+                text = qtyLabel,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -435,10 +469,4 @@ fun OrderItemRow(item: OrderItem, currency: String) {
             fontWeight = FontWeight.Bold
         )
     }
-}
-
-private fun formatCurrency(amount: Double, currencyCode: String): String {
-    val formatter = NumberFormat.getCurrencyInstance()
-    runCatching { formatter.currency = Currency.getInstance(currencyCode) }
-    return formatter.format(amount)
 }
