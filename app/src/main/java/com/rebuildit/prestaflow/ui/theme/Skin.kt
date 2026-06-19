@@ -16,6 +16,61 @@ internal data class SkinPalette(
 
 private val palettes: Map<PrestaFlowSkin, SkinPalette> =
     mapOf(
+        PrestaFlowSkin.TERRACOTTA to
+            SkinPalette(
+                light =
+                    lightColorScheme(
+                        primary = TerracottaLightPrimary,
+                        onPrimary = TerracottaLightOnPrimary,
+                        primaryContainer = TerracottaLightPrimaryContainer,
+                        onPrimaryContainer = TerracottaLightOnPrimaryContainer,
+                        secondary = TerracottaLightSecondary,
+                        onSecondary = TerracottaLightOnSecondary,
+                        secondaryContainer = TerracottaLightSecondaryContainer,
+                        onSecondaryContainer = TerracottaLightOnSecondaryContainer,
+                        tertiary = TerracottaLightTertiary,
+                        onTertiary = TerracottaLightOnTertiary,
+                        tertiaryContainer = TerracottaLightTertiaryContainer,
+                        onTertiaryContainer = TerracottaLightOnTertiaryContainer,
+                        error = TerracottaLightError,
+                        onError = TerracottaLightOnError,
+                        errorContainer = TerracottaLightErrorContainer,
+                        onErrorContainer = TerracottaLightOnErrorContainer,
+                        background = TerracottaLightBackground,
+                        onBackground = TerracottaLightOnBackground,
+                        surface = TerracottaLightSurface,
+                        onSurface = TerracottaLightOnSurface,
+                        surfaceVariant = TerracottaLightSurfaceVariant,
+                        onSurfaceVariant = TerracottaLightOnSurfaceVariant,
+                        outline = TerracottaLightOutline,
+                    ),
+                dark =
+                    darkColorScheme(
+                        primary = TerracottaDarkPrimary,
+                        onPrimary = TerracottaDarkOnPrimary,
+                        primaryContainer = TerracottaDarkPrimaryContainer,
+                        onPrimaryContainer = TerracottaDarkOnPrimaryContainer,
+                        secondary = TerracottaDarkSecondary,
+                        onSecondary = TerracottaDarkOnSecondary,
+                        secondaryContainer = TerracottaDarkSecondaryContainer,
+                        onSecondaryContainer = TerracottaDarkOnSecondaryContainer,
+                        tertiary = TerracottaDarkTertiary,
+                        onTertiary = TerracottaDarkOnTertiary,
+                        tertiaryContainer = TerracottaDarkTertiaryContainer,
+                        onTertiaryContainer = TerracottaDarkOnTertiaryContainer,
+                        error = TerracottaDarkError,
+                        onError = TerracottaDarkOnError,
+                        errorContainer = TerracottaDarkErrorContainer,
+                        onErrorContainer = TerracottaDarkOnErrorContainer,
+                        background = TerracottaDarkBackground,
+                        onBackground = TerracottaDarkOnBackground,
+                        surface = TerracottaDarkSurface,
+                        onSurface = TerracottaDarkOnSurface,
+                        surfaceVariant = TerracottaDarkSurfaceVariant,
+                        onSurfaceVariant = TerracottaDarkOnSurfaceVariant,
+                        outline = TerracottaDarkOutline,
+                    ),
+            ),
         PrestaFlowSkin.ROYAL to
             SkinPalette(
                 light =
@@ -351,6 +406,7 @@ private val palettes: Map<PrestaFlowSkin, SkinPalette> =
 @StringRes
 fun PrestaFlowSkin.displayNameRes(): Int =
     when (this) {
+        PrestaFlowSkin.TERRACOTTA -> R.string.skin_terracotta
         PrestaFlowSkin.ROYAL -> R.string.skin_royal
         PrestaFlowSkin.LAGOON -> R.string.skin_lagoon
         PrestaFlowSkin.EMBER -> R.string.skin_ember

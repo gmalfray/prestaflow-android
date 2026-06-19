@@ -18,6 +18,6 @@ object Dimensions {
     val screenHorizontalPadding = spacingXxl
     val screenVerticalPadding = spacingXl
     val listItemSpacing = spacingL
-    val cardCornerRadius = 16.dp
+    val cardCornerRadius = 20.dp
     val iconSizeSmall = 20.dp
 }

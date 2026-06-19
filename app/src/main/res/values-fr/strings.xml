@@ -52,6 +52,7 @@
     <string name="dashboard_chart_trend_falling">en baisse</string>
     <string name="dashboard_chart_trend_stable">stable</string>
 
+    <string name="skin_terracotta">Terracotta</string>
     <string name="skin_royal">Violet Royal</string>
     <string name="skin_lagoon">Lagune Turquoise</string>
     <string name="skin_ember">Coucher de Soleil</string>
