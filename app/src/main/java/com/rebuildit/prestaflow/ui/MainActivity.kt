@@ -265,6 +265,7 @@ private fun AuthenticatedShell(
 @Preview(showBackground = true)
 @Composable
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+@Suppress("UnusedPrivateMember") // Composable Preview privée : visible dans l'IDE Android Studio
 private fun AuthenticatedShellPreview() {
     val windowSize = WindowSizeClass.calculateFromSize(DpSize(360.dp, 640.dp))
     PrestaFlowTheme {

@@ -43,7 +43,7 @@ fun ProductDto.toEntity(): ProductEntity {
     return ProductEntity(
         id = id,
         name = name,
-        reference = reference ?: "",
+        reference = reference.orEmpty(),
         price = price,
         active = active,
         stockJson = stockJson,

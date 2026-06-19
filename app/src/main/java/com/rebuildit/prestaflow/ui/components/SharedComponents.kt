@@ -119,7 +119,7 @@ fun EmptyState(
 fun NotFoundState(
     message: String,
     modifier: Modifier = Modifier,
-    onBackClick: () -> Unit
+    @Suppress("UnusedParameter") onBackClick: () -> Unit // Conservé pour compatibilité future
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         Column(

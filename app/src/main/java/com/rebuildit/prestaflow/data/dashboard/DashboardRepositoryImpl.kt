@@ -74,6 +74,7 @@ class DashboardRepositoryImpl @Inject constructor(
         )
     }
 
+    @Suppress("UnusedPrivateMember") // Faux positif detekt : utilisée ligne 72 via it.toDomain()
     private fun ChartPointDto.toDomain(): DashboardChartPoint = DashboardChartPoint(
         label = label,
         orders = orders,

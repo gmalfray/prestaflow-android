@@ -59,9 +59,9 @@ class OrderDetailViewModel @Inject constructor(
             runCatching {
                 ordersRepository.updateOrderStatus(orderId, trimmed)
             }.onSuccess {
-                _actionState.update { it.copy(inProgress = false, message = "Status updated") }
+                _actionState.update { state -> state.copy(inProgress = false, message = "Status updated") }
             }.onFailure { error ->
-                _actionState.update { it.copy(inProgress = false, error = error.message ?: "Update failed") }
+                _actionState.update { state -> state.copy(inProgress = false, error = error.message ?: "Update failed") }
             }
         }
     }
@@ -74,9 +74,9 @@ class OrderDetailViewModel @Inject constructor(
             runCatching {
                 ordersRepository.updateOrderShipping(orderId, trimmed)
             }.onSuccess {
-                _actionState.update { it.copy(inProgress = false, message = "Tracking updated") }
+                _actionState.update { state -> state.copy(inProgress = false, message = "Tracking updated") }
             }.onFailure { error ->
-                _actionState.update { it.copy(inProgress = false, error = error.message ?: "Update failed") }
+                _actionState.update { state -> state.copy(inProgress = false, error = error.message ?: "Update failed") }
             }
         }
     }

@@ -56,12 +56,12 @@ class ProductDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isUpdating = true) }
             runCatching { productsRepository.updatePrice(productId, newPrice) }
                 .onSuccess {
-                    _uiState.update { it.copy(isUpdating = false, error = null) }
+                    _uiState.update { state -> state.copy(isUpdating = false, error = null) }
                 }
                 .onFailure { error ->
                     Timber.w(error, "Failed to update price")
-                    _uiState.update {
-                        it.copy(isUpdating = false, error = networkErrorMapper.map(error))
+                    _uiState.update { state ->
+                        state.copy(isUpdating = false, error = networkErrorMapper.map(error))
                     }
                 }
         }
@@ -72,12 +72,12 @@ class ProductDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isUpdating = true) }
             runCatching { productsRepository.updateStock(productId, newQuantity) }
                 .onSuccess {
-                    _uiState.update { it.copy(isUpdating = false, error = null) }
+                    _uiState.update { state -> state.copy(isUpdating = false, error = null) }
                 }
                 .onFailure { error ->
                     Timber.w(error, "Failed to update stock")
-                    _uiState.update {
-                        it.copy(isUpdating = false, error = networkErrorMapper.map(error))
+                    _uiState.update { state ->
+                        state.copy(isUpdating = false, error = networkErrorMapper.map(error))
                     }
                 }
         }
@@ -91,12 +91,12 @@ class ProductDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isUpdating = true) }
             runCatching { productsRepository.updateStatus(productId, newStatus) }
                 .onSuccess {
-                    _uiState.update { it.copy(isUpdating = false, error = null) }
+                    _uiState.update { state -> state.copy(isUpdating = false, error = null) }
                 }
                 .onFailure { error ->
                     Timber.w(error, "Failed to update status")
-                    _uiState.update {
-                        it.copy(isUpdating = false, error = networkErrorMapper.map(error))
+                    _uiState.update { state ->
+                        state.copy(isUpdating = false, error = networkErrorMapper.map(error))
                     }
                 }
         }

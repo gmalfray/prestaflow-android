@@ -18,7 +18,7 @@ fun OrderEntity.toDomain(): Order {
         } catch (e: Exception) {
             emptyList()
         }
-    } ?: emptyList()
+    }.orEmpty()
 
     val shippingInfo = shippingJson?.let {
         try {

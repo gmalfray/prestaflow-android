@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.rebuildit.prestaflow.ui.theme
 
 import androidx.annotation.StringRes

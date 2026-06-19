@@ -199,7 +199,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         val enabled = this[KEY_NOTIFICATIONS_ENABLED] ?: true
         val token = this[KEY_DEVICE_TOKEN]
         val lastSyncedToken = this[KEY_LAST_SYNCED_TOKEN]
-        val topics = this[KEY_TOPICS]?.let { deserializeTopics(it) } ?: emptyList()
+        val topics = this[KEY_TOPICS]?.let { deserializeTopics(it) }.orEmpty()
         val dndEnabled = this[KEY_DND_ENABLED] ?: false
         val dndStart = this[KEY_DND_START]?.let { runCatching { LocalTime.parse(it, TIME_FORMATTER) }.getOrNull() }
         val dndEnd = this[KEY_DND_END]?.let { runCatching { LocalTime.parse(it, TIME_FORMATTER) }.getOrNull() }

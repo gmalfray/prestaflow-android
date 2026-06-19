@@ -19,7 +19,7 @@ class ShopUrlValidator {
         val path = uri.rawPath
             ?.takeIf { it.isNotBlank() && it != "/" }
             ?.trimEnd('/')
-            ?: ""
+            .orEmpty()
 
         val normalized = buildString {
             append("https://")

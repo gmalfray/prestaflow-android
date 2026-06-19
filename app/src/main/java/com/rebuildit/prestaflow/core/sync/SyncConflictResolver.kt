@@ -9,10 +9,11 @@ import timber.log.Timber
 @Singleton
 class SyncConflictResolver @Inject constructor() {
 
+    @Suppress("UnusedParameter") // responseBody réservé pour futures stratégies MERGE qui en ont besoin
     fun resolve(
         task: PendingSyncTask,
         responseCode: Int,
-        _responseBody: String?
+        responseBody: String?
     ): ConflictResolution {
         Timber.w("Conflict detected for ${task.resourceType}:${task.resourceId} (code=$responseCode)")
         return when (task.conflictStrategy) {
