@@ -89,4 +89,54 @@
     <string name="product_status_section">Status</string>
     <string name="dismiss">Dismiss</string>
 
+    <!-- OrderDetail screen -->
+    <string name="order_detail_title">Order Details</string>
+    <string name="order_detail_error">Error loading order</string>
+    <string name="order_detail_retry">Retry</string>
+    <string name="order_detail_change_status">Change status</string>
+    <string name="order_detail_status_label">Status</string>
+    <string name="order_detail_status_update">Update</string>
+    <string name="order_detail_tracking_title">Tracking number</string>
+    <string name="order_detail_tracking_label">Tracking number</string>
+    <string name="order_detail_tracking_save">Save</string>
+    <string name="order_detail_customer_section">Customer</string>
+    <string name="order_detail_shipping_section">Shipping</string>
+    <string name="order_detail_items_section">Items (%1$d)</string>
+    <string name="order_detail_total_paid">Total Paid</string>
+    <string name="order_detail_tracking_button">Tracking</string>
+    <string name="order_detail_cancel">Cancel</string>
+    <string name="order_detail_qty_label">Qty: %1$d</string>
+    <string name="order_detail_tracking_display">Tracking: %1$s</string>
+
+    <!-- Shared back navigation -->
+    <string name="content_description_back">Back</string>
+    <string name="content_description_retry">Retry</string>
+
+    <!-- Detail not found states -->
+    <string name="product_not_found">Product not found.</string>
+    <string name="client_not_found">Customer not found.</string>
+
+    <!-- Settings screen -->
+    <string name="destination_settings">Settings</string>
+    <string name="settings_appearance_title">Appearance</string>
+    <string name="settings_dark_mode_title">Dark mode</string>
+    <string name="settings_logout">Log out</string>
+    <string name="settings_logout_confirm_title">Log out?</string>
+    <string name="settings_logout_confirm_message">You will need to reconnect to your shop.</string>
+    <string name="settings_logout_confirm">Log out</string>
+    <string name="settings_logout_cancel">Cancel</string>
+
+    <!-- Carts screen -->
+    <string name="carts_list_empty">No carts found.</string>
+    <string name="carts_list_abandoned">Abandoned carts</string>
+    <string name="carts_detail_title">Cart Details</string>
+    <string name="carts_total_incl">Total (incl. tax): %1$s</string>
+    <string name="carts_items_count">%1$d items</string>
+    <string name="carts_has_order">Converted to order</string>
+    <string name="carts_abandoned">Abandoned cart</string>
+    <string name="carts_customer_guest">Guest</string>
+    <string name="carts_products_section">Products</string>
+    <string name="carts_detail_error">Error loading cart</string>
+    <string name="carts_detail_not_found">Cart not found.</string>
+
 </resources>

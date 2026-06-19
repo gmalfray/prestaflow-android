@@ -89,4 +89,54 @@
     <string name="product_status_section">Statut</string>
     <string name="dismiss">Fermer</string>
 
+    <!-- Écran Détail commande -->
+    <string name="order_detail_title">Détails de la commande</string>
+    <string name="order_detail_error">Erreur lors du chargement de la commande</string>
+    <string name="order_detail_retry">Réessayer</string>
+    <string name="order_detail_change_status">Changer le statut</string>
+    <string name="order_detail_status_label">Statut</string>
+    <string name="order_detail_status_update">Mettre à jour</string>
+    <string name="order_detail_tracking_title">Numéro de suivi</string>
+    <string name="order_detail_tracking_label">Numéro de suivi</string>
+    <string name="order_detail_tracking_save">Enregistrer</string>
+    <string name="order_detail_customer_section">Client</string>
+    <string name="order_detail_shipping_section">Livraison</string>
+    <string name="order_detail_items_section">Articles (%1$d)</string>
+    <string name="order_detail_total_paid">Total payé</string>
+    <string name="order_detail_tracking_button">Suivi</string>
+    <string name="order_detail_cancel">Annuler</string>
+    <string name="order_detail_qty_label">Qté : %1$d</string>
+    <string name="order_detail_tracking_display">Suivi : %1$s</string>
+
+    <!-- Navigation retour partagée -->
+    <string name="content_description_back">Retour</string>
+    <string name="content_description_retry">Réessayer</string>
+
+    <!-- États introuvable -->
+    <string name="product_not_found">Produit introuvable.</string>
+    <string name="client_not_found">Client introuvable.</string>
+
+    <!-- Écran Réglages -->
+    <string name="destination_settings">Réglages</string>
+    <string name="settings_appearance_title">Apparence</string>
+    <string name="settings_dark_mode_title">Mode sombre</string>
+    <string name="settings_logout">Se déconnecter</string>
+    <string name="settings_logout_confirm_title">Se déconnecter ?</string>
+    <string name="settings_logout_confirm_message">Vous devrez vous reconnecter à votre boutique.</string>
+    <string name="settings_logout_confirm">Se déconnecter</string>
+    <string name="settings_logout_cancel">Annuler</string>
+
+    <!-- Écran Paniers -->
+    <string name="carts_list_empty">Aucun panier trouvé.</string>
+    <string name="carts_list_abandoned">Paniers abandonnés</string>
+    <string name="carts_detail_title">Détails du panier</string>
+    <string name="carts_total_incl">Total (TTC) : %1$s</string>
+    <string name="carts_items_count">%1$d article(s)</string>
+    <string name="carts_has_order">Converti en commande</string>
+    <string name="carts_abandoned">Panier abandonné</string>
+    <string name="carts_customer_guest">Invité</string>
+    <string name="carts_products_section">Produits</string>
+    <string name="carts_detail_error">Erreur lors du chargement du panier</string>
+    <string name="carts_detail_not_found">Panier introuvable.</string>
+
 </resources>
