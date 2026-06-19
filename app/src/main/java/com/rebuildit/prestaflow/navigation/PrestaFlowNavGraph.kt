@@ -1,5 +1,7 @@
 package com.rebuildit.prestaflow.navigation
 
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -16,6 +18,7 @@ import com.rebuildit.prestaflow.ui.clients.ClientsRoute
 import com.rebuildit.prestaflow.ui.dashboard.DashboardRoute
 import com.rebuildit.prestaflow.ui.orders.OrderDetailRoute
 import com.rebuildit.prestaflow.ui.orders.OrdersRoute
+import com.rebuildit.prestaflow.ui.orders.OrdersTwoPaneRoute
 import com.rebuildit.prestaflow.ui.products.ProductDetailRoute
 import com.rebuildit.prestaflow.ui.products.ProductsRoute
 import com.rebuildit.prestaflow.ui.settings.SettingsRoute
@@ -24,9 +27,12 @@ import com.rebuildit.prestaflow.ui.settings.SettingsRoute
 @Composable
 fun PrestaFlowNavGraph(
     onLogout: () -> Unit,
+    windowSizeClass: WindowSizeClass,
     navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier,
 ) {
+    val isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
+
     NavHost(
         navController = navController,
         startDestination = AppDestination.Dashboard.route,
@@ -34,11 +40,17 @@ fun PrestaFlowNavGraph(
     ) {
         composable(AppDestination.Dashboard.route) { DashboardRoute() }
         composable(AppDestination.Orders.route) {
-            OrdersRoute(
-                onOrderClick = { orderId ->
-                    navController.navigate("${AppDestination.Orders.route}/$orderId")
-                },
-            )
+            if (isExpanded) {
+                // Tablette : layout deux colonnes liste + détail
+                OrdersTwoPaneRoute()
+            } else {
+                // Téléphone / medium : navigation classique single-pane
+                OrdersRoute(
+                    onOrderClick = { orderId ->
+                        navController.navigate("${AppDestination.Orders.route}/$orderId")
+                    },
+                )
+            }
         }
         composable(
             route = "${AppDestination.Orders.route}/{orderId}",
