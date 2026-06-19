@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.clients
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,9 +34,12 @@ import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.clients.model.Client
 import com.rebuildit.prestaflow.domain.clients.model.ClientOrder
+import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.NotFoundState
+import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import com.rebuildit.prestaflow.ui.theme.Dimensions
 import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -128,59 +132,93 @@ private fun ClientContent(
             modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingM),
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
     ) {
-        // Client Info Card
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = client.fullName,
-                    style = MaterialTheme.typography.headlineSmall,
+        // Client Info Card : avatar + nom + email
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimensions.cardCornerRadius),
+            colors =
+                androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                ),
+            elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Row(
+                modifier = Modifier.padding(Dimensions.cardPadding),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AvatarInitials(
+                    name = client.fullName.ifBlank { client.email },
+                    size = 52.dp,
                 )
-                if (client.email.isNotBlank()) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = client.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = client.fullName,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
+                    if (client.email.isNotBlank()) {
+                        Text(
+                            text = client.email,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
 
-        // Stats Card
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Stats Card : total dépensé + nombre de commandes
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimensions.cardCornerRadius),
+            colors =
+                androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                ),
+            elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(Dimensions.cardPadding),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+            ) {
                 Text(
                     text = stringResource(R.string.client_stats_section),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Column {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            text = stringResource(R.string.client_total_spent_label),
-                            style = MaterialTheme.typography.bodySmall,
+                            text = stringResource(R.string.client_total_spent_label).uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             text = currencyFormatter.format(client.totalSpent),
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.headlineMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
-                    Column(horizontalAlignment = Alignment.End) {
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
                         Text(
-                            text = stringResource(R.string.client_orders_count_label),
-                            style = MaterialTheme.typography.bodySmall,
+                            text = stringResource(R.string.client_orders_count_label).uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             text = client.ordersCount.toString(),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
@@ -191,23 +229,41 @@ private fun ClientContent(
         if (client.orders.isNotEmpty()) {
             Text(
                 text = stringResource(R.string.client_order_history_title),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
-            client.orders.forEach { order ->
-                OrderHistoryCard(
-                    order = order,
-                    currencyFormatter = currencyFormatter,
-                    dateFormatter = dateFormatter,
-                    onClick = { onOrderClick(order.id) },
-                )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimensions.cardCornerRadius),
+                colors =
+                    androidx.compose.material3.CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                    ),
+                elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 2.dp),
+            ) {
+                Column {
+                    client.orders.forEachIndexed { index, order ->
+                        OrderHistoryRow(
+                            order = order,
+                            currencyFormatter = currencyFormatter,
+                            dateFormatter = dateFormatter,
+                            onClick = { onOrderClick(order.id) },
+                        )
+                        if (index < client.orders.lastIndex) {
+                            androidx.compose.material3.HorizontalDivider(
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun OrderHistoryCard(
+private fun OrderHistoryRow(
     order: ClientOrder,
     currencyFormatter: NumberFormat,
     dateFormatter: DateTimeFormatter,
@@ -222,11 +278,16 @@ private fun OrderHistoryCard(
             formatTimestamp(order.dateAdded, dateFormatter)
         }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(Dimensions.cardPadding),
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -234,29 +295,27 @@ private fun OrderHistoryCard(
                 Text(
                     text = order.reference,
                     style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = totalPaid,
                     style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = order.status,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
                 if (dateAdded != null) {
                     Text(
                         text = dateAdded,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                OrderStatusBadge(status = order.status)
             }
         }
     }

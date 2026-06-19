@@ -3,6 +3,7 @@ package com.rebuildit.prestaflow.ui.carts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,11 +13,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,11 +35,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.carts.model.CartSummary
+import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
+import com.rebuildit.prestaflow.ui.components.SectionHeader
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import com.rebuildit.prestaflow.ui.theme.Dimensions
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -85,7 +91,7 @@ fun CartsScreen(
     }
 }
 
-@Suppress("LongParameterList") // Composable liste : modifier + data + états + callbacks requis par l'architecture screen/content
+@Suppress("LongParameterList")
 @Composable
 private fun CartsList(
     modifier: Modifier,
@@ -95,30 +101,68 @@ private fun CartsList(
     onRefresh: () -> Unit,
     onCartClick: (Int) -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
-        AnimatedVisibility(visible = isRefreshing, enter = fadeIn(), exit = fadeOut()) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-        }
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            AnimatedVisibility(visible = isRefreshing, enter = fadeIn(), exit = fadeOut()) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainer,
+                )
+            }
 
-        if (errorMessage != null) {
-            ErrorRow(message = errorMessage, onRefresh = onRefresh)
-        }
+            if (errorMessage != null) {
+                ErrorRow(message = errorMessage, onRefresh = onRefresh)
+            }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            items(carts, key = { it.id }) { cart ->
-                CartCard(cart = cart, onClick = { onCartClick(cart.id) })
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding =
+                    PaddingValues(
+                        horizontal = Dimensions.screenEdgeMargin,
+                        vertical = Dimensions.spacingL,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+            ) {
+                item {
+                    SectionHeader(
+                        title = stringResource(R.string.carts_list_abandoned),
+                    )
+                }
+
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                            ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    ) {
+                        Column {
+                            carts.forEachIndexed { index, cart ->
+                                CartRow(cart = cart, onClick = { onCartClick(cart.id) })
+                                if (index < carts.lastIndex) {
+                                    HorizontalDivider(
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        thickness = 1.dp,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-@Suppress("LongMethod") // Composable card avec sections distinctes : header, totaux, actions
 @Composable
-private fun CartCard(
+private fun CartRow(
     cart: CartSummary,
     onClick: () -> Unit,
 ) {
@@ -131,21 +175,30 @@ private fun CartCard(
         remember(cart.updatedAtIso) {
             formatTimestamp(cart.updatedAtIso, dateFormatter)
         }
+    val displayName = cart.customerName.ifBlank { stringResource(R.string.carts_customer_guest) }
 
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(Dimensions.cardPadding),
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        AvatarInitials(name = displayName)
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = cart.customerName.ifBlank { stringResource(R.string.carts_customer_guest) },
-                    style = MaterialTheme.typography.titleMedium,
+                    text = displayName,
+                    style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -154,29 +207,27 @@ private fun CartCard(
                 Text(
                     text = totalText,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = stringResource(R.string.carts_items_count, cart.itemsCount),
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = updatedAt ?: "",
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (cart.hasOrder) {
                     Badge(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     ) {
                         Text(
                             text = stringResource(R.string.carts_has_order),
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelMedium,
                         )
                     }
                 } else {
@@ -186,18 +237,10 @@ private fun CartCard(
                     ) {
                         Text(
                             text = stringResource(R.string.carts_abandoned),
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelMedium,
                         )
                     }
                 }
-            }
-
-            if (updatedAt != null) {
-                Text(
-                    text = updatedAt,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
     }

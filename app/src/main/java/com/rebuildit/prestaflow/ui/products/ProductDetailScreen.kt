@@ -45,6 +45,7 @@ import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.NotFoundState
+import com.rebuildit.prestaflow.ui.theme.Dimensions
 
 @Composable
 fun ProductDetailRoute(
@@ -144,12 +145,20 @@ private fun ProductContent(
             modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingM),
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
     ) {
         // Image
         if (product.images.isNotEmpty()) {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimensions.cardCornerRadius),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                    ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            ) {
                 AsyncImage(
                     model = product.images.first().url,
                     contentDescription = product.name,
@@ -162,11 +171,23 @@ private fun ProductContent(
         }
 
         // Product Info Card
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimensions.cardCornerRadius),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(Dimensions.cardPadding),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+            ) {
                 Text(
                     text = product.name,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 if (product.reference.isNotBlank()) {
                     Text(
@@ -179,11 +200,23 @@ private fun ProductContent(
         }
 
         // Price Edit Card
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimensions.cardCornerRadius),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(Dimensions.cardPadding),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+            ) {
                 Text(
                     text = stringResource(R.string.product_price_section),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 OutlinedTextField(
                     value = priceText,
@@ -199,6 +232,7 @@ private fun ProductContent(
                     },
                     enabled = !isUpdating && priceText.toDoubleOrNull() != null,
                     modifier = Modifier.align(Alignment.End),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
                 ) {
                     Text(stringResource(R.string.product_update_price))
                 }
@@ -206,11 +240,23 @@ private fun ProductContent(
         }
 
         // Stock Edit Card
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimensions.cardCornerRadius),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(Dimensions.cardPadding),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+            ) {
                 Text(
                     text = stringResource(R.string.product_stock_section),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 OutlinedTextField(
                     value = stockText,
@@ -226,6 +272,7 @@ private fun ProductContent(
                     },
                     enabled = !isUpdating && stockText.toIntOrNull() != null,
                     modifier = Modifier.align(Alignment.End),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
                 ) {
                     Text(stringResource(R.string.product_update_stock))
                 }
@@ -233,19 +280,28 @@ private fun ProductContent(
         }
 
         // Status Toggle Card
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimensions.cardCornerRadius),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
             Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(Dimensions.cardPadding),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         text = stringResource(R.string.product_status_section),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
                         text =
