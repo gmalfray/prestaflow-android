@@ -59,8 +59,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderItem
+import com.rebuildit.prestaflow.ui.components.AvatarInitials
+import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import com.rebuildit.prestaflow.ui.theme.Dimensions
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -222,26 +225,33 @@ fun OrderDetailContent(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingM),
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
     ) {
-        // Header Card
+        // Header Card : référence + statut + date + avatar client
         SoftCard {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(Dimensions.cardPadding)) {
+                // Référence + badge statut
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = order.reference,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    StatusBadge(status = order.status)
+                    Column {
+                        Text(
+                            text = stringResource(R.string.order_detail_reference_label),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = order.reference,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    OrderStatusBadge(status = order.status)
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Dimensions.spacingM))
                 Text(
                     text = formatTimestamp(order.updatedAtIso, dateFormatter) ?: order.updatedAtIso,
                     style = MaterialTheme.typography.bodyMedium,
@@ -250,16 +260,22 @@ fun OrderDetailContent(
             }
         }
 
-        // Customer Card
+        // Customer Card : avatar + nom + email (si disponible)
         SectionCard(
             title = stringResource(R.string.order_detail_customer_section),
             icon = Icons.Outlined.Person,
         ) {
-            Text(
-                text = order.customerName,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AvatarInitials(name = order.customerName.ifBlank { order.reference })
+                Text(
+                    text = order.customerName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
         }
 
         // Shipping Card
@@ -297,44 +313,39 @@ fun OrderDetailContent(
             }
         }
 
-        // Totals Card
-        SoftCard(
-            colors =
-                CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                ),
-        ) {
+        // Totals Card — fond surface, total en primary bold
+        SoftCard {
             Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(Dimensions.cardPadding),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = stringResource(R.string.order_detail_total_paid),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = formatCurrency(order.totalPaid, order.currency),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
 
-        // Actions
+        // Actions — boutons pill Stitch
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
         ) {
             OutlinedButton(
                 onClick = { showStatusDialog = true },
                 enabled = !actionInProgress,
                 modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(50),
             ) {
                 Text(stringResource(R.string.order_detail_change_status))
             }
@@ -342,6 +353,7 @@ fun OrderDetailContent(
                 onClick = { showTrackingDialog = true },
                 enabled = !actionInProgress,
                 modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(50),
             ) {
                 Text(stringResource(R.string.order_detail_tracking_button))
             }
@@ -396,22 +408,24 @@ fun SectionCard(
     content: @Composable () -> Unit,
 ) {
     SoftCard {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.padding(Dimensions.cardPadding)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+            ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(Dimensions.iconSizeMedium),
                 )
-                Spacer(modifier = Modifier.size(8.dp))
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(Dimensions.spacingM))
             content()
         }
     }
@@ -422,37 +436,23 @@ fun SoftCard(
     modifier: Modifier = Modifier,
     colors: CardColors =
         CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
         ),
     content: @Composable () -> Unit,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
         colors = colors,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         content = { content() },
     )
 }
 
+// StatusBadge conservé pour compatibilité — délègue vers OrderStatusBadge (SharedComponents)
 @Composable
 fun StatusBadge(status: String) {
-    val badgeDesc = status
-    Box(
-        modifier =
-            Modifier
-                .clip(RoundedCornerShape(50))
-                .background(MaterialTheme.colorScheme.secondaryContainer)
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .semantics { contentDescription = badgeDesc },
-    ) {
-        Text(
-            text = status,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
-            fontWeight = FontWeight.Bold,
-        )
-    }
+    com.rebuildit.prestaflow.ui.components.OrderStatusBadge(status = status)
 }
 
 @Composable

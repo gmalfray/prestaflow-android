@@ -77,6 +77,10 @@
     <string name="orders_list_empty">Aucune commande pour le moment.</string>
     <string name="orders_status_unknown">Statut indisponible</string>
     <string name="orders_last_updated">Mise à jour le %1$s</string>
+    <string name="orders_list_section_title">Commandes récentes</string>
+    <string name="orders_list_count">%1$d au total</string>
+    <string name="orders_action_open">Ouvrir la commande</string>
+    <string name="orders_customer_unknown">Client inconnu</string>
     <string name="products_list_empty">Aucun produit disponible.</string>
     <string name="products_status_active">Actif</string>
     <string name="products_status_inactive">Inactif</string>
@@ -107,7 +111,8 @@
     <string name="orders_detail_pane_placeholder">Sélectionnez une commande pour afficher ses détails.</string>
 
     <!-- Écran Détail commande -->
-    <string name="order_detail_title">Détails de la commande</string>
+    <string name="order_detail_title">Détail commande</string>
+    <string name="order_detail_reference_label">Référence</string>
     <string name="order_detail_error">Erreur lors du chargement de la commande</string>
     <string name="order_detail_retry">Réessayer</string>
     <string name="order_detail_change_status">Changer le statut</string>

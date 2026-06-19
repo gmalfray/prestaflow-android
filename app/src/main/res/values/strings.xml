@@ -77,6 +77,10 @@
     <string name="orders_list_empty">No orders yet.</string>
     <string name="orders_status_unknown">Status unavailable</string>
     <string name="orders_last_updated">Updated %1$s</string>
+    <string name="orders_list_section_title">Recent orders</string>
+    <string name="orders_list_count">%1$d total</string>
+    <string name="orders_action_open">Open order</string>
+    <string name="orders_customer_unknown">Unknown customer</string>
     <string name="products_list_empty">No products available.</string>
     <string name="products_status_active">Active</string>
     <string name="products_status_inactive">Inactive</string>
@@ -108,6 +112,7 @@
 
     <!-- OrderDetail screen -->
     <string name="order_detail_title">Order Details</string>
+    <string name="order_detail_reference_label">Reference</string>
     <string name="order_detail_error">Error loading order</string>
     <string name="order_detail_retry">Retry</string>
     <string name="order_detail_change_status">Change status</string>
