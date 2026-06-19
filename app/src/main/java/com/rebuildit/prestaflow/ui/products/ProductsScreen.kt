@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Warning
@@ -54,6 +53,7 @@ import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
+import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.components.SectionHeader
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
@@ -74,6 +74,7 @@ fun ProductsRoute(
         state = state,
         onRefresh = viewModel::onRefresh,
         onProductClick = onProductClick,
+        onQueryChange = viewModel::onQueryChange,
     )
 }
 
@@ -83,6 +84,7 @@ fun ProductsScreen(
     onRefresh: () -> Unit,
     onProductClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    onQueryChange: (String) -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
 
@@ -98,7 +100,11 @@ fun ProductsScreen(
         else ->
             ProductList(
                 modifier = modifier,
-                products = state.products,
+                products = state.visibleProducts,
+                totalCount = state.products.size,
+                lowStockCount = state.products.count { it.stock.quantity <= LOW_STOCK_THRESHOLD },
+                query = state.query,
+                onQueryChange = onQueryChange,
                 isRefreshing = state.isRefreshing,
                 errorMessage = errorMessage,
                 onRefresh = onRefresh,
@@ -112,13 +118,16 @@ fun ProductsScreen(
 private fun ProductList(
     modifier: Modifier,
     products: List<Product>,
+    totalCount: Int,
+    lowStockCount: Int,
+    query: String,
+    onQueryChange: (String) -> Unit,
     isRefreshing: Boolean,
     errorMessage: String?,
     onRefresh: () -> Unit,
     onProductClick: (Long) -> Unit,
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
-    val lowStockCount = remember(products) { products.count { it.stock.quantity <= LOW_STOCK_THRESHOLD } }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -148,7 +157,7 @@ private fun ProductList(
                 // KPI stats : total produits + stock faible
                 item {
                     ProductsStatsRow(
-                        totalCount = products.size,
+                        totalCount = totalCount,
                         lowStockCount = lowStockCount,
                     )
                 }
@@ -162,29 +171,49 @@ private fun ProductList(
                     )
                 }
 
-                // Carte conteneur avec toutes les lignes produit
+                // Champ de recherche
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    ) {
-                        Column {
-                            products.forEachIndexed { index, product ->
-                                ProductRow(
-                                    product = product,
-                                    currencyFormatter = currencyFormatter,
-                                    onClick = { onProductClick(product.id) },
-                                )
-                                if (index < products.lastIndex) {
-                                    HorizontalDivider(
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
-                                        thickness = 1.dp,
+                    SearchField(
+                        query = query,
+                        onQueryChange = onQueryChange,
+                        placeholder = stringResource(R.string.products_search_placeholder),
+                    )
+                }
+
+                if (products.isEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.list_no_results, query),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = Dimensions.spacingM),
+                        )
+                    }
+                } else {
+                    // Carte conteneur avec toutes les lignes produit
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        ) {
+                            Column {
+                                products.forEachIndexed { index, product ->
+                                    ProductRow(
+                                        product = product,
+                                        currencyFormatter = currencyFormatter,
+                                        onClick = { onProductClick(product.id) },
                                     )
+                                    if (index < products.lastIndex) {
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.surfaceContainer,
+                                            thickness = 1.dp,
+                                        )
+                                    }
                                 }
                             }
                         }

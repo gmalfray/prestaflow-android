@@ -52,12 +52,14 @@ android {
                 // trim()+ifBlank guard against (a) a stray space/newline pasted into a secret and
                 // (b) an unset GitHub secret rendering as an EMPTY env var ("") rather than null —
                 // both surface as "Given final block not properly padded" on a PKCS12 keystore.
-                val storePw = (System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as? String)
-                    ?.trim()?.ifBlank { null }
+                val storePw =
+                    (System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as? String)
+                        ?.trim()?.ifBlank { null }
                 storeFile = keystoreFile
                 storePassword = storePw
-                keyAlias = (System.getenv("SIGNING_KEY_ALIAS") ?: project.findProperty("SIGNING_KEY_ALIAS") as? String ?: "prestaflow")
-                    .trim().ifBlank { "prestaflow" }
+                keyAlias =
+                    (System.getenv("SIGNING_KEY_ALIAS") ?: project.findProperty("SIGNING_KEY_ALIAS") as? String ?: "prestaflow")
+                        .trim().ifBlank { "prestaflow" }
                 // Falls back to the store password when the key password is not provided
                 // (standard case: keystore and key share the same password).
                 keyPassword = (System.getenv("SIGNING_KEY_PASSWORD") ?: project.findProperty("SIGNING_KEY_PASSWORD") as? String)

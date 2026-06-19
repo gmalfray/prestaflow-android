@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -47,8 +48,14 @@ class OrderDetailViewModel
             viewModelScope.launch {
                 runCatching {
                     ordersRepository.refreshOrder(orderId)
-                }.onFailure {
-                    // Local cached data is still rendered if available.
+                }.onFailure { error ->
+                    // Les données en cache (issues de la liste) restent affichées, mais
+                    // sans articles/livraison : on remonte l'échec au lieu de l'avaler
+                    // pour diagnostiquer (ex. endpoint détail du connecteur indisponible).
+                    Timber.w(error, "Échec du chargement du détail commande #%d", orderId)
+                    _actionState.update {
+                        it.copy(error = "Détail indisponible : affichage des données en cache")
+                    }
                 }
             }
         }

@@ -142,6 +142,13 @@
     <string name="content_description_back">Back</string>
     <string name="content_description_retry">Retry</string>
 
+    <!-- Search -->
+    <string name="content_description_clear_search">Clear search</string>
+    <string name="orders_search_placeholder">Search by customer or reference</string>
+    <string name="products_search_placeholder">Search by name or reference</string>
+    <string name="clients_search_placeholder">Search by name or email</string>
+    <string name="list_no_results">No result for \"%1$s\"</string>
+
     <!-- Detail not found states -->
     <string name="product_not_found">Product not found.</string>
     <string name="client_not_found">Customer not found.</string>

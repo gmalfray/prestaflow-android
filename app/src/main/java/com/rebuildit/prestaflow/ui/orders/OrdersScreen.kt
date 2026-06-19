@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -45,6 +43,7 @@ import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
+import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.theme.Dimensions
@@ -62,6 +61,7 @@ fun OrdersRoute(
         uiState = uiState,
         onRefresh = { forceRemote -> viewModel.refresh(forceRemote, notifyOnError = true) },
         onOrderClick = onOrderClick,
+        onQueryChange = viewModel::onQueryChange,
     )
 }
 
@@ -71,6 +71,7 @@ fun OrdersScreen(
     onRefresh: (Boolean) -> Unit,
     onOrderClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    onQueryChange: (String) -> Unit = {},
 ) {
     val errorMessage = uiState.error?.asString()
 
@@ -86,7 +87,10 @@ fun OrdersScreen(
         else ->
             OrdersList(
                 modifier = modifier,
-                orders = uiState.orders,
+                orders = uiState.visibleOrders,
+                totalCount = uiState.orders.size,
+                query = uiState.query,
+                onQueryChange = onQueryChange,
                 isRefreshing = uiState.isRefreshing,
                 errorMessage = errorMessage,
                 onRefresh = { onRefresh(true) },
@@ -100,6 +104,9 @@ fun OrdersScreen(
 private fun OrdersList(
     modifier: Modifier,
     orders: List<Order>,
+    totalCount: Int,
+    query: String,
+    onQueryChange: (String) -> Unit,
     isRefreshing: Boolean,
     errorMessage: String?,
     onRefresh: () -> Unit,
@@ -128,10 +135,11 @@ private fun OrdersList(
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    horizontal = Dimensions.screenEdgeMargin,
-                    vertical = Dimensions.spacingL,
-                ),
+                contentPadding =
+                    PaddingValues(
+                        horizontal = Dimensions.screenEdgeMargin,
+                        vertical = Dimensions.spacingL,
+                    ),
                 verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
             ) {
                 // En-tête : nombre de commandes
@@ -147,36 +155,57 @@ private fun OrdersList(
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            text = stringResource(R.string.orders_list_count, orders.size),
+                            text = stringResource(R.string.orders_list_count, totalCount),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
 
-                // Carte conteneur groupée
+                // Champ de recherche
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    ) {
-                        Column {
-                            orders.forEachIndexed { index, order ->
-                                OrderRow(
-                                    order = order,
-                                    dateFormatter = dateFormatter,
-                                    onClick = { onOrderClick(order.id) },
-                                )
-                                if (index < orders.lastIndex) {
-                                    HorizontalDivider(
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
-                                        thickness = 1.dp,
+                    SearchField(
+                        query = query,
+                        onQueryChange = onQueryChange,
+                        placeholder = stringResource(R.string.orders_search_placeholder),
+                    )
+                }
+
+                if (orders.isEmpty()) {
+                    // Recherche sans résultat
+                    item {
+                        Text(
+                            text = stringResource(R.string.list_no_results, query),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = Dimensions.spacingM),
+                        )
+                    }
+                } else {
+                    // Carte conteneur groupée
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        ) {
+                            Column {
+                                orders.forEachIndexed { index, order ->
+                                    OrderRow(
+                                        order = order,
+                                        dateFormatter = dateFormatter,
+                                        onClick = { onOrderClick(order.id) },
                                     )
+                                    if (index < orders.lastIndex) {
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.surfaceContainer,
+                                            thickness = 1.dp,
+                                        )
+                                    }
                                 }
                             }
                         }

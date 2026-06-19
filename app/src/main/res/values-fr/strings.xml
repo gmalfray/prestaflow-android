@@ -142,6 +142,13 @@
     <string name="content_description_back">Retour</string>
     <string name="content_description_retry">Réessayer</string>
 
+    <!-- Recherche -->
+    <string name="content_description_clear_search">Effacer la recherche</string>
+    <string name="orders_search_placeholder">Rechercher par client ou référence</string>
+    <string name="products_search_placeholder">Rechercher par nom ou référence</string>
+    <string name="clients_search_placeholder">Rechercher par nom ou e-mail</string>
+    <string name="list_no_results">Aucun résultat pour « %1$s »</string>
+
     <!-- États introuvable -->
     <string name="product_not_found">Produit introuvable.</string>
     <string name="client_not_found">Client introuvable.</string>

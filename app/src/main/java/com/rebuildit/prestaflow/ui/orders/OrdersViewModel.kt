@@ -34,6 +34,10 @@ class OrdersViewModel
             refresh(forceRemote = true, notifyOnError = true)
         }
 
+        fun onQueryChange(query: String) {
+            _uiState.update { it.copy(query = query) }
+        }
+
         private fun observeOrders() {
             viewModelScope.launch {
                 ordersRepository.observeOrders().collect { orders ->
@@ -92,4 +96,17 @@ data class OrdersUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val error: UiText? = null,
-)
+    val query: String = "",
+) {
+    /** Liste filtrée par [query] sur le nom du client et la référence (insensible à la casse). */
+    val visibleOrders: List<Order>
+        get() =
+            if (query.isBlank()) {
+                orders
+            } else {
+                orders.filter {
+                    it.customerName.contains(query, ignoreCase = true) ||
+                        it.reference.contains(query, ignoreCase = true)
+                }
+            }
+}

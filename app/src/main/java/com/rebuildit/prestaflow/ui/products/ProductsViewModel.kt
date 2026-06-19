@@ -34,6 +34,10 @@ class ProductsViewModel
             refresh(forceRemote = true, notifyOnError = true)
         }
 
+        fun onQueryChange(query: String) {
+            _uiState.update { it.copy(query = query) }
+        }
+
         private fun observeProducts() {
             viewModelScope.launch {
                 productsRepository.observeProducts().collect { products ->
@@ -92,4 +96,17 @@ data class ProductsUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val error: UiText? = null,
-)
+    val query: String = "",
+) {
+    /** Liste filtrée par [query] sur le nom et la référence (insensible à la casse). */
+    val visibleProducts: List<Product>
+        get() =
+            if (query.isBlank()) {
+                products
+            } else {
+                products.filter {
+                    it.name.contains(query, ignoreCase = true) ||
+                        it.reference.contains(query, ignoreCase = true)
+                }
+            }
+}

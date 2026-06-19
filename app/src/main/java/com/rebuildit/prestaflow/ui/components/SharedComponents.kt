@@ -14,11 +14,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -159,6 +163,58 @@ fun NotFoundState(
 // ─── Composants Terracotta partagés ──────────────────────────────────────────
 
 /**
+ * Champ de recherche réutilisable (filtre local des listes) — design Terracotta.
+ * Affiche une icône loupe, un placeholder, et une croix pour effacer quand non vide.
+ *
+ * @param query Texte de recherche courant.
+ * @param onQueryChange Callback à chaque frappe (et pour effacer via la croix).
+ * @param placeholder Texte d'invite (ex. « Rechercher une commande »).
+ */
+@Composable
+fun SearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+) {
+    val clearDesc = stringResource(R.string.content_description_clear_search)
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = modifier.fillMaxWidth(),
+        placeholder = {
+            Text(text = placeholder, style = MaterialTheme.typography.bodyMedium)
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Outlined.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.semantics { contentDescription = clearDesc },
+                ) {
+                    Icon(imageVector = Icons.Outlined.Close, contentDescription = null)
+                }
+            }
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(16.dp),
+        colors =
+            OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+            ),
+    )
+}
+
+/**
  * Avatar circulaire avec initiales du nom — design Terracotta.
  * Génère automatiquement 1 ou 2 initiales depuis [name].
  * La couleur de fond est dérivée de l'index numérique du premier caractère
@@ -185,18 +241,20 @@ fun AvatarInitials(
             }
         }
 
-    // Palette de fond tournante basée sur la valeur ASCII du premier char
+    // Palette de fond tournante basée sur la valeur ASCII du premier char.
+    // Tokens Stitch : secondary-container, primary-container léger, surface-container.
     val bgColors =
         listOf(
-            Color(0xFFE9DED4), // secondary-container Stitch
-            Color(0xFFC99587).copy(alpha = 0.22f), // primary-container léger
-            Color(0xFFF0EDED), // surface-container Stitch
+            Color(0xFFE9DED4),
+            Color(0xFFC99587).copy(alpha = 0.22f),
+            Color(0xFFF0EDED),
         )
+    // Tokens Stitch : secondary, primary, on-surface-variant.
     val textColors =
         listOf(
-            Color(0xFF655D56), // secondary Stitch
-            Color(0xFF7F5448), // primary Stitch
-            Color(0xFF514440), // on-surface-variant Stitch
+            Color(0xFF655D56),
+            Color(0xFF7F5448),
+            Color(0xFF514440),
         )
     val colorIndex = (name.firstOrNull()?.code ?: 0) % bgColors.size
 

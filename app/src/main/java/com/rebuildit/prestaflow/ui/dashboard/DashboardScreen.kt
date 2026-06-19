@@ -71,7 +71,6 @@ import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
-import com.rebuildit.prestaflow.ui.theme.kpiTextStyle
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId

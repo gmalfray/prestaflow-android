@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,8 +43,8 @@ import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
+import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.components.SectionHeader
-import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
@@ -64,6 +63,7 @@ fun ClientsRoute(
         state = state,
         onRefresh = viewModel::onRefresh,
         onClientClick = onClientClick,
+        onQueryChange = viewModel::onQueryChange,
     )
 }
 
@@ -73,6 +73,7 @@ fun ClientsScreen(
     onRefresh: () -> Unit,
     onClientClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    onQueryChange: (String) -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
 
@@ -88,7 +89,11 @@ fun ClientsScreen(
         else ->
             ClientList(
                 modifier = modifier,
-                clients = state.clients,
+                clients = state.visibleClients,
+                totalClients = state.clients.size,
+                totalOrders = state.clients.sumOf { it.ordersCount },
+                query = state.query,
+                onQueryChange = onQueryChange,
                 isRefreshing = state.isRefreshing,
                 errorMessage = errorMessage,
                 onRefresh = onRefresh,
@@ -102,6 +107,10 @@ fun ClientsScreen(
 private fun ClientList(
     modifier: Modifier,
     clients: List<Client>,
+    totalClients: Int,
+    totalOrders: Int,
+    query: String,
+    onQueryChange: (String) -> Unit,
     isRefreshing: Boolean,
     errorMessage: String?,
     onRefresh: () -> Unit,
@@ -109,7 +118,6 @@ private fun ClientList(
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
-    val totalOrders = remember(clients) { clients.sumOf { it.ordersCount } }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -139,7 +147,7 @@ private fun ClientList(
                 // KPI stats : total clients + commandes ce mois
                 item {
                     ClientsStatsRow(
-                        totalClients = clients.size,
+                        totalClients = totalClients,
                         totalOrders = totalOrders,
                     )
                 }
@@ -153,30 +161,50 @@ private fun ClientList(
                     )
                 }
 
-                // Carte conteneur avec toutes les lignes clients
+                // Champ de recherche
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    ) {
-                        Column {
-                            clients.forEachIndexed { index, client ->
-                                ClientRow(
-                                    client = client,
-                                    currencyFormatter = currencyFormatter,
-                                    dateFormatter = dateFormatter,
-                                    onClick = { onClientClick(client.id) },
-                                )
-                                if (index < clients.lastIndex) {
-                                    HorizontalDivider(
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
-                                        thickness = 1.dp,
+                    SearchField(
+                        query = query,
+                        onQueryChange = onQueryChange,
+                        placeholder = stringResource(R.string.clients_search_placeholder),
+                    )
+                }
+
+                if (clients.isEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.list_no_results, query),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = Dimensions.spacingM),
+                        )
+                    }
+                } else {
+                    // Carte conteneur avec toutes les lignes clients
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        ) {
+                            Column {
+                                clients.forEachIndexed { index, client ->
+                                    ClientRow(
+                                        client = client,
+                                        currencyFormatter = currencyFormatter,
+                                        dateFormatter = dateFormatter,
+                                        onClick = { onClientClick(client.id) },
                                     )
+                                    if (index < clients.lastIndex) {
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.surfaceContainer,
+                                            thickness = 1.dp,
+                                        )
+                                    }
                                 }
                             }
                         }

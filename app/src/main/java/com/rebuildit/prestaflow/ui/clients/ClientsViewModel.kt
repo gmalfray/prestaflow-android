@@ -36,6 +36,10 @@ class ClientsViewModel
             refresh(forceRemote = true, notifyOnError = true)
         }
 
+        fun onQueryChange(query: String) {
+            _uiState.update { it.copy(query = query) }
+        }
+
         private fun observeClients() {
             viewModelScope.launch {
                 clientsRepository.observeTopClients(TOP_CLIENTS_LIMIT).collect { clients ->
@@ -94,4 +98,17 @@ data class ClientsUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val error: UiText? = null,
-)
+    val query: String = "",
+) {
+    /** Liste filtrée par [query] sur le nom complet et l'e-mail (insensible à la casse). */
+    val visibleClients: List<Client>
+        get() =
+            if (query.isBlank()) {
+                clients
+            } else {
+                clients.filter {
+                    it.fullName.contains(query, ignoreCase = true) ||
+                        it.email.contains(query, ignoreCase = true)
+                }
+            }
+}
