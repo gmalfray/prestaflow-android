@@ -46,6 +46,11 @@
     <string name="dashboard_period_quarter">Quarter</string>
     <string name="dashboard_period_year">Year</string>
     <string name="dashboard_action_refresh">Refresh</string>
+    <!-- Accessibility: chart content description. Args: 1=formatted value, 2=trend (rising/falling) -->
+    <string name="dashboard_chart_content_description">Turnover for the period: %1$s, trend: %2$s</string>
+    <string name="dashboard_chart_trend_rising">rising</string>
+    <string name="dashboard_chart_trend_falling">falling</string>
+    <string name="dashboard_chart_trend_stable">stable</string>
 
     <string name="skin_royal">Royal Violet</string>
     <string name="skin_lagoon">Lagoon Teal</string>
@@ -88,6 +93,9 @@
     <string name="product_update_stock">Update Stock</string>
     <string name="product_status_section">Status</string>
     <string name="dismiss">Dismiss</string>
+
+    <!-- Two-pane layout (tablet) -->
+    <string name="orders_detail_pane_placeholder">Select an order to view its details.</string>
 
     <!-- OrderDetail screen -->
     <string name="order_detail_title">Order Details</string>

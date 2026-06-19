@@ -46,6 +46,11 @@
     <string name="dashboard_period_quarter">Trimestre</string>
     <string name="dashboard_period_year">Année</string>
     <string name="dashboard_action_refresh">Actualiser</string>
+    <!-- Accessibilité : description du graphique. Args : 1=valeur formatée, 2=tendance -->
+    <string name="dashboard_chart_content_description">Chiffre d\'affaires sur la période : %1$s, tendance : %2$s</string>
+    <string name="dashboard_chart_trend_rising">en hausse</string>
+    <string name="dashboard_chart_trend_falling">en baisse</string>
+    <string name="dashboard_chart_trend_stable">stable</string>
 
     <string name="skin_royal">Violet Royal</string>
     <string name="skin_lagoon">Lagune Turquoise</string>
@@ -88,6 +93,9 @@
     <string name="product_update_stock">Mettre à jour le stock</string>
     <string name="product_status_section">Statut</string>
     <string name="dismiss">Fermer</string>
+
+    <!-- Layout deux colonnes (tablette) -->
+    <string name="orders_detail_pane_placeholder">Sélectionnez une commande pour afficher ses détails.</string>
 
     <!-- Écran Détail commande -->
     <string name="order_detail_title">Détails de la commande</string>

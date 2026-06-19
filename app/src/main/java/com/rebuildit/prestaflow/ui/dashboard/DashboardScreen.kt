@@ -40,6 +40,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -298,10 +301,14 @@ private fun KpiCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -332,6 +339,26 @@ private fun DashboardChartCard(
     }
 }
 
+/** Calcule le [contentDescription] TalkBack décrivant la valeur max et la tendance du graphique. */
+@Composable
+private fun rememberChartContentDescription(points: List<DashboardChartPoint>): String {
+    val currencyFormatter = rememberCurrencyFormatter()
+    val peakValue = points.maxOf { it.turnover }
+    val formattedPeak = remember(peakValue) { currencyFormatter.format(peakValue) }
+    val trendRes =
+        remember(points) {
+            val first = points.first().turnover
+            val last = points.last().turnover
+            when {
+                last > first * 1.001 -> R.string.dashboard_chart_trend_rising
+                last < first * 0.999 -> R.string.dashboard_chart_trend_falling
+                else -> R.string.dashboard_chart_trend_stable
+            }
+        }
+    val trendLabel = stringResource(id = trendRes)
+    return stringResource(id = R.string.dashboard_chart_content_description, formattedPeak, trendLabel)
+}
+
 @Suppress("LongMethod") // Composable graphique Canvas : dessin manuel des axes, étiquettes et barres
 @Composable
 private fun TurnoverChart(
@@ -348,6 +375,7 @@ private fun TurnoverChart(
         return
     }
 
+    val chartDesc = rememberChartContentDescription(points)
     val lineColor = MaterialTheme.colorScheme.primary
     val fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
     val axisColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -356,7 +384,8 @@ private fun TurnoverChart(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(height),
+                .height(height)
+                .semantics(mergeDescendants = true) { contentDescription = chartDesc },
     ) {
         val maxValue = points.maxOf { it.turnover }.takeIf { it > 0.0 } ?: 1.0
         val verticalPadding = size.height * 0.1f
