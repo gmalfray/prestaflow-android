@@ -17,6 +17,7 @@ import com.rebuildit.prestaflow.core.security.EncryptedTokenStorage
 import com.rebuildit.prestaflow.core.security.InMemoryTokenProvider
 import com.rebuildit.prestaflow.core.security.TokenStorage
 import com.rebuildit.prestaflow.data.auth.AuthRepositoryImpl
+import com.rebuildit.prestaflow.data.carts.CartsRepositoryImpl
 import com.rebuildit.prestaflow.data.clients.ClientsRepositoryImpl
 import com.rebuildit.prestaflow.data.dashboard.DashboardRepositoryImpl
 import com.rebuildit.prestaflow.data.local.dao.ClientDao
@@ -38,6 +39,7 @@ import com.rebuildit.prestaflow.domain.theme.ThemeRepository
 import com.rebuildit.prestaflow.data.sync.SyncQueueRepositoryImpl
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
+import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
@@ -182,6 +184,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideClientsRepository(impl: ClientsRepositoryImpl): ClientsRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideCartsRepository(impl: CartsRepositoryImpl): CartsRepository = impl
 
     @Provides
     @Singleton

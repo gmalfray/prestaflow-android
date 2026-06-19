@@ -2,6 +2,8 @@ package com.rebuildit.prestaflow.data.remote.api
 
 import com.rebuildit.prestaflow.data.remote.dto.AuthRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.AuthResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.CartDetailResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.CartListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
@@ -69,4 +71,14 @@ interface PrestaFlowApi {
 
     @DELETE("notifications/devices/{token}")
     suspend fun unregisterDevice(@Path(value = "token", encoded = true) token: String)
+
+    @GET("baskets")
+    suspend fun getBaskets(
+        @Query("abandoned_since_days") abandonedSinceDays: Int? = null
+    ): CartListResponseDto
+
+    @GET("baskets")
+    suspend fun getBasketById(
+        @Query("id_cart") cartId: Int
+    ): CartDetailResponseDto
 }
