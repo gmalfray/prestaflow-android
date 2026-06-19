@@ -22,6 +22,10 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import timber.log.Timber
 
+private const val HTTP_CONFLICT = 409
+private const val HTTP_SERVER_ERROR_MIN = 500
+private const val HTTP_SERVER_ERROR_MAX = 599
+
 @HiltWorker
 class SyncWorker @AssistedInject constructor(
     @Assisted appContext: Context,
@@ -57,7 +61,7 @@ class SyncWorker @AssistedInject constructor(
                     if (resp.isSuccessful) {
                         syncQueueRepository.remove(task.id)
                         Result.success()
-                    } else if (resp.code == 409) {
+                    } else if (resp.code == HTTP_CONFLICT) {
                         val body = resp.body?.string()
                         when (val resolution = conflictResolver.resolve(task, resp.code, body)) {
                             Drop -> {
@@ -70,7 +74,7 @@ class SyncWorker @AssistedInject constructor(
                                 Result.success()
                             }
                         }
-                    } else if (resp.code in 500..599) {
+                    } else if (resp.code in HTTP_SERVER_ERROR_MIN..HTTP_SERVER_ERROR_MAX) {
                         Timber.w("Server error ${resp.code} for ${task.endpoint}")
                         Result.retry()
                     } else {

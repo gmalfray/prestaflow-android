@@ -8,6 +8,9 @@ import javax.inject.Singleton
 import retrofit2.HttpException
 import timber.log.Timber
 
+private const val HTTP_UNAUTHORIZED = 401
+private const val HTTP_FORBIDDEN = 403
+
 @Singleton
 class NetworkErrorMapper @Inject constructor() {
 
@@ -27,8 +30,8 @@ class NetworkErrorMapper @Inject constructor() {
                 throwable.message() ?: "n/a"
             )
             when (statusCode) {
-                401 -> UiText.FromResources(R.string.error_unauthorized)
-                403 -> UiText.FromResources(R.string.error_forbidden)
+                HTTP_UNAUTHORIZED -> UiText.FromResources(R.string.error_unauthorized)
+                HTTP_FORBIDDEN -> UiText.FromResources(R.string.error_forbidden)
                 else -> UiText.FromResources(
                     R.string.error_http_with_code,
                     listOf(statusCode)

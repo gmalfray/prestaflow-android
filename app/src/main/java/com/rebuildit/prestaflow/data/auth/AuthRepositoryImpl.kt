@@ -72,7 +72,7 @@ class AuthRepositoryImpl @Inject constructor(
                 val token = AuthToken(
                     value = payload.token,
                     expiresAtEpochMillis = payload.expiresIn.takeIf { it > 0 }?.let {
-                        System.currentTimeMillis() + it * 1000
+                        System.currentTimeMillis() + it * MILLIS_PER_SECOND
                     },
                     scopes = payload.scopes
                 )
@@ -151,5 +151,6 @@ class AuthRepositoryImpl @Inject constructor(
 
     companion object {
         private const val MAX_ERROR_BODY_LENGTH = 1024
+        private const val MILLIS_PER_SECOND = 1000L
     }
 }

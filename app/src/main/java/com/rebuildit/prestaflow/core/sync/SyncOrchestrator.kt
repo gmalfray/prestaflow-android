@@ -56,12 +56,13 @@ class SyncOrchestrator @Inject constructor(
         val request = OneTimeWorkRequestBuilder<SyncWorker>()
             .setConstraints(constraints)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.SECONDS)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_DELAY_SECONDS, TimeUnit.SECONDS)
             .build()
         workManager.enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, request)
     }
 
     companion object {
         private const val UNIQUE_WORK_NAME = "prestaflow_sync_queue"
+        private const val BACKOFF_DELAY_SECONDS = 15L
     }
 }
