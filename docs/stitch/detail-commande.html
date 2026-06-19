@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .card-shadow {
+            shadow-color: rgba(127, 84, 72, 0.05);
+            box-shadow: 0 4px 12px 0 rgba(127, 84, 72, 0.05);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed": "#31130a",
+                      "surface-container-high": "#eae7e7",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-bright": "#fcf9f8",
+                      "secondary-fixed": "#ece0d7",
+                      "on-error": "#ffffff",
+                      "surface-container-highest": "#e4e2e1",
+                      "on-tertiary-fixed-variant": "#4b4641",
+                      "on-tertiary-container": "#3b3732",
+                      "surface-tint": "#7f5448",
+                      "surface": "#fcf9f8",
+                      "primary-fixed-dim": "#f2baab",
+                      "on-surface": "#1b1c1c",
+                      "background": "#fcf9f8",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed": "#eae1da",
+                      "secondary": "#655d56",
+                      "outline": "#837470",
+                      "tertiary-fixed-dim": "#cdc5be",
+                      "surface-container-low": "#f6f3f2",
+                      "tertiary": "#635d58",
+                      "secondary-fixed-dim": "#d0c5bc",
+                      "on-primary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#4d453f",
+                      "on-background": "#1b1c1c",
+                      "inverse-surface": "#303030",
+                      "error-container": "#ffdad6",
+                      "on-secondary-fixed": "#201b15",
+                      "secondary-container": "#e9ded4",
+                      "surface-container": "#f0eded",
+                      "primary": "#7f5448",
+                      "on-surface-variant": "#514440",
+                      "error": "#ba1a1a",
+                      "inverse-on-surface": "#f3f0f0",
+                      "on-primary-container": "#532e24",
+                      "tertiary-container": "#a7a099",
+                      "on-tertiary": "#ffffff",
+                      "primary-container": "#c99587",
+                      "on-tertiary-fixed": "#1f1b17",
+                      "surface-variant": "#e4e2e1",
+                      "on-primary-fixed-variant": "#643d32",
+                      "primary-fixed": "#ffdbd1",
+                      "inverse-primary": "#f2baab",
+                      "on-secondary-container": "#69615a",
+                      "surface-dim": "#dcd9d9",
+                      "outline-variant": "#d5c2be"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "md": "16px",
+                      "edge-margin": "20px",
+                      "base": "4px",
+                      "lg": "24px",
+                      "gutter": "16px",
+                      "xl": "32px",
+                      "sm": "8px"
+              },
+              "fontFamily": {
+                      "title-lg": ["Plus Jakarta Sans"],
+                      "label-lg": ["Plus Jakarta Sans"],
+                      "headline-lg": ["Plus Jakarta Sans"],
+                      "label-md": ["Plus Jakarta Sans"],
+                      "display-kpi": ["Plus Jakarta Sans"],
+                      "body-md": ["Plus Jakarta Sans"],
+                      "body-lg": ["Plus Jakarta Sans"],
+                      "headline-md": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "600"}],
+                      "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                      "label-md": ["11px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "display-kpi": ["42px", {"lineHeight": "52px", "letterSpacing": "-1px", "fontWeight": "700"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- Top AppBar (from JSON Guidance) -->
+<header class="sticky top-0 flex justify-between items-center px-edge-margin py-md w-full bg-background/80 backdrop-blur-md z-50">
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity flex items-center justify-center p-1">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-title-lg text-title-lg text-primary">Détail commande</h1>
+</div>
+<div class="flex items-center gap-sm">
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">print</span>
+</button>
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<main class="px-edge-margin space-y-lg mt-md">
+<!-- Header: Order Ref & Status -->
+<div class="flex items-start justify-between">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">Référence</p>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">#ORD-8492</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Passée le 14 Octobre 2023 à 14:32</p>
+</div>
+<span class="px-md py-sm rounded-full bg-secondary-container text-on-secondary-container font-label-lg text-label-lg flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                Payée
+            </span>
+</div>
+<!-- Section: Client -->
+<section class="bg-surface-container-lowest p-md rounded-[20px] card-shadow border border-surface-container">
+<div class="flex items-center gap-md mb-md">
+<div class="w-12 h-12 rounded-full overflow-hidden bg-primary-fixed flex items-center justify-center text-on-primary-fixed font-bold">
+                    ML
+                </div>
+<div>
+<h3 class="font-title-lg text-title-lg text-on-surface">Marie Lefebvre</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">marie.lefebvre@gmail.com</p>
+</div>
+<button class="ml-auto text-primary p-2">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+<div class="pt-md border-t border-surface-container-high flex gap-xl">
+<div class="flex-1">
+<p class="font-label-md text-label-md text-on-surface-variant mb-xs">Téléphone</p>
+<p class="font-body-md text-body-md text-on-surface">+33 6 12 34 56 78</p>
+</div>
+<div class="flex-1">
+<p class="font-label-md text-label-md text-on-surface-variant mb-xs">Commandes</p>
+<p class="font-body-md text-body-md text-on-surface">12 au total</p>
+</div>
+</div>
+</section>
+<!-- Section: Articles -->
+<section class="bg-surface-container-lowest p-md rounded-[20px] card-shadow border border-surface-container">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-md">Articles (3)</h3>
+<div class="space-y-md">
+<!-- Product 1 -->
+<div class="flex items-center gap-md h-[72px]">
+<div class="w-[48px] h-[48px] rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A macro photograph of premium terracotta linen fabric showing the intricate weave and natural texture. The lighting is soft and warm, highlighting the handcrafted quality and earthy tones, fitting a craft shop aesthetic with professional studio lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYvENawsBnuXayN-ABHw5sTrLh3kYT786hF5IIXezoYyu-POr3aJ-oMmJCJtPM6HRsm5sQmxcSTUqb10S_5j0oRVlTvS1AC6w198AppQrqYsfWYHXf0m9J-cmJrv00NEGYecbAQqTxQJCcRTF69aXWJHcc3U0eyLYRyhjNVjX6cdCtMAIoFzK61GJKTDCbT1ILT68NmfUrfaeTxfQ_uZrdv30Bvuf5kjpxOZUlpgLeCfNFjylHMW5cJkL1U4le_6dAnboV5R4r6bQ"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-lg text-body-lg text-on-surface truncate">Lin Lavé - Terracotta</p>
+<p class="font-body-md text-body-md text-on-surface-variant">2.5 mètres</p>
+</div>
+<div class="text-right">
+<p class="font-title-lg text-title-lg text-on-surface">45,00€</p>
+<p class="font-label-md text-label-md text-on-surface-variant">Qté: 1</p>
+</div>
+</div>
+<!-- Product 2 -->
+<div class="flex items-center gap-md h-[72px]">
+<div class="w-[48px] h-[48px] rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A set of vintage-style wooden buttons arranged neatly on a beige cotton surface. The lighting is natural and bright, emphasizing the tactile wooden grain and artisanal craft feel of a high-end haberdashery store." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgF-pDFVcBhjYqMwIlMYO58WN-n_858hLB95PrwyKCyu1V7GvDd8wV2Bow_elxgNY01yppMP7gg7ty5Nc5l0pS1ZD9ozKqCCyOia4xQ3fwvNw1VSDx-bVd2VESCHOjzwxkpnjwm5ixpdQa11Zeb6oNzOGjG4WMfQ71wBCGkwJS_WbAvECmtVaRplhOTC9pAW1h3Wn6qcIBEVbsbOqGkienLWlzH0XQdye-SURSMWl_HCRrnUKr1w3uguPy90k9-grfQkebYCC3TJo"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-lg text-body-lg text-on-surface truncate">Boutons Bois Artisanal</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Lot de 6</p>
+</div>
+<div class="text-right">
+<p class="font-title-lg text-title-lg text-on-surface">12,50€</p>
+<p class="font-label-md text-label-md text-on-surface-variant">Qté: 2</p>
+</div>
+</div>
+</div>
+<!-- Totals row -->
+<div class="mt-lg pt-lg border-t border-surface-container-high space-y-sm">
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md text-body-md">Sous-total</span>
+<span class="font-body-md text-body-md">70,00€</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md text-body-md">Livraison (Colissimo)</span>
+<span class="font-body-md text-body-md">5,90€</span>
+</div>
+<div class="flex justify-between items-center pt-sm">
+<span class="font-title-lg text-title-lg text-on-surface">Total payé</span>
+<span class="font-display-kpi text-[24px] leading-tight text-primary">75,90€</span>
+</div>
+</div>
+</section>
+<!-- Section: Livraison -->
+<section class="bg-surface-container-lowest p-md rounded-[20px] card-shadow border border-surface-container">
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-title-lg text-title-lg text-on-surface">Livraison</h3>
+<span class="px-sm py-xs rounded bg-surface-container-high text-on-surface-variant font-label-md text-label-md">Standard</span>
+</div>
+<div class="flex items-start gap-md">
+<div class="p-2 rounded-full bg-secondary-container text-on-secondary-container">
+<span class="material-symbols-outlined">local_shipping</span>
+</div>
+<div>
+<p class="font-body-lg text-body-lg text-on-surface">Colissimo France</p>
+<div class="mt-xs flex items-center gap-xs">
+<p class="font-body-md text-body-md text-on-surface-variant">N° : </p>
+<code class="font-label-lg text-label-lg bg-surface-container-high px-sm py-[2px] rounded text-on-surface">8L02938475620</code>
+<button class="text-primary hover:bg-primary-container/10 p-1 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-md p-md bg-surface-container-low rounded-xl">
+<p class="font-label-md text-label-md text-on-surface-variant mb-xs">Adresse de livraison</p>
+<p class="font-body-md text-body-md text-on-surface">
+                    12 Rue des Lilas<br/>
+                    75011 Paris, France
+                </p>
+</div>
+</section>
+</main>
+<!-- Bottom Actions Container -->
+<div class="fixed bottom-0 left-0 w-full p-edge-margin bg-background/95 backdrop-blur-md border-t border-surface-container-high z-50 flex gap-md">
+<button class="flex-1 py-lg px-md rounded-full border-2 border-outline text-on-surface font-title-lg text-title-lg flex items-center justify-center gap-sm active:scale-95 transition-transform">
+<span class="material-symbols-outlined">edit_square</span>
+            Statut
+        </button>
+<button class="flex-[1.5] py-lg px-md rounded-full bg-primary text-on-primary font-title-lg text-title-lg flex items-center justify-center gap-sm shadow-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined">add</span>
+            Ajouter un suivi
+        </button>
+</div>
+<!-- Persistent Bottom Nav (for context) - Filtered to inactive state for this detail page -->
+<nav class="fixed bottom-0 left-0 w-full h-[0px] pointer-events-none">
+<!-- The actual BottomNavBar from JSON is handled by the sticky actions for this sub-page view -->
+</nav>
+<script>
+        // Simple ripple effect or interaction simulation
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('mousedown', function() {
+                this.classList.add('opacity-70');
+            });
+            button.addEventListener('mouseup', function() {
+                this.classList.remove('opacity-70');
+            });
+            button.addEventListener('mouseleave', function() {
+                this.classList.remove('opacity-70');
+            });
+        });
+    </script>
+</body></html>

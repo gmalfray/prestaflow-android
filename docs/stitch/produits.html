@@ -1,0 +1,265 @@
+<!DOCTYPE html><html class="light" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#f0eded",
+                    "on-primary-fixed-variant": "#643d32",
+                    "tertiary-fixed-dim": "#cdc5be",
+                    "tertiary-container": "#a7a099",
+                    "on-primary-container": "#532e24",
+                    "surface-tint": "#7f5448",
+                    "primary-fixed": "#ffdbd1",
+                    "background": "#fcf9f8",
+                    "on-error-container": "#93000a",
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#514440",
+                    "on-tertiary-fixed-variant": "#4b4641",
+                    "on-primary-fixed": "#31130a",
+                    "primary-container": "#c99587",
+                    "secondary-container": "#e9ded4",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-container": "#3b3732",
+                    "primary": "#7f5448",
+                    "surface": "#fcf9f8",
+                    "surface-bright": "#fcf9f8",
+                    "on-secondary-fixed": "#201b15",
+                    "on-secondary-fixed-variant": "#4d453f",
+                    "on-surface": "#1b1c1c",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-container": "#69615a",
+                    "inverse-on-surface": "#f3f0f0",
+                    "surface-container-high": "#eae7e7",
+                    "on-secondary": "#ffffff",
+                    "outline-variant": "#d5c2be",
+                    "on-primary": "#ffffff",
+                    "on-background": "#1b1c1c",
+                    "tertiary-fixed": "#eae1da",
+                    "surface-variant": "#e4e2e1",
+                    "surface-dim": "#dcd9d9",
+                    "secondary-fixed": "#ece0d7",
+                    "tertiary": "#635d58",
+                    "outline": "#837470",
+                    "surface-container-highest": "#e4e2e1",
+                    "secondary-fixed-dim": "#d0c5bc",
+                    "secondary": "#655d56",
+                    "primary-fixed-dim": "#f2baab",
+                    "on-tertiary-fixed": "#1f1b17",
+                    "inverse-primary": "#f2baab",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#f6f3f2",
+                    "inverse-surface": "#303030",
+                    "on-tertiary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "12px",
+                    "2xl": "20px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "md": "16px",
+                    "sm": "8px",
+                    "xs": "4px",
+                    "edge-margin": "20px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "display-kpi": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "title-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "600"}],
+                    "display-kpi": ["42px", {"lineHeight": "52px", "letterSpacing": "-1px", "fontWeight": "700"}],
+                    "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["11px", {"lineHeight": "16px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #fcf9f8; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .craft-card-shadow {
+            box-shadow: 0 4px 12px rgba(127, 84, 72, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- Top App Bar -->
+<header class="sticky top-0 flex justify-between items-center px-edge-margin py-md w-full bg-background/80 backdrop-blur-md z-50">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary cursor-pointer">menu</span>
+<h1 class="font-headline-lg text-headline-lg text-primary font-bold">PrestaFlow</h1>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">search</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">notifications</span>
+</div>
+</header>
+<main class="px-edge-margin mt-lg">
+<!-- Search & Filter Bar -->
+<div class="flex gap-md mb-lg">
+<div class="flex-1 bg-secondary-container rounded-full px-md py-sm flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-secondary-container">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md w-full placeholder-on-secondary-container" placeholder="Rechercher un produit..." type="text">
+</div>
+<button class="bg-primary-container text-on-primary-container p-sm rounded-xl">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+<!-- Inventory Summary (Bento Style) -->
+<div class="grid grid-cols-2 gap-md mb-lg">
+<div class="bg-surface-container-low p-md rounded-2xl craft-card-shadow flex flex-col justify-between h-32">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Total Produits</span>
+<span class="text-display-kpi font-display-kpi text-primary">142</span>
+</div>
+<div class="bg-error-container p-md rounded-2xl craft-card-shadow flex flex-col justify-between h-32">
+<span class="text-label-md font-label-md text-on-error-container uppercase tracking-wider">Stock Faible</span>
+<div class="flex items-end justify-between">
+<span class="text-display-kpi font-display-kpi text-on-error-container">12</span>
+<span class="material-symbols-outlined text-on-error-container text-4xl mb-1" style="font-variation-settings: 'FILL' 1;">error</span>
+</div>
+</div>
+</div>
+<!-- Products List Header -->
+<div class="flex justify-between items-center mb-md">
+<h2 class="font-headline-md text-headline-md text-on-surface">Inventaire des articles</h2>
+<span class="text-label-lg font-label-lg text-primary">Voir tout</span>
+</div>
+<!-- Products List -->
+<div class="space-y-md">
+<!-- Product Item 1 (Buttons) -->
+<div class="flex items-center gap-md bg-surface-container-lowest p-md rounded-2xl craft-card-shadow border border-outline-variant/30 active:scale-[0.98] transition-transform">
+<div class="w-16 h-16 rounded-lg bg-cover bg-center shrink-0" data-alt="A collection of artisanal ceramic buttons in various sizes and earthy tones of terracotta and cream, arranged neatly on a natural linen fabric. The lighting is soft and natural, emphasizing the handcrafted texture and matte finish of the buttons. High-end product photography style with a shallow depth of field." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDKJQ0CBh05P6HTvwjyQYk_ZpqLc9XqTOm83T-8RTALT1ixAhcCYtJYBaTuUFqYOlanwRdsjYU0Z5SK5zASNZ8qddgVjnxaJe6YMXDXtADQNcW6QF2Bb3JQ5nPFE_UFZoFObcVhO4al6sPx8S_kU0IslU2rvJZVGiZ7EZlYwoU0TUyOS-ubtkYjXUX5Xv10nU5hiw3x-z75YwUeiofF4_qZhS_-6p20C4UOQrfby_cIMeh6fSC_Gnfn4sst7ixeqn-DTZJgrw9pXCI')"></div>
+<div class="flex-1 min-w-0">
+<h3 class="font-title-lg text-title-lg text-on-surface truncate">Boutons Céramique Terre</h3>
+<div class="flex justify-between items-center mt-xs">
+<span class="text-body-md font-body-md text-on-surface-variant">€12.50 <span class="text-xs">/ lot</span></span>
+<div class="flex items-center gap-xs">
+<span class="text-label-lg font-label-lg text-on-surface-variant">Stock:</span>
+<span class="text-label-lg font-label-lg text-on-surface">45</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<!-- Product Item 2 (Thread - Low Stock Warning) -->
+<div class="flex items-center gap-md bg-surface-container-lowest p-md rounded-2xl craft-card-shadow border border-outline-variant/30 relative">
+<div class="w-16 h-16 rounded-lg bg-cover bg-center shrink-0" data-alt="Multiple spools of high-quality organic cotton sewing threads in a warm palette of dusty rose, sage green, and honey yellow. The wooden spools are stacked artistically in a wicker basket, with professional studio lighting highlighting the fine fibers and rich colors. Minimalist and warm aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDSvpS5fzO409MLiwHl7JzEclQJeVQq4OKY1CvIgJA2JrFzSMB8zBw6DibKg2oY74JD5cWDg5Np7qvKl3CHDTw8CAbrmXH8Rz9NMFugx7GyGbBafc-VAGqBkaNfjuhZCwjIPAJjcVup6OC0TA61lv34qEpfcGmzHLmT0YIs3dj53KN_IZfhxZ5jNzrlD5uUjSELpt0WchRVqGQabUEM8lpomFMpdgF8tII_2qV_o3OlsFCaYgKTjvneFeXrc52idFgzNecu7O70Ftw')"></div>
+<div class="flex-1 min-w-0">
+<h3 class="font-title-lg text-title-lg text-on-surface truncate">Fil Coton Bio "Sauge"</h3>
+<div class="flex justify-between items-center mt-xs">
+<span class="text-body-md font-body-md text-on-surface-variant">€4.20 <span class="text-xs">/ unité</span></span>
+<div class="flex items-center gap-xs bg-error-container px-sm py-0.5 rounded-full">
+<span class="text-label-md font-label-md text-on-error-container">Stock: 4</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<!-- Product Item 3 (Lace) -->
+<div class="flex items-center gap-md bg-surface-container-lowest p-md rounded-2xl craft-card-shadow border border-outline-variant/30">
+<div class="w-16 h-16 rounded-lg bg-cover bg-center shrink-0" data-alt="Intricate handmade cotton lace ribbon with floral patterns, delicately unrolled on a dark oak wooden tabletop. The morning sunlight casts soft shadows across the lace, showcasing the fine craftsmanship and delicate details. The mood is nostalgic, artisanal, and highly professional." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA12vc-AoWb1vvnNN3lo8VXxvTJXo8o2ZDFLhGUzAwDgmQTviuhKGgqadvLlL8FA9eq05eJKtFmZA9e0qyaJLRm2uUAAXHH2MG9jorjC3xFQg6IzuVbqcf0ooqdMLG1BALgsY3bWHUiJDcGEWOkfZufkaKvHZnXU4bm9daIrRZ1xY4zSRtGf7v-H18Gao1X96xrCeOFEjam8-B2lyi80ebreyq4pCpcVyIwJC-UaxsKFes7OtcSbVHSu_uK29BlSmZPCt5n4oTBGUY')"></div>
+<div class="flex-1 min-w-0">
+<h3 class="font-title-lg text-title-lg text-on-surface truncate">Dentelle Florale 15mm</h3>
+<div class="flex justify-between items-center mt-xs">
+<span class="text-body-md font-body-md text-on-surface-variant">€8.90 <span class="text-xs">/ mètre</span></span>
+<div class="flex items-center gap-xs">
+<span class="text-label-lg font-label-lg text-on-surface-variant">Stock:</span>
+<span class="text-label-lg font-label-lg text-on-surface">18</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<!-- Product Item 4 (Needles) -->
+<div class="flex items-center gap-md bg-surface-container-lowest p-md rounded-2xl craft-card-shadow border border-outline-variant/30">
+<div class="w-16 h-16 rounded-lg bg-cover bg-center shrink-0" data-alt="A vintage-style metal tin containing a variety of high-precision embroidery needles. The tin is open, revealing the organized needles against a dark velvet interior. Soft focus background with craft tools like small scissors. Elegant, sharp, and detailed macro photography." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDe789yFKg4TWh_KvPoIyerBrAipHmkQMQH1eyHlrYcr3slKOSGnFQgt4YdZycBWiT5VHJTxWhe10q8oxCvrY3q8D1UJ5bXBq12foQf2sU0BnK7FsWFpcD1_n6htaXlDtJymN2h1vAaoajTJxBrpU7Ap_dh_nG-dyWgMTw2pdLic1218CuUDVRYlNfNc1bZsGHtnkeZCItY3JY4z6n2N-vDpLraxclq9YsMZeqM9APDTQUqYwscyBfp1uDrc_-ljX-bLixkt3P--jE')"></div>
+<div class="flex-1 min-w-0">
+<h3 class="font-title-lg text-title-lg text-on-surface truncate">Aiguilles Broderie Pro</h3>
+<div class="flex justify-between items-center mt-xs">
+<span class="text-body-md font-body-md text-on-surface-variant">€15.00 <span class="text-xs">/ pack</span></span>
+<div class="flex items-center gap-xs bg-error-container px-sm py-0.5 rounded-full">
+<span class="text-label-md font-label-md text-on-error-container">Stock: 2</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary text-on-primary rounded-2xl shadow-xl flex items-center justify-center active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-edge-margin pb-4 pt-2 bg-surface dark:bg-surface-container shadow-lg">
+<!-- Dashboard -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors rounded-full px-5 py-1 cursor-pointer" onclick="window.location.href='/dashboard'">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-lg text-label-lg">Tableau de bord</span>
+</div>
+<!-- Commandes -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors rounded-full px-5 py-1 cursor-pointer" onclick="window.location.href='/orders'">
+<span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
+<span class="font-label-lg text-label-lg">Commandes</span>
+</div>
+<!-- Produits (ACTIVE) -->
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-1 cursor-pointer" onclick="window.location.href='/products'">
+<span class="material-symbols-outlined active-icon" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-lg text-label-lg">Produits</span>
+</div>
+<!-- Clients -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors rounded-full px-5 py-1 cursor-pointer" onclick="window.location.href='/clients'">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-lg text-label-lg">Clients</span>
+</div>
+<!-- Réglages -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors rounded-full px-5 py-1 cursor-pointer" onclick="window.location.href='/settings'">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-lg text-label-lg">Réglages</span>
+</div>
+</nav>
+<script>
+        // Simple micro-interaction for list items
+        document.querySelectorAll('.craft-card-shadow').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.classList.add('bg-primary-fixed-dim/10');
+            });
+            card.addEventListener('touchend', () => {
+                card.classList.remove('bg-primary-fixed-dim/10');
+            });
+        });
+    </script>
+
+
+</body></html>

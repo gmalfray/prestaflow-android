@@ -1,0 +1,215 @@
+<!DOCTYPE html><html class="light" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#f0eded",
+                    "on-primary-fixed-variant": "#643d32",
+                    "tertiary-fixed-dim": "#cdc5be",
+                    "tertiary-container": "#a7a099",
+                    "on-primary-container": "#532e24",
+                    "surface-tint": "#7f5448",
+                    "primary-fixed": "#ffdbd1",
+                    "background": "#fcf9f8",
+                    "on-error-container": "#93000a",
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#514440",
+                    "on-tertiary-fixed-variant": "#4b4641",
+                    "on-primary-fixed": "#31130a",
+                    "primary-container": "#c99587",
+                    "secondary-container": "#e9ded4",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-container": "#3b3732",
+                    "primary": "#7f5448",
+                    "surface": "#fcf9f8",
+                    "surface-bright": "#fcf9f8",
+                    "on-secondary-fixed": "#201b15",
+                    "on-secondary-fixed-variant": "#4d453f",
+                    "on-surface": "#1b1c1c",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-container": "#69615a",
+                    "inverse-on-surface": "#f3f0f0",
+                    "surface-container-high": "#eae7e7",
+                    "on-secondary": "#ffffff",
+                    "outline-variant": "#d5c2be",
+                    "on-primary": "#ffffff",
+                    "on-background": "#1b1c1c",
+                    "tertiary-fixed": "#eae1da",
+                    "surface-variant": "#e4e2e1",
+                    "surface-dim": "#dcd9d9",
+                    "secondary-fixed": "#ece0d7",
+                    "tertiary": "#635d58",
+                    "outline": "#837470",
+                    "surface-container-highest": "#e4e2e1",
+                    "secondary-fixed-dim": "#d0c5bc",
+                    "secondary": "#655d56",
+                    "primary-fixed-dim": "#f2baab",
+                    "on-tertiary-fixed": "#1f1b17",
+                    "inverse-primary": "#f2baab",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#f6f3f2",
+                    "inverse-surface": "#303030",
+                    "on-tertiary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px",
+                    "card": "20px"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "md": "16px",
+                    "sm": "8px",
+                    "xs": "4px",
+                    "edge-margin": "20px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "display-kpi": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "title-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "600"}],
+                    "display-kpi": ["42px", {"lineHeight": "52px", "letterSpacing": "-1px", "fontWeight": "700"}],
+                    "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["11px", {"lineHeight": "16px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-shadow {
+            box-shadow: 0 4px 12px rgba(127, 84, 72, 0.05);
+        }
+        /* Soft appearance of cards */
+        .order-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .order-card:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen pb-32">
+<!-- Top AppBar -->
+<header class="sticky top-0 flex justify-between items-center px-edge-margin py-md w-full bg-background/80 backdrop-blur-md z-50">
+<div class="flex items-center gap-md">
+<button class="p-xs text-primary hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline-lg text-headline-lg text-primary font-bold">PrestaFlow</h1>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-xs text-primary hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a woman who creates handmade pottery, wearing a linen apron in a bright, sunlit workshop. The lighting is warm and natural, emphasizing the artisanal and warm personality of the Brand PrestaFlow. The background shows soft-focus shelves with clay pots and sewing materials." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB83PO3ysuwGfxIVqZVV4oQ1IQQjH26j52UMki3AtzGfK8zZWjrvQCfX12moIK5LUH8TxDKzt_vtaeXqats86yv0wgEDyNl8KpkbB0Jluk6zKkCi4Ws1121uxHJpkKhCWCDeuZKD87GAmMb1YyJAC3y4BCxtwes-4lWlEXIjLAjUg1oBAbJ_BbhJHZz9HyOf5WTT4NrH7haITiZUKFbxKdvL-picN9HEywBjjWxYTajYBQ245EgPBZmkiVLL_4H42ro8KurKWcWScE">
+</div>
+</div>
+</header>
+<main class="px-edge-margin mt-md">
+<!-- Search Section -->
+<div class="mb-lg">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-md text-outline">search</span>
+<input class="w-full pl-xl pr-md py-md bg-secondary-container/30 border-none rounded-xl font-body-md focus:ring-2 focus:ring-primary/20 placeholder:text-on-surface-variant/60" placeholder="Rechercher une commande..." type="text">
+<button class="absolute right-sm p-sm text-primary">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+</div>
+<!-- Section Title & Filter Chips -->
+<div class="flex flex-col gap-md mb-lg">
+<div class="flex justify-between items-center">
+<h2 class="font-title-lg text-title-lg text-on-surface">Commandes récentes</h2>
+<span class="text-primary font-label-lg">24 au total</span>
+</div>
+<div class="flex gap-sm overflow-x-auto pb-xs scrollbar-hide"><div class="px-md py-sm bg-primary text-on-primary rounded-full whitespace-nowrap font-label-md">Toutes</div><div class="px-md py-sm bg-secondary-container text-on-secondary-container rounded-full whitespace-nowrap font-label-md">En attente</div><div class="px-md py-sm bg-secondary-container text-on-secondary-container rounded-full whitespace-nowrap font-label-md">Payées</div><div class="px-md py-sm bg-secondary-container text-on-secondary-container rounded-full whitespace-nowrap font-label-md">Expédiées</div></div>
+</div>
+<!-- Orders List (Asymmetric Grid / Bento feel) -->
+<div class="grid grid-cols-1 gap-md"><!-- Order Card 1 --><div class="order-card bg-surface-container-lowest p-md rounded-card custom-shadow flex flex-col gap-md border border-surface-container"><div class="flex justify-between items-start"><div class="flex items-center gap-md"><div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">MD</div><div class="flex flex-col"><h3 class="font-title-lg text-title-lg">Mme Dupont</h3><span class="font-label-lg text-on-surface-variant">#ORD-8492</span></div></div><div class="px-md py-xs bg-orange-100 text-orange-800 rounded-lg font-label-md border border-orange-200">En attente</div></div><div class="flex items-end justify-between"><span class="font-body-md text-on-surface-variant">Aujourd'hui, 14:20</span><span class="font-headline-md text-headline-md text-primary">45,00 €</span></div></div><!-- Order Card 2 --><div class="order-card bg-surface-container-lowest p-md rounded-card custom-shadow flex flex-col gap-md border border-surface-container"><div class="flex justify-between items-start"><div class="flex items-center gap-md"><div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold">JM</div><div class="flex flex-col"><h3 class="font-title-lg text-title-lg">Julien Martin</h3><span class="font-label-lg text-on-surface-variant">#ORD-8488</span></div></div><div class="px-md py-xs bg-green-100 text-green-800 rounded-lg font-label-md border border-green-200">Expédiée</div></div><div class="flex items-end justify-between"><span class="font-body-md text-on-surface-variant">Hier, 09:15</span><span class="font-headline-md text-headline-md text-primary">28,50 €</span></div></div><!-- Order Card 3 --><div class="order-card bg-surface-container-lowest p-md rounded-card custom-shadow flex flex-col gap-md border border-surface-container"><div class="flex justify-between items-start"><div class="flex items-center gap-md"><div class="w-10 h-10 rounded-full bg-stone-100 text-stone-800 flex items-center justify-center font-bold">ML</div><div class="flex flex-col"><h3 class="font-title-lg text-title-lg">Mme Leblanc</h3><span class="font-label-lg text-on-surface-variant">#ORD-8485</span></div></div><div class="px-md py-xs bg-primary-container text-on-primary-container rounded-lg font-label-md border border-outline-variant">Payée</div></div><div class="flex items-end justify-between"><span class="font-body-md text-on-surface-variant">02 Nov, 16:45</span><span class="font-headline-md text-headline-md text-primary">112,00 €</span></div></div></div>
+</main>
+<!-- FAB for New Order (Suppressed based on logic but kept if contextually relevant for Home/Orders list as a primary action) -->
+<button class="fixed right-edge-margin bottom-28 w-14 h-14 bg-primary text-on-primary rounded-2xl shadow-xl flex items-center justify-center active:scale-95 transition-transform z-50">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-edge-margin pb-6 pt-2 bg-surface dark:bg-surface-container shadow-lg">
+<!-- Tableau de bord -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-lg text-label-lg">Tableau de bord</span>
+</a>
+<!-- Commandes (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-2 scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shopping_bag</span>
+<span class="font-label-lg text-label-lg">Commandes</span>
+</a>
+<!-- Produits -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-lg text-label-lg">Produits</span>
+</a>
+<!-- Clients -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-lg text-label-lg">Clients</span>
+</a>
+<!-- Réglages -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-secondary-container transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-lg text-label-lg">Réglages</span>
+</a>
+</nav>
+<script>
+        // Simple logic for micro-interactions
+        document.querySelectorAll('.order-card').forEach(card => {
+            card.addEventListener('click', () => {
+                // Potential navigation to detail
+                console.log('Opening order details...');
+            });
+        });
+
+        // Search highlight effect
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput.addEventListener('focus', () => {
+            searchInput.parentElement.classList.add('ring-2', 'ring-primary/20');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.parentElement.classList.remove('ring-2', 'ring-primary/20');
+        });
+    </script>
+
+
+</body></html>
