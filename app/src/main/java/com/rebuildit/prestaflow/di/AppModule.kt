@@ -138,6 +138,7 @@ object AppModule {
 
     @Provides
     @Singleton
+    @Suppress("InjectDispatcher") // Ce provider EST la source d'injection du dispatcher
     fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
     @Provides

@@ -36,6 +36,7 @@ class SyncWorker @AssistedInject constructor(
     private val conflictResolver: SyncConflictResolver
 ) : CoroutineWorker(appContext, workerParams) {
 
+    @Suppress("InjectDispatcher") // WorkManager AssistedInject : Dispatchers.IO ne peut pas être injecté via le constructeur WorkerParameters
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val tasks = syncQueueRepository.pendingTasks()
         if (tasks.isEmpty()) return@withContext Result.success()

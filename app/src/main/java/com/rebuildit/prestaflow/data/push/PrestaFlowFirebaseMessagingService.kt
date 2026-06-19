@@ -24,6 +24,8 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
     lateinit var registrationManager: FcmRegistrationManager
 
     private val job = SupervisorJob()
+
+    @Suppress("InjectDispatcher") // FirebaseMessagingService est un service Android non injectable par Hilt constructor
     private val scope = CoroutineScope(Dispatchers.IO + job)
 
     override fun onNewToken(token: String) {
