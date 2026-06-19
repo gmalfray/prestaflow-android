@@ -43,3 +43,6 @@ Thumbs.db
 *.bak
 *.swp
 
+
+# Claude Code local config & subagents (infra recon — keep out of this public repo)
+.claude/
