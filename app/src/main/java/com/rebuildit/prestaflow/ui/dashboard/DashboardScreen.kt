@@ -151,7 +151,8 @@ private fun EmptyState(
     }
 }
 
-@Suppress("LongParameterList", "LongMethod") // Composable dashboard : KPIs + graphique + filtre période, longueur inhérente au rendu de données agrégées
+// Composable dashboard : KPIs + graphique + filtre période, longueur inhérente au rendu agrégé
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun DashboardContent(
     modifier: Modifier,

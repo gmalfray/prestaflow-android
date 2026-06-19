@@ -26,8 +26,9 @@ private const val HTTP_CONFLICT = 409
 private const val HTTP_SERVER_ERROR_MIN = 500
 private const val HTTP_SERVER_ERROR_MAX = 599
 
+// Worker Hilt : 2 params assistés WorkManager + 4 dépendances injectées
 @HiltWorker
-@Suppress("LongParameterList") // Worker Hilt : 2 params assistés WorkManager + 4 dépendances injectées, refactoring nuirait à la testabilité
+@Suppress("LongParameterList")
 class SyncWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
@@ -37,7 +38,7 @@ class SyncWorker @AssistedInject constructor(
     private val conflictResolver: SyncConflictResolver
 ) : CoroutineWorker(appContext, workerParams) {
 
-    @Suppress("InjectDispatcher") // WorkManager AssistedInject : Dispatchers.IO ne peut pas être injecté via le constructeur WorkerParameters
+    @Suppress("InjectDispatcher") // WorkManager AssistedInject : dispatcher non injectable via WorkerParameters
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val tasks = syncQueueRepository.pendingTasks()
         if (tasks.isEmpty()) return@withContext Result.success()

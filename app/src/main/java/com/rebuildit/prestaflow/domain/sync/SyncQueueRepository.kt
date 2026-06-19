@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.Flow
 interface SyncQueueRepository {
     fun observeQueue(): Flow<List<PendingSyncTask>>
 
-    @Suppress("LongParameterList") // Contrat d'enqueue : endpoint, méthode, payload + métadonnées optionnelles pour la résolution de conflits
+    // Contrat d'enqueue : endpoint, méthode, payload + métadonnées optionnelles pour résolution de conflits
+    @Suppress("LongParameterList")
     suspend fun enqueue(
         endpoint: String,
         method: String,

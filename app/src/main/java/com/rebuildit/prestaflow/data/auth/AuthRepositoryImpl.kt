@@ -35,7 +35,8 @@ class AuthRepositoryImpl @Inject constructor(
     private val _authState = MutableStateFlow(initialState())
     override val authState: StateFlow<AuthState> = _authState
 
-    @Suppress("ReturnCount", "LongMethod") // Validation URL + appel réseau + gestion d'erreurs distincts : impossible à décomposer sans perdre la cohérence transactionnelle
+    // Validation URL + appel réseau + gestion d'erreurs : décomposition nuirait à la cohérence
+    @Suppress("ReturnCount", "LongMethod")
     override suspend fun login(shopUrl: String, apiKey: String): AuthResult {
         _authState.value = AuthState.Loading
 

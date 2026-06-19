@@ -83,7 +83,8 @@ fun OrderDetailRoute(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongParameterList", "LongMethod") // Composable d'écran Compose : paramètres = callbacks requis, longueur inhérente à la mise en page
+// Composable écran : paramètres = callbacks requis, longueur inhérente à la mise en page Compose
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 fun OrderDetailScreen(
     state: OrderDetailUiState,
@@ -344,7 +345,8 @@ fun OrderDetailContent(
     }
 }
 
-@Suppress("LongParameterList") // Dialog générique : chaque paramètre est un label ou callback distinct, non regroupable sans perte de clarté
+// Dialog générique : titres, labels et callbacks distincts, non fusionnables sans perdre la clarté
+@Suppress("LongParameterList")
 @Composable
 private fun TextInputDialog(
     title: String,

@@ -29,7 +29,7 @@ class SyncOrchestrator @Inject constructor(
     private val workManager: WorkManager
 ) {
 
-    @Suppress("InjectDispatcher") // Scope singleton interne de l'orchestrateur : Dispatchers.Default est intentionnel (coordination, pas I/O)
+    @Suppress("InjectDispatcher") // Scope singleton interne : Dispatchers.Default volontaire (coordination, pas I/O)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val started = AtomicBoolean(false)
 
