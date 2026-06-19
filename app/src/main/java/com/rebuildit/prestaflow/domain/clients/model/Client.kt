@@ -26,5 +26,5 @@ data class ClientOrder(
     val status: String,
     val totalPaid: Double,
     val currency: String,
-    val dateAdded: String
+    val dateAdded: String? = null
 )

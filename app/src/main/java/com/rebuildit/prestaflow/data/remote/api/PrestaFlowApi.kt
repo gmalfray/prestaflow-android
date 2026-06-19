@@ -8,6 +8,8 @@ import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
 import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.OrderStatusUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
 import retrofit2.http.Body
@@ -29,6 +31,18 @@ interface PrestaFlowApi {
 
     @GET("orders/{id}")
     suspend fun getOrder(@Path("id") orderId: Long): OrderDetailResponseDto
+
+    @PATCH("orders/{id}/status")
+    suspend fun updateOrderStatus(
+        @Path("id") orderId: Long,
+        @Body body: OrderStatusUpdateRequestDto
+    )
+
+    @PATCH("orders/{id}/shipping")
+    suspend fun updateOrderShipping(
+        @Path("id") orderId: Long,
+        @Body body: OrderShippingUpdateRequestDto
+    )
 
     @GET("products")
     suspend fun getProducts(
@@ -55,6 +69,4 @@ interface PrestaFlowApi {
 
     @DELETE("notifications/devices/{token}")
     suspend fun unregisterDevice(@Path(value = "token", encoded = true) token: String)
-    @POST("connector/push/register")
-    suspend fun registerPushToken(@Body request: DeviceRegistrationRequestDto)
 }

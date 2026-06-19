@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.data.push
 
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.rebuildit.prestaflow.core.notifications.FcmRegistrationManager
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -17,19 +18,17 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var ordersRepository: OrdersRepository
 
+    @Inject
+    lateinit var registrationManager: FcmRegistrationManager
+
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + job)
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Timber.d("New FCM token: $token")
-        scope.launch {
-            try {
-                ordersRepository.registerToken(token)
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to register new token")
-            }
-        }
+        Timber.d("New FCM token received")
+        // Registration is routed through the notifications/devices endpoint.
+        registrationManager.onNewToken(token)
     }
 
     override fun onMessageReceived(message: RemoteMessage) {

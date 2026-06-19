@@ -62,5 +62,5 @@ fun CustomerOrderDto.toDomain(): ClientOrder = ClientOrder(
     status = status,
     totalPaid = totalPaid,
     currency = currency,
-    dateAdded = dateAdded
+    dateAdded = dateUpdated
 )

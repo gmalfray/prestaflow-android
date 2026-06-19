@@ -37,12 +37,17 @@ data class CustomerDetailDto(
     @SerialName("orders") val orders: List<CustomerOrderDto> = emptyList()
 )
 
+/**
+ * Orders nested in the customer detail come from `OrdersService::getOrders`
+ * (the FLAT `formatOrderRow` shape): `status` is a string and the date field
+ * is `date_upd` (not `date_add`).
+ */
 @Serializable
 data class CustomerOrderDto(
     @SerialName("id") val id: Long,
     @SerialName("reference") val reference: String,
-    @SerialName("status") val status: String,
-    @SerialName("total_paid") val totalPaid: Double,
-    @SerialName("currency") val currency: String,
-    @SerialName("date_add") val dateAdded: String
+    @SerialName("status") val status: String = "",
+    @SerialName("total_paid") val totalPaid: Double = 0.0,
+    @SerialName("currency") val currency: String = "",
+    @SerialName("date_upd") val dateUpdated: String? = null
 )

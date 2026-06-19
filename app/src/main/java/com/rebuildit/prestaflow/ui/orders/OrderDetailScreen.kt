@@ -19,6 +19,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.ShoppingBag
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
@@ -27,12 +29,21 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,9 +67,14 @@ fun OrderDetailRoute(
     viewModel: OrderDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val actionState by viewModel.actionState.collectAsStateWithLifecycle()
     OrderDetailScreen(
         state = state,
-        onBackClick = onBackClick
+        actionState = actionState,
+        onBackClick = onBackClick,
+        onUpdateStatus = viewModel::updateStatus,
+        onUpdateTracking = viewModel::updateTracking,
+        onConsumeFeedback = viewModel::consumeActionFeedback
     )
 }
 
@@ -66,9 +82,24 @@ fun OrderDetailRoute(
 @Composable
 fun OrderDetailScreen(
     state: OrderDetailUiState,
-    onBackClick: () -> Unit
+    actionState: OrderActionState = OrderActionState(),
+    onBackClick: () -> Unit,
+    onUpdateStatus: (String) -> Unit = {},
+    onUpdateTracking: (String) -> Unit = {},
+    onConsumeFeedback: () -> Unit = {}
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(actionState.message, actionState.error) {
+        val feedback = actionState.error ?: actionState.message
+        if (feedback != null) {
+            snackbarHostState.showSnackbar(feedback)
+            onConsumeFeedback()
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Order Details") }, // Should be localized
@@ -102,7 +133,12 @@ fun OrderDetailScreen(
                     )
                 }
                 is OrderDetailUiState.Success -> {
-                    OrderDetailContent(order = state.order)
+                    OrderDetailContent(
+                        order = state.order,
+                        actionInProgress = actionState.inProgress,
+                        onUpdateStatus = onUpdateStatus,
+                        onUpdateTracking = onUpdateTracking
+                    )
                 }
             }
         }
@@ -110,7 +146,42 @@ fun OrderDetailScreen(
 }
 
 @Composable
-fun OrderDetailContent(order: Order) {
+fun OrderDetailContent(
+    order: Order,
+    actionInProgress: Boolean = false,
+    onUpdateStatus: (String) -> Unit = {},
+    onUpdateTracking: (String) -> Unit = {}
+) {
+    var showStatusDialog by remember { mutableStateOf(false) }
+    var showTrackingDialog by remember { mutableStateOf(false) }
+
+    if (showStatusDialog) {
+        TextInputDialog(
+            title = "Change status",
+            label = "Status",
+            initialValue = order.status,
+            confirmLabel = "Update",
+            onConfirm = {
+                showStatusDialog = false
+                onUpdateStatus(it)
+            },
+            onDismiss = { showStatusDialog = false }
+        )
+    }
+
+    if (showTrackingDialog) {
+        TextInputDialog(
+            title = "Tracking number",
+            label = "Tracking number",
+            initialValue = order.shipping?.trackingNumber.orEmpty(),
+            confirmLabel = "Save",
+            onConfirm = {
+                showTrackingDialog = false
+                onUpdateTracking(it)
+            },
+            onDismiss = { showTrackingDialog = false }
+        )
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -217,7 +288,65 @@ fun OrderDetailContent(order: Order) {
                 )
             }
         }
+
+        // Actions
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = { showStatusDialog = true },
+                enabled = !actionInProgress,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Change status")
+            }
+            Button(
+                onClick = { showTrackingDialog = true },
+                enabled = !actionInProgress,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Tracking")
+            }
+        }
     }
+}
+
+@Composable
+private fun TextInputDialog(
+    title: String,
+    label: String,
+    initialValue: String,
+    confirmLabel: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var value by remember { mutableStateOf(initialValue) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = { value = it },
+                label = { Text(label) },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(value) },
+                enabled = value.isNotBlank()
+            ) {
+                Text(confirmLabel)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
