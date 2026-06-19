@@ -34,23 +34,31 @@
     <string name="error_http_with_code">Le serveur a renvoyé le code HTTP %1$d. Vérifiez la configuration de la boutique et réessayez.</string>
 
     <string name="dashboard_state_empty">Aucune donnée disponible pour le moment.</string>
-    <string name="dashboard_kpi_turnover">Chiffre d’affaires</string>
+    <string name="dashboard_kpi_turnover">Chiffre d\’affaires</string>
     <string name="dashboard_kpi_orders">Commandes</string>
-    <string name="dashboard_kpi_customers">Clients</string>
+    <string name="dashboard_kpi_customers">Nouveaux clients</string>
     <string name="dashboard_kpi_products">Produits</string>
-    <string name="dashboard_chart_title_turnover">Évolution du chiffre d’affaires</string>
+    <string name="dashboard_kpi_avg_cart">Panier moyen</string>
+    <string name="dashboard_chart_title_turnover">Chiffre d\’affaires</string>
     <string name="dashboard_chart_empty">Aucune donnée graphique pour la période sélectionnée.</string>
-    <string name="dashboard_period_today">Aujourd’hui</string>
+    <string name="dashboard_chart_total_period">Total période</string>
+    <string name="dashboard_chart_vs_yesterday">vs hier</string>
+    <string name="dashboard_period_today">Aujourd\’hui</string>
     <string name="dashboard_period_week">7 jours</string>
     <string name="dashboard_period_month">30 jours</string>
     <string name="dashboard_period_quarter">Trimestre</string>
     <string name="dashboard_period_year">Année</string>
     <string name="dashboard_action_refresh">Actualiser</string>
     <!-- Accessibilité : description du graphique. Args : 1=valeur formatée, 2=tendance -->
-    <string name="dashboard_chart_content_description">Chiffre d\'affaires sur la période : %1$s, tendance : %2$s</string>
+    <string name="dashboard_chart_content_description">Chiffre d\’affaires sur la période : %1$s, tendance : %2$s</string>
     <string name="dashboard_chart_trend_rising">en hausse</string>
     <string name="dashboard_chart_trend_falling">en baisse</string>
     <string name="dashboard_chart_trend_stable">stable</string>
+    <string name="dashboard_greeting">Bonjour</string>
+    <string name="dashboard_recent_orders">Commandes récentes</string>
+    <string name="dashboard_see_all">Voir tout</string>
+    <string name="dashboard_content_description_refresh">Actualiser le tableau de bord</string>
+    <string name="dashboard_content_description_kpi_card">%1$s : %2$s</string>
 
     <string name="skin_terracotta">Terracotta</string>
     <string name="skin_royal">Violet Royal</string>

@@ -38,8 +38,11 @@
     <string name="dashboard_kpi_orders">Orders</string>
     <string name="dashboard_kpi_customers">Customers</string>
     <string name="dashboard_kpi_products">Products</string>
+    <string name="dashboard_kpi_avg_cart">Avg. basket</string>
     <string name="dashboard_chart_title_turnover">Turnover trend</string>
     <string name="dashboard_chart_empty">No chart data for the selected period.</string>
+    <string name="dashboard_chart_total_period">Total period</string>
+    <string name="dashboard_chart_vs_yesterday">vs yesterday</string>
     <string name="dashboard_period_today">Today</string>
     <string name="dashboard_period_week">7 days</string>
     <string name="dashboard_period_month">30 days</string>
@@ -51,6 +54,11 @@
     <string name="dashboard_chart_trend_rising">rising</string>
     <string name="dashboard_chart_trend_falling">falling</string>
     <string name="dashboard_chart_trend_stable">stable</string>
+    <string name="dashboard_greeting">Hello</string>
+    <string name="dashboard_recent_orders">Recent orders</string>
+    <string name="dashboard_see_all">See all</string>
+    <string name="dashboard_content_description_refresh">Refresh dashboard</string>
+    <string name="dashboard_content_description_kpi_card">%1$s: %2$s</string>
 
     <string name="skin_terracotta">Terracotta</string>
     <string name="skin_royal">Royal Violet</string>
