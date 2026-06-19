@@ -13,6 +13,7 @@ import com.rebuildit.prestaflow.data.remote.dto.ProductDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.model.Product
+import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.domain.products.model.StockAvailability
 import com.rebuildit.prestaflow.domain.sync.SyncQueueRepository
 import com.rebuildit.prestaflow.domain.sync.model.ConflictStrategy
@@ -138,7 +139,7 @@ class ProductsRepositoryImpl @Inject constructor(
             val normalizedWarehouseId = warehouseId ?: StockAvailabilityEntity.NO_WAREHOUSE_ID
 
             productDao.getById(productId)?.let { existing ->
-                val updatedStock = json.decodeFromString<com.rebuildit.prestaflow.domain.products.model.ProductStock>(existing.stockJson).copy(
+                val updatedStock = json.decodeFromString<ProductStock>(existing.stockJson).copy(
                     quantity = quantity,
                     updatedAt = now
                 )
