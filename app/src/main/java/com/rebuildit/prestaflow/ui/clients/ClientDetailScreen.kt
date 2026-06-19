@@ -111,6 +111,7 @@ fun ClientDetailScreen(
     }
 }
 
+@Suppress("LongMethod") // Composable contenu client : infos personnelles, adresses et historique commandes
 @Composable
 private fun ClientContent(
     client: Client,

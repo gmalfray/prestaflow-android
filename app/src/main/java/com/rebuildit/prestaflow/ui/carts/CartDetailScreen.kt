@@ -61,6 +61,7 @@ fun CartDetailRoute(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongMethod") // Composable d'écran scaffold avec états loading/error/success distincts
 @Composable
 fun CartDetailScreen(
     state: CartDetailUiState,
@@ -128,6 +129,7 @@ fun CartDetailScreen(
     }
 }
 
+@Suppress("LongMethod") // Composable contenu panier : sections produits, totaux et résumé client
 @Composable
 private fun CartDetailContent(
     cart: CartDetail,

@@ -50,6 +50,7 @@ fun SettingsRoute(
     )
 }
 
+@Suppress("LongMethod") // Composable paramètres avec plusieurs sections (thème, skin, déconnexion)
 @Composable
 fun SettingsScreen(
     settings: ThemeSettings,

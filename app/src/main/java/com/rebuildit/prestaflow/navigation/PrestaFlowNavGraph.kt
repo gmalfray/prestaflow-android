@@ -20,6 +20,7 @@ import com.rebuildit.prestaflow.ui.products.ProductDetailRoute
 import com.rebuildit.prestaflow.ui.products.ProductsRoute
 import com.rebuildit.prestaflow.ui.settings.SettingsRoute
 
+@Suppress("LongMethod") // NavGraph centralise toutes les routes de l'app, longueur inhérente
 @Composable
 fun PrestaFlowNavGraph(
     onLogout: () -> Unit,

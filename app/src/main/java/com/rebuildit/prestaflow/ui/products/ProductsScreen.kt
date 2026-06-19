@@ -80,6 +80,7 @@ fun ProductsScreen(
     }
 }
 
+@Suppress("LongParameterList") // Composable liste : modifier + data + états + callbacks requis par l'architecture screen/content
 @Composable
 private fun ProductList(
     modifier: Modifier,

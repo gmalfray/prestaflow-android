@@ -80,6 +80,7 @@ fun AuthRoute(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongParameterList", "LongMethod") // Composable écran auth : champs URL/API key + actions QR et submit
 @Composable
 fun AuthScreen(
     modifier: Modifier = Modifier,

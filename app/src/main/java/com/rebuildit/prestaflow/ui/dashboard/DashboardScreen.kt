@@ -151,6 +151,7 @@ private fun EmptyState(
     }
 }
 
+@Suppress("LongParameterList", "LongMethod") // Composable dashboard : KPIs + graphique + filtre période, longueur inhérente au rendu de données agrégées
 @Composable
 private fun DashboardContent(
     modifier: Modifier,
@@ -320,6 +321,7 @@ private fun DashboardChartCard(
     }
 }
 
+@Suppress("LongMethod") // Composable graphique Canvas : dessin manuel des axes, étiquettes et barres
 @Composable
 private fun TurnoverChart(
     points: List<DashboardChartPoint>,

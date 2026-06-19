@@ -79,6 +79,7 @@ fun ClientsScreen(
     }
 }
 
+@Suppress("LongParameterList") // Composable liste : modifier + data + états + callbacks requis par l'architecture screen/content
 @Composable
 private fun ClientList(
     modifier: Modifier,

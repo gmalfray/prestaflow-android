@@ -123,6 +123,7 @@ private fun LoadingScreen() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
+@Suppress("LongMethod") // Shell responsive avec BottomNavigation et NavigationRail selon windowSizeClass
 @Composable
 private fun AuthenticatedShell(
     windowSizeClass: WindowSizeClass,

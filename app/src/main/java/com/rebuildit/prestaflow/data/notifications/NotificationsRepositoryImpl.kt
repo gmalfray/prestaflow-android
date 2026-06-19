@@ -39,6 +39,7 @@ import kotlinx.serialization.json.Json
 import timber.log.Timber
 
 @Singleton
+@Suppress("LongParameterList") // Repository Hilt : API + auth + context + dataStore + json + errorMapper + dispatcher
 class NotificationsRepositoryImpl @Inject constructor(
     private val api: PrestaFlowApi,
     private val authRepository: AuthRepository,

@@ -28,6 +28,7 @@ import kotlinx.serialization.json.Json
 import timber.log.Timber
 
 @Singleton
+@Suppress("LongParameterList") // Repository Hilt : dépendances DAO Room, API, queue sync, mapper, dispatcher et Json toutes nécessaires
 class ProductsRepositoryImpl @Inject constructor(
     private val api: PrestaFlowApi,
     private val productDao: ProductDao,

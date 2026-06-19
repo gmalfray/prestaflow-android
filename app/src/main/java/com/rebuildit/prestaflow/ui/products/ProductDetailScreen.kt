@@ -68,6 +68,7 @@ fun ProductDetailRoute(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongParameterList") // Composable d'écran : chaque paramètre est un callback d'action produit distinct
 @Composable
 fun ProductDetailScreen(
     state: ProductDetailUiState,
@@ -125,6 +126,7 @@ fun ProductDetailScreen(
     }
 }
 
+@Suppress("LongParameterList", "LongMethod") // Composable contenu produit : actions prix/stock/statut + sections images/description
 @Composable
 private fun ProductContent(
     product: Product,

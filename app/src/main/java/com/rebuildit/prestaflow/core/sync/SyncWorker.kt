@@ -27,6 +27,7 @@ private const val HTTP_SERVER_ERROR_MIN = 500
 private const val HTTP_SERVER_ERROR_MAX = 599
 
 @HiltWorker
+@Suppress("LongParameterList") // Worker Hilt : 2 params assistés WorkManager + 4 dépendances injectées, refactoring nuirait à la testabilité
 class SyncWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,

@@ -83,6 +83,7 @@ fun CartsScreen(
     }
 }
 
+@Suppress("LongParameterList") // Composable liste : modifier + data + états + callbacks requis par l'architecture screen/content
 @Composable
 private fun CartsList(
     modifier: Modifier,
@@ -113,6 +114,7 @@ private fun CartsList(
     }
 }
 
+@Suppress("LongMethod") // Composable card avec sections distinctes : header, totaux, actions
 @Composable
 private fun CartCard(
     cart: CartSummary,

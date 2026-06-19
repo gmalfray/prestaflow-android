@@ -22,6 +22,7 @@ import retrofit2.HttpException
 import timber.log.Timber
 
 @Singleton
+@Suppress("LongParameterList") // Repository Hilt : API + validator + endpointManager + tokenManager + errorMapper + dispatcher
 class AuthRepositoryImpl @Inject constructor(
     private val api: PrestaFlowApi,
     private val shopUrlValidator: ShopUrlValidator,
@@ -34,7 +35,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val _authState = MutableStateFlow(initialState())
     override val authState: StateFlow<AuthState> = _authState
 
-    @Suppress("ReturnCount") // Validation URL + échecs réseau distincts : early-returns intentionnels
+    @Suppress("ReturnCount", "LongMethod") // Validation URL + appel réseau + gestion d'erreurs distincts : impossible à décomposer sans perdre la cohérence transactionnelle
     override suspend fun login(shopUrl: String, apiKey: String): AuthResult {
         _authState.value = AuthState.Loading
 
