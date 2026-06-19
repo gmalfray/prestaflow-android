@@ -85,6 +85,8 @@ class FcmRegistrationManager @Inject constructor(
         Timber.w(error, "Unable to fetch FCM token")
     }.getOrNull()
 
+    // FirebaseApp.initializeApp peut lancer des RuntimeException non documentées
+    @Suppress("TooGenericExceptionCaught")
     private fun ensureFirebaseApp(): Boolean {
         return try {
             if (FirebaseApp.getApps(context).isEmpty()) {
@@ -98,10 +100,7 @@ class FcmRegistrationManager @Inject constructor(
         } catch (error: IllegalStateException) {
             Timber.w(error, "Firebase already initialized with different context")
             true
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // FirebaseApp.initializeApp peut lancer divers RuntimeException non documentés
-            error: Exception
-        ) {
+        } catch (error: Exception) {
             Timber.w(error, "Failed to initialize FirebaseApp")
             false
         }
