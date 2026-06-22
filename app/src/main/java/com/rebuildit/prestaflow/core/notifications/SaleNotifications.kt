@@ -15,14 +15,16 @@ import com.rebuildit.prestaflow.R
 
 /**
  * Canal et affichage des notifications de vente (« Nouvelle commande »), avec un
- * son de caisse par défaut (res/raw/cash_register.ogg, domaine public).
+ * son de caisse par défaut (res/raw/cash_register.mp3, Pixabay — licence libre).
  *
  * Sur Android 8+, le son est une propriété du CANAL, fixée à sa création :
  * l'utilisateur peut le changer via les réglages système du canal
  * (appui long sur la notif → Paramètres → son), ce qui couvre le « choix du son ».
  */
 object SaleNotifications {
-    const val CHANNEL_ID = "sales"
+    // v2 : le son d'un canal est figé à sa création (immuable). On change d'ID à chaque
+    // changement de son pour forcer la recréation du canal avec le nouveau son.
+    const val CHANNEL_ID = "sales_v2"
 
     private fun soundUri(context: Context): Uri = Uri.parse("android.resource://${context.packageName}/${R.raw.cash_register}")
 
