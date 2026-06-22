@@ -2,6 +2,9 @@
 <resources>
     <string name="app_name">PrestaFlow</string>
     <string name="app_tagline">Mobile management for PrestaShop</string>
+    <string name="notif_channel_sales_name">Sales</string>
+    <string name="notif_channel_sales_desc">New order notifications (cash register sound)</string>
+    <string name="notif_sale_default_title">New order</string>
     <string name="action_retry">Retry</string>
     <string name="label_environment">Environment</string>
     <string name="label_last_sync">Last sync: %1$s</string>
@@ -162,6 +165,8 @@
     <string name="settings_about_app">Application</string>
     <string name="settings_about_version">Version</string>
     <string name="settings_about_environment">Environment</string>
+    <string name="settings_notifications_label">Notifications</string>
+    <string name="settings_notification_sound">Notification sound</string>
     <string name="settings_logout">Log out</string>
     <string name="settings_logout_confirm_title">Log out?</string>
     <string name="settings_logout_confirm_message">You will need to reconnect to your shop.</string>

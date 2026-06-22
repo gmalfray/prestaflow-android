@@ -1,5 +1,9 @@
 package com.rebuildit.prestaflow.ui.settings
 
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ExitToApp
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -28,6 +33,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -50,6 +57,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.BuildConfig
 import com.rebuildit.prestaflow.R
+import com.rebuildit.prestaflow.core.notifications.SaleNotifications
 import com.rebuildit.prestaflow.domain.theme.DarkThemeConfig
 import com.rebuildit.prestaflow.domain.theme.PrestaFlowSkin
 import com.rebuildit.prestaflow.domain.theme.ThemeSettings
@@ -149,6 +157,26 @@ fun SettingsScreen(
             )
         }
 
+        // Section NOTIFICATIONS — raccourci vers les réglages système du son du canal « Ventes »
+        SettingsSection(label = stringResource(R.string.settings_notifications_label)) {
+            val context = LocalContext.current
+            OutlinedButton(
+                onClick = { openSalesNotificationSettings(context) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(50),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Notifications,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = Dimensions.spacingS),
+                )
+                Text(
+                    text = stringResource(R.string.settings_notification_sound),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(Dimensions.spacingM))
 
         // Bouton déconnexion — pill, fond errorContainer léger (maquette Stitch)
@@ -230,6 +258,24 @@ private fun AboutRow(
             color = MaterialTheme.colorScheme.onSurface,
         )
     }
+}
+
+/** Ouvre les réglages système du canal « Ventes » (où l'utilisateur change le son). */
+private fun openSalesNotificationSettings(context: Context) {
+    SaleNotifications.ensureChannel(context)
+    val intent =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                putExtra(Settings.EXTRA_CHANNEL_ID, SaleNotifications.CHANNEL_ID)
+            }
+        } else {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            }
+        }
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(intent) }
 }
 
 // ─── Sélecteur skin — cercles colorés ─────────────────────────────────────────
