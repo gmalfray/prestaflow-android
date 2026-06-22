@@ -158,6 +158,10 @@
     <string name="settings_appearance_title">Apparence</string>
     <string name="settings_theme_label">Thème</string>
     <string name="settings_dark_mode_title">Mode sombre</string>
+    <string name="settings_about_label">À propos</string>
+    <string name="settings_about_app">Application</string>
+    <string name="settings_about_version">Version</string>
+    <string name="settings_about_environment">Environnement</string>
     <string name="settings_logout">Déconnexion</string>
     <string name="settings_logout_confirm_title">Se déconnecter ?</string>
     <string name="settings_logout_confirm_message">Vous devrez vous reconnecter à votre boutique.</string>
