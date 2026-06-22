@@ -3,6 +3,7 @@ package com.rebuildit.prestaflow.data.push
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.rebuildit.prestaflow.core.notifications.FcmRegistrationManager
+import com.rebuildit.prestaflow.core.notifications.SaleNotifications
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -38,29 +39,27 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(message)
         Timber.d("Message received from: ${message.from}")
 
-        // Check if message contains data payload.
-        if (message.data.isNotEmpty()) {
-            Timber.d("Message data payload: ${message.data}")
-            // Handle data payload here if needed.
-            // For now, we rely on the notification payload handled by the system tray
-            // or we could trigger a data refresh.
-            val orderId = message.data["order_id"]?.toLongOrNull()
-            if (orderId != null) {
-                scope.launch {
-                    try {
-                        ordersRepository.refreshOrder(orderId)
-                    } catch (e: IOException) {
-                        Timber.e(e, "Network error refreshing order $orderId from push")
-                    } catch (e: HttpException) {
-                        Timber.e(e, "HTTP error refreshing order $orderId from push (code=${e.code()})")
-                    }
+        val orderId = message.data["order_id"]?.toLongOrNull()
+
+        // Rafraîchit la commande référencée par le push (si présente).
+        if (orderId != null) {
+            scope.launch {
+                try {
+                    ordersRepository.refreshOrder(orderId)
+                } catch (e: IOException) {
+                    Timber.e(e, "Network error refreshing order $orderId from push")
+                } catch (e: HttpException) {
+                    Timber.e(e, "HTTP error refreshing order $orderId from push (code=${e.code()})")
                 }
             }
         }
 
-        // Check if message contains notification payload.
-        message.notification?.let {
-            Timber.d("Message Notification Body: ${it.body}")
+        // Affiche la notif de vente (canal « Ventes » + son de caisse). Couvre le cas
+        // app au PREMIER PLAN — en arrière-plan, le système l'affiche déjà (même canal).
+        val title = message.notification?.title ?: message.data["title"]
+        val body = message.notification?.body ?: message.data["body"]
+        if (title != null || body != null) {
+            SaleNotifications.show(applicationContext, title, body, orderId)
         }
     }
 

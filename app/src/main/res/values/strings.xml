@@ -2,6 +2,9 @@
 <resources>
     <string name="app_name">PrestaFlow</string>
     <string name="app_tagline">Mobile management for PrestaShop</string>
+    <string name="notif_channel_sales_name">Sales</string>
+    <string name="notif_channel_sales_desc">New order notifications (cash register sound)</string>
+    <string name="notif_sale_default_title">New order</string>
     <string name="action_retry">Retry</string>
     <string name="label_environment">Environment</string>
     <string name="label_last_sync">Last sync: %1$s</string>

@@ -6,6 +6,7 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.rebuildit.prestaflow.BuildConfig
 import com.rebuildit.prestaflow.core.notifications.FcmRegistrationManager
+import com.rebuildit.prestaflow.core.notifications.SaleNotifications
 import com.rebuildit.prestaflow.core.sync.SyncOrchestrator
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
@@ -27,6 +28,7 @@ class PrestaFlowApp : Application(), Configuration.Provider {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+        SaleNotifications.ensureChannel(this)
         syncOrchestrator.start()
         notificationRegistrationManager.initialize()
     }
