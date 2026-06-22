@@ -12,6 +12,7 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderStatusUpdateRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.ProductDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
 import retrofit2.http.Body
@@ -55,6 +56,11 @@ interface PrestaFlowApi {
     suspend fun getProducts(
         @QueryMap filters: Map<String, @JvmSuppressWildcards String> = emptyMap(),
     ): ProductListResponseDto
+
+    @GET("products/{id}")
+    suspend fun getProduct(
+        @Path("id") productId: Long,
+    ): ProductDetailResponseDto
 
     @PATCH("products/{id}/stock")
     suspend fun updateProductStock(
