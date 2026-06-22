@@ -35,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -42,10 +43,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rebuildit.prestaflow.BuildConfig
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.domain.theme.DarkThemeConfig
 import com.rebuildit.prestaflow.domain.theme.PrestaFlowSkin
@@ -130,6 +133,22 @@ fun SettingsScreen(
             )
         }
 
+        // Section À PROPOS
+        SettingsSection(label = stringResource(R.string.settings_about_label)) {
+            AboutRow(
+                label = stringResource(R.string.settings_about_app),
+                value = stringResource(R.string.app_name),
+            )
+            AboutRow(
+                label = stringResource(R.string.settings_about_version),
+                value = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            )
+            AboutRow(
+                label = stringResource(R.string.settings_about_environment),
+                value = BuildConfig.ENVIRONMENT_NAME,
+            )
+        }
+
         Spacer(modifier = Modifier.height(Dimensions.spacingM))
 
         // Bouton déconnexion — pill, fond errorContainer léger (maquette Stitch)
@@ -184,6 +203,32 @@ private fun SettingsSection(
             )
             content()
         }
+    }
+}
+
+// ─── Ligne « À propos » (libellé / valeur) ──────────────────────────────────────
+
+@Composable
+private fun AboutRow(
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 
