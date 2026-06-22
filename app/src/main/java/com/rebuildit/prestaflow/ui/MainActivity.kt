@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -146,24 +147,41 @@ private fun AuthenticatedShell(
 
     val useNavigationRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
     val currentRoute = navBackStackEntry?.destination?.route
+    val isSettings = currentRoute == AppDestination.Settings.route
     val settingsLabel = stringResource(R.string.destination_settings)
+    val backLabel = stringResource(R.string.content_description_back)
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(text = stringResource(id = currentTitle)) },
+                navigationIcon = {
+                    // Réglages est ouvert via l'engrenage (hors barre du bas) : sans flèche
+                    // retour, l'utilisateur s'y retrouve coincé. On en ajoute une qui dépile.
+                    if (isSettings) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = backLabel,
+                            )
+                        }
+                    }
+                },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            navController.navigate(AppDestination.Settings.route) {
-                                launchSingleTop = true
-                            }
-                        },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Settings,
-                            contentDescription = settingsLabel,
-                        )
+                    // Pas d'engrenage quand on est déjà sur Réglages (re-naviguer = no-op).
+                    if (!isSettings) {
+                        IconButton(
+                            onClick = {
+                                navController.navigate(AppDestination.Settings.route) {
+                                    launchSingleTop = true
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Settings,
+                                contentDescription = settingsLabel,
+                            )
+                        }
                     }
                 },
             )
