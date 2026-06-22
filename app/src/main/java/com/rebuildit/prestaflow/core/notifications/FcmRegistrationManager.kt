@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.firebase.FirebaseApp
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.AuthState
+import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.notifications.NotificationSettings
 import com.rebuildit.prestaflow.domain.notifications.NotificationsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -25,6 +26,7 @@ class FcmRegistrationManager
         @ApplicationContext private val context: Context,
         private val authRepository: AuthRepository,
         private val notificationsRepository: NotificationsRepository,
+        private val shopDeviceRegistrar: ShopDeviceRegistrar,
         private val ioDispatcher: CoroutineDispatcher,
     ) {
         private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
@@ -34,6 +36,9 @@ class FcmRegistrationManager
 
         // Dernière boutique active connue : si elle change, on réenregistre le device.
         private var lastActiveShopId: String? = null
+
+        // Boutiques connues à la dernière émission : pour détecter les suppressions.
+        private var knownConnections: List<ShopConnection> = emptyList()
 
         fun initialize() {
             if (initialized) return
@@ -48,8 +53,22 @@ class FcmRegistrationManager
                     notificationsRepository.settings,
                     authRepository.connections,
                 ) { authState, settings, connections ->
-                    Triple(authState, settings, connections.firstOrNull { it.isActive }?.id)
-                }.collectLatest { (authState, settings, activeShopId) ->
+                    Triple(authState, settings, connections)
+                }.collectLatest { (authState, settings, connections) ->
+                    val activeShopId = connections.firstOrNull { it.isActive }?.id
+
+                    // Boutiques supprimées → désenregistrer le device de leur backend.
+                    val fcmToken = settings.deviceToken
+                    if (fcmToken != null) {
+                        knownConnections
+                            .filter { known -> connections.none { it.id == known.id } }
+                            .forEach { removed ->
+                                Timber.i("Boutique supprimée → désenregistrement FCM (%s)", removed.shopUrl)
+                                shopDeviceRegistrar.unregisterFromShop(removed.shopUrl, removed.token.value, fcmToken)
+                            }
+                    }
+                    knownConnections = connections
+
                     // Bascule de boutique → réenregistrer le device sur la nouvelle active.
                     if (authState is AuthState.Authenticated &&
                         activeShopId != null &&
@@ -71,7 +90,13 @@ class FcmRegistrationManager
                 return
             }
             scope.launch {
+                // La boutique active passe par le flux normal (met à jour le token local + isTokenSynced).
                 notificationsRepository.syncRegistration(token, null)
+                // Les autres boutiques connectées : on (ré)enregistre le nouveau token sur chacune,
+                // sinon elles garderaient l'ancien token périmé et cesseraient de pousser.
+                authRepository.connections.value.forEach { connection ->
+                    shopDeviceRegistrar.registerOnShop(connection.shopUrl, connection.token.value, token)
+                }
             }
         }
 
