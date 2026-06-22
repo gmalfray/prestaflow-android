@@ -21,6 +21,7 @@ data class OrderItem(
     val reference: String? = null,
     val quantity: Int,
     val price: Double,
+    val imageUrl: String? = null,
 )
 
 @Serializable

@@ -100,6 +100,7 @@ fun OrderItemDto.toDomain() =
         reference = reference,
         quantity = quantity,
         price = priceTaxIncl,
+        imageUrl = imageUrl,
     )
 
 fun OrderShippingDto.toDomain() =

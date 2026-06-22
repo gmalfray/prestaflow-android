@@ -10,6 +10,11 @@ data class ProductListResponseDto(
 )
 
 @Serializable
+data class ProductDetailResponseDto(
+    @SerialName("product") val product: ProductDto,
+)
+
+@Serializable
 data class ProductDto(
     @SerialName("id") val id: Long,
     @SerialName("name") val name: String,

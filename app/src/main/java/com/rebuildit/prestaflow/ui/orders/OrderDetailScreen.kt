@@ -47,7 +47,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -55,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderItem
@@ -462,8 +465,10 @@ fun OrderItemRow(
     val qtyLabel = stringResource(R.string.order_detail_qty_label, item.quantity)
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        OrderItemThumbnail(imageUrl = item.imageUrl, contentDescription = item.name)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.name,
@@ -481,5 +486,29 @@ fun OrderItemRow(
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
         )
+    }
+}
+
+/** Miniature de l'image produit pour une ligne d'article (ou placeholder neutre). */
+@Composable
+private fun OrderItemThumbnail(
+    imageUrl: String?,
+    contentDescription: String,
+) {
+    val shape = RoundedCornerShape(Dimensions.chipCornerRadius)
+    val base =
+        Modifier
+            .size(48.dp)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+    if (imageUrl != null) {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            modifier = base,
+        )
+    } else {
+        Box(modifier = base)
     }
 }

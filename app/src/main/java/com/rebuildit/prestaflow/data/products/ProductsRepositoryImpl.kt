@@ -86,18 +86,12 @@ class ProductsRepositoryImpl
             forceRemote: Boolean,
         ) {
             withContext(ioDispatcher) {
-                val filters =
-                    mapOf(
-                        "id" to productId.toString(),
-                        "limit" to FETCH_LIMIT.toString(),
-                    )
-                val result = runCatching { api.getProducts(filters) }
+                val result = runCatching { api.getProduct(productId) }
                 result.fold(
                     onSuccess = { payload ->
-                        payload.products.firstOrNull()?.let { dto ->
-                            productDao.upsertProduct(dto.toEntity())
-                            stockAvailabilityDao.upsertAll(listOf(dto.stock.toEntity(dto.id)))
-                        }
+                        val dto = payload.product
+                        productDao.upsertProduct(dto.toEntity())
+                        stockAvailabilityDao.upsertAll(listOf(dto.stock.toEntity(dto.id)))
                     },
                     onFailure = { error ->
                         Timber.w(networkErrorMapper.map(error).toString())

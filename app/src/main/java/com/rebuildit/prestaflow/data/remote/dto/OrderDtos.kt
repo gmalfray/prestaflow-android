@@ -88,6 +88,7 @@ data class OrderItemDto(
     @SerialName("quantity") val quantity: Int,
     @SerialName("price_tax_incl") val priceTaxIncl: Double,
     @SerialName("price_tax_excl") val priceTaxExcl: Double = 0.0,
+    @SerialName("image_url") val imageUrl: String? = null,
 )
 
 @Serializable
