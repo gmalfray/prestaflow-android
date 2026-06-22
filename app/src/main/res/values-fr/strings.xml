@@ -161,6 +161,8 @@
     <string name="settings_appearance_title">Apparence</string>
     <string name="settings_theme_label">Thème</string>
     <string name="settings_dark_mode_title">Mode sombre</string>
+    <string name="settings_notifications_label">Notifications</string>
+    <string name="settings_notification_sound">Son des notifications</string>
     <string name="settings_logout">Déconnexion</string>
     <string name="settings_logout_confirm_title">Se déconnecter ?</string>
     <string name="settings_logout_confirm_message">Vous devrez vous reconnecter à votre boutique.</string>
