@@ -192,6 +192,13 @@ class NotificationsRepositoryImpl
             }
         }
 
+        override suspend fun markRegistrationStale() {
+            withContext(ioDispatcher) {
+                // Garde le token FCM, oublie qu'il a été synchronisé → isTokenSynced = false.
+                dataStore.edit { prefs -> prefs.remove(KEY_LAST_SYNCED_TOKEN) }
+            }
+        }
+
         private suspend fun unregisterRemote(token: String) {
             val encoded = URLEncoder.encode(token, StandardCharsets.UTF_8.name())
             runCatching { api.unregisterDevice(encoded) }

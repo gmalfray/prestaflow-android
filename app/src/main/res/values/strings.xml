@@ -161,6 +161,11 @@
     <string name="settings_appearance_title">Appearance</string>
     <string name="settings_theme_label">Theme</string>
     <string name="settings_dark_mode_title">Dark mode</string>
+    <string name="settings_shops_label">Shops</string>
+    <string name="settings_shops_add">Add a shop</string>
+    <string name="settings_shops_remove">Remove shop</string>
+    <string name="shops_add_label_optional">Name (optional)</string>
+    <string name="shops_add_error_required">Shop URL and API key are required.</string>
     <string name="settings_about_label">About</string>
     <string name="settings_about_app">Application</string>
     <string name="settings_about_version">Version</string>

@@ -21,5 +21,12 @@ interface NotificationsRepository {
         deviceId: String?,
     )
 
+    /**
+     * Marque l'enregistrement comme « non synchronisé » (garde le token FCM mais oublie
+     * qu'il a été enregistré) → force un réenregistrement sur la boutique active.
+     * Utilisé lors d'une bascule de boutique (multi-boutiques).
+     */
+    suspend fun markRegistrationStale()
+
     suspend fun clearRegistration()
 }

@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.ExitToApp
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.AlertDialog
@@ -32,8 +34,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -58,6 +63,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.BuildConfig
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.notifications.SaleNotifications
+import com.rebuildit.prestaflow.core.ui.asString
+import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.theme.DarkThemeConfig
 import com.rebuildit.prestaflow.domain.theme.PrestaFlowSkin
 import com.rebuildit.prestaflow.domain.theme.ThemeSettings
@@ -70,25 +77,59 @@ import com.rebuildit.prestaflow.ui.theme.displayNameRes
 fun SettingsRoute(
     onLogoutClick: () -> Unit,
     themeViewModel: ThemeViewModel = hiltViewModel(),
+    shopsViewModel: ShopsViewModel = hiltViewModel(),
 ) {
     val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
+    val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
+    val addState by shopsViewModel.addState.collectAsStateWithLifecycle()
     SettingsScreen(
         settings = themeState.settings,
         onSkinSelected = themeViewModel::selectSkin,
         onDarkThemeSelected = themeViewModel::setDarkThemeConfig,
         onLogoutClick = onLogoutClick,
+        connections = connections,
+        addState = addState,
+        onSwitchShop = shopsViewModel::switchShop,
+        onRemoveShop = shopsViewModel::removeShop,
+        onShowAddShop = shopsViewModel::showAddDialog,
+        onDismissAddShop = shopsViewModel::dismissAddDialog,
+        onAddShopUrlChange = shopsViewModel::onUrlChange,
+        onAddShopKeyChange = shopsViewModel::onKeyChange,
+        onAddShopLabelChange = shopsViewModel::onLabelChange,
+        onSubmitAddShop = shopsViewModel::submitAdd,
     )
 }
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList") // Écran Réglages : thème + boutiques + notifs + logout
 @Composable
 fun SettingsScreen(
     settings: ThemeSettings,
     onSkinSelected: (PrestaFlowSkin) -> Unit,
     onDarkThemeSelected: (DarkThemeConfig) -> Unit,
     onLogoutClick: () -> Unit,
+    connections: List<ShopConnection> = emptyList(),
+    addState: AddShopUiState = AddShopUiState(),
+    onSwitchShop: (String) -> Unit = {},
+    onRemoveShop: (String) -> Unit = {},
+    onShowAddShop: () -> Unit = {},
+    onDismissAddShop: () -> Unit = {},
+    onAddShopUrlChange: (String) -> Unit = {},
+    onAddShopKeyChange: (String) -> Unit = {},
+    onAddShopLabelChange: (String) -> Unit = {},
+    onSubmitAddShop: () -> Unit = {},
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    if (addState.visible) {
+        AddShopDialog(
+            state = addState,
+            onUrlChange = onAddShopUrlChange,
+            onKeyChange = onAddShopKeyChange,
+            onLabelChange = onAddShopLabelChange,
+            onSubmit = onSubmitAddShop,
+            onDismiss = onDismissAddShop,
+        )
+    }
 
     if (showLogoutDialog) {
         AlertDialog(
@@ -124,6 +165,32 @@ fun SettingsScreen(
                 .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingL),
         verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
     ) {
+        // Section BOUTIQUES — liste des connexions + bascule + suppression + ajout
+        SettingsSection(label = stringResource(R.string.settings_shops_label)) {
+            connections.forEach { connection ->
+                ShopRow(
+                    connection = connection,
+                    onSwitch = { onSwitchShop(connection.id) },
+                    onRemove = { onRemoveShop(connection.id) },
+                )
+            }
+            OutlinedButton(
+                onClick = onShowAddShop,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(50),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = Dimensions.spacingS),
+                )
+                Text(
+                    text = stringResource(R.string.settings_shops_add),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+        }
+
         // Section THÈME — sélecteur skin cercles colorés
         SettingsSection(label = stringResource(R.string.settings_theme_label)) {
             SkinColorRow(
@@ -232,6 +299,103 @@ private fun SettingsSection(
             content()
         }
     }
+}
+
+// ─── Boutiques (multi-boutiques) ─────────────────────────────────────────────────
+
+@Composable
+private fun ShopRow(
+    connection: ShopConnection,
+    onSwitch: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onSwitch)
+                .padding(vertical = Dimensions.spacingXs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+    ) {
+        RadioButton(selected = connection.isActive, onClick = onSwitch)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = connection.label,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = connection.shopUrl,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+        IconButton(onClick = onRemove) {
+            Icon(
+                imageVector = Icons.Outlined.Delete,
+                contentDescription = stringResource(R.string.settings_shops_remove),
+                tint = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddShopDialog(
+    state: AddShopUiState,
+    onUrlChange: (String) -> Unit,
+    onKeyChange: (String) -> Unit,
+    onLabelChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+        title = { Text(stringResource(R.string.settings_shops_add)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS)) {
+                OutlinedTextField(
+                    value = state.shopUrl,
+                    onValueChange = onUrlChange,
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.auth_field_shop_url)) },
+                    placeholder = { Text(stringResource(R.string.auth_field_shop_url_placeholder)) },
+                )
+                OutlinedTextField(
+                    value = state.apiKey,
+                    onValueChange = onKeyChange,
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.auth_field_api_key)) },
+                )
+                OutlinedTextField(
+                    value = state.label,
+                    onValueChange = onLabelChange,
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.shops_add_label_optional)) },
+                )
+                state.error?.let {
+                    Text(
+                        text = it.asString(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onSubmit, enabled = !state.loading) {
+                Text(stringResource(R.string.auth_action_connect))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.settings_logout_cancel))
+            }
+        },
+    )
 }
 
 // ─── Ligne « À propos » (libellé / valeur) ──────────────────────────────────────
