@@ -32,6 +32,9 @@ class FcmRegistrationManager
         @Volatile
         private var initialized = false
 
+        // Dernière boutique active connue : si elle change, on réenregistre le device.
+        private var lastActiveShopId: String? = null
+
         fun initialize() {
             if (initialized) return
             if (!ensureFirebaseApp()) {
@@ -40,9 +43,23 @@ class FcmRegistrationManager
             }
             initialized = true
             scope.launch {
-                combine(authRepository.authState, notificationsRepository.settings) { authState, settings ->
-                    authState to settings
-                }.collectLatest { (authState, settings) ->
+                combine(
+                    authRepository.authState,
+                    notificationsRepository.settings,
+                    authRepository.connections,
+                ) { authState, settings, connections ->
+                    Triple(authState, settings, connections.firstOrNull { it.isActive }?.id)
+                }.collectLatest { (authState, settings, activeShopId) ->
+                    // Bascule de boutique → réenregistrer le device sur la nouvelle active.
+                    if (authState is AuthState.Authenticated &&
+                        activeShopId != null &&
+                        lastActiveShopId != null &&
+                        activeShopId != lastActiveShopId
+                    ) {
+                        Timber.i("Boutique active changée → réenregistrement FCM")
+                        notificationsRepository.markRegistrationStale()
+                    }
+                    lastActiveShopId = activeShopId
                     handleState(authState, settings)
                 }
             }
