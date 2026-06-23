@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -24,8 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Print
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -33,16 +36,21 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -114,6 +122,7 @@ fun OrdersRoute(
             onSwitchShop = shopsViewModel::switchShop,
             onAddShop = onAddShop,
             onStatusFilterSelected = viewModel::onStatusFilterSelected,
+            onVisibleStatusIdsChanged = viewModel::onVisibleStatusIdsChanged,
             onPrintSelected = {
                 viewModel.printSelectedInvoices { pdfList ->
                     val count = uiState.selectedOrderIds.size
@@ -147,6 +156,7 @@ fun OrdersScreen(
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
     onStatusFilterSelected: (Int?) -> Unit = {},
+    onVisibleStatusIdsChanged: (Set<Int>) -> Unit = {},
 ) {
     val errorMessage = uiState.error?.asString()
 
@@ -180,8 +190,11 @@ fun OrdersScreen(
                 onSwitchShop = onSwitchShop,
                 onAddShop = onAddShop,
                 availableStatuses = uiState.availableStatuses,
+                filteredStatuses = uiState.filteredStatuses,
+                visibleStatusIds = uiState.visibleStatusIds,
                 selectedStatusId = uiState.selectedStatusId,
                 onStatusFilterSelected = onStatusFilterSelected,
+                onVisibleStatusIdsChanged = onVisibleStatusIdsChanged,
             )
     }
 }
@@ -209,10 +222,28 @@ private fun OrdersList(
     onSwitchShop: (String) -> Unit,
     onAddShop: () -> Unit,
     availableStatuses: List<OrderStatusFilter> = emptyList(),
+    filteredStatuses: List<OrderStatusFilter> = emptyList(),
+    visibleStatusIds: Set<Int>? = null,
     selectedStatusId: Int? = null,
     onStatusFilterSelected: (Int?) -> Unit = {},
+    onVisibleStatusIdsChanged: (Set<Int>) -> Unit = {},
 ) {
     val dateFormatter = rememberDateFormatter()
+    var showStatusPrefsSheet by rememberSaveable { mutableStateOf(false) }
+    val statusPrefsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    if (showStatusPrefsSheet && availableStatuses.isNotEmpty()) {
+        StatusPreferencesSheet(
+            sheetState = statusPrefsSheetState,
+            availableStatuses = availableStatuses,
+            visibleStatusIds = visibleStatusIds,
+            onDismiss = { showStatusPrefsSheet = false },
+            onConfirm = { ids ->
+                onVisibleStatusIdsChanged(ids)
+                showStatusPrefsSheet = false
+            },
+        )
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -291,9 +322,10 @@ private fun OrdersList(
                         if (availableStatuses.isNotEmpty()) {
                             item {
                                 StatusFilterBar(
-                                    statuses = availableStatuses,
+                                    statuses = filteredStatuses,
                                     selectedStatusId = selectedStatusId,
                                     onStatusSelected = onStatusFilterSelected,
+                                    onConfigureClick = { showStatusPrefsSheet = true },
                                 )
                             }
                         }
@@ -563,35 +595,142 @@ private fun rememberDateFormatter(): DateTimeFormatter =
 /**
  * Ligne horizontale scrollable de chips permettant de filtrer les commandes par statut.
  * Le premier chip « Toutes » réinitialise le filtre (selectedStatusId = null).
+ * Le bouton ⚙ en fin de ligne ouvre le panneau de personnalisation des statuts visibles.
  */
 @Composable
 private fun StatusFilterBar(
     statuses: List<OrderStatusFilter>,
     selectedStatusId: Int?,
     onStatusSelected: (Int?) -> Unit,
+    onConfigureClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Chip « Toutes »
-        FilterChip(
-            selected = selectedStatusId == null,
-            onClick = { onStatusSelected(null) },
-            label = { Text(stringResource(R.string.orders_filter_all)) },
-        )
-        statuses.forEach { status ->
+        Row(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+        ) {
+            // Chip « Toutes »
             FilterChip(
-                selected = selectedStatusId == status.id,
-                onClick = {
-                    onStatusSelected(if (selectedStatusId == status.id) null else status.id)
-                },
-                label = { Text(status.name) },
+                selected = selectedStatusId == null,
+                onClick = { onStatusSelected(null) },
+                label = { Text(stringResource(R.string.orders_filter_all)) },
             )
+            statuses.forEach { status ->
+                FilterChip(
+                    selected = selectedStatusId == status.id,
+                    onClick = {
+                        onStatusSelected(if (selectedStatusId == status.id) null else status.id)
+                    },
+                    label = { Text(status.name) },
+                )
+            }
+        }
+        IconButton(
+            onClick = onConfigureClick,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Tune,
+                contentDescription = stringResource(R.string.orders_filter_configure),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+// ─── Bottom sheet de personnalisation des statuts visibles ────────────────────
+
+/**
+ * Panneau modal permettant de cocher/décocher les statuts affichés dans la barre de filtres.
+ * Par défaut (aucune préférence), tous les statuts sont cochés.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StatusPreferencesSheet(
+    sheetState: androidx.compose.material3.SheetState,
+    availableStatuses: List<OrderStatusFilter>,
+    visibleStatusIds: Set<Int>?,
+    onDismiss: () -> Unit,
+    onConfirm: (Set<Int>) -> Unit,
+) {
+    // Initialiser la sélection locale à partir de la préférence (ou tous si null)
+    val initialSelection = visibleStatusIds ?: availableStatuses.map { it.id }.toSet()
+    var localSelection by remember(availableStatuses, visibleStatusIds) {
+        mutableStateOf(initialSelection)
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimensions.screenEdgeMargin)
+                    .padding(bottom = Dimensions.spacingL),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+        ) {
+            Text(
+                text = stringResource(R.string.orders_filter_prefs_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = Dimensions.spacingS),
+            )
+            availableStatuses.forEach { status ->
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                localSelection =
+                                    if (status.id in localSelection) {
+                                        localSelection - status.id
+                                    } else {
+                                        localSelection + status.id
+                                    }
+                            }
+                            .padding(vertical = Dimensions.spacingXs),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+                ) {
+                    Checkbox(
+                        checked = status.id in localSelection,
+                        onCheckedChange = { checked ->
+                            localSelection =
+                                if (checked) localSelection + status.id else localSelection - status.id
+                        },
+                    )
+                    Text(
+                        text = status.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = Dimensions.spacingS),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.orders_filter_prefs_cancel))
+                }
+                TextButton(
+                    onClick = { onConfirm(localSelection) },
+                ) {
+                    Text(stringResource(R.string.orders_filter_prefs_confirm))
+                }
+            }
         }
     }
 }
