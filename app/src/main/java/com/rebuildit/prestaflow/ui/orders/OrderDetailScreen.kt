@@ -61,6 +61,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.print.InvoicePrinter
+import com.rebuildit.prestaflow.core.print.PrintMode
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderItem
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
@@ -79,6 +80,26 @@ fun OrderDetailRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val actionState by viewModel.actionState.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
+    var pendingPrintOrder by remember { mutableStateOf<Order?>(null) }
+
+    if (pendingPrintOrder != null) {
+        val order = pendingPrintOrder!!
+        PrintModeDialog(
+            onDismiss = { pendingPrintOrder = null },
+            onModeSelected = { mode ->
+                pendingPrintOrder = null
+                viewModel.fetchInvoicePdf { pdfBytes ->
+                    InvoicePrinter.print(
+                        context = context,
+                        pdfBytesList = listOf(pdfBytes),
+                        jobName = "Facture ${order.reference}",
+                        mode = mode,
+                    )
+                }
+            },
+        )
+    }
+
     OrderDetailScreen(
         state = state,
         actionState = actionState,
@@ -86,15 +107,7 @@ fun OrderDetailRoute(
         onUpdateStatus = viewModel::updateStatus,
         onUpdateTracking = viewModel::updateTracking,
         onConsumeFeedback = viewModel::consumeActionFeedback,
-        onPrintInvoice = { order ->
-            viewModel.fetchInvoicePdf { pdfBytes ->
-                InvoicePrinter.print(
-                    context = context,
-                    pdfBytesList = listOf(pdfBytes),
-                    jobName = "Facture ${order.reference}",
-                )
-            }
-        },
+        onPrintInvoice = { order -> pendingPrintOrder = order },
     )
 }
 
@@ -394,6 +407,43 @@ fun OrderDetailContent(
             }
         }
     }
+}
+
+/**
+ * Dialogue Material3 permettant de choisir le mode d'impression avant de lancer le travail.
+ * Deux options : 2-up paysage (économie de papier) ou 1 par page portrait.
+ */
+@Composable
+fun PrintModeDialog(
+    onDismiss: () -> Unit,
+    onModeSelected: (PrintMode) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.print_mode_dialog_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS)) {
+                TextButton(
+                    onClick = { onModeSelected(PrintMode.TWO_UP) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.print_mode_two_up))
+                }
+                TextButton(
+                    onClick = { onModeSelected(PrintMode.ONE_PER_PAGE) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.print_mode_one_per_page))
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.print_mode_cancel))
+            }
+        },
+    )
 }
 
 // Dialog générique : titres, labels et callbacks distincts, non fusionnables sans perdre la clarté
