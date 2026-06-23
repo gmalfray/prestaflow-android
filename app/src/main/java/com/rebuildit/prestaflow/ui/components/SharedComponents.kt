@@ -1,6 +1,7 @@
 package com.rebuildit.prestaflow.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,32 +15,49 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rebuildit.prestaflow.R
+import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.ui.theme.Dimensions
+import kotlinx.coroutines.launch
 
 /**
  * Barre d'erreur en haut d'une liste, avec message et bouton retry.
@@ -350,13 +368,205 @@ fun SectionHeader(
             color = MaterialTheme.colorScheme.onSurface,
         )
         if (onSeeAll != null && seeAllLabel != null) {
-            androidx.compose.material3.TextButton(onClick = onSeeAll) {
+            TextButton(onClick = onSeeAll) {
                 Text(
                     text = seeAllLabel,
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
+        }
+    }
+}
+
+// ─── Sélecteur de boutique active ────────────────────────────────────────────
+
+/**
+ * Chip cliquable affichant la boutique active. Au clic, ouvre un bottom-sheet
+ * listant toutes les boutiques connectées (avec coche sur l'active) et une entrée
+ * « + Ajouter une boutique ».
+ *
+ * @param connections Liste complète des boutiques (celle avec [ShopConnection.isActive] est active).
+ * @param onSwitch Callback appelé avec l'id de la boutique choisie.
+ * @param onAddShop Callback pour naviguer vers l'ajout d'une boutique.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ShopSwitcherChip(
+    connections: List<ShopConnection>,
+    onSwitch: (String) -> Unit,
+    onAddShop: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val activeShop = connections.firstOrNull { it.isActive }
+    val chipLabel = activeShop?.label ?: activeShop?.shopUrl?.substringAfter("://")?.trimEnd('/') ?: ""
+
+    var showSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+
+    val chipDesc = stringResource(R.string.shop_switcher_content_description)
+
+    // Chip pill — affiché seulement si au moins une boutique est connectée
+    if (chipLabel.isBlank()) return
+
+    Surface(
+        modifier =
+            modifier
+                .clip(CircleShape)
+                .clickable(
+                    onClickLabel = chipDesc,
+                    role = Role.Button,
+                    onClick = { showSheet = true },
+                )
+                .semantics { role = Role.Button },
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = Dimensions.spacingM, vertical = Dimensions.spacingXs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+        ) {
+            Text(
+                text = chipLabel,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (connections.size > 1) {
+                Icon(
+                    imageVector = Icons.Outlined.KeyboardArrowDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimensions.iconSizeSmall),
+                )
+            }
+        }
+    }
+
+    if (showSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSheet = false },
+            sheetState = sheetState,
+        ) {
+            ShopSwitcherSheetContent(
+                connections = connections,
+                onSwitch = { id ->
+                    scope.launch {
+                        sheetState.hide()
+                        showSheet = false
+                        onSwitch(id)
+                    }
+                },
+                onAddShop = {
+                    scope.launch {
+                        sheetState.hide()
+                        showSheet = false
+                        onAddShop()
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ShopSwitcherSheetContent(
+    connections: List<ShopConnection>,
+    onSwitch: (String) -> Unit,
+    onAddShop: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = Dimensions.spacingXl),
+    ) {
+        Text(
+            text = stringResource(R.string.shop_switcher_sheet_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingM),
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        connections.forEach { connection ->
+            ShopSheetRow(
+                connection = connection,
+                onSwitch = { onSwitch(connection.id) },
+            )
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onAddShop)
+                    .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingM),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Add,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(Dimensions.iconSizeMedium),
+            )
+            Text(
+                text = stringResource(R.string.shop_switcher_add),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ShopSheetRow(
+    connection: ShopConnection,
+    onSwitch: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onSwitch, enabled = !connection.isActive)
+                .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingM),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = connection.label,
+                style = MaterialTheme.typography.bodyLarge,
+                color =
+                    if (connection.isActive) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                fontWeight = if (connection.isActive) FontWeight.SemiBold else FontWeight.Normal,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = connection.shopUrl.substringAfter("://").trimEnd('/'),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (connection.isActive) {
+            Icon(
+                imageVector = Icons.Outlined.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(Dimensions.iconSizeMedium),
+            )
         }
     }
 }

@@ -66,9 +66,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
+import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartPoint
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
+import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
+import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
@@ -79,15 +82,21 @@ import java.time.format.FormatStyle
 
 @Composable
 fun DashboardRoute(
+    onAddShop: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel(),
+    shopsViewModel: ShopsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     DashboardScreen(
         modifier = modifier.fillMaxSize(),
         state = state,
+        connections = connections,
         onPeriodSelected = viewModel::onPeriodSelected,
         onRefresh = viewModel::onRefresh,
+        onSwitchShop = shopsViewModel::switchShop,
+        onAddShop = onAddShop,
     )
 }
 
@@ -95,8 +104,11 @@ fun DashboardRoute(
 fun DashboardScreen(
     modifier: Modifier = Modifier,
     state: DashboardUiState,
+    connections: List<ShopConnection> = emptyList(),
     onPeriodSelected: (DashboardPeriod) -> Unit,
     onRefresh: () -> Unit,
+    onSwitchShop: (String) -> Unit = {},
+    onAddShop: () -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
     val hasSnapshot = state.snapshot != null
@@ -112,8 +124,11 @@ fun DashboardScreen(
                 selectedPeriod = state.selectedPeriod,
                 isRefreshing = state.isRefreshing,
                 errorMessage = errorMessage,
+                connections = connections,
                 onPeriodSelected = onPeriodSelected,
                 onRefresh = onRefresh,
+                onSwitchShop = onSwitchShop,
+                onAddShop = onAddShop,
             )
         else ->
             DashboardEmptyState(
@@ -175,8 +190,11 @@ private fun DashboardContent(
     selectedPeriod: DashboardPeriod,
     isRefreshing: Boolean,
     errorMessage: String?,
+    connections: List<ShopConnection>,
     onPeriodSelected: (DashboardPeriod) -> Unit,
     onRefresh: () -> Unit,
+    onSwitchShop: (String) -> Unit,
+    onAddShop: () -> Unit,
 ) {
     val currencyFormatter = rememberCurrencyFormatter()
     val numberFormatter = rememberNumberFormatter()
@@ -199,11 +217,13 @@ private fun DashboardContent(
         // En-tête collant intégré dans la liste pour éviter un ScaffoldTopBar
         item {
             DashboardHeader(
-                shopName = "Pense Bonheur",
+                connections = connections,
                 isRefreshing = isRefreshing,
                 onRefresh = onRefresh,
                 selectedPeriod = selectedPeriod,
                 onPeriodSelected = onPeriodSelected,
+                onSwitchShop = onSwitchShop,
+                onAddShop = onAddShop,
             )
         }
 
@@ -282,14 +302,22 @@ private fun DashboardContent(
 
 @Composable
 private fun DashboardHeader(
-    shopName: String,
+    connections: List<ShopConnection>,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     selectedPeriod: DashboardPeriod,
     onPeriodSelected: (DashboardPeriod) -> Unit,
+    onSwitchShop: (String) -> Unit,
+    onAddShop: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val refreshDesc = stringResource(id = R.string.dashboard_content_description_refresh)
+    val activeShop = connections.firstOrNull { it.isActive }
+    val shopName =
+        activeShop?.label
+            ?: activeShop?.shopUrl?.substringAfter("://")?.trimEnd('/')
+            ?: stringResource(id = R.string.app_name)
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.background,
@@ -309,7 +337,7 @@ private fun DashboardHeader(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(id = R.string.dashboard_greeting),
                         style = MaterialTheme.typography.bodyMedium,
@@ -322,6 +350,15 @@ private fun DashboardHeader(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    // Sélecteur de boutique — chip sous le titre (visible si connexion définie)
+                    if (connections.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(Dimensions.spacingXs))
+                        ShopSwitcherChip(
+                            connections = connections,
+                            onSwitch = onSwitchShop,
+                            onAddShop = onAddShop,
+                        )
+                    }
                 }
                 Box(
                     modifier =

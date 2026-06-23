@@ -38,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
+import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.clients.model.Client
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.EmptyState
@@ -45,6 +46,8 @@ import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.components.SectionHeader
+import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
+import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
@@ -54,16 +57,22 @@ import java.time.format.FormatStyle
 @Composable
 fun ClientsRoute(
     onClientClick: (Long) -> Unit = {},
+    onAddShop: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ClientsViewModel = hiltViewModel(),
+    shopsViewModel: ShopsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     ClientsScreen(
         modifier = modifier,
         state = state,
+        connections = connections,
         onRefresh = viewModel::onRefresh,
         onClientClick = onClientClick,
         onQueryChange = viewModel::onQueryChange,
+        onSwitchShop = shopsViewModel::switchShop,
+        onAddShop = onAddShop,
     )
 }
 
@@ -73,7 +82,10 @@ fun ClientsScreen(
     onRefresh: () -> Unit,
     onClientClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    connections: List<ShopConnection> = emptyList(),
     onQueryChange: (String) -> Unit = {},
+    onSwitchShop: (String) -> Unit = {},
+    onAddShop: () -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
 
@@ -96,8 +108,11 @@ fun ClientsScreen(
                 onQueryChange = onQueryChange,
                 isRefreshing = state.isRefreshing,
                 errorMessage = errorMessage,
+                connections = connections,
                 onRefresh = onRefresh,
                 onClientClick = onClientClick,
+                onSwitchShop = onSwitchShop,
+                onAddShop = onAddShop,
             )
     }
 }
@@ -113,8 +128,11 @@ private fun ClientList(
     onQueryChange: (String) -> Unit,
     isRefreshing: Boolean,
     errorMessage: String?,
+    connections: List<ShopConnection>,
     onRefresh: () -> Unit,
     onClientClick: (Long) -> Unit,
+    onSwitchShop: (String) -> Unit,
+    onAddShop: () -> Unit,
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
@@ -153,6 +171,17 @@ private fun ClientList(
                 }
 
                 item { Spacer(modifier = Modifier.height(Dimensions.spacingXs)) }
+
+                // Sélecteur de boutique
+                if (connections.isNotEmpty()) {
+                    item {
+                        ShopSwitcherChip(
+                            connections = connections,
+                            onSwitch = onSwitchShop,
+                            onAddShop = onAddShop,
+                        )
+                    }
+                }
 
                 // En-tête section
                 item {

@@ -33,14 +33,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
+import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.carts.model.CartSummary
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.SectionHeader
+import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -48,15 +51,21 @@ import java.time.format.FormatStyle
 @Composable
 fun CartsRoute(
     onCartClick: (Int) -> Unit = {},
+    onAddShop: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: CartsViewModel = hiltViewModel(),
+    shopsViewModel: ShopsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     CartsScreen(
         modifier = modifier,
         state = state,
+        connections = connections,
         onRefresh = viewModel::onRefresh,
         onCartClick = onCartClick,
+        onSwitchShop = shopsViewModel::switchShop,
+        onAddShop = onAddShop,
     )
 }
 
@@ -66,6 +75,9 @@ fun CartsScreen(
     onRefresh: () -> Unit,
     onCartClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    connections: List<ShopConnection> = emptyList(),
+    onSwitchShop: (String) -> Unit = {},
+    onAddShop: () -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
 
@@ -84,8 +96,11 @@ fun CartsScreen(
                 carts = state.carts,
                 isRefreshing = state.isRefreshing,
                 errorMessage = errorMessage,
+                connections = connections,
                 onRefresh = onRefresh,
                 onCartClick = onCartClick,
+                onSwitchShop = onSwitchShop,
+                onAddShop = onAddShop,
             )
     }
 }
@@ -97,8 +112,11 @@ private fun CartsList(
     carts: List<CartSummary>,
     isRefreshing: Boolean,
     errorMessage: String?,
+    connections: List<ShopConnection>,
     onRefresh: () -> Unit,
     onCartClick: (Int) -> Unit,
+    onSwitchShop: (String) -> Unit,
+    onAddShop: () -> Unit,
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -126,6 +144,17 @@ private fun CartsList(
                     ),
                 verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
             ) {
+                // Sélecteur de boutique
+                if (connections.isNotEmpty()) {
+                    item {
+                        ShopSwitcherChip(
+                            connections = connections,
+                            onSwitch = onSwitchShop,
+                            onAddShop = onAddShop,
+                        )
+                    }
+                }
+
                 item {
                     SectionHeader(
                         title = stringResource(R.string.carts_list_abandoned),

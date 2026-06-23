@@ -38,7 +38,15 @@ fun PrestaFlowNavGraph(
         startDestination = AppDestination.Dashboard.route,
         modifier = modifier,
     ) {
-        composable(AppDestination.Dashboard.route) { DashboardRoute() }
+        composable(AppDestination.Dashboard.route) {
+            DashboardRoute(
+                onAddShop = {
+                    navController.navigate(AppDestination.Settings.route) {
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
         composable(AppDestination.Orders.route) {
             if (isExpanded) {
                 // Tablette : layout deux colonnes liste + détail
@@ -48,6 +56,11 @@ fun PrestaFlowNavGraph(
                 OrdersRoute(
                     onOrderClick = { orderId ->
                         navController.navigate("${AppDestination.Orders.route}/$orderId")
+                    },
+                    onAddShop = {
+                        navController.navigate(AppDestination.Settings.route) {
+                            launchSingleTop = true
+                        }
                     },
                 )
             }
@@ -72,6 +85,11 @@ fun PrestaFlowNavGraph(
                 onProductClick = { productId ->
                     navController.navigate("${AppDestination.Products.route}/$productId")
                 },
+                onAddShop = {
+                    navController.navigate(AppDestination.Settings.route) {
+                        launchSingleTop = true
+                    }
+                },
             )
         }
         composable(
@@ -89,6 +107,11 @@ fun PrestaFlowNavGraph(
             ClientsRoute(
                 onClientClick = { clientId ->
                     navController.navigate("${AppDestination.Clients.route}/$clientId")
+                },
+                onAddShop = {
+                    navController.navigate(AppDestination.Settings.route) {
+                        launchSingleTop = true
+                    }
                 },
             )
         }
@@ -110,6 +133,11 @@ fun PrestaFlowNavGraph(
             CartsRoute(
                 onCartClick = { cartId ->
                     navController.navigate("${AppDestination.Carts.route}/$cartId")
+                },
+                onAddShop = {
+                    navController.navigate(AppDestination.Settings.route) {
+                        launchSingleTop = true
+                    }
                 },
             )
         }

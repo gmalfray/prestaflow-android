@@ -54,6 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.print.InvoicePrinter
 import com.rebuildit.prestaflow.core.ui.asString
+import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.EmptyState
@@ -61,8 +62,10 @@ import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
 import com.rebuildit.prestaflow.ui.components.SearchField
+import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.time.format.DateTimeFormatter
@@ -71,9 +74,12 @@ import java.time.format.FormatStyle
 @Composable
 fun OrdersRoute(
     onOrderClick: (Long) -> Unit,
+    onAddShop: () -> Unit = {},
     viewModel: OrdersViewModel = hiltViewModel(),
+    shopsViewModel: ShopsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -88,6 +94,7 @@ fun OrdersRoute(
     Box(modifier = Modifier.fillMaxSize()) {
         OrdersScreen(
             uiState = uiState,
+            connections = connections,
             onRefresh = { forceRemote -> viewModel.refresh(forceRemote, notifyOnError = true) },
             onOrderClick = { id ->
                 if (uiState.selectionMode) {
@@ -99,6 +106,8 @@ fun OrdersRoute(
             onQueryChange = viewModel::onQueryChange,
             onOrderLongPress = viewModel::onOrderLongPress,
             onCancelSelection = viewModel::cancelSelection,
+            onSwitchShop = shopsViewModel::switchShop,
+            onAddShop = onAddShop,
             onPrintSelected = {
                 viewModel.printSelectedInvoices { pdfList ->
                     val count = uiState.selectedOrderIds.size
@@ -124,10 +133,13 @@ fun OrdersScreen(
     onRefresh: (Boolean) -> Unit,
     onOrderClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    connections: List<ShopConnection> = emptyList(),
     onQueryChange: (String) -> Unit = {},
     onOrderLongPress: (Long) -> Unit = {},
     onCancelSelection: () -> Unit = {},
     onPrintSelected: () -> Unit = {},
+    onSwitchShop: (String) -> Unit = {},
+    onAddShop: () -> Unit = {},
 ) {
     val errorMessage = uiState.error?.asString()
 
@@ -150,6 +162,7 @@ fun OrdersScreen(
                 isRefreshing = uiState.isRefreshing,
                 isPrintingInProgress = uiState.isPrintingInProgress,
                 errorMessage = errorMessage,
+                connections = connections,
                 onRefresh = { onRefresh(true) },
                 onOrderClick = onOrderClick,
                 onOrderLongPress = onOrderLongPress,
@@ -157,6 +170,8 @@ fun OrdersScreen(
                 selectedOrderIds = uiState.selectedOrderIds,
                 onCancelSelection = onCancelSelection,
                 onPrintSelected = onPrintSelected,
+                onSwitchShop = onSwitchShop,
+                onAddShop = onAddShop,
             )
     }
 }
@@ -172,6 +187,7 @@ private fun OrdersList(
     isRefreshing: Boolean,
     isPrintingInProgress: Boolean,
     errorMessage: String?,
+    connections: List<ShopConnection>,
     onRefresh: () -> Unit,
     onOrderClick: (Long) -> Unit,
     onOrderLongPress: (Long) -> Unit,
@@ -179,6 +195,8 @@ private fun OrdersList(
     selectedOrderIds: Set<Long>,
     onCancelSelection: () -> Unit,
     onPrintSelected: () -> Unit,
+    onSwitchShop: (String) -> Unit,
+    onAddShop: () -> Unit,
 ) {
     val dateFormatter = rememberDateFormatter()
 
@@ -220,23 +238,32 @@ private fun OrdersList(
                     ),
                 verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
             ) {
-                // En-tête : nombre de commandes
+                // En-tête : nombre de commandes + sélecteur boutique
                 item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.orders_list_section_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.orders_list_count, totalCount),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.orders_list_section_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = stringResource(R.string.orders_list_count, totalCount),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (connections.isNotEmpty()) {
+                            ShopSwitcherChip(
+                                connections = connections,
+                                onSwitch = onSwitchShop,
+                                onAddShop = onAddShop,
+                            )
+                        }
                     }
                 }
 

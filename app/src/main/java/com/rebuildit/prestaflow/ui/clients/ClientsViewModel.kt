@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.clients.model.Client
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -23,6 +27,7 @@ class ClientsViewModel
     constructor(
         private val clientsRepository: ClientsRepository,
         private val networkErrorMapper: NetworkErrorMapper,
+        private val authRepository: AuthRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(ClientsUiState())
         val uiState: StateFlow<ClientsUiState> = _uiState.asStateFlow()
@@ -30,6 +35,7 @@ class ClientsViewModel
         init {
             observeClients()
             refresh(forceRemote = true, notifyOnError = false)
+            observeActiveShopSwitch()
         }
 
         fun onRefresh() {
@@ -38,6 +44,21 @@ class ClientsViewModel
 
         fun onQueryChange(query: String) {
             _uiState.update { it.copy(query = query) }
+        }
+
+        private fun observeActiveShopSwitch() {
+            viewModelScope.launch {
+                authRepository.connections
+                    .map { list -> list.firstOrNull { it.isActive }?.id }
+                    .distinctUntilChanged()
+                    .drop(1)
+                    .collect {
+                        _uiState.update { current ->
+                            current.copy(clients = emptyList(), isLoading = true, error = null)
+                        }
+                        refresh(forceRemote = true, notifyOnError = true)
+                    }
+            }
         }
 
         private fun observeClients() {

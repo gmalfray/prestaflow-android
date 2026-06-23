@@ -3,11 +3,15 @@ package com.rebuildit.prestaflow.ui.carts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.carts.model.CartSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,12 +28,14 @@ class CartsViewModel
     @Inject
     constructor(
         private val cartsRepository: CartsRepository,
+        private val authRepository: AuthRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(CartsUiState())
         val uiState: StateFlow<CartsUiState> = _uiState
 
         init {
             load()
+            observeActiveShopSwitch()
         }
 
         fun onRefresh() {
@@ -46,6 +52,21 @@ class CartsViewModel
                                 error = UiText.Dynamic(error.message ?: "Unknown error"),
                             )
                         }
+                    }
+            }
+        }
+
+        private fun observeActiveShopSwitch() {
+            viewModelScope.launch {
+                authRepository.connections
+                    .map { list -> list.firstOrNull { it.isActive }?.id }
+                    .distinctUntilChanged()
+                    .drop(1)
+                    .collect {
+                        _uiState.update { current ->
+                            current.copy(carts = emptyList(), isLoading = true, error = null)
+                        }
+                        load()
                     }
             }
         }
