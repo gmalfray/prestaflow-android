@@ -76,6 +76,7 @@ import com.rebuildit.prestaflow.ui.theme.displayNameRes
 @Composable
 fun SettingsRoute(
     onLogoutClick: () -> Unit,
+    onNotifCategoriesClick: () -> Unit = {},
     themeViewModel: ThemeViewModel = hiltViewModel(),
     shopsViewModel: ShopsViewModel = hiltViewModel(),
 ) {
@@ -87,6 +88,7 @@ fun SettingsRoute(
         onSkinSelected = themeViewModel::selectSkin,
         onDarkThemeSelected = themeViewModel::setDarkThemeConfig,
         onLogoutClick = onLogoutClick,
+        onNotifCategoriesClick = onNotifCategoriesClick,
         connections = connections,
         addState = addState,
         onSwitchShop = shopsViewModel::switchShop,
@@ -107,6 +109,7 @@ fun SettingsScreen(
     onSkinSelected: (PrestaFlowSkin) -> Unit,
     onDarkThemeSelected: (DarkThemeConfig) -> Unit,
     onLogoutClick: () -> Unit,
+    onNotifCategoriesClick: () -> Unit = {},
     connections: List<ShopConnection> = emptyList(),
     addState: AddShopUiState = AddShopUiState(),
     onSwitchShop: (String) -> Unit = {},
@@ -224,7 +227,7 @@ fun SettingsScreen(
             )
         }
 
-        // Section NOTIFICATIONS — raccourci vers les réglages système du son du canal « Ventes »
+        // Section NOTIFICATIONS — son du canal + catégories
         SettingsSection(label = stringResource(R.string.settings_notifications_label)) {
             val context = LocalContext.current
             OutlinedButton(
@@ -239,6 +242,21 @@ fun SettingsScreen(
                 )
                 Text(
                     text = stringResource(R.string.settings_notification_sound),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+            OutlinedButton(
+                onClick = onNotifCategoriesClick,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(50),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Notifications,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = Dimensions.spacingS),
+                )
+                Text(
+                    text = stringResource(R.string.settings_notif_categories),
                     style = MaterialTheme.typography.titleSmall,
                 )
             }

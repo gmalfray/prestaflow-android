@@ -14,6 +14,7 @@ import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.DoNotDisturbDto
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.notifications.DoNotDisturb
+import com.rebuildit.prestaflow.domain.notifications.NotificationCategoriesRepository
 import com.rebuildit.prestaflow.domain.notifications.NotificationSettings
 import com.rebuildit.prestaflow.domain.notifications.NotificationsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -39,7 +40,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-@Suppress("LongParameterList") // Repository Hilt : API + auth + context + dataStore + json + errorMapper + dispatcher
+@Suppress("LongParameterList") // Repository Hilt : API + auth + context + dataStore + json + errorMapper + dispatcher + catégories
 class NotificationsRepositoryImpl
     @Inject
     constructor(
@@ -50,6 +51,7 @@ class NotificationsRepositoryImpl
         private val json: Json,
         private val networkErrorMapper: NetworkErrorMapper,
         private val ioDispatcher: CoroutineDispatcher,
+        private val notificationCategoriesRepository: NotificationCategoriesRepository,
     ) : NotificationsRepository {
         override val settings: Flow<NotificationSettings> =
             dataStore.data
@@ -149,7 +151,7 @@ class NotificationsRepositoryImpl
                 }
 
                 val resolvedDeviceId = deviceId ?: currentDeviceId()
-                val topics = currentSettings.topics
+                val topics = notificationCategoriesRepository.enabledTopics()
                 val dnd = currentSettings.doNotDisturb.takeIf { it.enabled && it.start != null && it.end != null }
 
                 val request =

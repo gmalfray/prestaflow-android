@@ -35,6 +35,7 @@ class ShopDeviceRegistrar
             shopUrl: String,
             shopToken: String,
             fcmToken: String,
+            topics: List<String> = emptyList(),
         ) {
             val base = endpointManager.buildApiBaseUrl(shopUrl) ?: return
             val url = base.newBuilder().addPathSegments("notifications/devices").build()
@@ -42,6 +43,12 @@ class ShopDeviceRegistrar
                 buildJsonObject {
                     put("token", JsonPrimitive(fcmToken))
                     put("platform", JsonPrimitive("android"))
+                    put(
+                        "topics",
+                        kotlinx.serialization.json.buildJsonArray {
+                            topics.forEach { add(JsonPrimitive(it)) }
+                        },
+                    )
                 }.toString().toRequestBody(JSON_MEDIA_TYPE)
             val request =
                 Request.Builder()

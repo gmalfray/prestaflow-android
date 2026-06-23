@@ -28,6 +28,7 @@ import com.rebuildit.prestaflow.data.local.dao.PendingSyncDao
 import com.rebuildit.prestaflow.data.local.dao.ProductDao
 import com.rebuildit.prestaflow.data.local.dao.StockAvailabilityDao
 import com.rebuildit.prestaflow.data.local.db.PrestaFlowDatabase
+import com.rebuildit.prestaflow.data.notifications.NotificationCategoriesRepositoryImpl
 import com.rebuildit.prestaflow.data.notifications.NotificationsRepositoryImpl
 import com.rebuildit.prestaflow.data.orders.OrdersPreferencesRepositoryImpl
 import com.rebuildit.prestaflow.data.orders.OrdersRepositoryImpl
@@ -43,6 +44,7 @@ import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
 import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
+import com.rebuildit.prestaflow.domain.notifications.NotificationCategoriesRepository
 import com.rebuildit.prestaflow.domain.notifications.NotificationsRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersPreferencesRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
@@ -202,6 +204,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideNotificationsRepository(impl: NotificationsRepositoryImpl): NotificationsRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideNotificationCategoriesRepository(impl: NotificationCategoriesRepositoryImpl): NotificationCategoriesRepository = impl
 
     @Provides
     @Singleton

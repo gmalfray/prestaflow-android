@@ -205,6 +205,14 @@
     <string name="product_not_found">Product not found.</string>
     <string name="client_not_found">Customer not found.</string>
 
+    <!-- Notification category preferences screen -->
+    <string name="notif_categories_title">Notification preferences</string>
+    <string name="notif_categories_section_label">Received notifications</string>
+    <string name="notif_category_order_created">New sales</string>
+    <string name="notif_category_order_status_changed">Status changes</string>
+    <string name="notif_category_order_shipping_updated">Shipments</string>
+    <string name="notif_categories_all_disabled_warning">No notification will be received while all categories are disabled.</string>
+
     <!-- Settings screen -->
     <string name="destination_settings">Settings</string>
     <string name="settings_appearance_title">Appearance</string>
@@ -221,6 +229,7 @@
     <string name="settings_about_environment">Environment</string>
     <string name="settings_notifications_label">Notifications</string>
     <string name="settings_notification_sound">Notification sound</string>
+    <string name="settings_notif_categories">Notification categories</string>
     <string name="settings_logout">Log out</string>
     <string name="settings_logout_confirm_title">Log out?</string>
     <string name="settings_logout_confirm_message">You will need to reconnect to your shop.</string>
