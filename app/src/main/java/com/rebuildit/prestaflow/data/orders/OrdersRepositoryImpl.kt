@@ -9,6 +9,7 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderStatusUpdateRequestDto
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
+import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -36,9 +37,25 @@ class OrdersRepositoryImpl
                 entity?.toDomain()
             }
 
-        override suspend fun refresh(forceRemote: Boolean) {
+        override suspend fun getOrderStatuses(): List<OrderStatusFilter> =
             withContext(ioDispatcher) {
-                val filters = mapOf("sort" to "-date_add", "limit" to "50")
+                val response = api.getOrderStatuses()
+                response.statuses.map { dto ->
+                    OrderStatusFilter(id = dto.id, name = dto.name, color = dto.color)
+                }
+            }
+
+        override suspend fun refresh(
+            forceRemote: Boolean,
+            statusId: Int?,
+        ) {
+            withContext(ioDispatcher) {
+                val filters =
+                    buildMap {
+                        put("sort", "-date_add")
+                        put("limit", "50")
+                        if (statusId != null) put("status", statusId.toString())
+                    }
                 val result = runCatching { api.getOrders(filters) }
                 result.fold(
                     onSuccess = { payload ->

@@ -11,7 +11,14 @@ interface ProductsRepository {
 
     fun observeStockAvailabilities(productId: Long): Flow<List<StockAvailability>>
 
-    suspend fun refresh(forceRemote: Boolean = false)
+    /**
+     * Rafraîchit la liste des produits depuis le serveur.
+     * @param stockFilter Si non nul, filtre par état de stock : "in_stock", "out_of_stock" ou "low_stock".
+     */
+    suspend fun refresh(
+        forceRemote: Boolean = false,
+        stockFilter: String? = null,
+    )
 
     suspend fun refreshProduct(
         productId: Long,

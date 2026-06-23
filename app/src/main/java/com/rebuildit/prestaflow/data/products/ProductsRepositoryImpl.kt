@@ -57,9 +57,12 @@ class ProductsRepositoryImpl
                 entities.map { it.toDomain() }
             }
 
-        override suspend fun refresh(forceRemote: Boolean) {
+        override suspend fun refresh(
+            forceRemote: Boolean,
+            stockFilter: String?,
+        ) {
             withContext(ioDispatcher) {
-                val result = runCatching { fetchAllProducts() }
+                val result = runCatching { fetchAllProducts(stockFilter) }
                 result.fold(
                     onSuccess = { products ->
                         val productEntities = products.map { it.toEntity() }
@@ -196,7 +199,7 @@ class ProductsRepositoryImpl
             }
         }
 
-        private suspend fun fetchAllProducts(): List<ProductDto> {
+        private suspend fun fetchAllProducts(stockFilter: String? = null): List<ProductDto> {
             val collected = mutableListOf<ProductDto>()
             var offset = 0
             var hasNext = true
@@ -204,6 +207,9 @@ class ProductsRepositoryImpl
                 val filters = mutableMapOf("limit" to FETCH_LIMIT.toString())
                 if (offset > 0) {
                     filters["offset"] = offset.toString()
+                }
+                if (stockFilter != null) {
+                    filters["stock"] = stockFilter
                 }
                 val response = api.getProducts(filters)
                 if (response.products.isEmpty()) {

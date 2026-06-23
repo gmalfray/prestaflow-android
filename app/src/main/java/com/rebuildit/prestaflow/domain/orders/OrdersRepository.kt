@@ -1,12 +1,26 @@
 package com.rebuildit.prestaflow.domain.orders
 
 import com.rebuildit.prestaflow.domain.orders.model.Order
+import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import kotlinx.coroutines.flow.Flow
 
 interface OrdersRepository {
     fun observeOrders(): Flow<List<Order>>
 
-    suspend fun refresh(forceRemote: Boolean = false)
+    /**
+     * Retourne les statuts disponibles pour filtrer les commandes.
+     * Lance une exception en cas d'erreur réseau.
+     */
+    suspend fun getOrderStatuses(): List<OrderStatusFilter>
+
+    /**
+     * Rafraîchit la liste des commandes depuis le serveur.
+     * @param statusId Si non nul, filtre les commandes par ce statut.
+     */
+    suspend fun refresh(
+        forceRemote: Boolean = false,
+        statusId: Int? = null,
+    )
 
     fun getOrder(orderId: Long): Flow<Order?>
 

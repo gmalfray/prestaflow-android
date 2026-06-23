@@ -7,6 +7,7 @@ import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
+import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,7 @@ class OrdersViewModel
         init {
             observeOrders()
             refresh(forceRemote = true, notifyOnError = false)
+            loadStatuses()
             observeActiveShopSwitch()
         }
 
@@ -42,6 +44,25 @@ class OrdersViewModel
 
         fun onQueryChange(query: String) {
             _uiState.update { it.copy(query = query) }
+        }
+
+        /** Charge les statuts disponibles depuis l'API (silencieux en cas d'erreur). */
+        private fun loadStatuses() {
+            viewModelScope.launch {
+                runCatching { ordersRepository.getOrderStatuses() }
+                    .onSuccess { statuses ->
+                        _uiState.update { it.copy(availableStatuses = statuses) }
+                    }
+                    .onFailure { error ->
+                        Timber.w(error, "Impossible de charger les statuts de commande")
+                    }
+            }
+        }
+
+        /** Sélectionne (ou désélectionne) le filtre par statut puis recharge la liste. */
+        fun onStatusFilterSelected(statusId: Int?) {
+            _uiState.update { it.copy(selectedStatusId = statusId) }
+            refresh(forceRemote = true, notifyOnError = true)
         }
 
         // ─── Sélection multiple ──────────────────────────────────────────────────
@@ -125,8 +146,11 @@ class OrdersViewModel
                                 error = null,
                                 selectionMode = false,
                                 selectedOrderIds = emptySet(),
+                                selectedStatusId = null,
+                                availableStatuses = emptyList(),
                             )
                         }
+                        loadStatuses()
                         refresh(forceRemote = true, notifyOnError = true)
                     }
             }
@@ -160,7 +184,8 @@ class OrdersViewModel
                     )
                 }
 
-                runCatching { ordersRepository.refresh(forceRemote) }
+                val statusId = _uiState.value.selectedStatusId
+                runCatching { ordersRepository.refresh(forceRemote, statusId) }
                     .onFailure { error ->
                         Timber.w(error, "Failed to refresh orders")
                         _uiState.update { current ->
@@ -199,6 +224,10 @@ data class OrdersUiState(
     val isPrintingInProgress: Boolean = false,
     /** Message d'erreur d'impression à afficher puis consommer. */
     val printError: String? = null,
+    /** Statuts disponibles pour le filtre, chargés depuis l'API. */
+    val availableStatuses: List<OrderStatusFilter> = emptyList(),
+    /** ID du statut sélectionné comme filtre, null = tous les statuts. */
+    val selectedStatusId: Int? = null,
 ) {
     /** Liste filtrée par [query] sur le nom du client et la référence (insensible à la casse). */
     val visibleOrders: List<Order>

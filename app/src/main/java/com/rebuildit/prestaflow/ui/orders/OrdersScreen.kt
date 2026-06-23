@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -26,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,6 +60,7 @@ import com.rebuildit.prestaflow.core.print.InvoicePrinter
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.orders.model.Order
+import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
@@ -109,6 +113,7 @@ fun OrdersRoute(
             onCancelSelection = viewModel::cancelSelection,
             onSwitchShop = shopsViewModel::switchShop,
             onAddShop = onAddShop,
+            onStatusFilterSelected = viewModel::onStatusFilterSelected,
             onPrintSelected = {
                 viewModel.printSelectedInvoices { pdfList ->
                     val count = uiState.selectedOrderIds.size
@@ -141,6 +146,7 @@ fun OrdersScreen(
     onPrintSelected: () -> Unit = {},
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
+    onStatusFilterSelected: (Int?) -> Unit = {},
 ) {
     val errorMessage = uiState.error?.asString()
 
@@ -173,6 +179,9 @@ fun OrdersScreen(
                 onPrintSelected = onPrintSelected,
                 onSwitchShop = onSwitchShop,
                 onAddShop = onAddShop,
+                availableStatuses = uiState.availableStatuses,
+                selectedStatusId = uiState.selectedStatusId,
+                onStatusFilterSelected = onStatusFilterSelected,
             )
     }
 }
@@ -199,6 +208,9 @@ private fun OrdersList(
     onPrintSelected: () -> Unit,
     onSwitchShop: (String) -> Unit,
     onAddShop: () -> Unit,
+    availableStatuses: List<OrderStatusFilter> = emptyList(),
+    selectedStatusId: Int? = null,
+    onStatusFilterSelected: (Int?) -> Unit = {},
 ) {
     val dateFormatter = rememberDateFormatter()
 
@@ -273,6 +285,17 @@ private fun OrdersList(
                                 onQueryChange = onQueryChange,
                                 placeholder = stringResource(R.string.orders_search_placeholder),
                             )
+                        }
+
+                        // Barre de filtres par statut (visible seulement si l'API a retourné des statuts)
+                        if (availableStatuses.isNotEmpty()) {
+                            item {
+                                StatusFilterBar(
+                                    statuses = availableStatuses,
+                                    selectedStatusId = selectedStatusId,
+                                    onStatusSelected = onStatusFilterSelected,
+                                )
+                            }
                         }
                     }
 
@@ -419,8 +442,8 @@ private fun OrderRow(
             formatCurrency(order.totalPaid, order.currency)
         }
     val updatedAt =
-        remember(order.updatedAtIso) {
-            formatTimestamp(order.updatedAtIso, dateFormatter) ?: order.updatedAtIso
+        remember(order.createdAtIso) {
+            formatTimestamp(order.createdAtIso, dateFormatter) ?: order.createdAtIso
         }
     val status = order.status.ifBlank { stringResource(id = R.string.orders_status_unknown) }
 
@@ -535,6 +558,44 @@ private fun rememberDateFormatter(): DateTimeFormatter =
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
     }
 
+// ─── Barre de filtres par statut ──────────────────────────────────────────────
+
+/**
+ * Ligne horizontale scrollable de chips permettant de filtrer les commandes par statut.
+ * Le premier chip « Toutes » réinitialise le filtre (selectedStatusId = null).
+ */
+@Composable
+private fun StatusFilterBar(
+    statuses: List<OrderStatusFilter>,
+    selectedStatusId: Int?,
+    onStatusSelected: (Int?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+    ) {
+        // Chip « Toutes »
+        FilterChip(
+            selected = selectedStatusId == null,
+            onClick = { onStatusSelected(null) },
+            label = { Text(stringResource(R.string.orders_filter_all)) },
+        )
+        statuses.forEach { status ->
+            FilterChip(
+                selected = selectedStatusId == status.id,
+                onClick = {
+                    onStatusSelected(if (selectedStatusId == status.id) null else status.id)
+                },
+                label = { Text(status.name) },
+            )
+        }
+    }
+}
+
 // ─── Previews ─────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, name = "Commandes — liste")
@@ -553,6 +614,7 @@ private fun PreviewOrdersList() {
                                 totalPaid = 45.0,
                                 currency = "EUR",
                                 customerName = "Marie Dupont",
+                                createdAtIso = "2026-06-19T14:20:00Z",
                                 updatedAtIso = "2026-06-19T14:20:00Z",
                                 hasInvoice = true,
                             ),
@@ -563,6 +625,7 @@ private fun PreviewOrdersList() {
                                 totalPaid = 28.50,
                                 currency = "EUR",
                                 customerName = "Julien Martin",
+                                createdAtIso = "2026-06-18T09:15:00Z",
                                 updatedAtIso = "2026-06-18T09:15:00Z",
                                 hasInvoice = false,
                             ),
@@ -573,6 +636,7 @@ private fun PreviewOrdersList() {
                                 totalPaid = 112.0,
                                 currency = "EUR",
                                 customerName = "Mme Leblanc",
+                                createdAtIso = "2026-11-02T16:45:00Z",
                                 updatedAtIso = "2026-11-02T16:45:00Z",
                                 hasInvoice = true,
                             ),
@@ -602,6 +666,7 @@ private fun PreviewOrdersListSelection() {
                                 totalPaid = 45.0,
                                 currency = "EUR",
                                 customerName = "Marie Dupont",
+                                createdAtIso = "2026-06-19T14:20:00Z",
                                 updatedAtIso = "2026-06-19T14:20:00Z",
                                 hasInvoice = true,
                             ),
@@ -612,6 +677,7 @@ private fun PreviewOrdersListSelection() {
                                 totalPaid = 28.50,
                                 currency = "EUR",
                                 customerName = "Julien Martin",
+                                createdAtIso = "2026-06-18T09:15:00Z",
                                 updatedAtIso = "2026-06-18T09:15:00Z",
                                 hasInvoice = false,
                             ),

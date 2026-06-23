@@ -7,6 +7,7 @@ import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.model.Product
+import com.rebuildit.prestaflow.domain.products.model.StockFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,6 +45,12 @@ class ProductsViewModel
             _uiState.update { it.copy(query = query) }
         }
 
+        /** Sélectionne un filtre de stock puis recharge la liste depuis le serveur. */
+        fun onStockFilterSelected(filter: StockFilter) {
+            _uiState.update { it.copy(stockFilter = filter) }
+            refresh(forceRemote = true, notifyOnError = true)
+        }
+
         private fun observeActiveShopSwitch() {
             viewModelScope.launch {
                 authRepository.connections
@@ -52,7 +59,12 @@ class ProductsViewModel
                     .drop(1)
                     .collect {
                         _uiState.update { current ->
-                            current.copy(products = emptyList(), isLoading = true, error = null)
+                            current.copy(
+                                products = emptyList(),
+                                isLoading = true,
+                                error = null,
+                                stockFilter = StockFilter.ALL,
+                            )
                         }
                         refresh(forceRemote = true, notifyOnError = true)
                     }
@@ -87,7 +99,8 @@ class ProductsViewModel
                     )
                 }
 
-                runCatching { productsRepository.refresh(forceRemote) }
+                val stockFilter = _uiState.value.stockFilter.apiValue
+                runCatching { productsRepository.refresh(forceRemote, stockFilter) }
                     .onFailure { error ->
                         Timber.w(error, "Failed to refresh products")
                         _uiState.update { current ->
@@ -118,6 +131,8 @@ data class ProductsUiState(
     val isRefreshing: Boolean = false,
     val error: UiText? = null,
     val query: String = "",
+    /** Filtre de stock actif. */
+    val stockFilter: StockFilter = StockFilter.ALL,
 ) {
     /** Liste filtrée par [query] sur le nom et la référence (insensible à la casse). */
     val visibleProducts: List<Product>

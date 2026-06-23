@@ -12,6 +12,7 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderStatusUpdateRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.OrderStatusesResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
@@ -32,6 +33,9 @@ interface PrestaFlowApi {
     suspend fun login(
         @Body request: AuthRequestDto,
     ): AuthResponseDto
+
+    @GET("orders/statuses")
+    suspend fun getOrderStatuses(): OrderStatusesResponseDto
 
     @GET("orders")
     suspend fun getOrders(
