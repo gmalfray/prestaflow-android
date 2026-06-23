@@ -32,6 +32,7 @@ class ShopConnectionStore
             val token: String,
             val expiresAt: Long? = null,
             val scopes: List<String> = emptyList(),
+            val apiKey: String = "",
         )
 
         fun read(): List<ShopConnection> {
@@ -70,6 +71,7 @@ class ShopConnectionStore
                 shopUrl = shopUrl,
                 label = label,
                 token = AuthToken(value = token, expiresAtEpochMillis = expiresAt, scopes = scopes),
+                apiKey = apiKey,
             )
 
         private fun ShopConnection.toStored() =
@@ -80,6 +82,7 @@ class ShopConnectionStore
                 token = token.value,
                 expiresAt = token.expiresAtEpochMillis,
                 scopes = token.scopes,
+                apiKey = apiKey,
             )
 
         private companion object {

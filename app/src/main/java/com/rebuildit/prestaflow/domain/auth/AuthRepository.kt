@@ -34,4 +34,11 @@ interface AuthRepository {
     suspend fun logout()
 
     suspend fun getActiveToken(): AuthToken?
+
+    /**
+     * Re-login silencieux de la boutique active avec sa clé API conservée, pour rafraîchir
+     * un jeton expiré (appelé par l'Authenticator OkHttp sur un 401). Retourne true si un
+     * nouveau jeton a été obtenu.
+     */
+    suspend fun refreshActiveToken(): Boolean
 }

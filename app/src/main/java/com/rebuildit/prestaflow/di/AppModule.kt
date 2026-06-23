@@ -13,6 +13,7 @@ import androidx.work.WorkManager
 import com.rebuildit.prestaflow.BuildConfig
 import com.rebuildit.prestaflow.core.config.AppEnvironment
 import com.rebuildit.prestaflow.core.network.ApiEndpointManager
+import com.rebuildit.prestaflow.core.network.TokenAuthenticator
 import com.rebuildit.prestaflow.core.security.EncryptedTokenStorage
 import com.rebuildit.prestaflow.core.security.InMemoryTokenProvider
 import com.rebuildit.prestaflow.core.security.TokenStorage
@@ -99,11 +100,13 @@ object AppModule {
         dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor,
         authInterceptor: AuthInterceptor,
         defaultHeadersInterceptor: DefaultHeadersInterceptor,
+        tokenAuthenticator: TokenAuthenticator,
     ): OkHttpClient =
         OkHttpClient.Builder()
             .connectTimeout(Duration.ofSeconds(30))
             .readTimeout(Duration.ofSeconds(30))
             .writeTimeout(Duration.ofSeconds(30))
+            .authenticator(tokenAuthenticator)
             .addInterceptor(dynamicBaseUrlInterceptor)
             .addInterceptor(defaultHeadersInterceptor)
             .addInterceptor(authInterceptor)

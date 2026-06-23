@@ -16,6 +16,8 @@ import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import timber.log.Timber
@@ -42,11 +44,22 @@ class AuthRepositoryImpl
         private val _connections = MutableStateFlow<List<ShopConnection>>(emptyList())
         override val connections: StateFlow<List<ShopConnection>> = _connections
 
+        // Sérialise les rafraîchissements de jeton (plusieurs 401 concurrents → un seul re-login).
+        private val refreshMutex = Mutex()
+
         init {
             migrateLegacySingleShopIfNeeded()
-            refreshConnections()
-            val token = tokenManager.currentToken()?.takeUnless { it.isExpired }
-            _authState.value = if (token != null) AuthState.Authenticated(token) else AuthState.Unauthenticated
+            val active = activeConnection()
+            if (active != null) {
+                // Réactive la boutique active dès le démarrage (endpoint + token), même si le
+                // jeton est expiré : l'Authenticator OkHttp le rafraîchira au 1er 401 via la
+                // clé API conservée. Évite de retomber sur l'écran de connexion après un cold
+                // start (typiquement après une mise à jour de l'app).
+                activate(active)
+            } else {
+                refreshConnections()
+                _authState.value = AuthState.Unauthenticated
+            }
         }
 
         override suspend fun login(
@@ -71,6 +84,7 @@ class AuthRepositoryImpl
                             shopUrl = outcome.normalizedUrl,
                             label = finalLabel,
                             token = outcome.token,
+                            apiKey = apiKey.trim(),
                         )
                     val updated = connectionStore.read().filterNot { it.id == connection.id } + connection
                     connectionStore.write(updated)
@@ -118,6 +132,29 @@ class AuthRepositoryImpl
         override suspend fun getActiveToken(): AuthToken? =
             withContext(ioDispatcher) {
                 tokenManager.currentToken()?.takeUnless { it.isExpired }
+            }
+
+        override suspend fun refreshActiveToken(): Boolean =
+            withContext(ioDispatcher) {
+                refreshMutex.withLock {
+                    val active = activeConnection() ?: return@withLock false
+                    val apiKey = active.apiKey.ifBlank { return@withLock false }
+                    when (val outcome = authenticate(active.shopUrl, apiKey)) {
+                        is AuthOutcome.Success -> {
+                            val refreshed = active.copy(token = outcome.token)
+                            val updated =
+                                connectionStore.read().map { if (it.id == refreshed.id) refreshed else it }
+                            connectionStore.write(updated)
+                            activate(refreshed)
+                            Timber.i("Jeton rafraîchi pour la boutique active %s", active.shopUrl)
+                            true
+                        }
+                        is AuthOutcome.Failure -> {
+                            Timber.w("Échec du rafraîchissement du jeton pour %s", active.shopUrl)
+                            false
+                        }
+                    }
+                }
             }
 
         // ─── Internes ────────────────────────────────────────────────────────────
