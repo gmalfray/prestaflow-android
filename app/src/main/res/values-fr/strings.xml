@@ -140,6 +140,7 @@
     <string name="order_detail_cancel">Annuler</string>
     <string name="order_detail_qty_label">Qté : %1$d</string>
     <string name="order_detail_tracking_display">Suivi : %1$s</string>
+    <string name="order_detail_print_invoice">Imprimer la facture</string>
 
     <!-- Navigation retour partagée -->
     <string name="content_description_back">Retour</string>
@@ -148,6 +149,11 @@
     <!-- Recherche -->
     <string name="content_description_clear_search">Effacer la recherche</string>
     <string name="orders_search_placeholder">Rechercher par client ou référence</string>
+    <string name="orders_selection_count">%1$d sélectionnée(s)</string>
+    <string name="orders_selection_print">Imprimer (%1$d)</string>
+    <string name="orders_selection_cancel">Annuler la sélection</string>
+    <string name="orders_action_toggle_selection">Basculer la sélection</string>
+    <string name="orders_print_job_name">Factures (%1$d)</string>
     <string name="products_search_placeholder">Rechercher par nom ou référence</string>
     <string name="clients_search_placeholder">Rechercher par nom ou e-mail</string>
     <string name="list_no_results">Aucun résultat pour « %1$s »</string>
