@@ -71,6 +71,9 @@ class ShopsViewModel
                             when (val reason = result.reason) {
                                 is AuthFailure.InvalidShopUrl ->
                                     UiText.FromResources(R.string.auth_error_shop_url_malformed)
+                                AuthFailure.ModuleNotInstalled ->
+                                    UiText.FromResources(R.string.auth_error_module_not_installed)
+                                is AuthFailure.HostUnreachable -> reason.message
                                 is AuthFailure.Network -> reason.message
                                 is AuthFailure.Unknown -> reason.message
                             }
