@@ -14,11 +14,14 @@ interface ProductsRepository {
     /**
      * Rafraîchit la liste des produits depuis le serveur.
      * @param stockFilter Si non nul, filtre par état de stock : "in_stock", "out_of_stock" ou "low_stock".
+     * @param search Si non nul, délègue la recherche textuelle à l'API (nom, référence).
+     * @return Le total réel de produits rapporté par l'API (selon filtres actifs), ou null si la requête échoue.
      */
     suspend fun refresh(
         forceRemote: Boolean = false,
         stockFilter: String? = null,
-    )
+        search: String? = null,
+    ): Int?
 
     suspend fun refreshProduct(
         productId: Long,

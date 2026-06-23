@@ -120,7 +120,7 @@ fun ProductsScreen(
             ProductList(
                 modifier = modifier,
                 products = state.visibleProducts,
-                totalCount = state.products.size,
+                totalCount = state.totalCount,
                 lowStockCount =
                     state.products.count {
                         it.stock.isLow || it.stock.quantity <= LOW_STOCK_THRESHOLD_FALLBACK

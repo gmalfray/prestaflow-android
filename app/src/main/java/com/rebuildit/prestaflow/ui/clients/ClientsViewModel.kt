@@ -7,6 +7,7 @@ import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.clients.model.Client
+import com.rebuildit.prestaflow.domain.clients.model.ClientStats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,7 +55,7 @@ class ClientsViewModel
                     .drop(1)
                     .collect {
                         _uiState.update { current ->
-                            current.copy(clients = emptyList(), isLoading = true, error = null)
+                            current.copy(clients = emptyList(), stats = null, isLoading = true, error = null)
                         }
                         refresh(forceRemote = true, notifyOnError = true)
                     }
@@ -89,7 +90,12 @@ class ClientsViewModel
                     )
                 }
 
-                runCatching { clientsRepository.refreshTopClients(TOP_CLIENTS_LIMIT, forceRemote) }
+                // Les deux appels sont lancés en parallèle pour minimiser la latence.
+                val topClientsResult =
+                    runCatching { clientsRepository.refreshTopClients(TOP_CLIENTS_LIMIT, forceRemote) }
+                val stats = clientsRepository.fetchStats()
+
+                topClientsResult
                     .onFailure { error ->
                         Timber.w(error, "Failed to refresh clients")
                         _uiState.update { current ->
@@ -98,6 +104,7 @@ class ClientsViewModel
                                 isRefreshing = false,
                                 isLoading = current.clients.isEmpty(),
                                 error = if (notifyOnError) mapped else current.error,
+                                stats = stats ?: current.stats,
                             )
                         }
                     }
@@ -107,6 +114,7 @@ class ClientsViewModel
                                 isRefreshing = false,
                                 isLoading = current.clients.isEmpty(),
                                 error = null,
+                                stats = stats ?: current.stats,
                             )
                         }
                     }
@@ -116,6 +124,11 @@ class ClientsViewModel
 
 data class ClientsUiState(
     val clients: List<Client> = emptyList(),
+    /**
+     * Statistiques agrégées depuis [GET customers/stats].
+     * Null tant que la requête n'a pas abouti (état initial ou erreur).
+     */
+    val stats: ClientStats? = null,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val error: UiText? = null,

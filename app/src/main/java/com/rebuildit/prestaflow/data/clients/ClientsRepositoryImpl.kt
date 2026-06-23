@@ -7,6 +7,7 @@ import com.rebuildit.prestaflow.data.local.dao.ClientDao
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.clients.model.Client
+import com.rebuildit.prestaflow.domain.clients.model.ClientStats
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -69,4 +70,18 @@ class ClientsRepositoryImpl
                 )
             }
         }
+
+        override suspend fun fetchStats(): ClientStats? =
+            withContext(ioDispatcher) {
+                runCatching { api.getCustomerStats() }
+                    .fold(
+                        onSuccess = { dto ->
+                            ClientStats(total = dto.total, newThisMonth = dto.newThisMonth)
+                        },
+                        onFailure = { error ->
+                            Timber.w(networkErrorMapper.map(error).toString())
+                            null
+                        },
+                    )
+            }
     }

@@ -10,6 +10,12 @@ data class CustomerListResponseDto(
 )
 
 @Serializable
+data class CustomerStatsDto(
+    @SerialName("total") val total: Int = 0,
+    @SerialName("new_this_month") val newThisMonth: Int = 0,
+)
+
+@Serializable
 data class CustomerDto(
     @SerialName("id") val id: Long,
     @SerialName("firstname") val firstName: String,

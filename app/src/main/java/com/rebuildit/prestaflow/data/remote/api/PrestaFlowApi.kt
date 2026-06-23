@@ -6,6 +6,7 @@ import com.rebuildit.prestaflow.data.remote.dto.CartDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CartListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerListResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.CustomerStatsDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
 import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
@@ -73,6 +74,7 @@ interface PrestaFlowApi {
     @GET("products")
     suspend fun getProducts(
         @QueryMap filters: Map<String, @JvmSuppressWildcards String> = emptyMap(),
+        @Query("search") search: String? = null,
     ): ProductListResponseDto
 
     @GET("products/{id}")
@@ -90,6 +92,9 @@ interface PrestaFlowApi {
     suspend fun getDashboardMetrics(
         @Query("period") period: String,
     ): DashboardMetricsDto
+
+    @GET("customers/stats")
+    suspend fun getCustomerStats(): CustomerStatsDto
 
     @GET("customers/top")
     suspend fun getTopCustomers(

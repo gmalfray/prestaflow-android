@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ProductListResponseDto(
     @SerialName("products") val products: List<ProductDto>,
+    @SerialName("total") val total: Int = 0,
     @SerialName("pagination") val pagination: PaginationDto? = null,
 )
 
