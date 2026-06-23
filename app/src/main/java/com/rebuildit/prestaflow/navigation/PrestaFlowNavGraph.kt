@@ -16,6 +16,7 @@ import com.rebuildit.prestaflow.ui.carts.CartsRoute
 import com.rebuildit.prestaflow.ui.clients.ClientDetailRoute
 import com.rebuildit.prestaflow.ui.clients.ClientsRoute
 import com.rebuildit.prestaflow.ui.dashboard.DashboardRoute
+import com.rebuildit.prestaflow.ui.notifications.NotificationCategoriesRoute
 import com.rebuildit.prestaflow.ui.orders.OrderDetailRoute
 import com.rebuildit.prestaflow.ui.orders.OrdersRoute
 import com.rebuildit.prestaflow.ui.orders.OrdersTwoPaneRoute
@@ -153,7 +154,17 @@ fun PrestaFlowNavGraph(
             )
         }
         composable(AppDestination.Settings.route) {
-            SettingsRoute(onLogoutClick = onLogout)
+            SettingsRoute(
+                onLogoutClick = onLogout,
+                onNotifCategoriesClick = {
+                    navController.navigate(AppDestination.NOTIF_CATEGORIES_ROUTE)
+                },
+            )
+        }
+        composable(AppDestination.NOTIF_CATEGORIES_ROUTE) {
+            NotificationCategoriesRoute(
+                onBackClick = { navController.popBackStack() },
+            )
         }
     }
 }

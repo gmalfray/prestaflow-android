@@ -5,6 +5,7 @@ import com.google.firebase.FirebaseApp
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.AuthState
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
+import com.rebuildit.prestaflow.domain.notifications.NotificationCategoriesRepository
 import com.rebuildit.prestaflow.domain.notifications.NotificationSettings
 import com.rebuildit.prestaflow.domain.notifications.NotificationsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -13,6 +14,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
@@ -26,6 +29,7 @@ class FcmRegistrationManager
         @ApplicationContext private val context: Context,
         private val authRepository: AuthRepository,
         private val notificationsRepository: NotificationsRepository,
+        private val notificationCategoriesRepository: NotificationCategoriesRepository,
         private val shopDeviceRegistrar: ShopDeviceRegistrar,
         private val ioDispatcher: CoroutineDispatcher,
     ) {
@@ -47,6 +51,42 @@ class FcmRegistrationManager
                 return
             }
             initialized = true
+            // Observe les changements de catégories → ré-enregistre sur toutes les boutiques.
+            scope.launch {
+                notificationCategoriesRepository.categoryPreferences
+                    .drop(1) // ignore la valeur initiale déjà traitée par le flux principal
+                    .collectLatest { _ ->
+                        val currentSettings = notificationsRepository.settings.first()
+                        val fcmToken = currentSettings.deviceToken ?: return@collectLatest
+                        val topics = notificationCategoriesRepository.enabledTopics()
+                        val connections = authRepository.connections.value
+                        if (topics.isEmpty()) {
+                            // Aucune catégorie active → désenregistrer de toutes les boutiques
+                            Timber.i("Toutes catégories désactivées → désenregistrement FCM sur %d boutiques", connections.size)
+                            connections.forEach { connection ->
+                                shopDeviceRegistrar.unregisterFromShop(
+                                    connection.shopUrl,
+                                    connection.token.value,
+                                    fcmToken,
+                                )
+                            }
+                            notificationsRepository.markRegistrationStale()
+                        } else {
+                            // Ré-enregistrer sur toutes les boutiques avec les nouveaux topics
+                            Timber.i("Catégories modifiées → ré-enregistrement FCM (topics=%s)", topics)
+                            connections.forEach { connection ->
+                                shopDeviceRegistrar.registerOnShop(
+                                    connection.shopUrl,
+                                    connection.token.value,
+                                    fcmToken,
+                                    topics,
+                                )
+                            }
+                            // La boutique active via le flux normal
+                            notificationsRepository.updateTopics(topics)
+                        }
+                    }
+            }
             scope.launch {
                 combine(
                     authRepository.authState,
@@ -90,12 +130,13 @@ class FcmRegistrationManager
                 return
             }
             scope.launch {
+                val topics = notificationCategoriesRepository.enabledTopics()
                 // La boutique active passe par le flux normal (met à jour le token local + isTokenSynced).
                 notificationsRepository.syncRegistration(token, null)
                 // Les autres boutiques connectées : on (ré)enregistre le nouveau token sur chacune,
                 // sinon elles garderaient l'ancien token périmé et cesseraient de pousser.
                 authRepository.connections.value.forEach { connection ->
-                    shopDeviceRegistrar.registerOnShop(connection.shopUrl, connection.token.value, token)
+                    shopDeviceRegistrar.registerOnShop(connection.shopUrl, connection.token.value, token, topics)
                 }
             }
         }

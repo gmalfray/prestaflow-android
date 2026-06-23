@@ -205,6 +205,17 @@
     <string name="product_not_found">Produit introuvable.</string>
     <string name="client_not_found">Client introuvable.</string>
 
+    <!-- Écran préférences de catégories de notifications -->
+    <string name="notif_categories_title">Préférences de notifications</string>
+    <string name="notif_categories_section_label">Notifications reçues</string>
+    <string name="notif_category_order_created">Nouvelles ventes</string>
+    <string name="notif_category_order_status_changed">Changements de statut</string>
+    <string name="notif_category_order_shipping_updated">Expéditions</string>
+    <string name="notif_categories_all_disabled_warning">Aucune notification ne sera reçue tant que toutes les catégories sont désactivées.</string>
+
+    <!-- Lien depuis les réglages -->
+    <string name="settings_notif_categories">Catégories de notifications</string>
+
     <!-- Écran Réglages -->
     <string name="destination_settings">Réglages</string>
     <string name="settings_appearance_title">Apparence</string>

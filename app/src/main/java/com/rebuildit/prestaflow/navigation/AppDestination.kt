@@ -22,4 +22,10 @@ enum class AppDestination(
     Clients("clients", R.string.destination_clients, Icons.Outlined.Group),
     Carts("carts", R.string.destination_carts, Icons.Outlined.ShoppingCart),
     Settings("settings", R.string.destination_settings, Icons.Outlined.Settings),
+    ;
+
+    companion object {
+        /** Route vers l'écran préférences de catégories de notifications (destination secondaire). */
+        const val NOTIF_CATEGORIES_ROUTE = "notif-categories"
+    }
 }
