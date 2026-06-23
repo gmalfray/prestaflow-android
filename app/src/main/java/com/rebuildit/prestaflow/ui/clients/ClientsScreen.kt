@@ -100,8 +100,8 @@ fun ClientsScreen(
             ClientList(
                 modifier = modifier,
                 clients = state.visibleClients,
-                totalClients = state.clients.size,
-                totalOrders = state.clients.sumOf { it.ordersCount },
+                totalClients = state.stats?.total ?: state.clients.size,
+                newThisMonth = state.stats?.newThisMonth ?: 0,
                 query = state.query,
                 onQueryChange = onQueryChange,
                 isRefreshing = state.isRefreshing,
@@ -122,7 +122,7 @@ private fun ClientList(
     modifier: Modifier,
     clients: List<Client>,
     totalClients: Int,
-    totalOrders: Int,
+    newThisMonth: Int,
     query: String,
     onQueryChange: (String) -> Unit,
     isRefreshing: Boolean,
@@ -159,11 +159,11 @@ private fun ClientList(
                         ),
                     verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
                 ) {
-                    // KPI stats : total clients + commandes ce mois
+                    // KPI stats : total clients + nouveaux ce mois
                     item {
                         ClientsStatsRow(
                             totalClients = totalClients,
-                            totalOrders = totalOrders,
+                            newThisMonth = newThisMonth,
                         )
                     }
 
@@ -247,7 +247,7 @@ private fun ClientList(
 @Composable
 private fun ClientsStatsRow(
     totalClients: Int,
-    totalOrders: Int,
+    newThisMonth: Int,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -262,7 +262,7 @@ private fun ClientsStatsRow(
         ClientStatCard(
             modifier = Modifier.weight(1f),
             label = stringResource(R.string.clients_stats_new_month),
-            value = totalOrders.toString(),
+            value = newThisMonth.toString(),
         )
     }
 }

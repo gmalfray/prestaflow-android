@@ -38,7 +38,7 @@ fun StockAvailabilityEntity.toDomain(): StockAvailability =
     )
 
 fun ProductDto.toEntity(): ProductEntity {
-    val stockJson = json.encodeToString(stock)
+    val stockJson = json.encodeToString(stock.toDomainStock())
     val imagesJson = json.encodeToString(images)
 
     return ProductEntity(
@@ -59,4 +59,13 @@ fun StockDto.toEntity(productId: Long): StockAvailabilityEntity =
         warehouseId = warehouseId ?: StockAvailabilityEntity.NO_WAREHOUSE_ID,
         quantity = quantity,
         updatedAtIso = updatedAt,
+    )
+
+fun StockDto.toDomainStock(): ProductStock =
+    ProductStock(
+        quantity = quantity,
+        warehouseId = warehouseId,
+        updatedAt = updatedAt,
+        isLow = isLow,
+        lowStockThreshold = lowStockThreshold,
     )

@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ProductListResponseDto(
     @SerialName("products") val products: List<ProductDto>,
+    @SerialName("total") val total: Int = 0,
     @SerialName("pagination") val pagination: PaginationDto? = null,
 )
 
@@ -31,6 +32,8 @@ data class StockDto(
     @SerialName("quantity") val quantity: Int,
     @SerialName("warehouse_id") val warehouseId: Long? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("is_low") val isLow: Boolean = false,
+    @SerialName("low_stock_threshold") val lowStockThreshold: Int = 0,
 )
 
 @Serializable

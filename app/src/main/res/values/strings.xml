@@ -154,6 +154,17 @@
     <string name="orders_selection_cancel">Cancel selection</string>
     <string name="orders_action_toggle_selection">Toggle selection</string>
     <string name="orders_print_job_name">Invoices (%1$d)</string>
+    <!-- Filtres statuts commandes -->
+    <string name="orders_filter_all">All</string>
+    <string name="orders_filter_label">Filter by status</string>
+
+    <!-- Filtres stock produits -->
+    <string name="products_filter_all">All</string>
+    <string name="products_filter_in_stock">In stock</string>
+    <string name="products_filter_out_of_stock">Out of stock</string>
+    <string name="products_filter_low_stock">Low stock</string>
+    <string name="products_filter_label">Filter by stock</string>
+
     <string name="products_search_placeholder">Search by name or reference</string>
     <string name="clients_search_placeholder">Search by name or email</string>
     <string name="list_no_results">No result for \"%1$s\"</string>

@@ -24,6 +24,7 @@ data class OrderListItemDto(
     @SerialName("status") val status: String = "",
     @SerialName("total_paid") val totalPaid: Double = 0.0,
     @SerialName("currency") val currency: String = "",
+    @SerialName("date_add") val dateAdded: String? = null,
     @SerialName("date_upd") val dateUpdated: String? = null,
     @SerialName("customer") val customer: OrderListCustomerDto,
     @SerialName("has_invoice") val hasInvoice: Boolean = false,
@@ -116,4 +117,18 @@ data class OrderStatusUpdateRequestDto(
 data class OrderShippingUpdateRequestDto(
     @SerialName("tracking_number") val trackingNumber: String,
     @SerialName("carrier_id") val carrierId: Long? = null,
+)
+
+// ─── Statuts de commande (endpoint GET orders/statuses) ──────────────────────
+
+@Serializable
+data class OrderStatusesResponseDto(
+    @SerialName("statuses") val statuses: List<OrderStatusFilterDto>,
+)
+
+@Serializable
+data class OrderStatusFilterDto(
+    @SerialName("id") val id: Int,
+    @SerialName("name") val name: String,
+    @SerialName("color") val color: String = "",
 )

@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.ui.products
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,12 +15,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +52,7 @@ import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
+import com.rebuildit.prestaflow.domain.products.model.StockFilter
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
@@ -60,8 +64,11 @@ import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
 
-/** Seuil de stock faible — produit signalé en badge rouge sous ce seuil (inclus). */
-private const val LOW_STOCK_THRESHOLD = 5
+/**
+ * Seuil de stock faible local (fallback) — utilisé quand le backend ne fournit pas
+ * `stock.is_low`. Si l'API retourne `is_low`, ce seuil est ignoré.
+ */
+private const val LOW_STOCK_THRESHOLD_FALLBACK = 5
 
 @Composable
 fun ProductsRoute(
@@ -82,6 +89,7 @@ fun ProductsRoute(
         onQueryChange = viewModel::onQueryChange,
         onSwitchShop = shopsViewModel::switchShop,
         onAddShop = onAddShop,
+        onStockFilterSelected = viewModel::onStockFilterSelected,
     )
 }
 
@@ -95,6 +103,7 @@ fun ProductsScreen(
     onQueryChange: (String) -> Unit = {},
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
+    onStockFilterSelected: (StockFilter) -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
 
@@ -111,8 +120,11 @@ fun ProductsScreen(
             ProductList(
                 modifier = modifier,
                 products = state.visibleProducts,
-                totalCount = state.products.size,
-                lowStockCount = state.products.count { it.stock.quantity <= LOW_STOCK_THRESHOLD },
+                totalCount = state.totalCount,
+                lowStockCount =
+                    state.products.count {
+                        it.stock.isLow || it.stock.quantity <= LOW_STOCK_THRESHOLD_FALLBACK
+                    },
                 query = state.query,
                 onQueryChange = onQueryChange,
                 isRefreshing = state.isRefreshing,
@@ -122,6 +134,8 @@ fun ProductsScreen(
                 onProductClick = onProductClick,
                 onSwitchShop = onSwitchShop,
                 onAddShop = onAddShop,
+                stockFilter = state.stockFilter,
+                onStockFilterSelected = onStockFilterSelected,
             )
     }
 }
@@ -143,6 +157,8 @@ private fun ProductList(
     onProductClick: (Long) -> Unit,
     onSwitchShop: (String) -> Unit,
     onAddShop: () -> Unit,
+    stockFilter: StockFilter = StockFilter.ALL,
+    onStockFilterSelected: (StockFilter) -> Unit = {},
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
 
@@ -203,6 +219,14 @@ private fun ProductList(
                             query = query,
                             onQueryChange = onQueryChange,
                             placeholder = stringResource(R.string.products_search_placeholder),
+                        )
+                    }
+
+                    // Chips de filtre par état de stock
+                    item {
+                        StockFilterBar(
+                            selected = stockFilter,
+                            onSelected = onStockFilterSelected,
                         )
                     }
 
@@ -349,7 +373,8 @@ private fun ProductRow(
     onClick: () -> Unit,
 ) {
     val priceText = remember(product.price) { currencyFormatter.format(product.price) }
-    val isLowStock = product.stock.quantity <= LOW_STOCK_THRESHOLD
+    // Priorité à is_low fourni par le backend ; fallback local si le backend n'envoie pas le champ
+    val isLowStock = product.stock.isLow || product.stock.quantity <= LOW_STOCK_THRESHOLD_FALLBACK
     val stockText = stringResource(R.string.products_stock_label, product.stock.quantity)
 
     Row(
@@ -463,6 +488,42 @@ private fun StockBadge(
             style = MaterialTheme.typography.labelMedium,
             color = textColor,
         )
+    }
+}
+
+// ─── Barre de filtres par état de stock ───────────────────────────────────────
+
+/**
+ * Ligne horizontale scrollable de chips pour filtrer les produits par état de stock :
+ * Tous / En stock / Rupture / Stock faible.
+ */
+@Composable
+private fun StockFilterBar(
+    selected: StockFilter,
+    onSelected: (StockFilter) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(com.rebuildit.prestaflow.ui.theme.Dimensions.spacingS),
+    ) {
+        StockFilter.entries.forEach { filter ->
+            val label =
+                when (filter) {
+                    StockFilter.ALL -> stringResource(R.string.products_filter_all)
+                    StockFilter.IN_STOCK -> stringResource(R.string.products_filter_in_stock)
+                    StockFilter.OUT_OF_STOCK -> stringResource(R.string.products_filter_out_of_stock)
+                    StockFilter.LOW_STOCK -> stringResource(R.string.products_filter_low_stock)
+                }
+            FilterChip(
+                selected = selected == filter,
+                onClick = { onSelected(filter) },
+                label = { Text(label) },
+            )
+        }
     }
 }
 

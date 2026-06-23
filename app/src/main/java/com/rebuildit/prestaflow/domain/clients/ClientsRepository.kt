@@ -1,6 +1,7 @@
 package com.rebuildit.prestaflow.domain.clients
 
 import com.rebuildit.prestaflow.domain.clients.model.Client
+import com.rebuildit.prestaflow.domain.clients.model.ClientStats
 import kotlinx.coroutines.flow.Flow
 
 interface ClientsRepository {
@@ -17,4 +18,10 @@ interface ClientsRepository {
         clientId: Long,
         forceRemote: Boolean = false,
     )
+
+    /**
+     * Récupère les statistiques agrégées des clients depuis [GET customers/stats].
+     * @return [ClientStats] avec le total et les nouveaux du mois, ou null en cas d'erreur réseau.
+     */
+    suspend fun fetchStats(): ClientStats?
 }

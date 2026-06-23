@@ -57,11 +57,15 @@ class ProductsRepositoryImpl
                 entities.map { it.toDomain() }
             }
 
-        override suspend fun refresh(forceRemote: Boolean) {
+        override suspend fun refresh(
+            forceRemote: Boolean,
+            stockFilter: String?,
+            search: String?,
+        ): Int? =
             withContext(ioDispatcher) {
-                val result = runCatching { fetchAllProducts() }
+                val result = runCatching { fetchAllProducts(stockFilter, search) }
                 result.fold(
-                    onSuccess = { products ->
+                    onSuccess = { (products, total) ->
                         val productEntities = products.map { it.toEntity() }
                         val stockEntities = products.map { it.stock.toEntity(it.id) }
                         database.withTransaction {
@@ -71,15 +75,16 @@ class ProductsRepositoryImpl
                                 stockAvailabilityDao.upsertAll(stockEntities)
                             }
                         }
-                        Timber.d("Products refresh succeeded (count=%d)", productEntities.size)
+                        Timber.d("Products refresh succeeded (count=%d, total=%d)", productEntities.size, total)
+                        total
                     },
                     onFailure = { error ->
                         Timber.w(networkErrorMapper.map(error).toString())
                         if (forceRemote) throw error
+                        null
                     },
                 )
             }
-        }
 
         override suspend fun refreshProduct(
             productId: Long,
@@ -196,16 +201,35 @@ class ProductsRepositoryImpl
             }
         }
 
-        private suspend fun fetchAllProducts(): List<ProductDto> {
+        /**
+         * Récupère toutes les pages de produits depuis l'API.
+         * @return Paire (liste complète des produits, total réel selon filtres/recherche).
+         *   Le total provient du champ `total` de la première réponse ; il reflète le vrai
+         *   nombre de produits correspondant aux critères actifs côté serveur.
+         */
+        private suspend fun fetchAllProducts(
+            stockFilter: String? = null,
+            search: String? = null,
+        ): Pair<List<ProductDto>, Int> {
             val collected = mutableListOf<ProductDto>()
             var offset = 0
             var hasNext = true
+            var reportedTotal = 0
             while (hasNext) {
                 val filters = mutableMapOf("limit" to FETCH_LIMIT.toString())
                 if (offset > 0) {
                     filters["offset"] = offset.toString()
                 }
-                val response = api.getProducts(filters)
+                if (stockFilter != null) {
+                    filters["stock"] = stockFilter
+                }
+                val response = api.getProducts(filters, search = search?.takeIf { it.isNotBlank() })
+                if (collected.isEmpty()) {
+                    // Le total de la première page est le vrai total (filtres + recherche actifs)
+                    reportedTotal = response.total.takeIf { it > 0 }
+                        ?: response.pagination?.total
+                        ?: 0
+                }
                 if (response.products.isEmpty()) {
                     Timber.d("Products page fetched with no items, stopping iteration (offset=%d)", offset)
                     break
@@ -231,6 +255,8 @@ class ProductsRepositoryImpl
                 hasNext = pagination?.hasNext == true && pageCount > 0 && nextOffset > offset
                 offset = nextOffset
             }
-            return collected
+            // Fallback : si le backend n'a pas renvoyé de total, on utilise le nombre réel collecté
+            if (reportedTotal == 0 && collected.isNotEmpty()) reportedTotal = collected.size
+            return collected to reportedTotal
         }
     }

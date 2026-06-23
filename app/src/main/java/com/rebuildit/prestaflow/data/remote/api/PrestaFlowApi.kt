@@ -6,12 +6,14 @@ import com.rebuildit.prestaflow.data.remote.dto.CartDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CartListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerListResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.CustomerStatsDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
 import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderStatusUpdateRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.OrderStatusesResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
@@ -32,6 +34,9 @@ interface PrestaFlowApi {
     suspend fun login(
         @Body request: AuthRequestDto,
     ): AuthResponseDto
+
+    @GET("orders/statuses")
+    suspend fun getOrderStatuses(): OrderStatusesResponseDto
 
     @GET("orders")
     suspend fun getOrders(
@@ -69,6 +74,7 @@ interface PrestaFlowApi {
     @GET("products")
     suspend fun getProducts(
         @QueryMap filters: Map<String, @JvmSuppressWildcards String> = emptyMap(),
+        @Query("search") search: String? = null,
     ): ProductListResponseDto
 
     @GET("products/{id}")
@@ -86,6 +92,9 @@ interface PrestaFlowApi {
     suspend fun getDashboardMetrics(
         @Query("period") period: String,
     ): DashboardMetricsDto
+
+    @GET("customers/stats")
+    suspend fun getCustomerStats(): CustomerStatsDto
 
     @GET("customers/top")
     suspend fun getTopCustomers(

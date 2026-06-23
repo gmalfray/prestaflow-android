@@ -19,6 +19,8 @@ data class ProductStock(
     val quantity: Int,
     val warehouseId: Long? = null,
     val updatedAt: String? = null,
+    val isLow: Boolean = false,
+    val lowStockThreshold: Int = 0,
 )
 
 @Serializable
