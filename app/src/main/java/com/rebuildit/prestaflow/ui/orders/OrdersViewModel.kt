@@ -38,6 +38,73 @@ class OrdersViewModel
             _uiState.update { it.copy(query = query) }
         }
 
+        // ─── Sélection multiple ──────────────────────────────────────────────────
+
+        /** Active le mode sélection et sélectionne la commande [orderId] (appui long). */
+        fun onOrderLongPress(orderId: Long) {
+            _uiState.update { current ->
+                val order = current.orders.find { it.id == orderId }
+                // Les commandes sans facture ne sont pas sélectionnables
+                if (order == null || !order.hasInvoice) return@update current
+                current.copy(
+                    selectionMode = true,
+                    selectedOrderIds = current.selectedOrderIds + orderId,
+                )
+            }
+        }
+
+        /** Bascule la sélection d'une commande (en mode sélection actif). */
+        fun onOrderSelectionToggle(orderId: Long) {
+            _uiState.update { current ->
+                if (!current.selectionMode) return@update current
+                val order = current.orders.find { it.id == orderId }
+                if (order == null || !order.hasInvoice) return@update current
+                val newSelection =
+                    if (orderId in current.selectedOrderIds) {
+                        current.selectedOrderIds - orderId
+                    } else {
+                        current.selectedOrderIds + orderId
+                    }
+                current.copy(
+                    selectionMode = newSelection.isNotEmpty(),
+                    selectedOrderIds = newSelection,
+                )
+            }
+        }
+
+        /** Quitte le mode sélection sans déclencher d'impression. */
+        fun cancelSelection() {
+            _uiState.update { it.copy(selectionMode = false, selectedOrderIds = emptySet()) }
+        }
+
+        /**
+         * Télécharge les PDFs des commandes sélectionnées et invoque [onReady] avec les octets.
+         * Remet à zéro la sélection après succès.
+         */
+        fun printSelectedInvoices(onReady: (List<ByteArray>) -> Unit) {
+            val selectedIds = _uiState.value.selectedOrderIds.toList()
+            if (selectedIds.isEmpty()) return
+            viewModelScope.launch {
+                _uiState.update { it.copy(isPrintingInProgress = true) }
+                runCatching {
+                    selectedIds.mapNotNull { id -> ordersRepository.downloadInvoicePdf(id) }
+                }.onSuccess { pdfList ->
+                    _uiState.update { it.copy(isPrintingInProgress = false, selectionMode = false, selectedOrderIds = emptySet()) }
+                    if (pdfList.isNotEmpty()) onReady(pdfList)
+                }.onFailure { error ->
+                    Timber.w(error, "Échec du téléchargement des factures sélectionnées")
+                    _uiState.update { it.copy(isPrintingInProgress = false, printError = error.message ?: "Erreur d'impression") }
+                }
+            }
+        }
+
+        /** Consomme le message d'erreur d'impression. */
+        fun consumePrintError() {
+            _uiState.update { it.copy(printError = null) }
+        }
+
+        // ─── Rafraîchissement ────────────────────────────────────────────────────
+
         private fun observeOrders() {
             viewModelScope.launch {
                 ordersRepository.observeOrders().collect { orders ->
@@ -97,6 +164,14 @@ data class OrdersUiState(
     val isRefreshing: Boolean = false,
     val error: UiText? = null,
     val query: String = "",
+    /** Mode sélection multiple actif (déclenché par appui long). */
+    val selectionMode: Boolean = false,
+    /** IDs des commandes sélectionnées (toutes avec has_invoice=true). */
+    val selectedOrderIds: Set<Long> = emptySet(),
+    /** Vrai pendant le téléchargement des PDFs pour impression. */
+    val isPrintingInProgress: Boolean = false,
+    /** Message d'erreur d'impression à afficher puis consommer. */
+    val printError: String? = null,
 ) {
     /** Liste filtrée par [query] sur le nom du client et la référence (insensible à la casse). */
     val visibleOrders: List<Order>

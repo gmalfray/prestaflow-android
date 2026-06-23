@@ -109,4 +109,18 @@ class OrdersRepositoryImpl
                 )
             }
         }
+
+        override suspend fun downloadInvoicePdf(orderId: Long): ByteArray? =
+            withContext(ioDispatcher) {
+                val response = api.getInvoicePdf(orderId)
+                when {
+                    response.isSuccessful -> response.body()?.bytes()
+                    response.code() == 404 -> null
+                    else -> {
+                        val msg = "Erreur HTTP ${response.code()} lors du téléchargement de la facture #$orderId"
+                        Timber.w(msg)
+                        error(msg)
+                    }
+                }
+            }
     }

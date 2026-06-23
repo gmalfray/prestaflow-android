@@ -26,6 +26,7 @@ data class OrderListItemDto(
     @SerialName("currency") val currency: String = "",
     @SerialName("date_upd") val dateUpdated: String? = null,
     @SerialName("customer") val customer: OrderListCustomerDto,
+    @SerialName("has_invoice") val hasInvoice: Boolean = false,
 )
 
 @Serializable
@@ -51,6 +52,7 @@ data class OrderDto(
     @SerialName("dates") val dates: OrderDatesDto? = null,
     @SerialName("items") val items: List<OrderItemDto>? = null,
     @SerialName("history") val history: List<OrderHistoryDto>? = null,
+    @SerialName("has_invoice") val hasInvoice: Boolean = false,
 )
 
 @Serializable

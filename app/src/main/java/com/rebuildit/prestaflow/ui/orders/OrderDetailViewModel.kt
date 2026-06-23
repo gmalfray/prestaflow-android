@@ -93,6 +93,28 @@ class OrderDetailViewModel
         fun consumeActionFeedback() {
             _actionState.update { it.copy(message = null, error = null) }
         }
+
+        /**
+         * Télécharge la facture PDF de la commande courante.
+         * Le résultat (octets PDF ou null si absent) est émis via [actionState].
+         */
+        fun fetchInvoicePdf(onReady: (ByteArray) -> Unit) {
+            viewModelScope.launch {
+                _actionState.update { it.copy(inProgress = true, error = null) }
+                runCatching {
+                    ordersRepository.downloadInvoicePdf(orderId)
+                }.onSuccess { bytes ->
+                    _actionState.update { it.copy(inProgress = false) }
+                    if (bytes != null) {
+                        onReady(bytes)
+                    } else {
+                        _actionState.update { it.copy(error = "Cette commande n'a pas de facture disponible.") }
+                    }
+                }.onFailure { error ->
+                    _actionState.update { it.copy(inProgress = false, error = error.message ?: "Échec du téléchargement de la facture") }
+                }
+            }
+        }
     }
 
 data class OrderActionState(

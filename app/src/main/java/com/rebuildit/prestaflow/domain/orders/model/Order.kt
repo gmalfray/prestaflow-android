@@ -10,6 +10,7 @@ data class Order(
     val currency: String,
     val customerName: String,
     val updatedAtIso: String,
+    val hasInvoice: Boolean = false,
     val items: List<OrderItem> = emptyList(),
     val shipping: OrderShipping? = null,
 )

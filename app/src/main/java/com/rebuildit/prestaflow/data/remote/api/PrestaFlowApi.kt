@@ -15,6 +15,8 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderStatusUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
+import okhttp3.ResponseBody
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -23,6 +25,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.QueryMap
+import retrofit2.http.Streaming
 
 interface PrestaFlowApi {
     @POST("connector/login")
@@ -51,6 +54,17 @@ interface PrestaFlowApi {
         @Path("id") orderId: Long,
         @Body body: OrderShippingUpdateRequestDto,
     )
+
+    /**
+     * Télécharge la facture PDF d'une commande.
+     * Retourne 404 si la commande n'a pas de facture générée.
+     * `@Streaming` évite de bufferiser le PDF entier en mémoire avant de le lire.
+     */
+    @Streaming
+    @GET("orders/{id}/invoice")
+    suspend fun getInvoicePdf(
+        @Path("id") orderId: Long,
+    ): Response<ResponseBody>
 
     @GET("products")
     suspend fun getProducts(

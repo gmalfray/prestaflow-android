@@ -30,4 +30,11 @@ interface OrdersRepository {
         trackingNumber: String,
         carrierId: Long? = null,
     )
+
+    /**
+     * Télécharge les octets PDF de la facture pour la commande [orderId].
+     * Retourne `null` si la commande n'a pas de facture (HTTP 404).
+     * Lance une exception pour toute autre erreur réseau.
+     */
+    suspend fun downloadInvoicePdf(orderId: Long): ByteArray?
 }

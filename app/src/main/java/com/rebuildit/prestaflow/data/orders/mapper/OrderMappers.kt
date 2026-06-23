@@ -42,6 +42,7 @@ fun OrderEntity.toDomain(): Order {
         currency = currency,
         customerName = customerName,
         updatedAtIso = updatedAtIso,
+        hasInvoice = hasInvoice,
         items = itemsList,
         shipping = shippingInfo,
     )
@@ -60,6 +61,7 @@ fun OrderListItemDto.toEntity(): OrderEntity =
         currency = currency,
         customerName = "${customer.firstName} ${customer.lastName}".trim(),
         updatedAtIso = dateUpdated.orEmpty(),
+        hasInvoice = hasInvoice,
         itemsJson = null,
         shippingJson = null,
     )
@@ -88,6 +90,7 @@ fun OrderDto.toEntity(): OrderEntity {
         currency = totals?.currency.orEmpty(),
         customerName = "${customer.firstName} ${customer.lastName}".trim(),
         updatedAtIso = dates?.updatedAt.orEmpty(),
+        hasInvoice = hasInvoice,
         itemsJson = itemsJsonStr,
         shippingJson = shippingJsonStr,
     )

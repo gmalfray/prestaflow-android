@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Print
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material3.AlertDialog
@@ -59,6 +60,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.rebuildit.prestaflow.R
+import com.rebuildit.prestaflow.core.print.InvoicePrinter
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderItem
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
@@ -76,6 +78,7 @@ fun OrderDetailRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val actionState by viewModel.actionState.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
     OrderDetailScreen(
         state = state,
         actionState = actionState,
@@ -83,6 +86,15 @@ fun OrderDetailRoute(
         onUpdateStatus = viewModel::updateStatus,
         onUpdateTracking = viewModel::updateTracking,
         onConsumeFeedback = viewModel::consumeActionFeedback,
+        onPrintInvoice = { order ->
+            viewModel.fetchInvoicePdf { pdfBytes ->
+                InvoicePrinter.print(
+                    context = context,
+                    pdfBytesList = listOf(pdfBytes),
+                    jobName = "Facture ${order.reference}",
+                )
+            }
+        },
     )
 }
 
@@ -97,6 +109,7 @@ fun OrderDetailScreen(
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
     onConsumeFeedback: () -> Unit = {},
+    onPrintInvoice: (Order) -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val backDesc = stringResource(R.string.content_description_back)
@@ -172,6 +185,7 @@ fun OrderDetailScreen(
                         actionInProgress = actionState.inProgress,
                         onUpdateStatus = onUpdateStatus,
                         onUpdateTracking = onUpdateTracking,
+                        onPrintInvoice = { onPrintInvoice(state.order) },
                     )
                 }
             }
@@ -186,6 +200,7 @@ fun OrderDetailContent(
     actionInProgress: Boolean = false,
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
+    onPrintInvoice: () -> Unit = {},
 ) {
     var showStatusDialog by remember { mutableStateOf(false) }
     var showTrackingDialog by remember { mutableStateOf(false) }
@@ -358,6 +373,24 @@ fun OrderDetailContent(
                 shape = RoundedCornerShape(50),
             ) {
                 Text(stringResource(R.string.order_detail_tracking_button))
+            }
+        }
+
+        // Bouton impression facture — visible uniquement si has_invoice
+        if (order.hasInvoice) {
+            Button(
+                onClick = onPrintInvoice,
+                enabled = !actionInProgress,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(50),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Print,
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimensions.iconSizeSmall),
+                )
+                Spacer(modifier = Modifier.size(Dimensions.spacingS))
+                Text(stringResource(R.string.order_detail_print_invoice))
             }
         }
     }
