@@ -50,15 +50,24 @@ class AuthRepositoryImpl
         init {
             migrateLegacySingleShopIfNeeded()
             val active = activeConnection()
-            if (active != null) {
-                // Réactive la boutique active dès le démarrage (endpoint + token), même si le
-                // jeton est expiré : l'Authenticator OkHttp le rafraîchira au 1er 401 via la
-                // clé API conservée. Évite de retomber sur l'écran de connexion après un cold
-                // start (typiquement après une mise à jour de l'app).
-                activate(active)
-            } else {
-                refreshConnections()
-                _authState.value = AuthState.Unauthenticated
+            when {
+                active == null -> {
+                    refreshConnections()
+                    _authState.value = AuthState.Unauthenticated
+                }
+                !active.token.isExpired || active.apiKey.isNotBlank() -> {
+                    // Jeton valide, OU expiré mais re-loginnable via la clé API conservée :
+                    // on réactive la boutique (endpoint + token) sans bloquer sur l'écran de
+                    // connexion. L'Authenticator OkHttp rafraîchira le jeton au 1er 401.
+                    activate(active)
+                }
+                else -> {
+                    // Connexion créée AVANT ce correctif : jeton expiré et pas de clé API
+                    // conservée → on demande une reconnexion (une seule fois ; ensuite la clé
+                    // est gardée et la session ne sera plus jamais perdue).
+                    refreshConnections()
+                    _authState.value = AuthState.Unauthenticated
+                }
             }
         }
 
