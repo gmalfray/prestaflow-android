@@ -95,6 +95,7 @@ fun OrdersRoute(
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    var showPrintModeDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.printError) {
         val err = uiState.printError
@@ -102,6 +103,24 @@ fun OrdersRoute(
             snackbarHostState.showSnackbar(err)
             viewModel.consumePrintError()
         }
+    }
+
+    if (showPrintModeDialog) {
+        PrintModeDialog(
+            onDismiss = { showPrintModeDialog = false },
+            onModeSelected = { mode ->
+                showPrintModeDialog = false
+                viewModel.printSelectedInvoices { pdfList ->
+                    val count = uiState.selectedOrderIds.size
+                    InvoicePrinter.print(
+                        context = context,
+                        pdfBytesList = pdfList,
+                        jobName = context.getString(R.string.orders_print_job_name, count),
+                        mode = mode,
+                    )
+                }
+            },
+        )
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -123,16 +142,7 @@ fun OrdersRoute(
             onAddShop = onAddShop,
             onStatusFilterSelected = viewModel::onStatusFilterSelected,
             onVisibleStatusIdsChanged = viewModel::onVisibleStatusIdsChanged,
-            onPrintSelected = {
-                viewModel.printSelectedInvoices { pdfList ->
-                    val count = uiState.selectedOrderIds.size
-                    InvoicePrinter.print(
-                        context = context,
-                        pdfBytesList = pdfList,
-                        jobName = context.getString(R.string.orders_print_job_name, count),
-                    )
-                }
-            },
+            onPrintSelected = { showPrintModeDialog = true },
         )
         SnackbarHost(
             hostState = snackbarHostState,

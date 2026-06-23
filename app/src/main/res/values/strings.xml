@@ -164,6 +164,12 @@
     <string name="order_detail_tracking_display">Tracking: %1$s</string>
     <string name="order_detail_print_invoice">Print invoice</string>
 
+    <!-- Dialogue de choix du mode d'impression -->
+    <string name="print_mode_dialog_title">Print mode</string>
+    <string name="print_mode_two_up">Two per page (paper saving)</string>
+    <string name="print_mode_one_per_page">One per page</string>
+    <string name="print_mode_cancel">Cancel</string>
+
     <!-- Shared back navigation -->
     <string name="content_description_back">Back</string>
     <string name="content_description_retry">Retry</string>
