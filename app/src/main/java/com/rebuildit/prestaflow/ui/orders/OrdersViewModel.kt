@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
+import com.rebuildit.prestaflow.domain.orders.OrdersPreferencesRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
@@ -25,6 +26,7 @@ class OrdersViewModel
     @Inject
     constructor(
         private val ordersRepository: OrdersRepository,
+        private val ordersPreferencesRepository: OrdersPreferencesRepository,
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
     ) : ViewModel() {
@@ -33,6 +35,7 @@ class OrdersViewModel
 
         init {
             observeOrders()
+            observeVisibleStatusIds()
             refresh(forceRemote = true, notifyOnError = false)
             loadStatuses()
             observeActiveShopSwitch()
@@ -63,6 +66,43 @@ class OrdersViewModel
         fun onStatusFilterSelected(statusId: Int?) {
             _uiState.update { it.copy(selectedStatusId = statusId) }
             refresh(forceRemote = true, notifyOnError = true)
+        }
+
+        // ─── Préférence de statuts visibles ─────────────────────────────────────
+
+        /** Observe la préférence DataStore et met à jour l'état. */
+        private fun observeVisibleStatusIds() {
+            viewModelScope.launch {
+                ordersPreferencesRepository.visibleStatusIds.collect { ids ->
+                    _uiState.update { current ->
+                        val newState = current.copy(visibleStatusIds = ids)
+                        // Si le statut sélectionné n'est plus visible, retomber sur « Toutes »
+                        val newSelectedId =
+                            if (ids != null && current.selectedStatusId != null &&
+                                current.selectedStatusId !in ids
+                            ) {
+                                null
+                            } else {
+                                current.selectedStatusId
+                            }
+                        newState.copy(selectedStatusId = newSelectedId)
+                    }
+                }
+            }
+        }
+
+        /**
+         * Persiste les IDs de statuts à afficher dans la barre de filtres.
+         * Si [ids] est null ou vide, réinitialise la préférence (tous les statuts affichés).
+         */
+        fun onVisibleStatusIdsChanged(ids: Set<Int>) {
+            viewModelScope.launch {
+                if (ids.isEmpty()) {
+                    ordersPreferencesRepository.clearVisibleStatusIds()
+                } else {
+                    ordersPreferencesRepository.setVisibleStatusIds(ids)
+                }
+            }
         }
 
         // ─── Sélection multiple ──────────────────────────────────────────────────
@@ -228,7 +268,22 @@ data class OrdersUiState(
     val availableStatuses: List<OrderStatusFilter> = emptyList(),
     /** ID du statut sélectionné comme filtre, null = tous les statuts. */
     val selectedStatusId: Int? = null,
+    /**
+     * IDs des statuts à afficher dans la barre de filtres (préférence persistée).
+     * Null = aucune préférence → tous les [availableStatuses] sont affichés.
+     */
+    val visibleStatusIds: Set<Int>? = null,
 ) {
+    /**
+     * Statuts effectivement affichés dans la barre de filtres.
+     * Si [visibleStatusIds] est null, tous les [availableStatuses] sont retournés (comportement par défaut).
+     */
+    val filteredStatuses: List<OrderStatusFilter>
+        get() =
+            visibleStatusIds?.let { ids ->
+                availableStatuses.filter { it.id in ids }
+            } ?: availableStatuses
+
     /** Liste filtrée par [query] sur le nom du client et la référence (insensible à la casse). */
     val visibleOrders: List<Order>
         get() =

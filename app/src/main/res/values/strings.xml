@@ -157,6 +157,10 @@
     <!-- Filtres statuts commandes -->
     <string name="orders_filter_all">All</string>
     <string name="orders_filter_label">Filter by status</string>
+    <string name="orders_filter_configure">Configure visible statuses</string>
+    <string name="orders_filter_prefs_title">Statuses shown in filter bar</string>
+    <string name="orders_filter_prefs_cancel">Cancel</string>
+    <string name="orders_filter_prefs_confirm">Apply</string>
 
     <!-- Filtres stock produits -->
     <string name="products_filter_all">All</string>

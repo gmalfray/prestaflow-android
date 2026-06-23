@@ -270,7 +270,7 @@ fun OrderDetailContent(
                 }
                 Spacer(modifier = Modifier.height(Dimensions.spacingM))
                 Text(
-                    text = formatTimestamp(order.updatedAtIso, dateFormatter) ?: order.updatedAtIso,
+                    text = formatTimestamp(order.createdAtIso, dateFormatter) ?: order.createdAtIso,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

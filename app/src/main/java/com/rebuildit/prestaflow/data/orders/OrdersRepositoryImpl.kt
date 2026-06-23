@@ -59,6 +59,10 @@ class OrdersRepositoryImpl
                 val result = runCatching { api.getOrders(filters) }
                 result.fold(
                     onSuccess = { payload ->
+                        // Vider la table avant l'upsert pour que la liste Room reflète
+                        // exactement le résultat de l'API (filtré ou non) — sans quoi les
+                        // commandes d'autres statuts restent visibles après un changement de filtre.
+                        orderDao.clear()
                         val entities = payload.orders.map { it.toEntity() }
                         orderDao.upsertOrders(entities)
                     },
