@@ -1,8 +1,5 @@
 package com.rebuildit.prestaflow.ui.carts
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,11 +13,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -33,14 +31,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
+import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.carts.model.CartSummary
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.SectionHeader
+import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -48,15 +49,21 @@ import java.time.format.FormatStyle
 @Composable
 fun CartsRoute(
     onCartClick: (Int) -> Unit = {},
+    onAddShop: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: CartsViewModel = hiltViewModel(),
+    shopsViewModel: ShopsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     CartsScreen(
         modifier = modifier,
         state = state,
+        connections = connections,
         onRefresh = viewModel::onRefresh,
         onCartClick = onCartClick,
+        onSwitchShop = shopsViewModel::switchShop,
+        onAddShop = onAddShop,
     )
 }
 
@@ -66,6 +73,9 @@ fun CartsScreen(
     onRefresh: () -> Unit,
     onCartClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    connections: List<ShopConnection> = emptyList(),
+    onSwitchShop: (String) -> Unit = {},
+    onAddShop: () -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
 
@@ -84,12 +94,16 @@ fun CartsScreen(
                 carts = state.carts,
                 isRefreshing = state.isRefreshing,
                 errorMessage = errorMessage,
+                connections = connections,
                 onRefresh = onRefresh,
                 onCartClick = onCartClick,
+                onSwitchShop = onSwitchShop,
+                onAddShop = onAddShop,
             )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList")
 @Composable
 private fun CartsList(
@@ -97,66 +111,78 @@ private fun CartsList(
     carts: List<CartSummary>,
     isRefreshing: Boolean,
     errorMessage: String?,
+    connections: List<ShopConnection>,
     onRefresh: () -> Unit,
     onCartClick: (Int) -> Unit,
+    onSwitchShop: (String) -> Unit,
+    onAddShop: () -> Unit,
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            AnimatedVisibility(visible = isRefreshing, enter = fadeIn(), exit = fadeOut()) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainer,
-                )
-            }
-
-            if (errorMessage != null) {
-                ErrorRow(message = errorMessage, onRefresh = onRefresh)
-            }
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        horizontal = Dimensions.screenEdgeMargin,
-                        vertical = Dimensions.spacingL,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
-            ) {
-                item {
-                    SectionHeader(
-                        title = stringResource(R.string.carts_list_abandoned),
-                    )
+        PullToRefreshBox(
+            modifier = Modifier.fillMaxSize(),
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (errorMessage != null) {
+                    ErrorRow(message = errorMessage, onRefresh = onRefresh)
                 }
 
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    ) {
-                        Column {
-                            carts.forEachIndexed { index, cart ->
-                                CartRow(cart = cart, onClick = { onCartClick(cart.id) })
-                                if (index < carts.lastIndex) {
-                                    HorizontalDivider(
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
-                                        thickness = 1.dp,
-                                    )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding =
+                        PaddingValues(
+                            horizontal = Dimensions.screenEdgeMargin,
+                            vertical = Dimensions.spacingL,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+                ) {
+                    // Sélecteur de boutique
+                    if (connections.isNotEmpty()) {
+                        item {
+                            ShopSwitcherChip(
+                                connections = connections,
+                                onSwitch = onSwitchShop,
+                                onAddShop = onAddShop,
+                            )
+                        }
+                    }
+
+                    item {
+                        SectionHeader(
+                            title = stringResource(R.string.carts_list_abandoned),
+                        )
+                    }
+
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        ) {
+                            Column {
+                                carts.forEachIndexed { index, cart ->
+                                    CartRow(cart = cart, onClick = { onCartClick(cart.id) })
+                                    if (index < carts.lastIndex) {
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.surfaceContainer,
+                                            thickness = 1.dp,
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
+        } // fin PullToRefreshBox
     }
 }
 

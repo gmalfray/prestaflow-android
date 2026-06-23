@@ -184,6 +184,11 @@
     <string name="settings_logout_confirm">Log out</string>
     <string name="settings_logout_cancel">Cancel</string>
 
+    <!-- Shop switcher -->
+    <string name="shop_switcher_content_description">Active shop, tap to switch</string>
+    <string name="shop_switcher_sheet_title">Switch shop</string>
+    <string name="shop_switcher_add">+ Add a shop</string>
+
     <!-- Carts screen -->
     <string name="carts_list_empty">No carts found.</string>
     <string name="carts_list_abandoned">Abandoned carts</string>

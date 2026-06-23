@@ -9,7 +9,7 @@
     <string name="label_environment">Environnement</string>
     <string name="label_last_sync">Dernière synchronisation : %1$s</string>
     <string name="content_description_app_logo">Logo PrestaFlow</string>
-    <string name="destination_dashboard">Tableau de bord</string>
+    <string name="destination_dashboard">Accueil</string>
     <string name="destination_orders">Commandes</string>
     <string name="destination_products">Produits</string>
     <string name="destination_clients">Clients</string>
@@ -172,6 +172,11 @@
     <string name="settings_shops_remove">Supprimer la boutique</string>
     <string name="shops_add_label_optional">Nom (optionnel)</string>
     <string name="shops_add_error_required">L\'URL de la boutique et la clé API sont requises.</string>
+    <!-- Sélecteur de boutique -->
+    <string name="shop_switcher_content_description">Boutique active, appuyer pour changer</string>
+    <string name="shop_switcher_sheet_title">Changer de boutique</string>
+    <string name="shop_switcher_add">+ Ajouter une boutique</string>
+
     <string name="settings_about_label">À propos</string>
     <string name="settings_about_app">Application</string>
     <string name="settings_about_version">Version</string>

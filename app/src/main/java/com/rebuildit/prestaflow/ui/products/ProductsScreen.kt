@@ -1,8 +1,5 @@
 package com.rebuildit.prestaflow.ui.products
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,12 +19,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -48,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
+import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.ui.components.EmptyState
@@ -55,6 +54,8 @@ import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.components.SectionHeader
+import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
+import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
@@ -65,16 +66,22 @@ private const val LOW_STOCK_THRESHOLD = 5
 @Composable
 fun ProductsRoute(
     onProductClick: (Long) -> Unit = {},
+    onAddShop: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProductsViewModel = hiltViewModel(),
+    shopsViewModel: ShopsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     ProductsScreen(
         modifier = modifier,
         state = state,
+        connections = connections,
         onRefresh = viewModel::onRefresh,
         onProductClick = onProductClick,
         onQueryChange = viewModel::onQueryChange,
+        onSwitchShop = shopsViewModel::switchShop,
+        onAddShop = onAddShop,
     )
 }
 
@@ -84,7 +91,10 @@ fun ProductsScreen(
     onRefresh: () -> Unit,
     onProductClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    connections: List<ShopConnection> = emptyList(),
     onQueryChange: (String) -> Unit = {},
+    onSwitchShop: (String) -> Unit = {},
+    onAddShop: () -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
 
@@ -107,12 +117,16 @@ fun ProductsScreen(
                 onQueryChange = onQueryChange,
                 isRefreshing = state.isRefreshing,
                 errorMessage = errorMessage,
+                connections = connections,
                 onRefresh = onRefresh,
                 onProductClick = onProductClick,
+                onSwitchShop = onSwitchShop,
+                onAddShop = onAddShop,
             )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList")
 @Composable
 private fun ProductList(
@@ -124,8 +138,11 @@ private fun ProductList(
     onQueryChange: (String) -> Unit,
     isRefreshing: Boolean,
     errorMessage: String?,
+    connections: List<ShopConnection>,
     onRefresh: () -> Unit,
     onProductClick: (Long) -> Unit,
+    onSwitchShop: (String) -> Unit,
+    onAddShop: () -> Unit,
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
 
@@ -133,86 +150,96 @@ private fun ProductList(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            AnimatedVisibility(visible = isRefreshing, enter = fadeIn(), exit = fadeOut()) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainer,
-                )
-            }
-            if (errorMessage != null) {
-                ErrorRow(message = errorMessage, onRefresh = onRefresh)
-            }
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        horizontal = Dimensions.screenEdgeMargin,
-                        vertical = Dimensions.spacingL,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
-            ) {
-                // KPI stats : total produits + stock faible
-                item {
-                    ProductsStatsRow(
-                        totalCount = totalCount,
-                        lowStockCount = lowStockCount,
-                    )
+        PullToRefreshBox(
+            modifier = Modifier.fillMaxSize(),
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (errorMessage != null) {
+                    ErrorRow(message = errorMessage, onRefresh = onRefresh)
                 }
 
-                item { Spacer(modifier = Modifier.height(Dimensions.spacingXs)) }
-
-                // En-tête de section
-                item {
-                    SectionHeader(
-                        title = stringResource(R.string.products_list_section_title),
-                    )
-                }
-
-                // Champ de recherche
-                item {
-                    SearchField(
-                        query = query,
-                        onQueryChange = onQueryChange,
-                        placeholder = stringResource(R.string.products_search_placeholder),
-                    )
-                }
-
-                if (products.isEmpty()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding =
+                        PaddingValues(
+                            horizontal = Dimensions.screenEdgeMargin,
+                            vertical = Dimensions.spacingL,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+                ) {
+                    // KPI stats : total produits + stock faible
                     item {
-                        Text(
-                            text = stringResource(R.string.list_no_results, query),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = Dimensions.spacingM),
+                        ProductsStatsRow(
+                            totalCount = totalCount,
+                            lowStockCount = lowStockCount,
                         )
                     }
-                } else {
-                    // Carte conteneur avec toutes les lignes produit
+
+                    item { Spacer(modifier = Modifier.height(Dimensions.spacingXs)) }
+
+                    // Sélecteur de boutique
+                    if (connections.isNotEmpty()) {
+                        item {
+                            ShopSwitcherChip(
+                                connections = connections,
+                                onSwitch = onSwitchShop,
+                                onAddShop = onAddShop,
+                            )
+                        }
+                    }
+
+                    // En-tête de section
                     item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                            colors =
-                                CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                                ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        ) {
-                            Column {
-                                products.forEachIndexed { index, product ->
-                                    ProductRow(
-                                        product = product,
-                                        currencyFormatter = currencyFormatter,
-                                        onClick = { onProductClick(product.id) },
-                                    )
-                                    if (index < products.lastIndex) {
-                                        HorizontalDivider(
-                                            color = MaterialTheme.colorScheme.surfaceContainer,
-                                            thickness = 1.dp,
+                        SectionHeader(
+                            title = stringResource(R.string.products_list_section_title),
+                        )
+                    }
+
+                    // Champ de recherche
+                    item {
+                        SearchField(
+                            query = query,
+                            onQueryChange = onQueryChange,
+                            placeholder = stringResource(R.string.products_search_placeholder),
+                        )
+                    }
+
+                    if (products.isEmpty()) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.list_no_results, query),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = Dimensions.spacingM),
+                            )
+                        }
+                    } else {
+                        // Carte conteneur avec toutes les lignes produit
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                    ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            ) {
+                                Column {
+                                    products.forEachIndexed { index, product ->
+                                        ProductRow(
+                                            product = product,
+                                            currencyFormatter = currencyFormatter,
+                                            onClick = { onProductClick(product.id) },
                                         )
+                                        if (index < products.lastIndex) {
+                                            HorizontalDivider(
+                                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                                thickness = 1.dp,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -220,7 +247,7 @@ private fun ProductList(
                     }
                 }
             }
-        }
+        } // fin PullToRefreshBox
     }
 }
 

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
@@ -11,6 +12,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -24,6 +27,7 @@ class DashboardViewModel
     constructor(
         private val dashboardRepository: DashboardRepository,
         private val networkErrorMapper: NetworkErrorMapper,
+        private val authRepository: AuthRepository,
     ) : ViewModel() {
         private val selectedPeriodFlow = MutableStateFlow(DashboardPeriod.WEEK)
         private val _uiState = MutableStateFlow(DashboardUiState())
@@ -32,6 +36,7 @@ class DashboardViewModel
         init {
             observeDashboard()
             refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = false)
+            observeActiveShopSwitch()
         }
 
         fun onPeriodSelected(period: DashboardPeriod) {
@@ -50,6 +55,22 @@ class DashboardViewModel
 
         fun onRefresh() {
             refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = true)
+        }
+
+        private fun observeActiveShopSwitch() {
+            viewModelScope.launch {
+                authRepository.connections
+                    .map { list -> list.firstOrNull { it.isActive }?.id }
+                    .distinctUntilChanged()
+                    .drop(1) // ignore la valeur initiale déjà traitée dans init
+                    .collect {
+                        // Réinitialise l'état et recharge les données pour la nouvelle boutique.
+                        _uiState.update { current ->
+                            current.copy(snapshot = null, isLoading = true, error = null)
+                        }
+                        refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = true)
+                    }
+            }
         }
 
         private fun observeDashboard() {

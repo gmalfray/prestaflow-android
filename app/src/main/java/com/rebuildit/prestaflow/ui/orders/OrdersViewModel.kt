@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -21,6 +25,7 @@ class OrdersViewModel
     constructor(
         private val ordersRepository: OrdersRepository,
         private val networkErrorMapper: NetworkErrorMapper,
+        private val authRepository: AuthRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(OrdersUiState())
         val uiState: StateFlow<OrdersUiState> = _uiState.asStateFlow()
@@ -28,6 +33,7 @@ class OrdersViewModel
         init {
             observeOrders()
             refresh(forceRemote = true, notifyOnError = false)
+            observeActiveShopSwitch()
         }
 
         fun onRefresh() {
@@ -104,6 +110,27 @@ class OrdersViewModel
         }
 
         // ─── Rafraîchissement ────────────────────────────────────────────────────
+
+        private fun observeActiveShopSwitch() {
+            viewModelScope.launch {
+                authRepository.connections
+                    .map { list -> list.firstOrNull { it.isActive }?.id }
+                    .distinctUntilChanged()
+                    .drop(1)
+                    .collect {
+                        _uiState.update { current ->
+                            current.copy(
+                                orders = emptyList(),
+                                isLoading = true,
+                                error = null,
+                                selectionMode = false,
+                                selectedOrderIds = emptySet(),
+                            )
+                        }
+                        refresh(forceRemote = true, notifyOnError = true)
+                    }
+            }
+        }
 
         private fun observeOrders() {
             viewModelScope.launch {
