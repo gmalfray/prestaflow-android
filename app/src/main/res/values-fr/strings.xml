@@ -77,6 +77,28 @@
     <string name="skin_selector_title">Apparence de l’application</string>
     <string name="skin_selector_subtitle">Choisissez un jeu de couleurs et la préférence de mode sombre</string>
     <string name="auth_loading">Vérification de vos identifiants…</string>
+    <string name="auth_error_module_not_installed">Le module Rebuild Connector n\'est pas installé sur cette boutique.</string>
+    <string name="auth_action_see_install_guide">Voir le guide d\'installation</string>
+
+    <!-- Écran d'onboarding (premier lancement, aucune connexion configurée) -->
+    <string name="onboarding_title">Bienvenue dans PrestaFlow</string>
+    <string name="onboarding_subtitle">Pour commencer, vous devez installer le module Rebuild Connector dans le back-office de votre boutique PrestaShop.</string>
+    <string name="onboarding_action_has_module">J\'ai déjà installé le module</string>
+    <string name="onboarding_action_no_module">Je n\'ai pas encore le module</string>
+
+    <!-- Écran guide d'installation du module -->
+    <string name="module_guide_title">Installation du module</string>
+    <string name="module_guide_intro">L\'installation se fait sur votre ordinateur, directement dans le back-office de votre boutique PrestaShop. Suivez ces 3 étapes :</string>
+    <string name="module_guide_step1_title">Télécharger le module</string>
+    <string name="module_guide_step1_desc">Sur votre ordinateur, ouvrez la page des releases (lien ci-dessous) et téléchargez le fichier rebuildconnector.zip (dernière version).</string>
+    <string name="module_guide_step2_title">Installer via le back-office</string>
+    <string name="module_guide_step2_desc">Dans votre back-office PrestaShop → Modules → Installer un module → envoyez le fichier zip et activez-le.</string>
+    <string name="module_guide_step3_title">Revenir et se connecter</string>
+    <string name="module_guide_step3_desc">Revenez dans l\'app et scannez le QR code affiché par le module (ou saisissez l\'URL et la clé manuellement).</string>
+    <string name="module_guide_action_share">Partager le lien de téléchargement</string>
+    <string name="module_guide_action_open">Ouvrir dans le navigateur</string>
+    <string name="module_guide_action_go_connect">Module installé → Scanner le QR code</string>
+    <string name="module_guide_share_chooser">Partager via…</string>
     <string name="orders_list_empty">Aucune commande pour le moment.</string>
     <string name="orders_status_unknown">Statut indisponible</string>
     <string name="orders_last_updated">Mise à jour le %1$s</string>

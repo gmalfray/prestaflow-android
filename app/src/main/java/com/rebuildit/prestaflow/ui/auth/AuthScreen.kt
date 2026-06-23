@@ -48,6 +48,7 @@ import com.rebuildit.prestaflow.core.ui.UiText
 @Composable
 fun AuthRoute(
     modifier: Modifier = Modifier,
+    onShowInstallGuide: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -78,6 +79,7 @@ fun AuthRoute(
                     .setBarcodeImageEnabled(false)
             scanLauncher.launch(options)
         },
+        onShowInstallGuide = onShowInstallGuide,
     )
 }
 
@@ -91,6 +93,7 @@ fun AuthScreen(
     onApiKeyChanged: (String) -> Unit,
     onSubmit: () -> Unit,
     onScanQr: () -> Unit,
+    onShowInstallGuide: () -> Unit = {},
 ) {
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
@@ -185,6 +188,18 @@ fun AuthScreen(
                 val formError = state.formError
                 if (formError != null) {
                     ErrorText(formError)
+                }
+
+                if (state.showModuleNotInstalledGuide) {
+                    TextButton(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        onClick = onShowInstallGuide,
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.auth_action_see_install_guide),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
 
                 Button(

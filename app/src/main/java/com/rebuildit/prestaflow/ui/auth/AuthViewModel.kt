@@ -30,11 +30,13 @@ class AuthViewModel
         val uiState: StateFlow<AuthUiState> = _uiState
 
         fun onShopUrlChanged(value: String) {
-            _uiState.update { it.copy(shopUrl = value, shopUrlError = null, formError = null) }
+            _uiState.update {
+                it.copy(shopUrl = value, shopUrlError = null, formError = null, showModuleNotInstalledGuide = false)
+            }
         }
 
         fun onApiKeyChanged(value: String) {
-            _uiState.update { it.copy(apiKey = value, formError = null) }
+            _uiState.update { it.copy(apiKey = value, formError = null, showModuleNotInstalledGuide = false) }
         }
 
         fun onQrScanned(rawValue: String) {
@@ -117,9 +119,14 @@ class AuthViewModel
                             ShopUrlValidator.Result.Invalid.Malformed -> UiText.FromResources(R.string.auth_error_shop_url_malformed)
                             ShopUrlValidator.Result.Invalid.NonHttps -> UiText.FromResources(R.string.auth_error_shop_url_https)
                         }
+                    AuthFailure.ModuleNotInstalled ->
+                        UiText.FromResources(R.string.auth_error_module_not_installed)
+                    is AuthFailure.HostUnreachable -> failure.message
                     is AuthFailure.Network -> failure.message
                     is AuthFailure.Unknown -> failure.message
                 }
+
+            val showGuideAction = failure is AuthFailure.ModuleNotInstalled
 
             _uiState.update {
                 val shopUrlError = if (failure is AuthFailure.InvalidShopUrl) message else null
@@ -127,6 +134,7 @@ class AuthViewModel
                     isLoading = false,
                     formError = if (shopUrlError == null) message else null,
                     shopUrlError = shopUrlError,
+                    showModuleNotInstalledGuide = showGuideAction,
                 )
             }
         }
@@ -162,6 +170,11 @@ data class AuthUiState(
     val isLoading: Boolean = false,
     val formError: UiText? = null,
     val shopUrlError: UiText? = null,
+    /**
+     * Vrai quand la connexion a échoué avec un 404, indiquant que le module n'est pas installé.
+     * L'écran affiche alors une action secondaire vers le guide d'installation.
+     */
+    val showModuleNotInstalledGuide: Boolean = false,
 ) {
     val isSubmitEnabled: Boolean
         get() = shopUrl.isNotBlank() && apiKey.isNotBlank() && !isLoading

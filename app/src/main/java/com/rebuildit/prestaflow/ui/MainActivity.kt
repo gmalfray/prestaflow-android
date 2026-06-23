@@ -34,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +56,8 @@ import com.rebuildit.prestaflow.domain.auth.AuthState
 import com.rebuildit.prestaflow.navigation.AppDestination
 import com.rebuildit.prestaflow.navigation.PrestaFlowNavGraph
 import com.rebuildit.prestaflow.ui.auth.AuthRoute
+import com.rebuildit.prestaflow.ui.onboarding.ModuleInstallGuideRoute
+import com.rebuildit.prestaflow.ui.onboarding.OnboardingRoute
 import com.rebuildit.prestaflow.ui.root.RootViewModel
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import com.rebuildit.prestaflow.ui.theme.ThemeViewModel
@@ -112,10 +115,45 @@ private fun PrestaFlowApp(windowSizeClass: WindowSizeClass) {
                     windowSizeClass = windowSizeClass,
                     onLogout = rootViewModel::logout,
                 )
-            AuthState.Unauthenticated -> AuthRoute()
+            AuthState.Unauthenticated -> UnauthenticatedFlow()
         }
     }
 }
+
+/**
+ * Flux de navigation pour les utilisateurs non authentifiés.
+ *
+ * Gère l'enchaînement :
+ *   OnboardingScreen → [AuthRoute | ModuleInstallGuideScreen]
+ *
+ * L'état de navigation est conservé via [rememberSaveable] pour survivre aux changements
+ * de configuration, mais reste local à ce composable (pas besoin de NavController complet
+ * pour 3 destinations).
+ */
+@Composable
+private fun UnauthenticatedFlow() {
+    // Destinations locales au flux non-authentifié
+    var destination by rememberSaveable { mutableStateOf(UnauthDest.ONBOARDING) }
+
+    when (destination) {
+        UnauthDest.ONBOARDING ->
+            OnboardingRoute(
+                onHasModule = { destination = UnauthDest.CONNECT },
+                onNoModule = { destination = UnauthDest.INSTALL_GUIDE },
+            )
+        UnauthDest.CONNECT ->
+            AuthRoute(
+                onShowInstallGuide = { destination = UnauthDest.INSTALL_GUIDE },
+            )
+        UnauthDest.INSTALL_GUIDE ->
+            ModuleInstallGuideRoute(
+                onBack = { destination = UnauthDest.ONBOARDING },
+                onGoToConnect = { destination = UnauthDest.CONNECT },
+            )
+    }
+}
+
+private enum class UnauthDest { ONBOARDING, CONNECT, INSTALL_GUIDE }
 
 @Composable
 private fun LoadingScreen() {

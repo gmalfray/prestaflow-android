@@ -231,7 +231,8 @@ class AuthRepositoryImpl
             return when (error) {
                 is IOException -> {
                     Timber.e(error, "Login échec réseau (shopUrl=%s)", normalizedUrl)
-                    AuthFailure.Network(message)
+                    // Toute IOException (DNS, timeout, refus de connexion…) = hôte injoignable.
+                    AuthFailure.HostUnreachable(message)
                 }
                 is HttpException -> {
                     val body =
@@ -244,7 +245,12 @@ class AuthRepositoryImpl
                         normalizedUrl,
                         body ?: "<empty>",
                     )
-                    AuthFailure.Network(message)
+                    // HTTP 404 sur l'endpoint du connecteur = module absent.
+                    if (error.code() == HTTP_NOT_FOUND) {
+                        AuthFailure.ModuleNotInstalled
+                    } else {
+                        AuthFailure.Network(message)
+                    }
                 }
                 else -> {
                     Timber.e(error, "Login échec inattendu (shopUrl=%s)", normalizedUrl)
@@ -299,5 +305,6 @@ class AuthRepositoryImpl
         private companion object {
             const val MAX_ERROR_BODY_LENGTH = 1024
             const val MILLIS_PER_SECOND = 1000L
+            const val HTTP_NOT_FOUND = 404
         }
     }
