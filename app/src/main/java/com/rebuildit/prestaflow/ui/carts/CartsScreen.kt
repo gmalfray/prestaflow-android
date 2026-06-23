@@ -1,8 +1,5 @@
 package com.rebuildit.prestaflow.ui.carts
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,11 +13,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -105,6 +103,7 @@ fun CartsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList")
 @Composable
 private fun CartsList(
@@ -122,70 +121,68 @@ private fun CartsList(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            AnimatedVisibility(visible = isRefreshing, enter = fadeIn(), exit = fadeOut()) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainer,
-                )
-            }
+        PullToRefreshBox(
+            modifier = Modifier.fillMaxSize(),
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (errorMessage != null) {
+                    ErrorRow(message = errorMessage, onRefresh = onRefresh)
+                }
 
-            if (errorMessage != null) {
-                ErrorRow(message = errorMessage, onRefresh = onRefresh)
-            }
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding =
+                        PaddingValues(
+                            horizontal = Dimensions.screenEdgeMargin,
+                            vertical = Dimensions.spacingL,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+                ) {
+                    // Sélecteur de boutique
+                    if (connections.isNotEmpty()) {
+                        item {
+                            ShopSwitcherChip(
+                                connections = connections,
+                                onSwitch = onSwitchShop,
+                                onAddShop = onAddShop,
+                            )
+                        }
+                    }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        horizontal = Dimensions.screenEdgeMargin,
-                        vertical = Dimensions.spacingL,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
-            ) {
-                // Sélecteur de boutique
-                if (connections.isNotEmpty()) {
                     item {
-                        ShopSwitcherChip(
-                            connections = connections,
-                            onSwitch = onSwitchShop,
-                            onAddShop = onAddShop,
+                        SectionHeader(
+                            title = stringResource(R.string.carts_list_abandoned),
                         )
                     }
-                }
 
-                item {
-                    SectionHeader(
-                        title = stringResource(R.string.carts_list_abandoned),
-                    )
-                }
-
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    ) {
-                        Column {
-                            carts.forEachIndexed { index, cart ->
-                                CartRow(cart = cart, onClick = { onCartClick(cart.id) })
-                                if (index < carts.lastIndex) {
-                                    HorizontalDivider(
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
-                                        thickness = 1.dp,
-                                    )
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        ) {
+                            Column {
+                                carts.forEachIndexed { index, cart ->
+                                    CartRow(cart = cart, onClick = { onCartClick(cart.id) })
+                                    if (index < carts.lastIndex) {
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.surfaceContainer,
+                                            thickness = 1.dp,
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
+        } // fin PullToRefreshBox
     }
 }
 

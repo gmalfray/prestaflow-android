@@ -25,16 +25,17 @@ import androidx.compose.material.icons.outlined.Print
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -176,6 +177,7 @@ fun OrdersScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun OrdersList(
@@ -204,117 +206,114 @@ private fun OrdersList(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Barre d'action sélection multiple
-            AnimatedVisibility(visible = selectionMode, enter = fadeIn(), exit = fadeOut()) {
-                SelectionActionBar(
-                    selectedCount = selectedOrderIds.size,
-                    isPrintingInProgress = isPrintingInProgress,
-                    onCancel = onCancelSelection,
-                    onPrint = onPrintSelected,
-                )
-            }
+        PullToRefreshBox(
+            modifier = Modifier.fillMaxSize(),
+            isRefreshing = isRefreshing && !selectionMode,
+            onRefresh = { if (!selectionMode) onRefresh() },
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Barre d'action sélection multiple
+                AnimatedVisibility(visible = selectionMode, enter = fadeIn(), exit = fadeOut()) {
+                    SelectionActionBar(
+                        selectedCount = selectedOrderIds.size,
+                        isPrintingInProgress = isPrintingInProgress,
+                        onCancel = onCancelSelection,
+                        onPrint = onPrintSelected,
+                    )
+                }
 
-            // Indicateur de rafraîchissement
-            AnimatedVisibility(visible = isRefreshing, enter = fadeIn(), exit = fadeOut()) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainer,
-                )
-            }
+                // Bandeau erreur
+                if (errorMessage != null) {
+                    ErrorRow(message = errorMessage, onRefresh = onRefresh)
+                }
 
-            // Bandeau erreur
-            if (errorMessage != null) {
-                ErrorRow(message = errorMessage, onRefresh = onRefresh)
-            }
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding =
+                        PaddingValues(
+                            horizontal = Dimensions.screenEdgeMargin,
+                            vertical = Dimensions.spacingL,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+                ) {
+                    // En-tête : nombre de commandes + sélecteur boutique
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.orders_list_section_title),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Text(
+                                    text = stringResource(R.string.orders_list_count, totalCount),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            if (connections.isNotEmpty()) {
+                                ShopSwitcherChip(
+                                    connections = connections,
+                                    onSwitch = onSwitchShop,
+                                    onAddShop = onAddShop,
+                                )
+                            }
+                        }
+                    }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        horizontal = Dimensions.screenEdgeMargin,
-                        vertical = Dimensions.spacingL,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
-            ) {
-                // En-tête : nombre de commandes + sélecteur boutique
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.orders_list_section_title),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
+                    // Champ de recherche (masqué en mode sélection pour simplifier l'UX)
+                    if (!selectionMode) {
+                        item {
+                            SearchField(
+                                query = query,
+                                onQueryChange = onQueryChange,
+                                placeholder = stringResource(R.string.orders_search_placeholder),
                             )
+                        }
+                    }
+
+                    if (orders.isEmpty()) {
+                        // Recherche sans résultat
+                        item {
                             Text(
-                                text = stringResource(R.string.orders_list_count, totalCount),
-                                style = MaterialTheme.typography.labelLarge,
+                                text = stringResource(R.string.list_no_results, query),
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = Dimensions.spacingM),
                             )
                         }
-                        if (connections.isNotEmpty()) {
-                            ShopSwitcherChip(
-                                connections = connections,
-                                onSwitch = onSwitchShop,
-                                onAddShop = onAddShop,
-                            )
-                        }
-                    }
-                }
-
-                // Champ de recherche (masqué en mode sélection pour simplifier l'UX)
-                if (!selectionMode) {
-                    item {
-                        SearchField(
-                            query = query,
-                            onQueryChange = onQueryChange,
-                            placeholder = stringResource(R.string.orders_search_placeholder),
-                        )
-                    }
-                }
-
-                if (orders.isEmpty()) {
-                    // Recherche sans résultat
-                    item {
-                        Text(
-                            text = stringResource(R.string.list_no_results, query),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = Dimensions.spacingM),
-                        )
-                    }
-                } else {
-                    // Carte conteneur groupée
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                            colors =
-                                CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                                ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        ) {
-                            Column {
-                                orders.forEachIndexed { index, order ->
-                                    OrderRow(
-                                        order = order,
-                                        dateFormatter = dateFormatter,
-                                        selectionMode = selectionMode,
-                                        isSelected = order.id in selectedOrderIds,
-                                        onClick = { onOrderClick(order.id) },
-                                        onLongPress = { onOrderLongPress(order.id) },
-                                    )
-                                    if (index < orders.lastIndex) {
-                                        HorizontalDivider(
-                                            color = MaterialTheme.colorScheme.surfaceContainer,
-                                            thickness = 1.dp,
+                    } else {
+                        // Carte conteneur groupée
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                    ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            ) {
+                                Column {
+                                    orders.forEachIndexed { index, order ->
+                                        OrderRow(
+                                            order = order,
+                                            dateFormatter = dateFormatter,
+                                            selectionMode = selectionMode,
+                                            isSelected = order.id in selectedOrderIds,
+                                            onClick = { onOrderClick(order.id) },
+                                            onLongPress = { onOrderLongPress(order.id) },
                                         )
+                                        if (index < orders.lastIndex) {
+                                            HorizontalDivider(
+                                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                                thickness = 1.dp,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -322,7 +321,7 @@ private fun OrdersList(
                     }
                 }
             }
-        }
+        } // fin PullToRefreshBox
     }
 }
 

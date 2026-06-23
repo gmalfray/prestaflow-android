@@ -1,8 +1,5 @@
 package com.rebuildit.prestaflow.ui.clients
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,11 +14,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -117,6 +115,7 @@ fun ClientsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList")
 @Composable
 private fun ClientList(
@@ -141,106 +140,105 @@ private fun ClientList(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            AnimatedVisibility(visible = isRefreshing, enter = fadeIn(), exit = fadeOut()) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainer,
-                )
-            }
-            if (errorMessage != null) {
-                ErrorRow(message = errorMessage, onRefresh = onRefresh)
-            }
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        horizontal = Dimensions.screenEdgeMargin,
-                        vertical = Dimensions.spacingL,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
-            ) {
-                // KPI stats : total clients + commandes ce mois
-                item {
-                    ClientsStatsRow(
-                        totalClients = totalClients,
-                        totalOrders = totalOrders,
-                    )
+        PullToRefreshBox(
+            modifier = Modifier.fillMaxSize(),
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (errorMessage != null) {
+                    ErrorRow(message = errorMessage, onRefresh = onRefresh)
                 }
 
-                item { Spacer(modifier = Modifier.height(Dimensions.spacingXs)) }
-
-                // Sélecteur de boutique
-                if (connections.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding =
+                        PaddingValues(
+                            horizontal = Dimensions.screenEdgeMargin,
+                            vertical = Dimensions.spacingL,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+                ) {
+                    // KPI stats : total clients + commandes ce mois
                     item {
-                        ShopSwitcherChip(
-                            connections = connections,
-                            onSwitch = onSwitchShop,
-                            onAddShop = onAddShop,
+                        ClientsStatsRow(
+                            totalClients = totalClients,
+                            totalOrders = totalOrders,
                         )
                     }
-                }
 
-                // En-tête section
-                item {
-                    SectionHeader(
-                        title = stringResource(R.string.clients_list_section_title),
-                    )
-                }
+                    item { Spacer(modifier = Modifier.height(Dimensions.spacingXs)) }
 
-                // Champ de recherche
-                item {
-                    SearchField(
-                        query = query,
-                        onQueryChange = onQueryChange,
-                        placeholder = stringResource(R.string.clients_search_placeholder),
-                    )
-                }
+                    // Sélecteur de boutique
+                    if (connections.isNotEmpty()) {
+                        item {
+                            ShopSwitcherChip(
+                                connections = connections,
+                                onSwitch = onSwitchShop,
+                                onAddShop = onAddShop,
+                            )
+                        }
+                    }
 
-                if (clients.isEmpty()) {
+                    // En-tête section
                     item {
-                        Text(
-                            text = stringResource(R.string.list_no_results, query),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = Dimensions.spacingM),
+                        SectionHeader(
+                            title = stringResource(R.string.clients_list_section_title),
                         )
                     }
-                } else {
-                    // Carte conteneur avec toutes les lignes clients
+
+                    // Champ de recherche
                     item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                            colors =
-                                CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                                ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        ) {
-                            Column {
-                                clients.forEachIndexed { index, client ->
-                                    ClientRow(
-                                        client = client,
-                                        currencyFormatter = currencyFormatter,
-                                        dateFormatter = dateFormatter,
-                                        onClick = { onClientClick(client.id) },
-                                    )
-                                    if (index < clients.lastIndex) {
-                                        HorizontalDivider(
-                                            color = MaterialTheme.colorScheme.surfaceContainer,
-                                            thickness = 1.dp,
+                        SearchField(
+                            query = query,
+                            onQueryChange = onQueryChange,
+                            placeholder = stringResource(R.string.clients_search_placeholder),
+                        )
+                    }
+
+                    if (clients.isEmpty()) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.list_no_results, query),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = Dimensions.spacingM),
+                            )
+                        }
+                    } else {
+                        // Carte conteneur avec toutes les lignes clients
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                    ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            ) {
+                                Column {
+                                    clients.forEachIndexed { index, client ->
+                                        ClientRow(
+                                            client = client,
+                                            currencyFormatter = currencyFormatter,
+                                            dateFormatter = dateFormatter,
+                                            onClick = { onClientClick(client.id) },
                                         )
+                                        if (index < clients.lastIndex) {
+                                            HorizontalDivider(
+                                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                                thickness = 1.dp,
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
-        }
+            } // fin Column
+        } // fin PullToRefreshBox
     }
 }
 

@@ -32,12 +32,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -182,6 +184,7 @@ private fun DashboardEmptyState(
 
 // ─── Contenu principal ────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun DashboardContent(
@@ -209,91 +212,97 @@ private fun DashboardContent(
     val avgCartText = remember(avgCart) { currencyFormatter.format(avgCart) }
     val lastUpdatedText = remember(snapshot.lastUpdatedIso) { formatLastUpdated(snapshot.lastUpdatedIso) }
 
-    LazyColumn(
+    PullToRefreshBox(
         modifier = modifier.background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(bottom = 100.dp),
-        verticalArrangement = Arrangement.spacedBy(0.dp),
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
     ) {
-        // En-tête collant intégré dans la liste pour éviter un ScaffoldTopBar
-        item {
-            DashboardHeader(
-                connections = connections,
-                isRefreshing = isRefreshing,
-                onRefresh = onRefresh,
-                selectedPeriod = selectedPeriod,
-                onPeriodSelected = onPeriodSelected,
-                onSwitchShop = onSwitchShop,
-                onAddShop = onAddShop,
-            )
-        }
-
-        // Bandeau erreur inline
-        if (errorMessage != null) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
+            // En-tête collant intégré dans la liste pour éviter un ScaffoldTopBar
             item {
-                ErrorBanner(
-                    message = errorMessage,
-                    onRetry = onRefresh,
-                    modifier = Modifier.padding(horizontal = Dimensions.screenEdgeMargin),
+                DashboardHeader(
+                    connections = connections,
+                    isRefreshing = isRefreshing,
+                    onRefresh = onRefresh,
+                    selectedPeriod = selectedPeriod,
+                    onPeriodSelected = onPeriodSelected,
+                    onSwitchShop = onSwitchShop,
+                    onAddShop = onAddShop,
                 )
             }
-        }
 
-        // Grille KPI 2x2
-        item {
-            DashboardKpiGrid(
-                modifier =
-                    Modifier
-                        .padding(horizontal = Dimensions.screenEdgeMargin)
-                        .padding(top = Dimensions.spacingL),
-                kpiItems =
-                    listOf(
-                        KpiItem(
-                            title = stringResource(id = R.string.dashboard_kpi_turnover),
-                            value = turnoverText,
-                            icon = Icons.Outlined.Payments,
-                        ),
-                        KpiItem(
-                            title = stringResource(id = R.string.dashboard_kpi_orders),
-                            value = ordersText,
-                            icon = Icons.Outlined.ShoppingBag,
-                        ),
-                        KpiItem(
-                            title = stringResource(id = R.string.dashboard_kpi_avg_cart),
-                            value = avgCartText,
-                            icon = Icons.Outlined.Analytics,
-                        ),
-                        KpiItem(
-                            title = stringResource(id = R.string.dashboard_kpi_customers),
-                            value = customersText,
-                            icon = Icons.Outlined.Group,
-                        ),
-                    ),
-            )
-        }
+            // Bandeau erreur inline
+            if (errorMessage != null) {
+                item {
+                    ErrorBanner(
+                        message = errorMessage,
+                        onRetry = onRefresh,
+                        modifier = Modifier.padding(horizontal = Dimensions.screenEdgeMargin),
+                    )
+                }
+            }
 
-        // Carte graphique CA
-        item {
-            DashboardChartCard(
-                modifier =
-                    Modifier
-                        .padding(horizontal = Dimensions.screenEdgeMargin)
-                        .padding(top = Dimensions.spacingL),
-                points = snapshot.chart,
-                totalText = turnoverText,
-            )
-        }
+            // Grille KPI 2x2
+            item {
+                DashboardKpiGrid(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = Dimensions.screenEdgeMargin)
+                            .padding(top = Dimensions.spacingL),
+                    kpiItems =
+                        listOf(
+                            KpiItem(
+                                title = stringResource(id = R.string.dashboard_kpi_turnover),
+                                value = turnoverText,
+                                icon = Icons.Outlined.Payments,
+                            ),
+                            KpiItem(
+                                title = stringResource(id = R.string.dashboard_kpi_orders),
+                                value = ordersText,
+                                icon = Icons.Outlined.ShoppingBag,
+                            ),
+                            KpiItem(
+                                title = stringResource(id = R.string.dashboard_kpi_avg_cart),
+                                value = avgCartText,
+                                icon = Icons.Outlined.Analytics,
+                            ),
+                            KpiItem(
+                                title = stringResource(id = R.string.dashboard_kpi_customers),
+                                value = customersText,
+                                icon = Icons.Outlined.Group,
+                            ),
+                        ),
+                )
+            }
 
-        // Dernière synchronisation
-        item {
-            Text(
-                modifier =
-                    Modifier
-                        .padding(horizontal = Dimensions.screenEdgeMargin)
-                        .padding(top = Dimensions.spacingS, bottom = Dimensions.spacingL),
-                text = stringResource(id = R.string.label_last_sync, lastUpdatedText),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // Carte graphique CA
+            item {
+                DashboardChartCard(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = Dimensions.screenEdgeMargin)
+                            .padding(top = Dimensions.spacingL),
+                    points = snapshot.chart,
+                    totalText = turnoverText,
+                )
+            }
+
+            // Dernière synchronisation
+            item {
+                Text(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = Dimensions.screenEdgeMargin)
+                            .padding(top = Dimensions.spacingS, bottom = Dimensions.spacingL),
+                    text = stringResource(id = R.string.label_last_sync, lastUpdatedText),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
