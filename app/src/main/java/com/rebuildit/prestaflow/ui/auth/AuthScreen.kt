@@ -77,6 +77,8 @@ fun AuthRoute(
                     .setPrompt(scanPrompt)
                     .setBeepEnabled(false)
                     .setBarcodeImageEnabled(false)
+                    .setOrientationLocked(false)
+                    .setCaptureActivity(PortraitCaptureActivity::class.java)
             scanLauncher.launch(options)
         },
         onShowInstallGuide = onShowInstallGuide,
