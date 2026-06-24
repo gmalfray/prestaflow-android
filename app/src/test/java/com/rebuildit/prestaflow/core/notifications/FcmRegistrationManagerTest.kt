@@ -28,7 +28,6 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class FcmRegistrationManagerTest {
-
     private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var fakeAuth: FakeAuthRepository
@@ -47,41 +46,43 @@ class FcmRegistrationManagerTest {
     // ─── Effet de markRegistrationStale ─────────────────────────────────────
 
     @Test
-    fun `markRegistrationStale rend isTokenSynced false`() = runTest(testDispatcher) {
-        // Token initialement synchronisé (état normal après un premier enregistrement réussi).
-        fakeNotifications.setSettings(
-            NotificationSettings(
-                notificationsEnabled = true,
-                deviceToken = "mon-token",
-                lastSyncedToken = "mon-token",
-            ),
-        )
-        // Avant markStale, le token est synchronisé.
-        // On appelle manuellement ce que initialize() déclenche.
-        fakeNotifications.markRegistrationStale()
-        advanceUntilIdle()
+    fun `markRegistrationStale rend isTokenSynced false`() =
+        runTest(testDispatcher) {
+            // Token initialement synchronisé (état normal après un premier enregistrement réussi).
+            fakeNotifications.setSettings(
+                NotificationSettings(
+                    notificationsEnabled = true,
+                    deviceToken = "mon-token",
+                    lastSyncedToken = "mon-token",
+                ),
+            )
+            // Avant markStale, le token est synchronisé.
+            // On appelle manuellement ce que initialize() déclenche.
+            fakeNotifications.markRegistrationStale()
+            advanceUntilIdle()
 
-        assertEquals("markStale doit avoir été appelé une fois", 1, fakeNotifications.markStaleCallCount)
-        // La simulation dans FakeNotificationsRepository efface lastSyncedToken.
-        // isTokenSynced = (deviceToken != null && deviceToken == lastSyncedToken)
-        // → après markStale : lastSyncedToken = null → isTokenSynced = false.
-        // syncRegistration sera déclenché par handleState à la prochaine émission du flux.
-    }
+            assertEquals("markStale doit avoir été appelé une fois", 1, fakeNotifications.markStaleCallCount)
+            // La simulation dans FakeNotificationsRepository efface lastSyncedToken.
+            // isTokenSynced = (deviceToken != null && deviceToken == lastSyncedToken)
+            // → après markStale : lastSyncedToken = null → isTokenSynced = false.
+            // syncRegistration sera déclenché par handleState à la prochaine émission du flux.
+        }
 
     @Test
-    fun `markRegistrationStale est idempotent si appele plusieurs fois`() = runTest(testDispatcher) {
-        fakeNotifications.setSettings(
-            NotificationSettings(deviceToken = "token", lastSyncedToken = "token"),
-        )
+    fun `markRegistrationStale est idempotent si appele plusieurs fois`() =
+        runTest(testDispatcher) {
+            fakeNotifications.setSettings(
+                NotificationSettings(deviceToken = "token", lastSyncedToken = "token"),
+            )
 
-        fakeNotifications.markRegistrationStale()
-        fakeNotifications.markRegistrationStale()
-        advanceUntilIdle()
+            fakeNotifications.markRegistrationStale()
+            fakeNotifications.markRegistrationStale()
+            advanceUntilIdle()
 
-        // Deux appels sont comptabilisés (le guard initialized dans FcmRegistrationManager
-        // garantit qu'en pratique on n'appelle markStale qu'une fois par process).
-        assertEquals(2, fakeNotifications.markStaleCallCount)
-    }
+            // Deux appels sont comptabilisés (le guard initialized dans FcmRegistrationManager
+            // garantit qu'en pratique on n'appelle markStale qu'une fois par process).
+            assertEquals(2, fakeNotifications.markStaleCallCount)
+        }
 
     // ─── Comportement après markStale : syncRegistration ────────────────────
 
@@ -127,22 +128,23 @@ class FcmRegistrationManagerTest {
     // ─── Rotation de token FCM (onNewToken) ─────────────────────────────────
 
     @Test
-    fun `nouveau token FCM met a jour le token synchronise`() = runTest(testDispatcher) {
-        fakeNotifications.setSettings(
-            NotificationSettings(
-                notificationsEnabled = true,
-                deviceToken = "ancien-token",
-                lastSyncedToken = "ancien-token",
-            ),
-        )
+    fun `nouveau token FCM met a jour le token synchronise`() =
+        runTest(testDispatcher) {
+            fakeNotifications.setSettings(
+                NotificationSettings(
+                    notificationsEnabled = true,
+                    deviceToken = "ancien-token",
+                    lastSyncedToken = "ancien-token",
+                ),
+            )
 
-        // Simule ce que fait FcmRegistrationManager.onNewToken.
-        fakeNotifications.syncRegistration("nouveau-token", null)
-        advanceUntilIdle()
+            // Simule ce que fait FcmRegistrationManager.onNewToken.
+            fakeNotifications.syncRegistration("nouveau-token", null)
+            advanceUntilIdle()
 
-        assertEquals(1, fakeNotifications.syncRegistrationCallCount)
-        assertEquals("nouveau-token", fakeNotifications.lastSyncedToken)
-    }
+            assertEquals(1, fakeNotifications.syncRegistrationCallCount)
+            assertEquals("nouveau-token", fakeNotifications.lastSyncedToken)
+        }
 
     // ─── Multi-boutiques : enregistrement sur toutes les boutiques ───────────
 

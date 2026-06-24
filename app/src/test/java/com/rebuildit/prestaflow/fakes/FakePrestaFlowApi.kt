@@ -27,7 +27,6 @@ import retrofit2.Response
  * explicitement un appel inattendu dans un test.
  */
 class FakePrestaFlowApi : PrestaFlowApi {
-
     /** Réponse renvoyée par [getOrders]. */
     var ordersResponse: OrderListDto = OrderListDto(orders = emptyList())
 
@@ -43,17 +42,19 @@ class FakePrestaFlowApi : PrestaFlowApi {
         return ordersResponse
     }
 
-    override suspend fun getOrderStatuses(): OrderStatusesResponseDto =
-        OrderStatusesResponseDto(statuses = emptyList())
+    override suspend fun getOrderStatuses(): OrderStatusesResponseDto = OrderStatusesResponseDto(statuses = emptyList())
 
-    override suspend fun getOrder(orderId: Long): OrderDetailResponseDto =
-        throw UnsupportedOperationException("Non utilisé dans ce test")
+    override suspend fun getOrder(orderId: Long): OrderDetailResponseDto = throw UnsupportedOperationException("Non utilisé dans ce test")
 
-    override suspend fun updateOrderStatus(orderId: Long, body: OrderStatusUpdateRequestDto) =
-        throw UnsupportedOperationException("Non utilisé dans ce test")
+    override suspend fun updateOrderStatus(
+        orderId: Long,
+        body: OrderStatusUpdateRequestDto,
+    ) = throw UnsupportedOperationException("Non utilisé dans ce test")
 
-    override suspend fun updateOrderShipping(orderId: Long, body: OrderShippingUpdateRequestDto) =
-        throw UnsupportedOperationException("Non utilisé dans ce test")
+    override suspend fun updateOrderShipping(
+        orderId: Long,
+        body: OrderShippingUpdateRequestDto,
+    ) = throw UnsupportedOperationException("Non utilisé dans ce test")
 
     override suspend fun getInvoicePdf(orderId: Long): Response<ResponseBody> =
         throw UnsupportedOperationException("Non utilisé dans ce test")
@@ -66,14 +67,15 @@ class FakePrestaFlowApi : PrestaFlowApi {
     override suspend fun getProduct(productId: Long): ProductDetailResponseDto =
         throw UnsupportedOperationException("Non utilisé dans ce test")
 
-    override suspend fun updateProductStock(productId: Long, body: StockUpdateRequestDto) =
-        throw UnsupportedOperationException("Non utilisé dans ce test")
+    override suspend fun updateProductStock(
+        productId: Long,
+        body: StockUpdateRequestDto,
+    ) = throw UnsupportedOperationException("Non utilisé dans ce test")
 
     override suspend fun getDashboardMetrics(period: String): DashboardMetricsDto =
         throw UnsupportedOperationException("Non utilisé dans ce test")
 
-    override suspend fun getCustomerStats(): CustomerStatsDto =
-        throw UnsupportedOperationException("Non utilisé dans ce test")
+    override suspend fun getCustomerStats(): CustomerStatsDto = throw UnsupportedOperationException("Non utilisé dans ce test")
 
     override suspend fun getTopCustomers(limit: Int): CustomerListResponseDto =
         throw UnsupportedOperationException("Non utilisé dans ce test")
@@ -84,15 +86,12 @@ class FakePrestaFlowApi : PrestaFlowApi {
     override suspend fun registerDevice(body: DeviceRegistrationRequestDto) =
         throw UnsupportedOperationException("Non utilisé dans ce test")
 
-    override suspend fun unregisterDevice(token: String) =
-        throw UnsupportedOperationException("Non utilisé dans ce test")
+    override suspend fun unregisterDevice(token: String) = throw UnsupportedOperationException("Non utilisé dans ce test")
 
-    override suspend fun login(request: AuthRequestDto): AuthResponseDto =
-        throw UnsupportedOperationException("Non utilisé dans ce test")
+    override suspend fun login(request: AuthRequestDto): AuthResponseDto = throw UnsupportedOperationException("Non utilisé dans ce test")
 
     override suspend fun getBaskets(abandonedSinceDays: Int?): CartListResponseDto =
         throw UnsupportedOperationException("Non utilisé dans ce test")
 
-    override suspend fun getBasketById(cartId: Int): CartDetailResponseDto =
-        throw UnsupportedOperationException("Non utilisé dans ce test")
+    override suspend fun getBasketById(cartId: Int): CartDetailResponseDto = throw UnsupportedOperationException("Non utilisé dans ce test")
 }

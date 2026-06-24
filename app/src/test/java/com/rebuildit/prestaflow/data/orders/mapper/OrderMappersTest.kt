@@ -20,7 +20,6 @@ import org.junit.Test
  * Ces bugs ont déjà causé des régressions.
  */
 class OrderMappersTest {
-
     // ─── OrderListItemDto.toEntity() ────────────────────────────────────────
 
     @Test
@@ -220,17 +219,19 @@ class OrderMappersTest {
         id = id,
         reference = reference,
         status = OrderStatusDto(id = 2, name = statusName),
-        totals = if (paidTaxIncl != null) {
-            OrderTotalsDto(paidTaxIncl = paidTaxIncl, currency = currency)
-        } else {
-            null
-        },
+        totals =
+            if (paidTaxIncl != null) {
+                OrderTotalsDto(paidTaxIncl = paidTaxIncl, currency = currency)
+            } else {
+                null
+            },
         customer = OrderCustomerDto(id = 10L, firstName = "Alice", lastName = "Martin"),
-        dates = if (createdAt != null || updatedAt != null) {
-            OrderDatesDto(createdAt = createdAt, updatedAt = updatedAt)
-        } else {
-            null
-        },
+        dates =
+            if (createdAt != null || updatedAt != null) {
+                OrderDatesDto(createdAt = createdAt, updatedAt = updatedAt)
+            } else {
+                null
+            },
         hasInvoice = hasInvoice,
     )
 

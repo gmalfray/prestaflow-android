@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.asStateFlow
  * - [refreshTotal] : valeur renvoyée par [refresh] (simule le total API).
  */
 class FakeProductsRepository : ProductsRepository {
-
     private val _productsFlow = MutableStateFlow<List<Product>>(emptyList())
 
     fun setProducts(products: List<Product>) {
@@ -31,23 +30,39 @@ class FakeProductsRepository : ProductsRepository {
 
     override fun observeProducts(): Flow<List<Product>> = _productsFlow.asStateFlow()
 
-    override fun observeProduct(productId: Long): Flow<Product?> =
-        MutableStateFlow(_productsFlow.value.find { it.id == productId })
+    override fun observeProduct(productId: Long): Flow<Product?> = MutableStateFlow(_productsFlow.value.find { it.id == productId })
 
-    override fun observeStockAvailabilities(productId: Long): Flow<List<StockAvailability>> =
-        MutableStateFlow(emptyList())
+    override fun observeStockAvailabilities(productId: Long): Flow<List<StockAvailability>> = MutableStateFlow(emptyList())
 
-    override suspend fun refresh(forceRemote: Boolean, stockFilter: String?, search: String?): Int? {
+    override suspend fun refresh(
+        forceRemote: Boolean,
+        stockFilter: String?,
+        search: String?,
+    ): Int? {
         refreshCalls += RefreshCall(forceRemote, stockFilter, search)
         if (shouldThrowOnRefresh) throw RuntimeException("Erreur réseau simulée")
         return refreshTotal
     }
 
-    override suspend fun refreshProduct(productId: Long, forceRemote: Boolean) = Unit
+    override suspend fun refreshProduct(
+        productId: Long,
+        forceRemote: Boolean,
+    ) = Unit
 
-    override suspend fun updateStock(productId: Long, quantity: Int, warehouseId: Long?, reason: String?) = Unit
+    override suspend fun updateStock(
+        productId: Long,
+        quantity: Int,
+        warehouseId: Long?,
+        reason: String?,
+    ) = Unit
 
-    override suspend fun updatePrice(productId: Long, price: Double) = Unit
+    override suspend fun updatePrice(
+        productId: Long,
+        price: Double,
+    ) = Unit
 
-    override suspend fun updateStatus(productId: Long, active: Boolean) = Unit
+    override suspend fun updateStatus(
+        productId: Long,
+        active: Boolean,
+    ) = Unit
 }

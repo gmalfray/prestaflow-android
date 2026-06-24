@@ -15,35 +15,37 @@ import org.junit.Test
  * de l'Authenticator.
  */
 class TokenAuthenticatorTest {
-
     // ─── AuthToken.isExpired ─────────────────────────────────────────────────
 
     @Test
     fun `isExpired retourne false si expiresAtEpochMillis est dans le futur`() {
-        val token = AuthToken(
-            value = "tok",
-            expiresAtEpochMillis = System.currentTimeMillis() + 60_000L,
-        )
+        val token =
+            AuthToken(
+                value = "tok",
+                expiresAtEpochMillis = System.currentTimeMillis() + 60_000L,
+            )
 
         assertFalse(token.isExpired)
     }
 
     @Test
     fun `isExpired retourne true si expiresAtEpochMillis est dans le passe`() {
-        val token = AuthToken(
-            value = "tok",
-            expiresAtEpochMillis = 1L, // timestamp epoch très ancien
-        )
+        val token =
+            AuthToken(
+                value = "tok",
+                expiresAtEpochMillis = 1L, // timestamp epoch très ancien
+            )
 
         assertTrue(token.isExpired)
     }
 
     @Test
     fun `isExpired retourne false si expiresAtEpochMillis est null`() {
-        val token = AuthToken(
-            value = "tok",
-            expiresAtEpochMillis = null,
-        )
+        val token =
+            AuthToken(
+                value = "tok",
+                expiresAtEpochMillis = null,
+            )
 
         // Un token sans expiration est considéré comme valide
         assertFalse(token.isExpired)
@@ -52,10 +54,11 @@ class TokenAuthenticatorTest {
     @Test
     fun `isExpired retourne true si expiresAtEpochMillis est exactement l heure courante`() {
         val now = System.currentTimeMillis()
-        val token = AuthToken(
-            value = "tok",
-            expiresAtEpochMillis = now - 1L, // légèrement dans le passé
-        )
+        val token =
+            AuthToken(
+                value = "tok",
+                expiresAtEpochMillis = now - 1L, // légèrement dans le passé
+            )
 
         assertTrue(token.isExpired)
     }

@@ -1,7 +1,7 @@
 package com.rebuildit.prestaflow.fakes
 
-import com.rebuildit.prestaflow.domain.notifications.NotificationCategory
 import com.rebuildit.prestaflow.domain.notifications.NotificationCategoriesRepository
+import com.rebuildit.prestaflow.domain.notifications.NotificationCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -10,10 +10,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * Toutes les catégories sont actives par défaut.
  */
 class FakeNotificationCategoriesRepository : NotificationCategoriesRepository {
-
-    private val _prefs = MutableStateFlow(
-        NotificationCategory.entries.associateWith { true },
-    )
+    private val _prefs =
+        MutableStateFlow(
+            NotificationCategory.entries.associateWith { true },
+        )
     override val categoryPreferences: Flow<Map<NotificationCategory, Boolean>> = _prefs
 
     override suspend fun setCategory(
