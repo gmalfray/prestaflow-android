@@ -30,7 +30,7 @@ class FcmRegistrationManager
         private val authRepository: AuthRepository,
         private val notificationsRepository: NotificationsRepository,
         private val notificationCategoriesRepository: NotificationCategoriesRepository,
-        private val shopDeviceRegistrar: ShopDeviceRegistrar,
+        private val shopDeviceRegistrar: ShopDeviceRegistrarContract,
         private val ioDispatcher: CoroutineDispatcher,
     ) {
         private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
@@ -51,6 +51,12 @@ class FcmRegistrationManager
                 return
             }
             initialized = true
+            // À chaque démarrage du process, force un (re)enregistrement du token FCM courant
+            // auprès de la boutique active. Nécessaire car onNewToken n'est émis que lors d'une
+            // rotation de token ; les devices enregistrés avant l'activation du hub push ne
+            // seraient jamais relayés autrement. markRegistrationStale() remet isTokenSynced
+            // à false → handleState() déclenche syncRegistration au premier collectLatest.
+            scope.launch { notificationsRepository.markRegistrationStale() }
             // Observe les changements de catégories → ré-enregistre sur toutes les boutiques.
             scope.launch {
                 notificationCategoriesRepository.categoryPreferences

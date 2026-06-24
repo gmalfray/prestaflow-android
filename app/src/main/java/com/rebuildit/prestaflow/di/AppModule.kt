@@ -14,6 +14,8 @@ import com.rebuildit.prestaflow.BuildConfig
 import com.rebuildit.prestaflow.core.config.AppEnvironment
 import com.rebuildit.prestaflow.core.network.ApiEndpointManager
 import com.rebuildit.prestaflow.core.network.TokenAuthenticator
+import com.rebuildit.prestaflow.core.notifications.ShopDeviceRegistrar
+import com.rebuildit.prestaflow.core.notifications.ShopDeviceRegistrarContract
 import com.rebuildit.prestaflow.core.security.EncryptedTokenStorage
 import com.rebuildit.prestaflow.core.security.InMemoryTokenProvider
 import com.rebuildit.prestaflow.core.security.TokenStorage
@@ -200,6 +202,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideCartsRepository(impl: CartsRepositoryImpl): CartsRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideShopDeviceRegistrar(impl: ShopDeviceRegistrar): ShopDeviceRegistrarContract = impl
 
     @Provides
     @Singleton

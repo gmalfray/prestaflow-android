@@ -28,14 +28,14 @@ class ShopDeviceRegistrar
     constructor(
         private val endpointManager: ApiEndpointManager,
         private val ioDispatcher: CoroutineDispatcher,
-    ) {
+    ) : ShopDeviceRegistrarContract {
         private val client = OkHttpClient()
 
-        suspend fun registerOnShop(
+        override suspend fun registerOnShop(
             shopUrl: String,
             shopToken: String,
             fcmToken: String,
-            topics: List<String> = emptyList(),
+            topics: List<String>,
         ) {
             val base = endpointManager.buildApiBaseUrl(shopUrl) ?: return
             val url = base.newBuilder().addPathSegments("notifications/devices").build()
@@ -59,7 +59,7 @@ class ShopDeviceRegistrar
             execute(request, "register", shopUrl)
         }
 
-        suspend fun unregisterFromShop(
+        override suspend fun unregisterFromShop(
             shopUrl: String,
             shopToken: String,
             fcmToken: String,
