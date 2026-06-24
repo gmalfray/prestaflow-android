@@ -70,23 +70,29 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build Release APK
+      - name: Build Release APK + AAB
         env:
           KEYSTORE_FILE: ${{ github.workspace }}/release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-        run: ./gradlew assembleProdRelease --no-daemon
+        # APK = sideload / Releases GitHub ; AAB (bundle) = exigé par le Play Store. Les deux sont
+        # signés via la signingConfig release (buildType release commun aux deux tâches).
+        run: ./gradlew assembleProdRelease bundleProdRelease --no-daemon
 
-      - name: Upload APK
+      - name: Upload APK + AAB
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: app/build/outputs/apk/prod/release/*.apk
+          path: |
+            app/build/outputs/apk/prod/release/*.apk
+            app/build/outputs/bundle/prodRelease/*.aab
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/prod/release/*.apk
+          files: |
+            app/build/outputs/apk/prod/release/*.apk
+            app/build/outputs/bundle/prodRelease/*.aab
           draft: false
           prerelease: true
         env:
