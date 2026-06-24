@@ -24,7 +24,6 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class OrdersRepositoryImplTest {
-
     private lateinit var fakeApi: FakePrestaFlowApi
     private lateinit var fakeDao: FakeOrderDao
     private lateinit var repository: OrdersRepositoryImpl
@@ -33,90 +32,98 @@ class OrdersRepositoryImplTest {
     fun setUp() {
         fakeApi = FakePrestaFlowApi()
         fakeDao = FakeOrderDao()
-        repository = OrdersRepositoryImpl(
-            api = fakeApi,
-            orderDao = fakeDao,
-            networkErrorMapper = NetworkErrorMapper(),
-            ioDispatcher = UnconfinedTestDispatcher(),
-        )
+        repository =
+            OrdersRepositoryImpl(
+                api = fakeApi,
+                orderDao = fakeDao,
+                networkErrorMapper = NetworkErrorMapper(),
+                ioDispatcher = UnconfinedTestDispatcher(),
+            )
     }
 
     // ─── Purge avant upsert ──────────────────────────────────────────────────
 
     @Test
-    fun `refresh purge la table avant d inserer les nouvelles commandes`() = runTest {
-        // Pré-remplir le DAO avec une commande
-        fakeDao.upsertOrders(listOf(buildEntity(id = 99L)))
-        fakeApi.ordersResponse = OrderListDto(orders = listOf(buildDto(id = 1L)))
+    fun `refresh purge la table avant d inserer les nouvelles commandes`() =
+        runTest {
+            // Pré-remplir le DAO avec une commande
+            fakeDao.upsertOrders(listOf(buildEntity(id = 99L)))
+            fakeApi.ordersResponse = OrderListDto(orders = listOf(buildDto(id = 1L)))
 
-        repository.refresh(forceRemote = true, statusId = null)
+            repository.refresh(forceRemote = true, statusId = null)
 
-        // clear() doit avoir été appelé au moins une fois
-        assertTrue("clear() doit être appelé avant upsert", fakeDao.clearCallCount >= 1)
-        // L'ancienne commande (id=99) ne doit plus être présente
-        val remaining = fakeDao.currentEntities()
-        assertTrue("La commande précédente (id=99) ne doit plus être dans le DAO", remaining.none { it.id == 99L })
-        assertTrue("La nouvelle commande (id=1) doit être présente", remaining.any { it.id == 1L })
-    }
+            // clear() doit avoir été appelé au moins une fois
+            assertTrue("clear() doit être appelé avant upsert", fakeDao.clearCallCount >= 1)
+            // L'ancienne commande (id=99) ne doit plus être présente
+            val remaining = fakeDao.currentEntities()
+            assertTrue("La commande précédente (id=99) ne doit plus être dans le DAO", remaining.none { it.id == 99L })
+            assertTrue("La nouvelle commande (id=1) doit être présente", remaining.any { it.id == 1L })
+        }
 
     @Test
-    fun `refresh avec liste vide retournee par l API vide la table`() = runTest {
-        fakeDao.upsertOrders(listOf(buildEntity(id = 1L), buildEntity(id = 2L)))
-        fakeApi.ordersResponse = OrderListDto(orders = emptyList())
+    fun `refresh avec liste vide retournee par l API vide la table`() =
+        runTest {
+            fakeDao.upsertOrders(listOf(buildEntity(id = 1L), buildEntity(id = 2L)))
+            fakeApi.ordersResponse = OrderListDto(orders = emptyList())
 
-        repository.refresh(forceRemote = true, statusId = null)
+            repository.refresh(forceRemote = true, statusId = null)
 
-        assertTrue("La table doit être vide si l'API renvoie une liste vide", fakeDao.currentEntities().isEmpty())
-    }
+            assertTrue("La table doit être vide si l'API renvoie une liste vide", fakeDao.currentEntities().isEmpty())
+        }
 
     // ─── Transmission du statusId à l'API ────────────────────────────────────
 
     @Test
-    fun `refresh transmet le statusId dans les filtres API`() = runTest {
-        fakeApi.ordersResponse = OrderListDto(orders = emptyList())
+    fun `refresh transmet le statusId dans les filtres API`() =
+        runTest {
+            fakeApi.ordersResponse = OrderListDto(orders = emptyList())
 
-        repository.refresh(forceRemote = true, statusId = 3)
+            repository.refresh(forceRemote = true, statusId = 3)
 
-        val filters = fakeApi.lastOrderFilters
-        assertEquals("Le paramètre 'status' doit être '3'", "3", filters?.get("status"))
-    }
-
-    @Test
-    fun `refresh sans statusId n inclut pas le parametre status dans l API`() = runTest {
-        fakeApi.ordersResponse = OrderListDto(orders = emptyList())
-
-        repository.refresh(forceRemote = true, statusId = null)
-
-        val filters = fakeApi.lastOrderFilters
-        assertTrue("Le paramètre 'status' ne doit pas être envoyé si statusId est null", !filters.orEmpty().containsKey("status"))
-    }
+            val filters = fakeApi.lastOrderFilters
+            assertEquals("Le paramètre 'status' doit être '3'", "3", filters?.get("status"))
+        }
 
     @Test
-    fun `refresh envoie toujours sort et limit dans les filtres API`() = runTest {
-        fakeApi.ordersResponse = OrderListDto(orders = emptyList())
+    fun `refresh sans statusId n inclut pas le parametre status dans l API`() =
+        runTest {
+            fakeApi.ordersResponse = OrderListDto(orders = emptyList())
 
-        repository.refresh(forceRemote = true, statusId = null)
+            repository.refresh(forceRemote = true, statusId = null)
 
-        val filters = fakeApi.lastOrderFilters.orEmpty()
-        assertEquals("sort doit être '-date_add'", "-date_add", filters["sort"])
-        assertEquals("limit doit être '50'", "50", filters["limit"])
-    }
+            val filters = fakeApi.lastOrderFilters
+            assertTrue("Le paramètre 'status' ne doit pas être envoyé si statusId est null", !filters.orEmpty().containsKey("status"))
+        }
+
+    @Test
+    fun `refresh envoie toujours sort et limit dans les filtres API`() =
+        runTest {
+            fakeApi.ordersResponse = OrderListDto(orders = emptyList())
+
+            repository.refresh(forceRemote = true, statusId = null)
+
+            val filters = fakeApi.lastOrderFilters.orEmpty()
+            assertEquals("sort doit être '-date_add'", "-date_add", filters["sort"])
+            assertEquals("limit doit être '50'", "50", filters["limit"])
+        }
 
     // ─── Comportement en cas d'erreur réseau ─────────────────────────────────
 
     @Test(expected = RuntimeException::class)
-    fun `refresh avec forceRemote true propage l exception reseau`() = runTest {
-        fakeApi.ordersException = RuntimeException("Timeout")
+    fun `refresh avec forceRemote true propage l exception reseau`() =
+        runTest {
+            fakeApi.ordersException = RuntimeException("Timeout")
 
-        repository.refresh(forceRemote = true, statusId = null)
-    }
+            repository.refresh(forceRemote = true, statusId = null)
+        }
 
     @Test
-    fun `refresh avec forceRemote false n leve pas d exception en cas d erreur reseau`() = runTest {
-        fakeApi.ordersException = RuntimeException("Timeout")
-        // Ne doit pas lever d'exception
-        repository.refresh(forceRemote = false, statusId = null)
-    }
+    fun `refresh avec forceRemote false n leve pas d exception en cas d erreur reseau`() =
+        runTest {
+            fakeApi.ordersException = RuntimeException("Timeout")
+            // Ne doit pas lever d'exception
+            repository.refresh(forceRemote = false, statusId = null)
+        }
 
     // ─── Builders ────────────────────────────────────────────────────────────
 

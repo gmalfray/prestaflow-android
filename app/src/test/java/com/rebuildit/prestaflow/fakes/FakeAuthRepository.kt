@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
  * Permet d'émettre des changements de boutique active via [emitConnections].
  */
 class FakeAuthRepository : AuthRepository {
-
     private val _authState = MutableStateFlow<AuthState>(AuthState.Authenticated(fakeToken()))
     override val authState: StateFlow<AuthState> = _authState
 
@@ -24,10 +23,16 @@ class FakeAuthRepository : AuthRepository {
         _connections.value = connections
     }
 
-    override suspend fun login(shopUrl: String, apiKey: String): AuthResult = AuthResult.Success
+    override suspend fun login(
+        shopUrl: String,
+        apiKey: String,
+    ): AuthResult = AuthResult.Success
 
-    override suspend fun addConnection(shopUrl: String, apiKey: String, label: String): AuthResult =
-        AuthResult.Success
+    override suspend fun addConnection(
+        shopUrl: String,
+        apiKey: String,
+        label: String,
+    ): AuthResult = AuthResult.Success
 
     override suspend fun switchActiveConnection(id: String) = Unit
 

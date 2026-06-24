@@ -8,8 +8,8 @@ import com.rebuildit.prestaflow.core.notifications.ShopDeviceRegistrarContract
  * Enregistre les appels sans faire aucune requête réseau réelle.
  */
 class FakeShopDeviceRegistrar : ShopDeviceRegistrarContract {
-
     data class RegisterCall(val shopUrl: String, val fcmToken: String, val topics: List<String>)
+
     data class UnregisterCall(val shopUrl: String, val fcmToken: String)
 
     val registerCalls: MutableList<RegisterCall> = mutableListOf()

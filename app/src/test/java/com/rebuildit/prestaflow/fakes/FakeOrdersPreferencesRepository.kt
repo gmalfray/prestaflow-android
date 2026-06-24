@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * Expose [emitVisibleStatusIds] pour piloter le flux depuis les tests.
  */
 class FakeOrdersPreferencesRepository : OrdersPreferencesRepository {
-
     private val _visibleStatusIds = MutableStateFlow<Set<Int>?>(null)
 
     /** Émet une nouvelle valeur dans le flux des IDs visibles. */

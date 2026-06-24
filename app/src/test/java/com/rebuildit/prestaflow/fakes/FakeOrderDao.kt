@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * Enregistre les appels à [clear] et [upsertOrders] pour vérification dans les tests.
  */
 class FakeOrderDao : OrderDao {
-
     private val _store = MutableStateFlow<List<OrderEntity>>(emptyList())
 
     var clearCallCount = 0
@@ -18,8 +17,7 @@ class FakeOrderDao : OrderDao {
 
     override fun observeOrders(): Flow<List<OrderEntity>> = _store
 
-    override fun observeOrder(orderId: Long): Flow<OrderEntity?> =
-        MutableStateFlow(_store.value.find { it.id == orderId })
+    override fun observeOrder(orderId: Long): Flow<OrderEntity?> = MutableStateFlow(_store.value.find { it.id == orderId })
 
     override suspend fun upsertOrders(entities: List<OrderEntity>) {
         upsertedBatches += entities

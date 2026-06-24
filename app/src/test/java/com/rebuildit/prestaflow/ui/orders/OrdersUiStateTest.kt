@@ -11,7 +11,6 @@ import org.junit.Test
  * Aucune dépendance Android ni coroutine : exécution JVM directe.
  */
 class OrdersUiStateTest {
-
     // ─── visibleOrders ───────────────────────────────────────────────────────
 
     @Test
@@ -23,13 +22,15 @@ class OrdersUiStateTest {
 
     @Test
     fun `visibleOrders filtre sur le nom du client insensible a la casse`() {
-        val state = buildState(
-            orders = listOf(
-                buildOrder(1L, "REF001", customerName = "Alice Martin"),
-                buildOrder(2L, "REF002", customerName = "Bob Dupont"),
-            ),
-            query = "alice",
-        )
+        val state =
+            buildState(
+                orders =
+                    listOf(
+                        buildOrder(1L, "REF001", customerName = "Alice Martin"),
+                        buildOrder(2L, "REF002", customerName = "Bob Dupont"),
+                    ),
+                query = "alice",
+            )
 
         assertEquals(1, state.visibleOrders.size)
         assertEquals("REF001", state.visibleOrders.first().reference)
@@ -37,13 +38,15 @@ class OrdersUiStateTest {
 
     @Test
     fun `visibleOrders filtre sur la reference insensible a la casse`() {
-        val state = buildState(
-            orders = listOf(
-                buildOrder(1L, "REF001", customerName = "Alice Martin"),
-                buildOrder(2L, "REF002", customerName = "Bob Dupont"),
-            ),
-            query = "ref002",
-        )
+        val state =
+            buildState(
+                orders =
+                    listOf(
+                        buildOrder(1L, "REF001", customerName = "Alice Martin"),
+                        buildOrder(2L, "REF002", customerName = "Bob Dupont"),
+                    ),
+                query = "ref002",
+            )
 
         assertEquals(1, state.visibleOrders.size)
         assertEquals("REF002", state.visibleOrders.first().reference)
@@ -51,20 +54,22 @@ class OrdersUiStateTest {
 
     @Test
     fun `visibleOrders retourne liste vide si aucune commande ne correspond`() {
-        val state = buildState(
-            orders = listOf(buildOrder(1L, "REF001", "Alice Martin")),
-            query = "zzz",
-        )
+        val state =
+            buildState(
+                orders = listOf(buildOrder(1L, "REF001", "Alice Martin")),
+                query = "zzz",
+            )
 
         assertTrue(state.visibleOrders.isEmpty())
     }
 
     @Test
     fun `visibleOrders retourne toutes les commandes si query est seulement des espaces`() {
-        val state = buildState(
-            orders = listOf(buildOrder(1L, "REF001", "Alice Martin")),
-            query = "   ",
-        )
+        val state =
+            buildState(
+                orders = listOf(buildOrder(1L, "REF001", "Alice Martin")),
+                query = "   ",
+            )
 
         assertEquals(1, state.visibleOrders.size)
     }
@@ -73,11 +78,12 @@ class OrdersUiStateTest {
 
     @Test
     fun `filteredStatuses retourne tous les statuts si visibleStatusIds est null`() {
-        val statuses = listOf(
-            OrderStatusFilter(1, "Paiement accepté", "#00FF00"),
-            OrderStatusFilter(2, "En préparation", "#0000FF"),
-            OrderStatusFilter(3, "Expédié", "#FFA500"),
-        )
+        val statuses =
+            listOf(
+                OrderStatusFilter(1, "Paiement accepté", "#00FF00"),
+                OrderStatusFilter(2, "En préparation", "#0000FF"),
+                OrderStatusFilter(3, "Expédié", "#FFA500"),
+            )
         val state = buildState(availableStatuses = statuses, visibleStatusIds = null)
 
         assertEquals(3, state.filteredStatuses.size)
@@ -85,11 +91,12 @@ class OrdersUiStateTest {
 
     @Test
     fun `filteredStatuses ne retourne que les statuts dont l id est dans visibleStatusIds`() {
-        val statuses = listOf(
-            OrderStatusFilter(1, "Paiement accepté", "#00FF00"),
-            OrderStatusFilter(2, "En préparation", "#0000FF"),
-            OrderStatusFilter(3, "Expédié", "#FFA500"),
-        )
+        val statuses =
+            listOf(
+                OrderStatusFilter(1, "Paiement accepté", "#00FF00"),
+                OrderStatusFilter(2, "En préparation", "#0000FF"),
+                OrderStatusFilter(3, "Expédié", "#FFA500"),
+            )
         val state = buildState(availableStatuses = statuses, visibleStatusIds = setOf(1, 3))
 
         val filtered = state.filteredStatuses

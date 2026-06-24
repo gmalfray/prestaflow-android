@@ -13,7 +13,6 @@ import java.time.LocalTime
  * sans effets de bord réseau ni DataStore réel.
  */
 class FakeNotificationsRepository : NotificationsRepository {
-
     private val _settings = MutableStateFlow(NotificationSettings())
     override val settings: Flow<NotificationSettings> = _settings
 
@@ -52,10 +51,11 @@ class FakeNotificationsRepository : NotificationsRepository {
         syncRegistrationCallCount++
         lastSyncedToken = token
         // Simule la mise à jour de l'état : le token est maintenant synchronisé.
-        _settings.value = _settings.value.copy(
-            deviceToken = token,
-            lastSyncedToken = token,
-        )
+        _settings.value =
+            _settings.value.copy(
+                deviceToken = token,
+                lastSyncedToken = token,
+            )
     }
 
     override suspend fun markRegistrationStale() {

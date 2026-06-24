@@ -31,7 +31,6 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProductsViewModelTest {
-
     private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var fakeProductsRepo: FakeProductsRepository
@@ -59,154 +58,163 @@ class ProductsViewModelTest {
     // ─── Total depuis l'API ──────────────────────────────────────────────────
 
     @Test
-    fun `totalCount vient du retour de refresh et non de la taille de la liste`() = runTest {
-        // L'API renvoie un total de 150, mais on n'a que 2 produits dans la liste locale
-        fakeProductsRepo.refreshTotal = 150
-        fakeProductsRepo.setProducts(listOf(buildProduct(1L), buildProduct(2L)))
+    fun `totalCount vient du retour de refresh et non de la taille de la liste`() =
+        runTest {
+            // L'API renvoie un total de 150, mais on n'a que 2 produits dans la liste locale
+            fakeProductsRepo.refreshTotal = 150
+            fakeProductsRepo.setProducts(listOf(buildProduct(1L), buildProduct(2L)))
 
-        val vm = buildViewModel()
-        advanceUntilIdle()
+            val vm = buildViewModel()
+            advanceUntilIdle()
 
-        assertEquals(
-            "totalCount doit correspondre au total renvoyé par l'API (150), pas à la taille de la liste (2)",
-            150,
-            vm.uiState.value.totalCount,
-        )
-    }
+            assertEquals(
+                "totalCount doit correspondre au total renvoyé par l'API (150), pas à la taille de la liste (2)",
+                150,
+                vm.uiState.value.totalCount,
+            )
+        }
 
     @Test
-    fun `totalCount reste inchange si refresh retourne null`() = runTest {
-        fakeProductsRepo.refreshTotal = null
+    fun `totalCount reste inchange si refresh retourne null`() =
+        runTest {
+            fakeProductsRepo.refreshTotal = null
 
-        val vm = buildViewModel()
-        advanceUntilIdle()
+            val vm = buildViewModel()
+            advanceUntilIdle()
 
-        // Valeur initiale attendue (0 car pas encore de refresh réussi)
-        assertEquals(0, vm.uiState.value.totalCount)
-    }
+            // Valeur initiale attendue (0 car pas encore de refresh réussi)
+            assertEquals(0, vm.uiState.value.totalCount)
+        }
 
     // ─── Recherche déléguée à l'API ──────────────────────────────────────────
 
     @Test
-    fun `onQueryChange avec debounce transmet la recherche au repository`() = runTest {
-        val vm = buildViewModel()
-        advanceUntilIdle()
-        fakeProductsRepo.refreshCalls.clear()
+    fun `onQueryChange avec debounce transmet la recherche au repository`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeProductsRepo.refreshCalls.clear()
 
-        vm.onQueryChange("chaussures")
-        // Avancer le temps pour dépasser le debounce de 300ms
-        testDispatcher.scheduler.advanceTimeBy(400L)
-        advanceUntilIdle()
+            vm.onQueryChange("chaussures")
+            // Avancer le temps pour dépasser le debounce de 300ms
+            testDispatcher.scheduler.advanceTimeBy(400L)
+            advanceUntilIdle()
 
-        val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
-        assertEquals(
-            "La recherche 'chaussures' doit être transmise au repository",
-            "chaussures",
-            lastCall?.search,
-        )
-    }
+            val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
+            assertEquals(
+                "La recherche 'chaussures' doit être transmise au repository",
+                "chaussures",
+                lastCall?.search,
+            )
+        }
 
     @Test
-    fun `onQueryChange vide transmet null comme search au repository`() = runTest {
-        val vm = buildViewModel()
-        advanceUntilIdle()
+    fun `onQueryChange vide transmet null comme search au repository`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
 
-        vm.onQueryChange("chaussures")
-        testDispatcher.scheduler.advanceTimeBy(400L)
-        advanceUntilIdle()
-        fakeProductsRepo.refreshCalls.clear()
+            vm.onQueryChange("chaussures")
+            testDispatcher.scheduler.advanceTimeBy(400L)
+            advanceUntilIdle()
+            fakeProductsRepo.refreshCalls.clear()
 
-        // Vider la query
-        vm.onQueryChange("")
-        testDispatcher.scheduler.advanceTimeBy(400L)
-        advanceUntilIdle()
+            // Vider la query
+            vm.onQueryChange("")
+            testDispatcher.scheduler.advanceTimeBy(400L)
+            advanceUntilIdle()
 
-        val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
-        assertNull(
-            "Une query vide doit transmettre null comme search",
-            lastCall?.search,
-        )
-    }
+            val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
+            assertNull(
+                "Une query vide doit transmettre null comme search",
+                lastCall?.search,
+            )
+        }
 
     // ─── Filtre de stock ─────────────────────────────────────────────────────
 
     @Test
-    fun `onStockFilterSelected transmet l apiValue du filtre au repository`() = runTest {
-        val vm = buildViewModel()
-        advanceUntilIdle()
-        fakeProductsRepo.refreshCalls.clear()
+    fun `onStockFilterSelected transmet l apiValue du filtre au repository`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeProductsRepo.refreshCalls.clear()
 
-        vm.onStockFilterSelected(StockFilter.LOW_STOCK)
-        advanceUntilIdle()
+            vm.onStockFilterSelected(StockFilter.LOW_STOCK)
+            advanceUntilIdle()
 
-        val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
-        assertEquals(
-            "Le filtre LOW_STOCK doit transmettre son apiValue au repository",
-            StockFilter.LOW_STOCK.apiValue,
-            lastCall?.stockFilter,
-        )
-    }
+            val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
+            assertEquals(
+                "Le filtre LOW_STOCK doit transmettre son apiValue au repository",
+                StockFilter.LOW_STOCK.apiValue,
+                lastCall?.stockFilter,
+            )
+        }
 
     @Test
-    fun `onStockFilterSelected ALL transmet null comme stockFilter au repository`() = runTest {
-        val vm = buildViewModel()
-        advanceUntilIdle()
-        fakeProductsRepo.refreshCalls.clear()
+    fun `onStockFilterSelected ALL transmet null comme stockFilter au repository`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeProductsRepo.refreshCalls.clear()
 
-        vm.onStockFilterSelected(StockFilter.ALL)
-        advanceUntilIdle()
+            vm.onStockFilterSelected(StockFilter.ALL)
+            advanceUntilIdle()
 
-        val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
-        assertNull(
-            "StockFilter.ALL doit transmettre null comme stockFilter",
-            lastCall?.stockFilter,
-        )
-    }
+            val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
+            assertNull(
+                "StockFilter.ALL doit transmettre null comme stockFilter",
+                lastCall?.stockFilter,
+            )
+        }
 
     // ─── visibleProducts (pas de filtrage local) ─────────────────────────────
 
     @Test
-    fun `visibleProducts retourne tous les produits du repository sans filtrage local`() = runTest {
-        fakeProductsRepo.setProducts(listOf(buildProduct(1L), buildProduct(2L), buildProduct(3L)))
+    fun `visibleProducts retourne tous les produits du repository sans filtrage local`() =
+        runTest {
+            fakeProductsRepo.setProducts(listOf(buildProduct(1L), buildProduct(2L), buildProduct(3L)))
 
-        val vm = buildViewModel()
-        advanceUntilIdle()
+            val vm = buildViewModel()
+            advanceUntilIdle()
 
-        assertEquals(
-            "visibleProducts doit retourner tous les produits (pas de filtrage local)",
-            3,
-            vm.uiState.value.visibleProducts.size,
-        )
-    }
+            assertEquals(
+                "visibleProducts doit retourner tous les produits (pas de filtrage local)",
+                3,
+                vm.uiState.value.visibleProducts.size,
+            )
+        }
 
     // ─── État d'erreur ───────────────────────────────────────────────────────
 
     @Test
-    fun `un echec de refresh avec onRefresh expose une erreur dans l etat`() = runTest {
-        fakeProductsRepo.shouldThrowOnRefresh = true
+    fun `un echec de refresh avec onRefresh expose une erreur dans l etat`() =
+        runTest {
+            fakeProductsRepo.shouldThrowOnRefresh = true
 
-        val vm = buildViewModel()
-        advanceUntilIdle()
+            val vm = buildViewModel()
+            advanceUntilIdle()
 
-        vm.onRefresh()
-        advanceUntilIdle()
+            vm.onRefresh()
+            advanceUntilIdle()
 
-        assertTrue(
-            "L'état doit contenir une erreur après onRefresh() échoué",
-            vm.uiState.value.error != null,
-        )
-    }
+            assertTrue(
+                "L'état doit contenir une erreur après onRefresh() échoué",
+                vm.uiState.value.error != null,
+            )
+        }
 
     // ─── Builders ────────────────────────────────────────────────────────────
 
-    private fun buildProduct(id: Long) = Product(
-        id = id,
-        name = "Produit $id",
-        reference = "REF$id",
-        price = 19.99,
-        active = true,
-        stock = ProductStock(quantity = 10),
-        images = emptyList<ProductImage>(),
-        updatedAt = "2024-01-01T00:00:00Z",
-    )
+    private fun buildProduct(id: Long) =
+        Product(
+            id = id,
+            name = "Produit $id",
+            reference = "REF$id",
+            price = 19.99,
+            active = true,
+            stock = ProductStock(quantity = 10),
+            images = emptyList<ProductImage>(),
+            updatedAt = "2024-01-01T00:00:00Z",
+        )
 }
