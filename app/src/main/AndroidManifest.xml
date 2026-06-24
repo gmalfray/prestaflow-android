@@ -39,11 +39,12 @@
             </intent-filter>
         </service>
 
-        <!-- Notifs affichées par le système (app en arrière-plan) : canal « Ventes »
-             (son de caisse) + icône dédiée. Le canal est créé dans PrestaFlowApp. -->
+        <!-- Notifs background sans channel_id explicite → canal sobre (son système, pas la caisse).
+             Le module envoie le channel_id explicite pour les 3 catégories ; ceci n'est qu'un filet.
+             Le canal est créé dans PrestaFlowApp via NotificationChannels.ensureAllChannels. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="sales_v2" />
+            android:value="default_alerts" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_notification" />

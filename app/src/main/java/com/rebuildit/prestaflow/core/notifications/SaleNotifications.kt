@@ -14,21 +14,25 @@ import androidx.core.content.ContextCompat
 import com.rebuildit.prestaflow.R
 
 /**
- * Canal et affichage des notifications de vente (« Nouvelle commande »), avec un
- * son de caisse par défaut (res/raw/cash_register.mp3, Pixabay — licence libre).
+ * Affichage des notifications de vente (« Nouvelle commande »), avec le son de caisse.
  *
- * Sur Android 8+, le son est une propriété du CANAL, fixée à sa création :
- * l'utilisateur peut le changer via les réglages système du canal
- * (appui long sur la notif → Paramètres → son), ce qui couvre le « choix du son ».
+ * La création du canal est désormais centralisée dans [NotificationChannels.ensureAllChannels].
+ * Cette classe conserve [ensureChannel] pour compatibilité (no-op si le canal existe déjà) et
+ * [show] pour afficher une notification sur le canal [NotificationChannels.CHANNEL_SALES].
+ *
+ * Sur Android 8+, le son est une propriété du CANAL, fixée à sa création (immuable).
+ * L'utilisateur peut le modifier via les réglages système du canal.
  */
 object SaleNotifications {
-    // v2 : le son d'un canal est figé à sa création (immuable). On change d'ID à chaque
-    // changement de son pour forcer la recréation du canal avec le nouveau son.
-    const val CHANNEL_ID = "sales_v2"
+    // Conservé pour compatibilité des appelants existants (SettingsScreen).
+    const val CHANNEL_ID = NotificationChannels.CHANNEL_SALES
 
-    private fun soundUri(context: Context): Uri = Uri.parse("android.resource://${context.packageName}/${R.raw.cash_register}")
+    private fun soundUri(context: Context): Uri = NotificationChannels.cashRegisterSoundUri(context)
 
-    /** Crée le canal « Ventes » avec le son de caisse (idempotent). À appeler au démarrage. */
+    /**
+     * Crée le canal « Ventes » avec le son de caisse (idempotent).
+     * Préférer [NotificationChannels.ensureAllChannels] au démarrage.
+     */
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
@@ -53,8 +57,9 @@ object SaleNotifications {
     }
 
     /**
-     * Affiche une notification de vente. No-op si la permission notifications manque
-     * (Android 13+). Fonctionne aussi quand l'app est au premier plan.
+     * Affiche une notification de vente (son de caisse).
+     * No-op si la permission POST_NOTIFICATIONS manque (Android 13+).
+     * Fonctionne aussi quand l'app est au premier plan.
      */
     fun show(
         context: Context,

@@ -1,9 +1,16 @@
 package com.rebuildit.prestaflow.data.push
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.notifications.FcmRegistrationManager
-import com.rebuildit.prestaflow.core.notifications.SaleNotifications
+import com.rebuildit.prestaflow.core.notifications.NotificationChannels
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +46,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(message)
         Timber.d("Message received from: ${message.from}")
 
+        val event = message.data["event"]
         val orderId = message.data["order_id"]?.toLongOrNull()
 
         // Rafraîchit la commande référencée par le push (si présente).
@@ -54,17 +62,57 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
             }
         }
 
-        // Affiche la notif de vente (canal « Ventes » + son de caisse). Couvre le cas
-        // app au PREMIER PLAN — en arrière-plan, le système l'affiche déjà (même canal).
+        // Affichage foreground : routage par event → canal (et donc son) adapté.
+        // En arrière-plan, le système gère lui-même via default_notification_channel_id (manifeste).
         val title = message.notification?.title ?: message.data["title"]
         val body = message.notification?.body ?: message.data["body"]
         if (title != null || body != null) {
-            SaleNotifications.show(applicationContext, title, body, orderId)
+            showNotification(event = event, title = title, body = body, orderId = orderId)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         job.cancel()
+    }
+
+    // ── Affichage ──────────────────────────────────────────────────────────────
+
+    private fun showNotification(
+        event: String?,
+        title: String?,
+        body: String?,
+        orderId: Long?,
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        val channelId = NotificationChannels.channelForEvent(event)
+
+        val builder =
+            NotificationCompat.Builder(applicationContext, channelId)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(title ?: applicationContext.getString(R.string.notif_sale_default_title))
+                .setContentText(body)
+                .setAutoCancel(true)
+
+        // Priorité et son explicite (Android < 8) selon le canal.
+        if (channelId == NotificationChannels.CHANNEL_SALES) {
+            builder
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                // Son explicite pour Android < 8 (sur 8+ c'est le canal qui décide).
+                .setSound(NotificationChannels.cashRegisterSoundUri(applicationContext))
+        } else {
+            builder.setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            // Son système par défaut pour Android < 8.
+            builder.setDefaults(NotificationCompat.DEFAULT_SOUND)
+        }
+
+        val notificationId = orderId?.toInt() ?: (System.currentTimeMillis() and 0x7FFFFFFF).toInt()
+        NotificationManagerCompat.from(applicationContext).notify(notificationId, builder.build())
     }
 }
