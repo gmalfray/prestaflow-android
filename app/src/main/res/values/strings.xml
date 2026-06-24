@@ -4,6 +4,12 @@
     <string name="app_tagline">Mobile management for PrestaShop</string>
     <string name="notif_channel_sales_name">Sales</string>
     <string name="notif_channel_sales_desc">New order notifications (cash register sound)</string>
+    <string name="notif_channel_order_status_name">Order status changes</string>
+    <string name="notif_channel_order_status_desc">Notifications when an order status is updated</string>
+    <string name="notif_channel_order_shipping_name">Shipments</string>
+    <string name="notif_channel_order_shipping_desc">Notifications when an order tracking is updated</string>
+    <string name="notif_channel_default_name">Alerts</string>
+    <string name="notif_channel_default_desc">General app notifications</string>
     <string name="notif_sale_default_title">New order</string>
     <string name="action_retry">Retry</string>
     <string name="label_environment">Environment</string>
