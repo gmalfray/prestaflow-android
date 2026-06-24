@@ -49,6 +49,14 @@
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_notification" />
 
+        <!-- Scan QR verrouillé en portrait (la CaptureActivity ZXing par défaut force le paysage). -->
+        <activity
+            android:name=".ui.auth.PortraitCaptureActivity"
+            android:screenOrientation="sensorPortrait"
+            android:stateNotNeeded="true"
+            android:exported="false"
+            android:theme="@style/zxing_CaptureTheme" />
+
     </application>
 
 </manifest>
