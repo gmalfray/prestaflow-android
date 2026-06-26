@@ -244,12 +244,24 @@ private fun AuthenticatedShell(
                         val onItemClick = {
                             if (!selected) {
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true
+                                if (destination == AppDestination.Dashboard) {
+                                    // Dashboard = destination de départ : on dépile vers elle (popBackStack)
+                                    // plutôt que de naviguer en avant. navigate(startDest){ launchSingleTop }
+                                    // peut être traité comme no-op quand Dashboard est déjà au sommet
+                                    // du back stack après popUpTo, rendant le retour au Dashboard impossible.
+                                    navController.popBackStack(
+                                        route = AppDestination.Dashboard.route,
+                                        inclusive = false,
+                                        saveState = true,
+                                    )
+                                } else {
+                                    navController.navigate(destination.route) {
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             }
                         }
@@ -286,12 +298,24 @@ private fun AuthenticatedShell(
                             val onItemClick = {
                                 if (!selected) {
                                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    navController.navigate(destination.route) {
-                                        popUpTo(navController.graph.startDestinationId) {
-                                            saveState = true
+                                    if (destination == AppDestination.Dashboard) {
+                                        // Dashboard = destination de départ : on dépile vers elle (popBackStack)
+                                        // plutôt que de naviguer en avant. navigate(startDest){ launchSingleTop }
+                                        // peut être traité comme no-op quand Dashboard est déjà au sommet
+                                        // du back stack après popUpTo, rendant le retour au Dashboard impossible.
+                                        navController.popBackStack(
+                                            route = AppDestination.Dashboard.route,
+                                            inclusive = false,
+                                            saveState = true,
+                                        )
+                                    } else {
+                                        navController.navigate(destination.route) {
+                                            popUpTo(navController.graph.startDestinationId) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
                                     }
                                 }
                             }
