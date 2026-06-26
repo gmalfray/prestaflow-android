@@ -145,6 +145,57 @@ class OrdersViewModel
         }
 
         /**
+         * Change le statut de toutes les commandes sélectionnées vers [statusId].
+         *
+         * - Itère sur chaque commande sélectionnée et appelle [updateOrderStatus] individuellement
+         *   pour ne pas bloquer l'ensemble en cas d'échec partiel.
+         * - Expose [OrdersUiState.isBulkUpdating] pendant l'opération.
+         * - Émet un snackbar résumant les succès / échecs.
+         * - Rafraîchit la liste et quitte le mode sélection à la fin (succès ou non).
+         * - Robuste hors-ligne : une exception par commande est catchée individuellement.
+         */
+        fun bulkUpdateStatus(statusId: String) {
+            val selectedIds = _uiState.value.selectedOrderIds.toList()
+            if (selectedIds.isEmpty()) return
+            viewModelScope.launch {
+                _uiState.update { it.copy(isBulkUpdating = true) }
+                var successCount = 0
+                var failureCount = 0
+                selectedIds.forEach { orderId ->
+                    runCatching {
+                        ordersRepository.updateOrderStatus(orderId, statusId)
+                    }.onSuccess {
+                        successCount++
+                    }.onFailure { error ->
+                        failureCount++
+                        Timber.w(error, "Échec mise à jour statut commande #%d", orderId)
+                    }
+                }
+                _uiState.update { current ->
+                    val message =
+                        if (failureCount == 0) {
+                            "$successCount commande(s) mise(s) à jour"
+                        } else {
+                            "$successCount mise(s) à jour, $failureCount échec(s)"
+                        }
+                    current.copy(
+                        isBulkUpdating = false,
+                        selectionMode = false,
+                        selectedOrderIds = emptySet(),
+                        bulkSnackbar = message,
+                    )
+                }
+                // Rafraîchir la liste pour refléter les nouveaux statuts
+                refresh(forceRemote = true, notifyOnError = false)
+            }
+        }
+
+        /** Consomme le message snackbar de mise à jour en lot. */
+        fun consumeBulkSnackbar() {
+            _uiState.update { it.copy(bulkSnackbar = null) }
+        }
+
+        /**
          * Télécharge les PDFs des commandes sélectionnées et invoque [onReady] avec les octets.
          * Remet à zéro la sélection après succès.
          */
@@ -262,8 +313,12 @@ data class OrdersUiState(
     val selectedOrderIds: Set<Long> = emptySet(),
     /** Vrai pendant le téléchargement des PDFs pour impression. */
     val isPrintingInProgress: Boolean = false,
+    /** Vrai pendant la mise à jour de statut en lot. */
+    val isBulkUpdating: Boolean = false,
     /** Message d'erreur d'impression à afficher puis consommer. */
     val printError: String? = null,
+    /** Message snackbar résumant le résultat de la mise à jour en lot. */
+    val bulkSnackbar: String? = null,
     /** Statuts disponibles pour le filtre, chargés depuis l'API. */
     val availableStatuses: List<OrderStatusFilter> = emptyList(),
     /** ID du statut sélectionné comme filtre, null = tous les statuts. */

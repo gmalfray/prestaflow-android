@@ -186,8 +186,15 @@
     <string name="orders_selection_count">%1$d selected</string>
     <string name="orders_selection_print">Print (%1$d)</string>
     <string name="orders_selection_cancel">Cancel selection</string>
+    <string name="orders_selection_change_status">Change status</string>
     <string name="orders_action_toggle_selection">Toggle selection</string>
     <string name="orders_print_job_name">Invoices (%1$d)</string>
+    <!-- Sélecteur de statut (StatusPickerDialog) -->
+    <string name="status_picker_title">Choose a status</string>
+    <string name="status_picker_empty">No status available.</string>
+    <string name="status_picker_confirm">Apply</string>
+    <string name="status_picker_cancel">Cancel</string>
+
     <!-- Filtres statuts commandes -->
     <string name="orders_filter_all">All</string>
     <string name="orders_filter_label">Filter by status</string>

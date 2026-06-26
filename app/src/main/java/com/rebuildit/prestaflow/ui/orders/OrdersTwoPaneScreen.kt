@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
+import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 
 /**
  * Layout deux colonnes pour tablette (WindowWidthSizeClass.Expanded).
@@ -48,6 +49,7 @@ fun OrdersTwoPaneRoute(
     val ordersUiState by ordersViewModel.uiState.collectAsStateWithLifecycle()
     val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
     val actionState by detailViewModel.actionState.collectAsStateWithLifecycle()
+    val availableStatuses by detailViewModel.availableStatuses.collectAsStateWithLifecycle()
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Panneau gauche : liste des commandes (40 %)
@@ -85,6 +87,7 @@ fun OrdersTwoPaneRoute(
             OrdersDetailPane(
                 state = detailUiState,
                 actionState = actionState,
+                availableStatuses = availableStatuses,
                 onUpdateStatus = detailViewModel::updateStatus,
                 onUpdateTracking = detailViewModel::updateTracking,
                 onConsumeFeedback = detailViewModel::consumeActionFeedback,
@@ -97,6 +100,7 @@ fun OrdersTwoPaneRoute(
 private fun OrdersDetailPane(
     state: OrderDetailUiState,
     actionState: OrderActionState,
+    availableStatuses: List<OrderStatusFilter>,
     onUpdateStatus: (String) -> Unit,
     onUpdateTracking: (String) -> Unit,
     onConsumeFeedback: () -> Unit,
@@ -135,6 +139,7 @@ private fun OrdersDetailPane(
             OrderDetailContent(
                 order = state.order,
                 actionInProgress = actionState.inProgress,
+                availableStatuses = availableStatuses,
                 onUpdateStatus = onUpdateStatus,
                 onUpdateTracking = onUpdateTracking,
             )

@@ -64,10 +64,12 @@ import com.rebuildit.prestaflow.core.print.InvoicePrinter
 import com.rebuildit.prestaflow.core.print.PrintMode
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderItem
+import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import com.rebuildit.prestaflow.ui.orders.components.StatusPickerDialog
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -79,6 +81,7 @@ fun OrderDetailRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val actionState by viewModel.actionState.collectAsStateWithLifecycle()
+    val availableStatuses by viewModel.availableStatuses.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
     var pendingPrintOrder by remember { mutableStateOf<Order?>(null) }
 
@@ -103,6 +106,7 @@ fun OrderDetailRoute(
     OrderDetailScreen(
         state = state,
         actionState = actionState,
+        availableStatuses = availableStatuses,
         onBackClick = onBackClick,
         onUpdateStatus = viewModel::updateStatus,
         onUpdateTracking = viewModel::updateTracking,
@@ -118,6 +122,7 @@ fun OrderDetailRoute(
 fun OrderDetailScreen(
     state: OrderDetailUiState,
     actionState: OrderActionState = OrderActionState(),
+    availableStatuses: List<OrderStatusFilter> = emptyList(),
     onBackClick: () -> Unit,
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
@@ -196,6 +201,7 @@ fun OrderDetailScreen(
                     OrderDetailContent(
                         order = state.order,
                         actionInProgress = actionState.inProgress,
+                        availableStatuses = availableStatuses,
                         onUpdateStatus = onUpdateStatus,
                         onUpdateTracking = onUpdateTracking,
                         onPrintInvoice = { onPrintInvoice(state.order) },
@@ -211,6 +217,7 @@ fun OrderDetailScreen(
 fun OrderDetailContent(
     order: Order,
     actionInProgress: Boolean = false,
+    availableStatuses: List<OrderStatusFilter> = emptyList(),
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
     onPrintInvoice: () -> Unit = {},
@@ -219,15 +226,15 @@ fun OrderDetailContent(
     var showTrackingDialog by remember { mutableStateOf(false) }
 
     if (showStatusDialog) {
-        TextInputDialog(
-            title = stringResource(R.string.order_detail_change_status),
-            label = stringResource(R.string.order_detail_status_label),
-            initialValue = order.status,
-            confirmLabel = stringResource(R.string.order_detail_status_update),
-            cancelLabel = stringResource(R.string.order_detail_cancel),
-            onConfirm = {
+        // Trouver l'id du statut courant pour la pré-sélection (match sur le nom)
+        val currentStatusId =
+            availableStatuses.firstOrNull { it.name.equals(order.status, ignoreCase = true) }?.id
+        StatusPickerDialog(
+            statuses = availableStatuses,
+            currentStatusId = currentStatusId,
+            onConfirm = { statusId ->
                 showStatusDialog = false
-                onUpdateStatus(it)
+                onUpdateStatus(statusId)
             },
             onDismiss = { showStatusDialog = false },
         )

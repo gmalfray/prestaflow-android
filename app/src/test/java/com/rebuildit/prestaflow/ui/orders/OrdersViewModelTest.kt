@@ -274,6 +274,135 @@ class OrdersViewModelTest {
             assertTrue(vm.uiState.value.selectedOrderIds.isEmpty())
         }
 
+    // ─── Mise à jour de statut en lot ────────────────────────────────────────
+
+    @Test
+    fun `bulkUpdateStatus appelle updateOrderStatus pour chaque commande selectionnee`() =
+        runTest {
+            fakeOrdersRepo.setOrders(
+                listOf(
+                    buildOrder(1L, "REF001", hasInvoice = true),
+                    buildOrder(2L, "REF002", hasInvoice = true),
+                ),
+            )
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            // Sélectionner les deux commandes
+            vm.onOrderLongPress(1L)
+            advanceUntilIdle()
+            vm.onOrderSelectionToggle(2L)
+            advanceUntilIdle()
+
+            vm.bulkUpdateStatus("5")
+            advanceUntilIdle()
+
+            val calledIds = fakeOrdersRepo.updateStatusCalls.map { it.first }
+            assertTrue("La commande 1 doit être mise à jour", 1L in calledIds)
+            assertTrue("La commande 2 doit être mise à jour", 2L in calledIds)
+            assertEquals("Le statut envoyé doit être '5'", "5", fakeOrdersRepo.updateStatusCalls.first().second)
+        }
+
+    @Test
+    fun `bulkUpdateStatus quitte le mode selection apres succes`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "REF001", hasInvoice = true)))
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onOrderLongPress(1L)
+            advanceUntilIdle()
+
+            vm.bulkUpdateStatus("3")
+            advanceUntilIdle()
+
+            assertTrue("Le mode sélection doit être désactivé", !vm.uiState.value.selectionMode)
+            assertTrue("Les IDs sélectionnés doivent être vidés", vm.uiState.value.selectedOrderIds.isEmpty())
+        }
+
+    @Test
+    fun `bulkUpdateStatus emet un snackbar de succes`() =
+        runTest {
+            fakeOrdersRepo.setOrders(
+                listOf(
+                    buildOrder(1L, "REF001", hasInvoice = true),
+                    buildOrder(2L, "REF002", hasInvoice = true),
+                ),
+            )
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            vm.onOrderLongPress(1L)
+            advanceUntilIdle()
+            vm.onOrderSelectionToggle(2L)
+            advanceUntilIdle()
+
+            vm.bulkUpdateStatus("5")
+            advanceUntilIdle()
+
+            val snackbar = vm.uiState.value.bulkSnackbar
+            assertTrue(
+                "Le snackbar doit mentionner le nombre de succès",
+                snackbar != null && snackbar.contains("2"),
+            )
+        }
+
+    @Test
+    fun `bulkUpdateStatus gere les echecs partiels sans planter`() =
+        runTest {
+            fakeOrdersRepo.setOrders(
+                listOf(
+                    buildOrder(1L, "REF001", hasInvoice = true),
+                    buildOrder(2L, "REF002", hasInvoice = true),
+                ),
+            )
+            // La commande 2 échoue
+            fakeOrdersRepo.failingOrderIds.add(2L)
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            vm.onOrderLongPress(1L)
+            advanceUntilIdle()
+            vm.onOrderSelectionToggle(2L)
+            advanceUntilIdle()
+
+            // Ne doit pas lancer d'exception
+            vm.bulkUpdateStatus("5")
+            advanceUntilIdle()
+
+            // L'opération se termine quand même et sort du mode sélection
+            assertTrue("Le mode sélection doit être désactivé même avec un échec partiel", !vm.uiState.value.selectionMode)
+            val snackbar = vm.uiState.value.bulkSnackbar
+            assertTrue("Le snackbar doit mentionner un échec", snackbar != null && snackbar.contains("1"))
+        }
+
+    @Test
+    fun `bulkUpdateStatus ne fait rien si la selection est vide`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeOrdersRepo.updateStatusCalls.clear()
+
+            vm.bulkUpdateStatus("5")
+            advanceUntilIdle()
+
+            assertTrue("Aucun appel updateOrderStatus ne doit avoir eu lieu", fakeOrdersRepo.updateStatusCalls.isEmpty())
+        }
+
+    @Test
+    fun `isBulkUpdating est faux apres la fin de la mise a jour`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "REF001", hasInvoice = true)))
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            vm.onOrderLongPress(1L)
+            advanceUntilIdle()
+
+            vm.bulkUpdateStatus("5")
+            advanceUntilIdle()
+
+            assertTrue("isBulkUpdating doit être false après l'opération", !vm.uiState.value.isBulkUpdating)
+        }
+
     // ─── Builders ────────────────────────────────────────────────────────────
 
     private fun buildOrder(

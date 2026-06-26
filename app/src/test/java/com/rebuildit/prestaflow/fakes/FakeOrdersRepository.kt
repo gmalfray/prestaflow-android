@@ -27,6 +27,19 @@ class FakeOrdersRepository : OrdersRepository {
     var shouldThrowOnRefresh = false
     var refreshException: Throwable = RuntimeException("Erreur réseau simulée")
 
+    /** Appels reçus par [updateOrderStatus] : (orderId, status). */
+    val updateStatusCalls = mutableListOf<Pair<Long, String>>()
+
+    /** Si vrai, [updateOrderStatus] lance une exception. */
+    var shouldThrowOnUpdateStatus = false
+    var updateStatusException: Throwable = RuntimeException("Erreur réseau simulée update status")
+
+    /**
+     * IDs pour lesquels [updateOrderStatus] doit échouer
+     * (pour simuler des échecs partiels en mode batch).
+     */
+    val failingOrderIds = mutableSetOf<Long>()
+
     override fun observeOrders(): Flow<List<Order>> = _ordersFlow.asStateFlow()
 
     override fun getOrder(orderId: Long): Flow<Order?> = MutableStateFlow(_ordersFlow.value.find { it.id == orderId })
@@ -48,7 +61,10 @@ class FakeOrdersRepository : OrdersRepository {
     override suspend fun updateOrderStatus(
         orderId: Long,
         status: String,
-    ) = Unit
+    ) {
+        updateStatusCalls += Pair(orderId, status)
+        if (shouldThrowOnUpdateStatus || orderId in failingOrderIds) throw updateStatusException
+    }
 
     override suspend fun updateOrderShipping(
         orderId: Long,
