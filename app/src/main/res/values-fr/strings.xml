@@ -208,6 +208,8 @@
     <string name="orders_filter_prefs_title">Statuts affichés dans la barre de filtres</string>
     <string name="orders_filter_prefs_cancel">Annuler</string>
     <string name="orders_filter_prefs_confirm">Appliquer</string>
+    <string name="orders_filter_empty">Aucune commande pour ce statut.</string>
+    <string name="orders_filter_reset">Réinitialiser les filtres</string>
 
     <!-- Filtres stock produits -->
     <string name="products_filter_all">Tous</string>

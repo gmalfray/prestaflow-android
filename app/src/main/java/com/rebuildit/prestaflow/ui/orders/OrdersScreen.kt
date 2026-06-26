@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -197,9 +196,12 @@ fun OrdersScreen(
 ) {
     val errorMessage = uiState.error?.asString()
 
+    // Quand un filtre de statut est actif, on reste sur OrdersList même si la liste est vide,
+    // afin que la barre de filtres reste accessible et que l'utilisateur puisse réinitialiser.
+    val hasActiveStatusFilter = uiState.selectedStatusId != null
     when {
-        uiState.isLoading && uiState.orders.isEmpty() -> LoadingState(modifier)
-        uiState.orders.isEmpty() ->
+        uiState.isLoading && uiState.orders.isEmpty() && !hasActiveStatusFilter -> LoadingState(modifier)
+        uiState.orders.isEmpty() && !hasActiveStatusFilter ->
             EmptyState(
                 message = stringResource(R.string.orders_list_empty),
                 modifier = modifier,
@@ -376,14 +378,36 @@ private fun OrdersList(
                     }
 
                     if (orders.isEmpty()) {
-                        // Recherche sans résultat
-                        item {
-                            Text(
-                                text = stringResource(R.string.list_no_results, query),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(vertical = Dimensions.spacingM),
-                            )
+                        // Filtre statut actif sans résultat → bouton de réinitialisation
+                        if (selectedStatusId != null && query.isBlank()) {
+                            item {
+                                Column(
+                                    modifier = Modifier.padding(vertical = Dimensions.spacingM),
+                                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.orders_filter_empty),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    TextButton(onClick = { onStatusFilterSelected(null) }) {
+                                        Text(
+                                            text = stringResource(R.string.orders_filter_reset),
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            // Recherche texte sans résultat
+                            item {
+                                Text(
+                                    text = stringResource(R.string.list_no_results, query),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(vertical = Dimensions.spacingM),
+                                )
+                            }
                         }
                     } else {
                         // Carte conteneur groupée
@@ -491,37 +515,25 @@ private fun SelectionActionBar(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (hasStatuses) {
-                            TextButton(
+                            IconButton(
                                 onClick = onChangeStatus,
                                 enabled = selectedCount > 0,
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Edit,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.orders_selection_change_status),
                                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(Dimensions.iconSizeSmall),
-                                )
-                                Spacer(modifier = Modifier.size(Dimensions.spacingXs))
-                                Text(
-                                    text = stringResource(R.string.orders_selection_change_status),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 )
                             }
                         }
-                        TextButton(
+                        IconButton(
                             onClick = onPrint,
                             enabled = selectedCount > 0,
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Print,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.orders_selection_print, selectedCount),
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(Dimensions.iconSizeSmall),
-                            )
-                            Spacer(modifier = Modifier.size(Dimensions.spacingXs))
-                            Text(
-                                text = stringResource(R.string.orders_selection_print, selectedCount),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
                         }
                     }
