@@ -180,7 +180,9 @@ private fun AuthenticatedShell(
 
     LaunchedEffect(navBackStackEntry) {
         val route = navBackStackEntry?.destination?.route
-        currentTitle = AppDestination.values().find { it.route == route }?.labelRes ?: R.string.app_name
+        // Tronquer à '?' et '/' pour rester robuste aux routes paramétrées (ex. "orders?period=today")
+        val baseRoute = route?.substringBefore('?')?.substringBefore('/')
+        currentTitle = AppDestination.values().find { it.route == baseRoute }?.labelRes ?: R.string.app_name
     }
 
     val useNavigationRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
@@ -237,7 +239,7 @@ private fun AuthenticatedShell(
                     )
                 NavigationBar(containerColor = navigationBarContainerColor) {
                     navBarDestinations.forEach { destination ->
-                        val selected = currentRoute == destination.route
+                        val selected = currentRoute?.substringBefore('?')?.substringBefore('/') == destination.route
                         val label = stringResource(id = destination.labelRes)
                         val onItemClick = {
                             if (!selected) {
@@ -279,7 +281,7 @@ private fun AuthenticatedShell(
                 Row(modifier = Modifier.fillMaxSize()) {
                     NavigationRail(modifier = Modifier.padding(vertical = 12.dp)) {
                         navBarDestinations.forEach { destination ->
-                            val selected = currentRoute == destination.route
+                            val selected = currentRoute?.substringBefore('?')?.substringBefore('/') == destination.route
                             val label = stringResource(id = destination.labelRes)
                             val onItemClick = {
                                 if (!selected) {

@@ -405,6 +405,53 @@ class OrdersViewModelTest {
             assertTrue("isBulkUpdating doit être false après l'opération", !vm.uiState.value.isBulkUpdating)
         }
 
+    // ─── Filtre statut + liste vide ──────────────────────────────────────────
+
+    @Test
+    fun `filtre statut sur liste vide ne crashe pas et conserve selectedStatusId`() =
+        runTest {
+            // Aucune commande retournée par le repo (statut sans résultat)
+            fakeOrdersRepo.setOrders(emptyList())
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            // Sélectionner un statut → refresh → liste vide
+            vm.onStatusFilterSelected(statusId = 7)
+            advanceUntilIdle()
+
+            assertEquals(
+                "selectedStatusId doit être conservé même si la liste est vide",
+                7,
+                vm.uiState.value.selectedStatusId,
+            )
+            assertTrue(
+                "orders doit être vide",
+                vm.uiState.value.orders.isEmpty(),
+            )
+        }
+
+    @Test
+    fun `reinitialiser le filtre statut remet selectedStatusId a null`() =
+        runTest {
+            fakeOrdersRepo.setOrders(emptyList())
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onStatusFilterSelected(statusId = 7)
+            advanceUntilIdle()
+
+            // Réinitialisation via onStatusFilterSelected(null) (action bouton "Réinitialiser")
+            vm.onStatusFilterSelected(statusId = null)
+            advanceUntilIdle()
+
+            assertNull(
+                "selectedStatusId doit être null après réinitialisation",
+                vm.uiState.value.selectedStatusId,
+            )
+        }
+
     // ─── Builders ────────────────────────────────────────────────────────────
 
     private fun buildOrder(
