@@ -14,6 +14,7 @@ data class Order(
     /** Date de dernière modification de la commande (ISO-8601). */
     val updatedAtIso: String,
     val hasInvoice: Boolean = false,
+    val hasShippingLabel: Boolean = false,
     val items: List<OrderItem> = emptyList(),
     val shipping: OrderShipping? = null,
 )

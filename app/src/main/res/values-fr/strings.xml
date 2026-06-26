@@ -4,6 +4,12 @@
     <string name="app_tagline">Gestion mobile pour PrestaShop</string>
     <string name="notif_channel_sales_name">Ventes</string>
     <string name="notif_channel_sales_desc">Notifications de nouvelle commande (son de caisse)</string>
+    <string name="notif_channel_order_status_name">Changements de statut commande</string>
+    <string name="notif_channel_order_status_desc">Notifications lors de la mise à jour du statut d\'une commande</string>
+    <string name="notif_channel_order_shipping_name">Expéditions</string>
+    <string name="notif_channel_order_shipping_desc">Notifications lors de la mise à jour du suivi d\'une commande</string>
+    <string name="notif_channel_default_name">Alertes</string>
+    <string name="notif_channel_default_desc">Notifications générales de l\'application</string>
     <string name="notif_sale_default_title">Nouvelle commande</string>
     <string name="action_retry">Réessayer</string>
     <string name="label_environment">Environnement</string>
@@ -46,6 +52,12 @@
     <string name="dashboard_chart_empty">Aucune donnée graphique pour la période sélectionnée.</string>
     <string name="dashboard_chart_total_period">Total période</string>
     <string name="dashboard_chart_vs_yesterday">vs hier</string>
+    <string name="dashboard_chart_vs_prev_week">vs 7 j précédents</string>
+    <string name="dashboard_chart_vs_prev_month">vs 30 j précédents</string>
+    <string name="dashboard_chart_vs_prev_quarter">vs trimestre précédent</string>
+    <string name="dashboard_chart_vs_prev_year">vs année précédente</string>
+    <string name="dashboard_kpi_orders_navigate">Voir les commandes de la période</string>
+    <string name="dashboard_kpi_clients_navigate">Voir les clients</string>
     <string name="dashboard_period_today">Aujourd\’hui</string>
     <string name="dashboard_period_week">7 jours</string>
     <string name="dashboard_period_month">30 jours</string>
@@ -163,6 +175,7 @@
     <string name="order_detail_qty_label">Qté : %1$d</string>
     <string name="order_detail_tracking_display">Suivi : %1$s</string>
     <string name="order_detail_print_invoice">Imprimer la facture</string>
+    <string name="order_detail_print_shipping_label">Imprimer le bordereau</string>
 
     <!-- Dialogue de choix du mode d'impression -->
     <string name="print_mode_dialog_title">Mode d\'impression</string>
@@ -180,8 +193,14 @@
     <string name="orders_selection_count">%1$d sélectionnée(s)</string>
     <string name="orders_selection_print">Imprimer (%1$d)</string>
     <string name="orders_selection_cancel">Annuler la sélection</string>
+    <string name="orders_selection_change_status">Changer le statut</string>
     <string name="orders_action_toggle_selection">Basculer la sélection</string>
     <string name="orders_print_job_name">Factures (%1$d)</string>
+    <!-- Sélecteur de statut (StatusPickerDialog) -->
+    <string name="status_picker_title">Choisir un statut</string>
+    <string name="status_picker_empty">Aucun statut disponible.</string>
+    <string name="status_picker_confirm">Appliquer</string>
+    <string name="status_picker_cancel">Annuler</string>
     <!-- Filtres statuts commandes -->
     <string name="orders_filter_all">Toutes</string>
     <string name="orders_filter_label">Filtrer par statut</string>

@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.dashboard
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -58,7 +59,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -85,6 +88,8 @@ import java.time.format.FormatStyle
 @Composable
 fun DashboardRoute(
     onAddShop: () -> Unit = {},
+    onOrdersClick: (DashboardPeriod) -> Unit = {},
+    onClientsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel(),
     shopsViewModel: ShopsViewModel = hiltViewModel(),
@@ -99,6 +104,8 @@ fun DashboardRoute(
         onRefresh = viewModel::onRefresh,
         onSwitchShop = shopsViewModel::switchShop,
         onAddShop = onAddShop,
+        onOrdersClick = { onOrdersClick(state.selectedPeriod) },
+        onClientsClick = onClientsClick,
     )
 }
 
@@ -111,6 +118,8 @@ fun DashboardScreen(
     onRefresh: () -> Unit,
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
+    onOrdersClick: () -> Unit = {},
+    onClientsClick: () -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
     val hasSnapshot = state.snapshot != null
@@ -131,6 +140,8 @@ fun DashboardScreen(
                 onRefresh = onRefresh,
                 onSwitchShop = onSwitchShop,
                 onAddShop = onAddShop,
+                onOrdersClick = onOrdersClick,
+                onClientsClick = onClientsClick,
             )
         else ->
             DashboardEmptyState(
@@ -198,6 +209,8 @@ private fun DashboardContent(
     onRefresh: () -> Unit,
     onSwitchShop: (String) -> Unit,
     onAddShop: () -> Unit,
+    onOrdersClick: () -> Unit = {},
+    onClientsClick: () -> Unit = {},
 ) {
     val currencyFormatter = rememberCurrencyFormatter()
     val numberFormatter = rememberNumberFormatter()
@@ -264,6 +277,7 @@ private fun DashboardContent(
                                 title = stringResource(id = R.string.dashboard_kpi_orders),
                                 value = ordersText,
                                 icon = Icons.Outlined.ShoppingBag,
+                                onClick = onOrdersClick,
                             ),
                             KpiItem(
                                 title = stringResource(id = R.string.dashboard_kpi_avg_cart),
@@ -274,6 +288,7 @@ private fun DashboardContent(
                                 title = stringResource(id = R.string.dashboard_kpi_customers),
                                 value = customersText,
                                 icon = Icons.Outlined.Group,
+                                onClick = onClientsClick,
                             ),
                         ),
                 )
@@ -288,6 +303,9 @@ private fun DashboardContent(
                             .padding(top = Dimensions.spacingL),
                     points = snapshot.chart,
                     totalText = turnoverText,
+                    currentTurnover = snapshot.turnover,
+                    previousTurnover = snapshot.previousTurnover,
+                    selectedPeriod = selectedPeriod,
                 )
             }
 
@@ -519,6 +537,7 @@ private fun DashboardKpiGrid(
  * Carte KPI Terracotta — fond blanc, icône dans un conteneur teinté,
  * label en haut uppercase, valeur en bas (title-lg Stitch).
  * Rayon 20dp signature du design system.
+ * Cliquable si [item.onClick] est non nul (navigation vers la liste filtrée).
  */
 @Composable
 private fun KpiCard(
@@ -526,25 +545,24 @@ private fun KpiCard(
     modifier: Modifier = Modifier,
 ) {
     val cardDesc = stringResource(id = R.string.dashboard_content_description_kpi_card, item.title, item.value)
-    Card(
-        modifier = modifier.aspectRatio(1f),
-        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-        elevation =
-            CardDefaults.cardElevation(
-                defaultElevation = 2.dp,
-            ),
-    ) {
+    val cardShape = RoundedCornerShape(Dimensions.cardCornerRadius)
+    val cardColors =
+        CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        )
+    val cardElevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+
+    val innerContent: @Composable () -> Unit = {
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(Dimensions.cardPadding)
-                    .semantics(mergeDescendants = true) { contentDescription = cardDesc },
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = cardDesc
+                        if (item.onClick != null) role = Role.Button
+                    },
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             // Icône dans un conteneur teinté
@@ -583,6 +601,23 @@ private fun KpiCard(
             }
         }
     }
+
+    if (item.onClick != null) {
+        Card(
+            onClick = item.onClick,
+            modifier = modifier.aspectRatio(1f),
+            shape = cardShape,
+            colors = cardColors,
+            elevation = cardElevation,
+        ) { innerContent() }
+    } else {
+        Card(
+            modifier = modifier.aspectRatio(1f),
+            shape = cardShape,
+            colors = cardColors,
+            elevation = cardElevation,
+        ) { innerContent() }
+    }
 }
 
 // ─── Carte graphique ──────────────────────────────────────────────────────────
@@ -591,6 +626,9 @@ private fun KpiCard(
 private fun DashboardChartCard(
     points: List<DashboardChartPoint>,
     totalText: String,
+    currentTurnover: Double,
+    previousTurnover: Double?,
+    selectedPeriod: DashboardPeriod,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -618,11 +656,15 @@ private fun DashboardChartCard(
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
-                    if (points.size >= 2) {
-                        val first = points.first().turnover
-                        val last = points.last().turnover
+                    // Comparatif vs période précédente — affiché uniquement si le connecteur
+                    // fournit le CA précédent (champ previous_turnover, disponible dès v1.5.x).
+                    if (previousTurnover != null) {
                         val delta =
-                            if (first > 0.0) ((last - first) / first * 100.0) else 0.0
+                            if (previousTurnover > 0.0) {
+                                (currentTurnover - previousTurnover) / previousTurnover * 100.0
+                            } else {
+                                0.0
+                            }
                         val isPositive = delta >= 0.0
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
@@ -639,7 +681,7 @@ private fun DashboardChartCard(
                                     },
                             )
                             Text(
-                                text = stringResource(id = R.string.dashboard_chart_vs_yesterday),
+                                text = stringResource(id = periodComparisonLabelRes(selectedPeriod)),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -852,12 +894,27 @@ private fun formatLastUpdated(isoString: String): String =
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(zoned)
     }.getOrElse { isoString }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Retourne le string resource correspondant au libellé "vs période précédente" selon la période active. */
+@StringRes
+private fun periodComparisonLabelRes(period: DashboardPeriod): Int =
+    when (period) {
+        DashboardPeriod.TODAY -> R.string.dashboard_chart_vs_yesterday
+        DashboardPeriod.WEEK -> R.string.dashboard_chart_vs_prev_week
+        DashboardPeriod.MONTH -> R.string.dashboard_chart_vs_prev_month
+        DashboardPeriod.QUARTER -> R.string.dashboard_chart_vs_prev_quarter
+        DashboardPeriod.YEAR -> R.string.dashboard_chart_vs_prev_year
+    }
+
 // ─── Modèle local ─────────────────────────────────────────────────────────────
 
 private data class KpiItem(
     val title: String,
     val value: String,
     val icon: ImageVector,
+    /** Callback de navigation. Null = carte non cliquable. */
+    val onClick: (() -> Unit)? = null,
 )
 
 // ─── Previews ─────────────────────────────────────────────────────────────────

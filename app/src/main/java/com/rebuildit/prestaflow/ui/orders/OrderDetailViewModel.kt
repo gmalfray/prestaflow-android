@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
+import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,6 +45,9 @@ class OrderDetailViewModel
         private val _actionState = MutableStateFlow(OrderActionState())
         val actionState: StateFlow<OrderActionState> = _actionState.asStateFlow()
 
+        private val _availableStatuses = MutableStateFlow<List<OrderStatusFilter>>(emptyList())
+        val availableStatuses: StateFlow<List<OrderStatusFilter>> = _availableStatuses.asStateFlow()
+
         init {
             viewModelScope.launch {
                 runCatching {
@@ -57,6 +61,18 @@ class OrderDetailViewModel
                         it.copy(error = "Détail indisponible : affichage des données en cache")
                     }
                 }
+            }
+            loadStatuses()
+        }
+
+        /** Charge les statuts disponibles depuis l'API (silencieux en cas d'erreur). */
+        private fun loadStatuses() {
+            viewModelScope.launch {
+                runCatching { ordersRepository.getOrderStatuses() }
+                    .onSuccess { statuses -> _availableStatuses.value = statuses }
+                    .onFailure { error ->
+                        Timber.w(error, "Impossible de charger les statuts pour le détail commande")
+                    }
             }
         }
 
@@ -112,6 +128,28 @@ class OrderDetailViewModel
                     }
                 }.onFailure { error ->
                     _actionState.update { it.copy(inProgress = false, error = error.message ?: "Échec du téléchargement de la facture") }
+                }
+            }
+        }
+
+        /**
+         * Télécharge le bordereau de transport PDF de la commande courante.
+         * Le résultat (octets PDF ou null si absent) est émis via [actionState].
+         */
+        fun fetchShippingLabelPdf(onReady: (ByteArray) -> Unit) {
+            viewModelScope.launch {
+                _actionState.update { it.copy(inProgress = true, error = null) }
+                runCatching {
+                    ordersRepository.downloadShippingLabel(orderId)
+                }.onSuccess { bytes ->
+                    _actionState.update { it.copy(inProgress = false) }
+                    if (bytes != null) {
+                        onReady(bytes)
+                    } else {
+                        _actionState.update { it.copy(error = "Aucun bordereau disponible pour cette commande.") }
+                    }
+                }.onFailure { error ->
+                    _actionState.update { it.copy(inProgress = false, error = error.message ?: "Échec du téléchargement du bordereau") }
                 }
             }
         }

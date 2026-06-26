@@ -16,14 +16,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Print
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Card
@@ -78,6 +81,7 @@ import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import com.rebuildit.prestaflow.ui.orders.components.StatusPickerDialog
 import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
@@ -96,12 +100,21 @@ fun OrdersRoute(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     var showPrintModeDialog by remember { mutableStateOf(false) }
+    var showBulkStatusDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.printError) {
         val err = uiState.printError
         if (err != null) {
             snackbarHostState.showSnackbar(err)
             viewModel.consumePrintError()
+        }
+    }
+
+    LaunchedEffect(uiState.bulkSnackbar) {
+        val msg = uiState.bulkSnackbar
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            viewModel.consumeBulkSnackbar()
         }
     }
 
@@ -120,6 +133,18 @@ fun OrdersRoute(
                     )
                 }
             },
+        )
+    }
+
+    if (showBulkStatusDialog) {
+        StatusPickerDialog(
+            statuses = uiState.availableStatuses,
+            currentStatusId = null,
+            onConfirm = { statusId ->
+                showBulkStatusDialog = false
+                viewModel.bulkUpdateStatus(statusId)
+            },
+            onDismiss = { showBulkStatusDialog = false },
         )
     }
 
@@ -143,6 +168,7 @@ fun OrdersRoute(
             onStatusFilterSelected = viewModel::onStatusFilterSelected,
             onVisibleStatusIdsChanged = viewModel::onVisibleStatusIdsChanged,
             onPrintSelected = { showPrintModeDialog = true },
+            onBulkChangeStatus = { showBulkStatusDialog = true },
         )
         SnackbarHost(
             hostState = snackbarHostState,
@@ -163,6 +189,7 @@ fun OrdersScreen(
     onOrderLongPress: (Long) -> Unit = {},
     onCancelSelection: () -> Unit = {},
     onPrintSelected: () -> Unit = {},
+    onBulkChangeStatus: () -> Unit = {},
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
     onStatusFilterSelected: (Int?) -> Unit = {},
@@ -188,6 +215,7 @@ fun OrdersScreen(
                 onQueryChange = onQueryChange,
                 isRefreshing = uiState.isRefreshing,
                 isPrintingInProgress = uiState.isPrintingInProgress,
+                isBulkUpdating = uiState.isBulkUpdating,
                 errorMessage = errorMessage,
                 connections = connections,
                 onRefresh = { onRefresh(true) },
@@ -197,6 +225,7 @@ fun OrdersScreen(
                 selectedOrderIds = uiState.selectedOrderIds,
                 onCancelSelection = onCancelSelection,
                 onPrintSelected = onPrintSelected,
+                onBulkChangeStatus = onBulkChangeStatus,
                 onSwitchShop = onSwitchShop,
                 onAddShop = onAddShop,
                 availableStatuses = uiState.availableStatuses,
@@ -220,6 +249,7 @@ private fun OrdersList(
     onQueryChange: (String) -> Unit,
     isRefreshing: Boolean,
     isPrintingInProgress: Boolean,
+    isBulkUpdating: Boolean = false,
     errorMessage: String?,
     connections: List<ShopConnection>,
     onRefresh: () -> Unit,
@@ -229,6 +259,7 @@ private fun OrdersList(
     selectedOrderIds: Set<Long>,
     onCancelSelection: () -> Unit,
     onPrintSelected: () -> Unit,
+    onBulkChangeStatus: () -> Unit = {},
     onSwitchShop: (String) -> Unit,
     onAddShop: () -> Unit,
     availableStatuses: List<OrderStatusFilter> = emptyList(),
@@ -270,8 +301,11 @@ private fun OrdersList(
                     SelectionActionBar(
                         selectedCount = selectedOrderIds.size,
                         isPrintingInProgress = isPrintingInProgress,
+                        isBulkUpdating = isBulkUpdating,
                         onCancel = onCancelSelection,
                         onPrint = onPrintSelected,
+                        onChangeStatus = onBulkChangeStatus,
+                        hasStatuses = availableStatuses.isNotEmpty(),
                     )
                 }
 
@@ -392,14 +426,19 @@ private fun OrdersList(
 
 /**
  * Barre contextuelle affichée en haut de l'écran lors de la sélection multiple.
- * Affiche le nombre de commandes sélectionnées, un bouton Annuler et un bouton Imprimer.
+ * Affiche le nombre de commandes sélectionnées, un bouton Annuler, un bouton
+ * « Changer le statut » (si des statuts sont disponibles) et un bouton Imprimer.
  */
+@Suppress("LongParameterList")
 @Composable
 private fun SelectionActionBar(
     selectedCount: Int,
     isPrintingInProgress: Boolean,
+    isBulkUpdating: Boolean,
     onCancel: () -> Unit,
     onPrint: () -> Unit,
+    onChangeStatus: () -> Unit,
+    hasStatuses: Boolean,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
@@ -431,28 +470,61 @@ private fun SelectionActionBar(
                 )
             }
 
-            if (isPrintingInProgress) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(Dimensions.iconSizeMedium),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    strokeWidth = 2.dp,
-                )
-            } else {
-                TextButton(
-                    onClick = onPrint,
-                    enabled = selectedCount > 0,
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Print,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(Dimensions.iconSizeSmall),
-                    )
-                    Spacer(modifier = Modifier.size(Dimensions.spacingXs))
-                    Text(
-                        text = stringResource(R.string.orders_selection_print, selectedCount),
+            when {
+                isBulkUpdating -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimensions.iconSizeMedium),
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        strokeWidth = 2.dp,
                     )
+                }
+                isPrintingInProgress -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimensions.iconSizeMedium),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        strokeWidth = 2.dp,
+                    )
+                }
+                else -> {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (hasStatuses) {
+                            TextButton(
+                                onClick = onChangeStatus,
+                                enabled = selectedCount > 0,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Edit,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(Dimensions.iconSizeSmall),
+                                )
+                                Spacer(modifier = Modifier.size(Dimensions.spacingXs))
+                                Text(
+                                    text = stringResource(R.string.orders_selection_change_status),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
+                        }
+                        TextButton(
+                            onClick = onPrint,
+                            enabled = selectedCount > 0,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Print,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(Dimensions.iconSizeSmall),
+                            )
+                            Spacer(modifier = Modifier.size(Dimensions.spacingXs))
+                            Text(
+                                text = stringResource(R.string.orders_selection_print, selectedCount),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -685,7 +757,6 @@ private fun StatusPreferencesSheet(
                     .fillMaxWidth()
                     .padding(horizontal = Dimensions.screenEdgeMargin)
                     .padding(bottom = Dimensions.spacingL),
-            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
         ) {
             Text(
                 text = stringResource(R.string.orders_filter_prefs_title),
@@ -693,37 +764,47 @@ private fun StatusPreferencesSheet(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = Dimensions.spacingS),
             )
-            availableStatuses.forEach { status ->
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable {
+            // Liste scrollable : chaque statut reste visible sans débordement
+            LazyColumn(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 320.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+            ) {
+                items(availableStatuses, key = { it.id }) { status ->
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    localSelection =
+                                        if (status.id in localSelection) {
+                                            localSelection - status.id
+                                        } else {
+                                            localSelection + status.id
+                                        }
+                                }
+                                .padding(vertical = Dimensions.spacingXs),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+                    ) {
+                        Checkbox(
+                            checked = status.id in localSelection,
+                            onCheckedChange = { checked ->
                                 localSelection =
-                                    if (status.id in localSelection) {
-                                        localSelection - status.id
-                                    } else {
-                                        localSelection + status.id
-                                    }
-                            }
-                            .padding(vertical = Dimensions.spacingXs),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
-                ) {
-                    Checkbox(
-                        checked = status.id in localSelection,
-                        onCheckedChange = { checked ->
-                            localSelection =
-                                if (checked) localSelection + status.id else localSelection - status.id
-                        },
-                    )
-                    Text(
-                        text = status.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+                                    if (checked) localSelection + status.id else localSelection - status.id
+                            },
+                        )
+                        Text(
+                            text = status.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                 }
             }
+            // Boutons toujours visibles — fixes en bas du sheet
             Row(
                 modifier =
                     Modifier

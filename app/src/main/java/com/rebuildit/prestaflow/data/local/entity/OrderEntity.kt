@@ -15,6 +15,7 @@ data class OrderEntity(
     @ColumnInfo(name = "created_at_iso", defaultValue = "") val createdAtIso: String = "",
     @ColumnInfo(name = "updated_at_iso") val updatedAtIso: String,
     @ColumnInfo(name = "has_invoice", defaultValue = "0") val hasInvoice: Boolean = false,
+    @ColumnInfo(name = "has_shipping_label", defaultValue = "0") val hasShippingLabel: Boolean = false,
     @ColumnInfo(name = "items_json") val itemsJson: String? = null,
     @ColumnInfo(name = "shipping_json") val shippingJson: String? = null,
 )

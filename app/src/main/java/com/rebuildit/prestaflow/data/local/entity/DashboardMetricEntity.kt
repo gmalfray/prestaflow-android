@@ -13,4 +13,6 @@ data class DashboardMetricEntity(
     val productsCount: Int,
     val lastUpdatedIso: String,
     @ColumnInfo(name = "chart_json") val chartJson: String,
+    /** CA période précédente — null si le connecteur ne le fournit pas encore. */
+    @ColumnInfo(name = "previous_turnover", defaultValue = "NULL") val previousTurnover: Double? = null,
 )

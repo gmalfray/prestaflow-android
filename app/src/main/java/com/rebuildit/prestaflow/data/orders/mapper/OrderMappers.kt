@@ -44,6 +44,7 @@ fun OrderEntity.toDomain(): Order {
         createdAtIso = createdAtIso,
         updatedAtIso = updatedAtIso,
         hasInvoice = hasInvoice,
+        hasShippingLabel = hasShippingLabel,
         items = itemsList,
         shipping = shippingInfo,
     )
@@ -64,6 +65,8 @@ fun OrderListItemDto.toEntity(): OrderEntity =
         createdAtIso = dateAdded.orEmpty(),
         updatedAtIso = dateUpdated.orEmpty(),
         hasInvoice = hasInvoice,
+        // non exposé par l'endpoint liste
+        hasShippingLabel = false,
         itemsJson = null,
         shippingJson = null,
     )
@@ -94,6 +97,7 @@ fun OrderDto.toEntity(): OrderEntity {
         createdAtIso = dates?.createdAt.orEmpty(),
         updatedAtIso = dates?.updatedAt.orEmpty(),
         hasInvoice = hasInvoice,
+        hasShippingLabel = shippingLabel?.hasShippingLabel ?: false,
         itemsJson = itemsJsonStr,
         shippingJson = shippingJsonStr,
     )

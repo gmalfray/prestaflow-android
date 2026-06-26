@@ -16,10 +16,14 @@ interface OrdersRepository {
     /**
      * Rafraîchit la liste des commandes depuis le serveur.
      * @param statusId Si non nul, filtre les commandes par ce statut.
+     * @param dateFrom Date de début au format Y-m-d (ex. "2026-06-01"). Null = pas de filtre date.
+     * @param dateTo Date de fin au format Y-m-d (ex. "2026-06-30"). Null = pas de filtre date.
      */
     suspend fun refresh(
         forceRemote: Boolean = false,
         statusId: Int? = null,
+        dateFrom: String? = null,
+        dateTo: String? = null,
     )
 
     fun getOrder(orderId: Long): Flow<Order?>
@@ -51,4 +55,12 @@ interface OrdersRepository {
      * Lance une exception pour toute autre erreur réseau.
      */
     suspend fun downloadInvoicePdf(orderId: Long): ByteArray?
+
+    /**
+     * Télécharge les octets PDF du bordereau de transport pour la commande [orderId].
+     * Retourne `null` si la commande n'a pas de bordereau disponible (HTTP 404) :
+     * transporteur non géré (ni Colissimo ni Mondial Relay), fichier absent ou URL expirée.
+     * Lance une exception pour toute autre erreur réseau.
+     */
+    suspend fun downloadShippingLabel(orderId: Long): ByteArray?
 }

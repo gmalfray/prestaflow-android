@@ -48,6 +48,8 @@ class OrdersRepositoryImpl
         override suspend fun refresh(
             forceRemote: Boolean,
             statusId: Int?,
+            dateFrom: String?,
+            dateTo: String?,
         ) {
             withContext(ioDispatcher) {
                 val filters =
@@ -55,6 +57,8 @@ class OrdersRepositoryImpl
                         put("sort", "-date_add")
                         put("limit", "50")
                         if (statusId != null) put("status", statusId.toString())
+                        if (dateFrom != null) put("date_from", dateFrom)
+                        if (dateTo != null) put("date_to", dateTo)
                     }
                 val result = runCatching { api.getOrders(filters) }
                 result.fold(
@@ -139,6 +143,20 @@ class OrdersRepositoryImpl
                     response.code() == 404 -> null
                     else -> {
                         val msg = "Erreur HTTP ${response.code()} lors du téléchargement de la facture #$orderId"
+                        Timber.w(msg)
+                        error(msg)
+                    }
+                }
+            }
+
+        override suspend fun downloadShippingLabel(orderId: Long): ByteArray? =
+            withContext(ioDispatcher) {
+                val response = api.getShippingLabelPdf(orderId)
+                when {
+                    response.isSuccessful -> response.body()?.bytes()
+                    response.code() == 404 -> null
+                    else -> {
+                        val msg = "Erreur HTTP ${response.code()} lors du téléchargement du bordereau #$orderId"
                         Timber.w(msg)
                         error(msg)
                     }

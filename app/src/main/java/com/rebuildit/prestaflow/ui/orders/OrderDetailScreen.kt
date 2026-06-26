@@ -64,10 +64,12 @@ import com.rebuildit.prestaflow.core.print.InvoicePrinter
 import com.rebuildit.prestaflow.core.print.PrintMode
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderItem
+import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import com.rebuildit.prestaflow.ui.orders.components.StatusPickerDialog
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -79,6 +81,7 @@ fun OrderDetailRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val actionState by viewModel.actionState.collectAsStateWithLifecycle()
+    val availableStatuses by viewModel.availableStatuses.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
     var pendingPrintOrder by remember { mutableStateOf<Order?>(null) }
 
@@ -103,11 +106,22 @@ fun OrderDetailRoute(
     OrderDetailScreen(
         state = state,
         actionState = actionState,
+        availableStatuses = availableStatuses,
         onBackClick = onBackClick,
         onUpdateStatus = viewModel::updateStatus,
         onUpdateTracking = viewModel::updateTracking,
         onConsumeFeedback = viewModel::consumeActionFeedback,
         onPrintInvoice = { order -> pendingPrintOrder = order },
+        onPrintShippingLabel = { order ->
+            viewModel.fetchShippingLabelPdf { pdfBytes ->
+                InvoicePrinter.print(
+                    context = context,
+                    pdfBytesList = listOf(pdfBytes),
+                    jobName = "Bordereau ${order.reference}",
+                    mode = PrintMode.ONE_PER_PAGE,
+                )
+            }
+        },
     )
 }
 
@@ -118,11 +132,13 @@ fun OrderDetailRoute(
 fun OrderDetailScreen(
     state: OrderDetailUiState,
     actionState: OrderActionState = OrderActionState(),
+    availableStatuses: List<OrderStatusFilter> = emptyList(),
     onBackClick: () -> Unit,
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
     onConsumeFeedback: () -> Unit = {},
     onPrintInvoice: (Order) -> Unit = {},
+    onPrintShippingLabel: (Order) -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val backDesc = stringResource(R.string.content_description_back)
@@ -196,9 +212,11 @@ fun OrderDetailScreen(
                     OrderDetailContent(
                         order = state.order,
                         actionInProgress = actionState.inProgress,
+                        availableStatuses = availableStatuses,
                         onUpdateStatus = onUpdateStatus,
                         onUpdateTracking = onUpdateTracking,
                         onPrintInvoice = { onPrintInvoice(state.order) },
+                        onPrintShippingLabel = { onPrintShippingLabel(state.order) },
                     )
                 }
             }
@@ -206,28 +224,31 @@ fun OrderDetailScreen(
     }
 }
 
-@Suppress("LongMethod") // Composable contenu de détail : chaque bloc est une card métier distincte, extraction nuirait à la lisibilité
+// Composable contenu de détail : chaque bloc est une card métier distincte, extraction nuirait à la lisibilité
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 fun OrderDetailContent(
     order: Order,
     actionInProgress: Boolean = false,
+    availableStatuses: List<OrderStatusFilter> = emptyList(),
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
     onPrintInvoice: () -> Unit = {},
+    onPrintShippingLabel: () -> Unit = {},
 ) {
     var showStatusDialog by remember { mutableStateOf(false) }
     var showTrackingDialog by remember { mutableStateOf(false) }
 
     if (showStatusDialog) {
-        TextInputDialog(
-            title = stringResource(R.string.order_detail_change_status),
-            label = stringResource(R.string.order_detail_status_label),
-            initialValue = order.status,
-            confirmLabel = stringResource(R.string.order_detail_status_update),
-            cancelLabel = stringResource(R.string.order_detail_cancel),
-            onConfirm = {
+        // Trouver l'id du statut courant pour la pré-sélection (match sur le nom)
+        val currentStatusId =
+            availableStatuses.firstOrNull { it.name.equals(order.status, ignoreCase = true) }?.id
+        StatusPickerDialog(
+            statuses = availableStatuses,
+            currentStatusId = currentStatusId,
+            onConfirm = { statusId ->
                 showStatusDialog = false
-                onUpdateStatus(it)
+                onUpdateStatus(statusId)
             },
             onDismiss = { showStatusDialog = false },
         )
@@ -404,6 +425,24 @@ fun OrderDetailContent(
                 )
                 Spacer(modifier = Modifier.size(Dimensions.spacingS))
                 Text(stringResource(R.string.order_detail_print_invoice))
+            }
+        }
+
+        // Bouton impression bordereau — visible uniquement si has_shipping_label
+        if (order.hasShippingLabel) {
+            OutlinedButton(
+                onClick = onPrintShippingLabel,
+                enabled = !actionInProgress,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(50),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.LocalShipping,
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimensions.iconSizeSmall),
+                )
+                Spacer(modifier = Modifier.size(Dimensions.spacingS))
+                Text(stringResource(R.string.order_detail_print_shipping_label))
             }
         }
     }

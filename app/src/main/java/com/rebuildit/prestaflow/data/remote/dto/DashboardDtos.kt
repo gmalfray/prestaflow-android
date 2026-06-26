@@ -10,6 +10,11 @@ data class DashboardMetricsDto(
     @SerialName("customers_count") val customersCount: Int,
     @SerialName("products_count") val productsCount: Int,
     @SerialName("chart") val chart: List<ChartPointDto>,
+    /**
+     * CA de la période précédente équivalente, retourné par le connecteur v1.5.x+.
+     * Null si le connecteur ne supporte pas encore ce champ.
+     */
+    @SerialName("previous_turnover") val previousTurnover: Double? = null,
 )
 
 @Serializable

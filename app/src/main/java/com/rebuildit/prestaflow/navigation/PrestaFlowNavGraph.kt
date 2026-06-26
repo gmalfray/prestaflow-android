@@ -46,9 +46,29 @@ fun PrestaFlowNavGraph(
                         launchSingleTop = true
                     }
                 },
+                onOrdersClick = { period ->
+                    navController.navigate("${AppDestination.Orders.route}?period=${period.queryValue}")
+                },
+                onClientsClick = {
+                    navController.navigate(AppDestination.Clients.route) {
+                        launchSingleTop = true
+                    }
+                },
             )
         }
-        composable(AppDestination.Orders.route) {
+        // Route commandes avec filtre de période optionnel (transmis depuis le dashboard).
+        // L'argument "period" est null lors d'un accès direct via la barre de navigation.
+        composable(
+            route = "${AppDestination.Orders.route}?period={period}",
+            arguments =
+                listOf(
+                    navArgument("period") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+        ) {
             if (isExpanded) {
                 // Tablette : layout deux colonnes liste + détail
                 OrdersTwoPaneRoute()

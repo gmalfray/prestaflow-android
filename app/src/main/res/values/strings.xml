@@ -52,6 +52,12 @@
     <string name="dashboard_chart_empty">No chart data for the selected period.</string>
     <string name="dashboard_chart_total_period">Total period</string>
     <string name="dashboard_chart_vs_yesterday">vs yesterday</string>
+    <string name="dashboard_chart_vs_prev_week">vs prev. 7 days</string>
+    <string name="dashboard_chart_vs_prev_month">vs prev. 30 days</string>
+    <string name="dashboard_chart_vs_prev_quarter">vs prev. quarter</string>
+    <string name="dashboard_chart_vs_prev_year">vs prev. year</string>
+    <string name="dashboard_kpi_orders_navigate">See orders for this period</string>
+    <string name="dashboard_kpi_clients_navigate">See customers</string>
     <string name="dashboard_period_today">Today</string>
     <string name="dashboard_period_week">7 days</string>
     <string name="dashboard_period_month">30 days</string>
@@ -169,6 +175,7 @@
     <string name="order_detail_qty_label">Qty: %1$d</string>
     <string name="order_detail_tracking_display">Tracking: %1$s</string>
     <string name="order_detail_print_invoice">Print invoice</string>
+    <string name="order_detail_print_shipping_label">Print shipping label</string>
 
     <!-- Dialogue de choix du mode d'impression -->
     <string name="print_mode_dialog_title">Print mode</string>
@@ -186,8 +193,15 @@
     <string name="orders_selection_count">%1$d selected</string>
     <string name="orders_selection_print">Print (%1$d)</string>
     <string name="orders_selection_cancel">Cancel selection</string>
+    <string name="orders_selection_change_status">Change status</string>
     <string name="orders_action_toggle_selection">Toggle selection</string>
     <string name="orders_print_job_name">Invoices (%1$d)</string>
+    <!-- Sélecteur de statut (StatusPickerDialog) -->
+    <string name="status_picker_title">Choose a status</string>
+    <string name="status_picker_empty">No status available.</string>
+    <string name="status_picker_confirm">Apply</string>
+    <string name="status_picker_cancel">Cancel</string>
+
     <!-- Filtres statuts commandes -->
     <string name="orders_filter_all">All</string>
     <string name="orders_filter_label">Filter by status</string>
