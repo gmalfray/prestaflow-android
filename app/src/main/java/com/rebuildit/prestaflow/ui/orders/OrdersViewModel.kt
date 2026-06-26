@@ -298,7 +298,10 @@ class OrdersViewModel
                             val mapped = networkErrorMapper.map(error)
                             current.copy(
                                 isRefreshing = false,
-                                isLoading = current.orders.isEmpty(),
+                                // Toujours false après une réponse (même vide), pour ne pas
+                                // bloquer l'UI sur le loader quand le filtre de période donne 0 résultats.
+                                // observeOrders() a déjà positionné isLoading = false via l'émission Room.
+                                isLoading = false,
                                 error = if (notifyOnError) mapped else current.error,
                             )
                         }
@@ -307,7 +310,12 @@ class OrdersViewModel
                         _uiState.update { current ->
                             current.copy(
                                 isRefreshing = false,
-                                isLoading = current.orders.isEmpty(),
+                                // Toujours false après succès : si la liste est vide (filtre de période
+                                // sans résultat), on affiche l'état vide plutôt qu'un spinner infini.
+                                // Si isLoading = current.orders.isEmpty() était utilisé, Room émet []
+                                // avant onSuccess et remet isLoading = false, puis onSuccess le repasse
+                                // à true → loader infini pour les listes vides filtrées.
+                                isLoading = false,
                                 error = null,
                             )
                         }
@@ -317,22 +325,30 @@ class OrdersViewModel
     }
 
 /**
- * Convertit une [DashboardPeriod] en plage de dates (dateFrom, dateTo) au format "Y-m-d",
- * en reprenant exactement la même logique que [DashboardService::resolvePeriodRange] côté PHP
- * (baseé sur la date locale du device ; la boutique utilise son propre fuseau côté serveur).
+ * Convertit une [DashboardPeriod] en plage (dateFrom, dateTo) pour le filtre `GET /orders`.
+ *
+ * Le connecteur accepte les formats `Y-m-d` et `Y-m-d H:i:s` dans `date_from`/`date_to`.
+ * Sans suffixe horaire, MySQL interprète une date nue comme `00:00:00` : la condition
+ * `date_add <= "2024-01-15"` devient `date_add <= "2024-01-15 00:00:00"`, excluant toutes
+ * les commandes passées après minuit le même jour. On aligne sur le comportement du Dashboard
+ * (`DashboardService::resolvePeriodRange`) qui borne `date_to` à `23:59:59`.
+ *
+ * @param today Date courante (injectable pour les tests ; défaut = [LocalDate.now]).
  */
-private fun DashboardPeriod.toDateRange(): Pair<String, String> {
-    val fmt = DateTimeFormatter.ISO_LOCAL_DATE
-    val today = LocalDate.now()
-    val (from, to) =
+internal fun DashboardPeriod.toDateRange(today: LocalDate = LocalDate.now()): Pair<String, String> {
+    val dateFmt = DateTimeFormatter.ISO_LOCAL_DATE
+    val fromDate =
         when (this) {
-            DashboardPeriod.TODAY -> Pair(today, today)
-            DashboardPeriod.WEEK -> Pair(today.minusDays(6), today)
-            DashboardPeriod.MONTH -> Pair(today.minusDays(29), today)
-            DashboardPeriod.QUARTER -> Pair(today.minusMonths(3), today)
-            DashboardPeriod.YEAR -> Pair(today.withDayOfYear(1), today)
+            DashboardPeriod.TODAY -> today
+            DashboardPeriod.WEEK -> today.minusDays(6)
+            DashboardPeriod.MONTH -> today.minusDays(29)
+            DashboardPeriod.QUARTER -> today.minusMonths(3)
+            DashboardPeriod.YEAR -> today.withDayOfYear(1)
         }
-    return Pair(from.format(fmt), to.format(fmt))
+    // date_to avec 23:59:59 : sans ce suffixe, MySQL cast la date nue en 00:00:00,
+    // rendant le filtre du jour "aujourd'hui" vide et causant un écart de comptage
+    // par rapport au KPI Dashboard (qui lui applique le BETWEEN avec 23:59:59).
+    return Pair(fromDate.format(dateFmt), "${today.format(dateFmt)} 23:59:59")
 }
 
 data class OrdersUiState(
