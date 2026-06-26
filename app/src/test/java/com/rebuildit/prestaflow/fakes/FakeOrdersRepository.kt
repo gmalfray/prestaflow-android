@@ -51,6 +51,8 @@ class FakeOrdersRepository : OrdersRepository {
     override suspend fun refresh(
         forceRemote: Boolean,
         statusId: Int?,
+        dateFrom: String?,
+        dateTo: String?,
     ) {
         refreshCalls += Pair(forceRemote, statusId)
         if (shouldThrowOnRefresh) throw refreshException

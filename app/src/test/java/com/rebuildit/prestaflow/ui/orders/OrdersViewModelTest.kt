@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.orders
 
+import androidx.lifecycle.SavedStateHandle
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
@@ -47,8 +48,9 @@ class OrdersViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun buildViewModel(): OrdersViewModel =
+    private fun buildViewModel(periodValue: String? = null): OrdersViewModel =
         OrdersViewModel(
+            savedStateHandle = SavedStateHandle(if (periodValue != null) mapOf("period" to periodValue) else emptyMap()),
             ordersRepository = fakeOrdersRepo,
             ordersPreferencesRepository = fakePrefsRepo,
             networkErrorMapper = NetworkErrorMapper(),

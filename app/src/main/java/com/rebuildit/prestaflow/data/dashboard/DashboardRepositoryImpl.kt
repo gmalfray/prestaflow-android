@@ -53,6 +53,7 @@ class DashboardRepositoryImpl
                                 productsCount = payload.productsCount,
                                 lastUpdatedIso = java.time.Instant.now().toString(),
                                 chartJson = json.encodeToString(chartSerializer, payload.chart),
+                                previousTurnover = payload.previousTurnover,
                             )
                         dashboardDao.upsert(entity)
                     },
@@ -77,6 +78,7 @@ class DashboardRepositoryImpl
                 productsCount = productsCount,
                 chart = chartPoints.map { it.toDomain() },
                 lastUpdatedIso = lastUpdatedIso,
+                previousTurnover = previousTurnover,
             )
         }
 

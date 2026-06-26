@@ -52,6 +52,12 @@
     <string name="dashboard_chart_empty">Aucune donnée graphique pour la période sélectionnée.</string>
     <string name="dashboard_chart_total_period">Total période</string>
     <string name="dashboard_chart_vs_yesterday">vs hier</string>
+    <string name="dashboard_chart_vs_prev_week">vs 7 j précédents</string>
+    <string name="dashboard_chart_vs_prev_month">vs 30 j précédents</string>
+    <string name="dashboard_chart_vs_prev_quarter">vs trimestre précédent</string>
+    <string name="dashboard_chart_vs_prev_year">vs année précédente</string>
+    <string name="dashboard_kpi_orders_navigate">Voir les commandes de la période</string>
+    <string name="dashboard_kpi_clients_navigate">Voir les clients</string>
     <string name="dashboard_period_today">Aujourd\’hui</string>
     <string name="dashboard_period_week">7 jours</string>
     <string name="dashboard_period_month">30 jours</string>

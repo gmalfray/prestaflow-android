@@ -1,10 +1,12 @@
 package com.rebuildit.prestaflow.ui.orders
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.orders.OrdersPreferencesRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
@@ -19,12 +21,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
 class OrdersViewModel
     @Inject
     constructor(
+        savedStateHandle: SavedStateHandle,
         private val ordersRepository: OrdersRepository,
         private val ordersPreferencesRepository: OrdersPreferencesRepository,
         private val networkErrorMapper: NetworkErrorMapper,
@@ -32,6 +37,15 @@ class OrdersViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(OrdersUiState())
         val uiState: StateFlow<OrdersUiState> = _uiState.asStateFlow()
+
+        /**
+         * Plage de dates dérivée de la période dashboard transmise via nav arg "period".
+         * Null si l'écran est ouvert sans filtre de période (accès direct depuis la barre de navigation).
+         */
+        private val periodDateRange: Pair<String, String>? =
+            savedStateHandle.get<String?>("period")
+                ?.let { periodValue -> DashboardPeriod.entries.find { it.queryValue == periodValue } }
+                ?.toDateRange()
 
         init {
             observeOrders()
@@ -276,7 +290,8 @@ class OrdersViewModel
                 }
 
                 val statusId = _uiState.value.selectedStatusId
-                runCatching { ordersRepository.refresh(forceRemote, statusId) }
+                val (dateFrom, dateTo) = periodDateRange ?: Pair(null, null)
+                runCatching { ordersRepository.refresh(forceRemote, statusId, dateFrom, dateTo) }
                     .onFailure { error ->
                         Timber.w(error, "Failed to refresh orders")
                         _uiState.update { current ->
@@ -300,6 +315,25 @@ class OrdersViewModel
             }
         }
     }
+
+/**
+ * Convertit une [DashboardPeriod] en plage de dates (dateFrom, dateTo) au format "Y-m-d",
+ * en reprenant exactement la même logique que [DashboardService::resolvePeriodRange] côté PHP
+ * (baseé sur la date locale du device ; la boutique utilise son propre fuseau côté serveur).
+ */
+private fun DashboardPeriod.toDateRange(): Pair<String, String> {
+    val fmt = DateTimeFormatter.ISO_LOCAL_DATE
+    val today = LocalDate.now()
+    val (from, to) =
+        when (this) {
+            DashboardPeriod.TODAY -> Pair(today, today)
+            DashboardPeriod.WEEK -> Pair(today.minusDays(6), today)
+            DashboardPeriod.MONTH -> Pair(today.minusDays(29), today)
+            DashboardPeriod.QUARTER -> Pair(today.minusMonths(3), today)
+            DashboardPeriod.YEAR -> Pair(today.withDayOfYear(1), today)
+        }
+    return Pair(from.format(fmt), to.format(fmt))
+}
 
 data class OrdersUiState(
     val orders: List<Order> = emptyList(),

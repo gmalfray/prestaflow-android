@@ -48,6 +48,8 @@ class OrdersRepositoryImpl
         override suspend fun refresh(
             forceRemote: Boolean,
             statusId: Int?,
+            dateFrom: String?,
+            dateTo: String?,
         ) {
             withContext(ioDispatcher) {
                 val filters =
@@ -55,6 +57,8 @@ class OrdersRepositoryImpl
                         put("sort", "-date_add")
                         put("limit", "50")
                         if (statusId != null) put("status", statusId.toString())
+                        if (dateFrom != null) put("date_from", dateFrom)
+                        if (dateTo != null) put("date_to", dateTo)
                     }
                 val result = runCatching { api.getOrders(filters) }
                 result.fold(
