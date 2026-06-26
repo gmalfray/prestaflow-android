@@ -55,4 +55,12 @@ interface OrdersRepository {
      * Lance une exception pour toute autre erreur réseau.
      */
     suspend fun downloadInvoicePdf(orderId: Long): ByteArray?
+
+    /**
+     * Télécharge les octets PDF du bordereau de transport pour la commande [orderId].
+     * Retourne `null` si la commande n'a pas de bordereau disponible (HTTP 404) :
+     * transporteur non géré (ni Colissimo ni Mondial Relay), fichier absent ou URL expirée.
+     * Lance une exception pour toute autre erreur réseau.
+     */
+    suspend fun downloadShippingLabel(orderId: Long): ByteArray?
 }

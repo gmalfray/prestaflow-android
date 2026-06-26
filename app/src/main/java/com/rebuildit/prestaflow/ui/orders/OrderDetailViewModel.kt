@@ -131,6 +131,28 @@ class OrderDetailViewModel
                 }
             }
         }
+
+        /**
+         * Télécharge le bordereau de transport PDF de la commande courante.
+         * Le résultat (octets PDF ou null si absent) est émis via [actionState].
+         */
+        fun fetchShippingLabelPdf(onReady: (ByteArray) -> Unit) {
+            viewModelScope.launch {
+                _actionState.update { it.copy(inProgress = true, error = null) }
+                runCatching {
+                    ordersRepository.downloadShippingLabel(orderId)
+                }.onSuccess { bytes ->
+                    _actionState.update { it.copy(inProgress = false) }
+                    if (bytes != null) {
+                        onReady(bytes)
+                    } else {
+                        _actionState.update { it.copy(error = "Aucun bordereau disponible pour cette commande.") }
+                    }
+                }.onFailure { error ->
+                    _actionState.update { it.copy(inProgress = false, error = error.message ?: "Échec du téléchargement du bordereau") }
+                }
+            }
+        }
     }
 
 data class OrderActionState(

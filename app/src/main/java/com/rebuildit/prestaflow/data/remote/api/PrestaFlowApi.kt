@@ -71,6 +71,18 @@ interface PrestaFlowApi {
         @Path("id") orderId: Long,
     ): Response<ResponseBody>
 
+    /**
+     * Télécharge le bordereau de transport PDF d'une commande.
+     * Retourne 404 si la commande n'a pas de bordereau disponible (transporteur non géré,
+     * fichier absent, URL expirée).
+     * `@Streaming` évite de bufferiser le PDF entier en mémoire avant de le lire.
+     */
+    @Streaming
+    @GET("orders/{id}/shipping-label")
+    suspend fun getShippingLabelPdf(
+        @Path("id") orderId: Long,
+    ): Response<ResponseBody>
+
     @GET("products")
     suspend fun getProducts(
         @QueryMap filters: Map<String, @JvmSuppressWildcards String> = emptyMap(),

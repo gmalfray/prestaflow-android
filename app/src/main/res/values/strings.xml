@@ -175,6 +175,7 @@
     <string name="order_detail_qty_label">Qty: %1$d</string>
     <string name="order_detail_tracking_display">Tracking: %1$s</string>
     <string name="order_detail_print_invoice">Print invoice</string>
+    <string name="order_detail_print_shipping_label">Print shipping label</string>
 
     <!-- Dialogue de choix du mode d'impression -->
     <string name="print_mode_dialog_title">Print mode</string>

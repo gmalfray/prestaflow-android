@@ -75,4 +75,6 @@ class FakeOrdersRepository : OrdersRepository {
     ) = Unit
 
     override suspend fun downloadInvoicePdf(orderId: Long): ByteArray? = null
+
+    override suspend fun downloadShippingLabel(orderId: Long): ByteArray? = null
 }

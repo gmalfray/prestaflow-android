@@ -54,6 +54,13 @@ data class OrderDto(
     @SerialName("items") val items: List<OrderItemDto>? = null,
     @SerialName("history") val history: List<OrderHistoryDto>? = null,
     @SerialName("has_invoice") val hasInvoice: Boolean = false,
+    @SerialName("shipping_label") val shippingLabel: OrderShippingLabelDto? = null,
+)
+
+@Serializable
+data class OrderShippingLabelDto(
+    @SerialName("has_shipping_label") val hasShippingLabel: Boolean = false,
+    @SerialName("carrier_type") val carrierType: String? = null,
 )
 
 @Serializable

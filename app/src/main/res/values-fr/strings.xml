@@ -175,6 +175,7 @@
     <string name="order_detail_qty_label">Qté : %1$d</string>
     <string name="order_detail_tracking_display">Suivi : %1$s</string>
     <string name="order_detail_print_invoice">Imprimer la facture</string>
+    <string name="order_detail_print_shipping_label">Imprimer le bordereau</string>
 
     <!-- Dialogue de choix du mode d'impression -->
     <string name="print_mode_dialog_title">Mode d\'impression</string>

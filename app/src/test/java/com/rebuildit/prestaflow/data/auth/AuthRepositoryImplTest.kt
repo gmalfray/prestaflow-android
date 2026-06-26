@@ -608,6 +608,8 @@ class AuthRepositoryImplTest {
 
         override suspend fun getInvoicePdf(orderId: Long) = throw UnsupportedOperationException()
 
+        override suspend fun getShippingLabelPdf(orderId: Long) = throw UnsupportedOperationException()
+
         override suspend fun getProducts(
             filters: Map<String, String>,
             search: String?,

@@ -59,6 +59,9 @@ class FakePrestaFlowApi : PrestaFlowApi {
     override suspend fun getInvoicePdf(orderId: Long): Response<ResponseBody> =
         throw UnsupportedOperationException("Non utilisé dans ce test")
 
+    override suspend fun getShippingLabelPdf(orderId: Long): Response<ResponseBody> =
+        throw UnsupportedOperationException("Non utilisé dans ce test")
+
     override suspend fun getProducts(
         filters: Map<String, String>,
         search: String?,

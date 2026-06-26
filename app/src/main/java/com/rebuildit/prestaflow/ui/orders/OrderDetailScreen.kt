@@ -112,6 +112,16 @@ fun OrderDetailRoute(
         onUpdateTracking = viewModel::updateTracking,
         onConsumeFeedback = viewModel::consumeActionFeedback,
         onPrintInvoice = { order -> pendingPrintOrder = order },
+        onPrintShippingLabel = { order ->
+            viewModel.fetchShippingLabelPdf { pdfBytes ->
+                InvoicePrinter.print(
+                    context = context,
+                    pdfBytesList = listOf(pdfBytes),
+                    jobName = "Bordereau ${order.reference}",
+                    mode = PrintMode.ONE_PER_PAGE,
+                )
+            }
+        },
     )
 }
 
@@ -128,6 +138,7 @@ fun OrderDetailScreen(
     onUpdateTracking: (String) -> Unit = {},
     onConsumeFeedback: () -> Unit = {},
     onPrintInvoice: (Order) -> Unit = {},
+    onPrintShippingLabel: (Order) -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val backDesc = stringResource(R.string.content_description_back)
@@ -205,6 +216,7 @@ fun OrderDetailScreen(
                         onUpdateStatus = onUpdateStatus,
                         onUpdateTracking = onUpdateTracking,
                         onPrintInvoice = { onPrintInvoice(state.order) },
+                        onPrintShippingLabel = { onPrintShippingLabel(state.order) },
                     )
                 }
             }
@@ -212,7 +224,8 @@ fun OrderDetailScreen(
     }
 }
 
-@Suppress("LongMethod") // Composable contenu de détail : chaque bloc est une card métier distincte, extraction nuirait à la lisibilité
+// Composable contenu de détail : chaque bloc est une card métier distincte, extraction nuirait à la lisibilité
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 fun OrderDetailContent(
     order: Order,
@@ -221,6 +234,7 @@ fun OrderDetailContent(
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
     onPrintInvoice: () -> Unit = {},
+    onPrintShippingLabel: () -> Unit = {},
 ) {
     var showStatusDialog by remember { mutableStateOf(false) }
     var showTrackingDialog by remember { mutableStateOf(false) }
@@ -411,6 +425,24 @@ fun OrderDetailContent(
                 )
                 Spacer(modifier = Modifier.size(Dimensions.spacingS))
                 Text(stringResource(R.string.order_detail_print_invoice))
+            }
+        }
+
+        // Bouton impression bordereau — visible uniquement si has_shipping_label
+        if (order.hasShippingLabel) {
+            OutlinedButton(
+                onClick = onPrintShippingLabel,
+                enabled = !actionInProgress,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(50),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.LocalShipping,
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimensions.iconSizeSmall),
+                )
+                Spacer(modifier = Modifier.size(Dimensions.spacingS))
+                Text(stringResource(R.string.order_detail_print_shipping_label))
             }
         }
     }

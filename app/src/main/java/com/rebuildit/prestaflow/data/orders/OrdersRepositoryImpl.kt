@@ -148,4 +148,18 @@ class OrdersRepositoryImpl
                     }
                 }
             }
+
+        override suspend fun downloadShippingLabel(orderId: Long): ByteArray? =
+            withContext(ioDispatcher) {
+                val response = api.getShippingLabelPdf(orderId)
+                when {
+                    response.isSuccessful -> response.body()?.bytes()
+                    response.code() == 404 -> null
+                    else -> {
+                        val msg = "Erreur HTTP ${response.code()} lors du téléchargement du bordereau #$orderId"
+                        Timber.w(msg)
+                        error(msg)
+                    }
+                }
+            }
     }
