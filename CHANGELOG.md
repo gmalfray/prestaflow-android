@@ -4,6 +4,22 @@ Les versions suivent [Semantic Versioning](https://semver.org/) : `MAJEUR.MINEUR
 
 ---
 
+## [0.3.1] — 2026-06-26
+
+### Corrections
+- **Filtrage par période : "Aujourd'hui" vide et écart de comptage KPI↔liste** : `date_to` envoyé
+  sans suffixe horaire (`"2024-01-15"`) était interprété par MySQL comme `"2024-01-15 00:00:00"`,
+  excluant toutes les commandes passées après minuit. Résultat : 0 commandes pour "Aujourd'hui",
+  et un écart entre le KPI Dashboard (qui applique `23:59:59` côté serveur) et la liste filtrée.
+  Correction : `date_to` est désormais envoyé au format `"Y-m-d 23:59:59"`.
+- **Loader infini sur liste filtrée vide** : quand un filtre de période ne retourne aucune
+  commande, `isLoading` était remis à `true` dans le bloc `onSuccess` (`current.orders.isEmpty()`)
+  après que Room avait déjà émis `[]` et positionné `isLoading = false`. L'écran restait bloqué
+  sur le spinner indéfiniment. Correction : `isLoading = false` inconditionnellement après succès
+  ou échec réseau.
+
+---
+
 ## [0.3.0] — 2026-06-26
 
 ### Ajouts
