@@ -23,11 +23,22 @@
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.PrestaFlow">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Deep link pour les notifications "nouvelle commande" / statut / expédition.
+                 La notification foreground (ContentIntent) envoie prestaflow://orders/{id} ;
+                 le tap déclenche onNewIntent (singleTop) ou onCreate (cold start) dans MainActivity. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="prestaflow"
+                    android:host="orders" />
             </intent-filter>
         </activity>
 

@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -75,9 +76,20 @@ private val navBarDestinations =
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    // Commande à afficher en profondeur, issue d'une notification push.
+    // Partagé entre le cycle de vie Android (onCreate/onNewIntent) et la composition Compose :
+    // toute écriture depuis le thread principal déclenche une recomposition.
+    private val pendingOrderId = mutableStateOf<Long?>(null)
+
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class, ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Notification background (gérée par le système) : le tap ajoute les extras FCM à l'Intent.
+        // Notification foreground (notre ContentIntent URI) : le NavHost traite le deep link automatiquement
+        // au démarrage à froid, donc on n'en a pas besoin ici (évite une double navigation).
+        if (savedInstanceState == null && intent?.data?.scheme != "prestaflow") {
+            pendingOrderId.value = intent?.extras?.getString("order_id")?.toLongOrNull()
+        }
         setContent {
             val windowSizeClass = calculateWindowSizeClass(activity = this@MainActivity)
 
@@ -94,13 +106,36 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            PrestaFlowApp(windowSizeClass)
+            PrestaFlowApp(
+                windowSizeClass = windowSizeClass,
+                pendingOrderId = pendingOrderId.value,
+                onOrderIdConsumed = { pendingOrderId.value = null },
+            )
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // Deux chemins selon l'origine du tap :
+        //  • URI prestaflow://orders/{id} → notre ContentIntent (notification foreground).
+        //    Le NavHost ne retraite pas Activity.intent après le démarrage à chaud ;
+        //    on extrait l'orderId manuellement pour déclencher la navigation Compose.
+        //  • Extras FCM → notification background gérée par le système (ordre_id en extra String).
+        pendingOrderId.value = if (intent.data?.scheme == "prestaflow") {
+            intent.data?.lastPathSegment?.toLongOrNull()
+        } else {
+            intent.extras?.getString("order_id")?.toLongOrNull()
         }
     }
 }
 
 @Composable
-private fun PrestaFlowApp(windowSizeClass: WindowSizeClass) {
+private fun PrestaFlowApp(
+    windowSizeClass: WindowSizeClass,
+    pendingOrderId: Long? = null,
+    onOrderIdConsumed: () -> Unit = {},
+) {
     val themeViewModel: ThemeViewModel = hiltViewModel()
     val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -114,6 +149,8 @@ private fun PrestaFlowApp(windowSizeClass: WindowSizeClass) {
                 AuthenticatedShell(
                     windowSizeClass = windowSizeClass,
                     onLogout = rootViewModel::logout,
+                    pendingOrderId = pendingOrderId,
+                    onOrderIdConsumed = onOrderIdConsumed,
                 )
             AuthState.Unauthenticated -> UnauthenticatedFlow()
         }
@@ -171,12 +208,27 @@ private fun LoadingScreen() {
 private fun AuthenticatedShell(
     windowSizeClass: WindowSizeClass,
     onLogout: () -> Unit,
+    pendingOrderId: Long? = null,
+    onOrderIdConsumed: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val haptics = LocalHapticFeedback.current
 
     var currentTitle by remember { mutableStateOf(R.string.app_name) }
+
+    // Navigation vers le détail commande depuis une notification push.
+    // Déclenché à chaque changement de pendingOrderId (non-null uniquement).
+    // popUpTo assure un back stack propre : Dashboard → détail commande (retour arrière → Dashboard).
+    LaunchedEffect(pendingOrderId) {
+        pendingOrderId?.let { orderId ->
+            navController.navigate("${AppDestination.Orders.route}/$orderId") {
+                popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                launchSingleTop = true
+            }
+            onOrderIdConsumed()
+        }
+    }
 
     LaunchedEffect(navBackStackEntry) {
         val route = navBackStackEntry?.destination?.route

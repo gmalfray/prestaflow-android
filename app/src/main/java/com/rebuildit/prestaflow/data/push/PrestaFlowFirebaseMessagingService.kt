@@ -1,7 +1,10 @@
 package com.rebuildit.prestaflow.data.push
 
 import android.Manifest
+import android.app.PendingIntent
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -12,6 +15,7 @@ import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.notifications.FcmRegistrationManager
 import com.rebuildit.prestaflow.core.notifications.NotificationChannels
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
+import com.rebuildit.prestaflow.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -112,7 +116,33 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
             builder.setDefaults(NotificationCompat.DEFAULT_SOUND)
         }
 
+        // Tap sur la notification → ouvre directement le détail de la commande (foreground uniquement ;
+        // les notifs background sont gérées par le système sans passer par onMessageReceived).
+        if (orderId != null) {
+            builder.setContentIntent(buildOrderDeepLinkIntent(orderId))
+        }
+
         val notificationId = orderId?.toInt() ?: (System.currentTimeMillis() and 0x7FFFFFFF).toInt()
         NotificationManagerCompat.from(applicationContext).notify(notificationId, builder.build())
+    }
+
+    /**
+     * Construit un [PendingIntent] qui ouvre [MainActivity] sur le détail de la commande [orderId].
+     *
+     * L'URI `prestaflow://orders/{orderId}` est déclarée comme deep link dans [PrestaFlowNavGraph]
+     * et dans le manifeste. Le flag [Intent.FLAG_ACTIVITY_SINGLE_TOP] garantit que si l'Activity
+     * est déjà active, `onNewIntent` est appelé plutôt qu'une nouvelle instance.
+     */
+    private fun buildOrderDeepLinkIntent(orderId: Long): PendingIntent {
+        val uri = Uri.parse("prestaflow://orders/$orderId")
+        val intent = Intent(Intent.ACTION_VIEW, uri, applicationContext, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        return PendingIntent.getActivity(
+            applicationContext,
+            orderId.toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 }
