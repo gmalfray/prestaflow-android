@@ -15,4 +15,6 @@ data class ClientEntity(
     @ColumnInfo(name = "last_order_iso") val lastOrderIso: String?,
     @ColumnInfo(name = "orders_json") val ordersJson: String = "[]",
     @ColumnInfo(name = "last_synced_iso") val lastSyncedIso: String,
+    /** Date d'inscription PrestaShop (`date_add`). Null pour les clients venant de `customers/top`. */
+    @ColumnInfo(name = "date_add_iso") val dateAddIso: String? = null,
 )

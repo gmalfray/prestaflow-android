@@ -24,6 +24,8 @@ data class CustomerDto(
     @SerialName("orders_count") val ordersCount: Int,
     @SerialName("total_spent") val totalSpent: Double,
     @SerialName("last_order_at") val lastOrderAt: String? = null,
+    /** Date d'inscription du client (format `YYYY-MM-DD HH:MM:SS`). Présent dans `GET /customers`, absent de `GET /customers/top`. */
+    @SerialName("date_add") val dateAdd: String? = null,
 )
 
 @Serializable

@@ -26,6 +26,7 @@ fun ClientEntity.toDomain(): Client {
         totalSpent = totalSpent,
         lastOrderAtIso = lastOrderIso,
         orders = orders,
+        dateAddIso = dateAddIso,
     )
 }
 
@@ -40,6 +41,19 @@ fun CustomerDto.toEntity(lastSyncedIso: String): ClientEntity =
         lastOrderIso = lastOrderAt,
         ordersJson = "[]",
         lastSyncedIso = lastSyncedIso,
+        dateAddIso = dateAdd,
+    )
+
+fun CustomerDto.toDomain(): Client =
+    Client(
+        id = id,
+        firstName = firstName,
+        lastName = lastName,
+        email = email,
+        ordersCount = ordersCount,
+        totalSpent = totalSpent,
+        lastOrderAtIso = lastOrderAt,
+        dateAddIso = dateAdd,
     )
 
 fun CustomerDetailDto.toEntity(lastSyncedIso: String): ClientEntity {

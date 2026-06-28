@@ -86,6 +86,15 @@ class FakePrestaFlowApi : PrestaFlowApi {
     override suspend fun getTopCustomers(limit: Int): CustomerListResponseDto =
         throw UnsupportedOperationException("Non utilisé dans ce test")
 
+    override suspend fun getCustomers(
+        limit: Int?,
+        offset: Int?,
+        search: String?,
+        sort: String?,
+        createdFrom: String?,
+        createdTo: String?,
+    ): CustomerListResponseDto = throw UnsupportedOperationException("Non utilisé dans ce test")
+
     override suspend fun getCustomer(customerId: Long): CustomerDetailResponseDto =
         throw UnsupportedOperationException("Non utilisé dans ce test")
 
