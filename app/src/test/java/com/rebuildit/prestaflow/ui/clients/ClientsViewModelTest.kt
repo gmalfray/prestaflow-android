@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.clients
 
+import androidx.lifecycle.SavedStateHandle
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.clients.model.Client
@@ -56,8 +57,11 @@ class ClientsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun buildViewModel(): ClientsViewModel =
+    private fun buildViewModel(filterArg: String? = null): ClientsViewModel =
         ClientsViewModel(
+            savedStateHandle = SavedStateHandle(
+                if (filterArg != null) mapOf("filter" to filterArg) else emptyMap(),
+            ),
             clientsRepository = fakeClientsRepo,
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = fakeAuthRepo,
@@ -472,6 +476,62 @@ class ClientsViewModelTest {
             assertNotNull(
                 "L'état doit contenir une erreur après un échec fetchClients",
                 vm.uiState.value.error,
+            )
+        }
+
+    // ─── Filtre initial transmis par la navigation (dashboard KPI) ──────────────
+
+    @Test
+    fun `filter new au demarrage active le mode NEW_THIS_MONTH`() =
+        runTest {
+            fakeClientsRepo.fetchClientsResult =
+                ClientsPage(clients = emptyList(), hasNext = false, nextOffset = 0)
+
+            val vm = buildViewModel(filterArg = "new")
+            advanceUntilIdle()
+
+            assertEquals(
+                "Le mode doit être NEW_THIS_MONTH quand filter=new est passé en nav arg",
+                ClientFilter.NEW_THIS_MONTH,
+                vm.uiState.value.activeFilter,
+            )
+        }
+
+    @Test
+    fun `filter new au demarrage charge la liste des nouveaux du mois avec le 1er du mois`() =
+        runTest {
+            val newClients = listOf(buildClient(1L), buildClient(2L))
+            fakeClientsRepo.fetchClientsResult =
+                ClientsPage(clients = newClients, hasNext = false, nextOffset = 0)
+
+            val vm = buildViewModel(filterArg = "new")
+            advanceUntilIdle()
+
+            val call = fakeClientsRepo.lastFetchClientsCall
+            assertNotNull("fetchClients doit être appelé au démarrage avec filter=new", call)
+            val expectedFirstOfMonth =
+                LocalDate.now().withDayOfMonth(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            assertEquals("createdFrom doit être le 1er du mois courant", expectedFirstOfMonth, call?.createdFrom)
+            assertEquals("sort doit être date_desc", "date_desc", call?.sort)
+            assertEquals("La liste doit contenir les 2 nouveaux clients", 2, vm.uiState.value.clients.size)
+        }
+
+    @Test
+    fun `filter null au demarrage reste en mode TOP_CLIENTS sans appel fetchClients`() =
+        runTest {
+            fakeClientsRepo.setClients(listOf(buildClient(1L)))
+
+            val vm = buildViewModel(filterArg = null)
+            advanceUntilIdle()
+
+            assertEquals(
+                "Sans filter, le mode doit rester TOP_CLIENTS",
+                ClientFilter.TOP_CLIENTS,
+                vm.uiState.value.activeFilter,
+            )
+            assertNull(
+                "fetchClients ne doit pas être appelé en mode TOP_CLIENTS initial",
+                fakeClientsRepo.lastFetchClientsCall,
             )
         }
 

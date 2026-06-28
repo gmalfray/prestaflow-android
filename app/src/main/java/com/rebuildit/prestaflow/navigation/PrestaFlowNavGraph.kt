@@ -50,7 +50,9 @@ fun PrestaFlowNavGraph(
                     navController.navigate("${AppDestination.Orders.route}?period=${period.queryValue}")
                 },
                 onClientsClick = {
-                    navController.navigate(AppDestination.Clients.route) {
+                    // Le KPI "Nouveaux clients" du dashboard navigue avec filter=new pour
+                    // pré-sélectionner le mode NEW_THIS_MONTH dès l'ouverture de l'écran Clients.
+                    navController.navigate("${AppDestination.Clients.route}?filter=new") {
                         launchSingleTop = true
                     }
                 },
@@ -124,7 +126,20 @@ fun PrestaFlowNavGraph(
                 onBackClick = { navController.popBackStack() },
             )
         }
-        composable(AppDestination.Clients.route) {
+        // Route clients avec filtre optionnel (arg "filter").
+        // "new" est transmis depuis la carte KPI "Nouveaux clients" du dashboard.
+        // Accès direct via la barre de navigation → filter=null → mode TOP_CLIENTS par défaut.
+        composable(
+            route = "${AppDestination.Clients.route}?filter={filter}",
+            arguments =
+                listOf(
+                    navArgument("filter") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+        ) {
             ClientsRoute(
                 onClientClick = { clientId ->
                     navController.navigate("${AppDestination.Clients.route}/$clientId")

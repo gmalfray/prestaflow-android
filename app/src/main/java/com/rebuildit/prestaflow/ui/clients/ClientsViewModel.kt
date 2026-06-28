@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.clients
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
@@ -43,11 +44,23 @@ enum class ClientFilter { TOP_CLIENTS, ALL_CLIENTS, NEW_THIS_MONTH }
 class ClientsViewModel
     @Inject
     constructor(
+        savedStateHandle: SavedStateHandle,
         private val clientsRepository: ClientsRepository,
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
     ) : ViewModel() {
-        private val _uiState = MutableStateFlow(ClientsUiState())
+        /**
+         * Filtre initial transmis par la navigation (arg "filter").
+         * "new" → [ClientFilter.NEW_THIS_MONTH] quand on arrive depuis le KPI "Nouveaux clients" du dashboard.
+         * Null (accès direct via la barre de navigation) → [ClientFilter.TOP_CLIENTS].
+         */
+        private val initialFilter: ClientFilter =
+            when (savedStateHandle.get<String?>("filter")) {
+                "new" -> ClientFilter.NEW_THIS_MONTH
+                else -> ClientFilter.TOP_CLIENTS
+            }
+
+        private val _uiState = MutableStateFlow(ClientsUiState(activeFilter = initialFilter))
         val uiState: StateFlow<ClientsUiState> = _uiState.asStateFlow()
 
         /** Flow interne de la query de recherche, débouncé avant d'émettre une requête. */
@@ -131,28 +144,36 @@ class ClientsViewModel
 
         private fun loadInitialData() {
             viewModelScope.launch {
-                _uiState.update { it.copy(isRefreshing = true, isLoading = it.clients.isEmpty()) }
-                val topResult = runCatching { clientsRepository.refreshTopClients(TOP_CLIENTS_LIMIT, forceRemote = true) }
-                val stats = clientsRepository.fetchStats()
-                topResult.onFailure { error ->
-                    Timber.w(error, "Échec du chargement initial des clients")
-                    _uiState.update { current ->
-                        current.copy(
-                            isRefreshing = false,
-                            isLoading = current.clients.isEmpty(),
-                            error = networkErrorMapper.map(error),
-                            stats = stats ?: current.stats,
-                        )
+                if (initialFilter == ClientFilter.TOP_CLIENTS) {
+                    _uiState.update { it.copy(isRefreshing = true, isLoading = it.clients.isEmpty()) }
+                    val topResult = runCatching { clientsRepository.refreshTopClients(TOP_CLIENTS_LIMIT, forceRemote = true) }
+                    val stats = clientsRepository.fetchStats()
+                    topResult.onFailure { error ->
+                        Timber.w(error, "Échec du chargement initial des clients")
+                        _uiState.update { current ->
+                            current.copy(
+                                isRefreshing = false,
+                                isLoading = current.clients.isEmpty(),
+                                error = networkErrorMapper.map(error),
+                                stats = stats ?: current.stats,
+                            )
+                        }
+                    }.onSuccess {
+                        _uiState.update { current ->
+                            current.copy(
+                                isRefreshing = false,
+                                isLoading = current.clients.isEmpty(),
+                                error = null,
+                                stats = stats ?: current.stats,
+                            )
+                        }
                     }
-                }.onSuccess {
-                    _uiState.update { current ->
-                        current.copy(
-                            isRefreshing = false,
-                            isLoading = current.clients.isEmpty(),
-                            error = null,
-                            stats = stats ?: current.stats,
-                        )
-                    }
+                } else {
+                    // Navigation depuis le dashboard avec filtre (ex. "new") :
+                    // charger les stats puis déléguer au chargement filtré standard.
+                    val stats = clientsRepository.fetchStats()
+                    _uiState.update { current -> current.copy(stats = stats ?: current.stats) }
+                    fetchClientsForMode(mode = initialFilter, query = "", resetPage = true, notifyOnError = false)
                 }
             }
         }
