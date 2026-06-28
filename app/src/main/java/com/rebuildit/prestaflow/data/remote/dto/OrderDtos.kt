@@ -126,6 +126,30 @@ data class OrderShippingUpdateRequestDto(
     @SerialName("carrier_id") val carrierId: Long? = null,
 )
 
+// ─── Génération étiquette Colissimo (POST orders/{id}/shipping-label) ────────
+
+/**
+ * Réponse plate de l'endpoint POST orders/{id}/shipping-label.
+ * 200 = étiquette déjà existante (idempotent) ; 201 = nouvellement générée.
+ */
+@Serializable
+data class GenerateLabelResponseDto(
+    val generated: Boolean,
+    @SerialName("tracking_number") val trackingNumber: String? = null,
+    @SerialName("has_label") val hasLabel: Boolean = false,
+    @SerialName("carrier_type") val carrierType: String? = null,
+)
+
+/**
+ * Enveloppe d'erreur retournée par le connecteur sur les codes 4xx/5xx.
+ * Champs optionnels : le connecteur peut omettre l'un ou l'autre selon l'erreur.
+ */
+@Serializable
+data class ApiErrorBodyDto(
+    val error: String? = null,
+    val message: String? = null,
+)
+
 // ─── Statuts de commande (endpoint GET orders/statuses) ──────────────────────
 
 @Serializable

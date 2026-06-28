@@ -63,4 +63,14 @@ interface OrdersRepository {
      * Lance une exception pour toute autre erreur réseau.
      */
     suspend fun downloadShippingLabel(orderId: Long): ByteArray?
+
+    /**
+     * Génère l'étiquette Colissimo pour la commande [orderId] via le webservice transporteur.
+     * Rafraîchit le cache local en cas de succès (200/201).
+     * Lance une [IllegalStateException] avec un message lisible en cas d'erreur métier :
+     * - 422 carrier_not_supported → "Génération dispo uniquement pour Colissimo"
+     * - 501 generation_not_configured → "Contrat transporteur non configuré"
+     * - 502 carrier_webservice_error → "Erreur transporteur : <message>"
+     */
+    suspend fun generateShippingLabel(orderId: Long)
 }

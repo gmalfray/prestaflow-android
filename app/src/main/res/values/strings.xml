@@ -192,6 +192,8 @@
     <string name="order_detail_tracking_display">Tracking: %1$s</string>
     <string name="order_detail_print_invoice">Print invoice</string>
     <string name="order_detail_print_shipping_label">Print shipping label</string>
+    <string name="order_detail_generate_label">Generate label</string>
+    <string name="order_detail_generate_label_content_description">Generate Colissimo shipping label</string>
 
     <!-- Dialogue de choix du mode d'impression -->
     <string name="print_mode_dialog_title">Print mode</string>

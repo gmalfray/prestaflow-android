@@ -5,6 +5,7 @@ import com.rebuildit.prestaflow.data.local.dao.OrderDao
 import com.rebuildit.prestaflow.data.orders.mapper.toDomain
 import com.rebuildit.prestaflow.data.orders.mapper.toEntity
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
+import com.rebuildit.prestaflow.data.remote.dto.ApiErrorBodyDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderStatusUpdateRequestDto
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
@@ -14,9 +15,13 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/** Instance Json réutilisée pour parser les body d'erreur du connecteur. */
+private val errorBodyJson = Json { ignoreUnknownKeys = true }
 
 @Singleton
 class OrdersRepositoryImpl
@@ -161,5 +166,55 @@ class OrdersRepositoryImpl
                         error(msg)
                     }
                 }
+            }
+
+        override suspend fun generateShippingLabel(orderId: Long) {
+            withContext(ioDispatcher) {
+                val response = runCatching { api.generateShippingLabel(orderId) }.getOrElse { error ->
+                    Timber.w(networkErrorMapper.map(error).toString())
+                    throw error
+                }
+                when {
+                    response.isSuccessful -> {
+                        // Recharge la commande pour mettre à jour le n° de suivi et hasShippingLabel dans Room
+                        refreshOrder(orderId)
+                    }
+                    else -> {
+                        val errorMsg = parseGenerateLabelError(response.code(), response.errorBody()?.string())
+                        Timber.w("Génération étiquette commande #$orderId — $errorMsg")
+                        error(errorMsg)
+                    }
+                }
+            }
+        }
+
+        /**
+         * Traduit le code HTTP et le body d'erreur JSON en message lisible.
+         * Le body peut être null si le serveur ne renvoie pas de contenu.
+         */
+        private fun parseGenerateLabelError(
+            code: Int,
+            errorBody: String?,
+        ): String =
+            when (code) {
+                404 -> "Commande introuvable"
+                422 -> "Génération dispo uniquement pour Colissimo"
+                501 -> "Contrat transporteur non configuré"
+                502 -> {
+                    val connectorMessage =
+                        runCatching {
+                            errorBody
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let { body ->
+                                    errorBodyJson.decodeFromString<ApiErrorBodyDto>(body).message
+                                }
+                        }.getOrNull()
+                    if (!connectorMessage.isNullOrBlank()) {
+                        "Erreur transporteur : $connectorMessage"
+                    } else {
+                        "Erreur du service transporteur"
+                    }
+                }
+                else -> "Erreur HTTP $code lors de la génération de l'étiquette"
             }
     }

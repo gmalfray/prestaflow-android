@@ -1,6 +1,8 @@
 package com.rebuildit.prestaflow.ui.orders
 
+import app.cash.turbine.test
 import com.rebuildit.prestaflow.domain.orders.model.Order
+import com.rebuildit.prestaflow.domain.orders.model.OrderShipping
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import com.rebuildit.prestaflow.fakes.FakeOrdersRepository
 import kotlinx.coroutines.Dispatchers
@@ -12,6 +14,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -221,6 +225,119 @@ class OrderDetailViewModelTest {
 
             assertTrue("Une erreur doit être émise", vm.actionState.value.error != null)
             assertEquals(null, vm.actionState.value.message)
+        }
+
+    // ─── Génération étiquette ────────────────────────────────────────────────
+
+    @Test
+    fun `onGenerateLabel appelle generateShippingLabel pour la commande courante`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L)))
+            val vm = buildViewModel(orderId = 1L)
+            advanceUntilIdle()
+
+            vm.onGenerateLabel()
+            advanceUntilIdle()
+
+            assertTrue("generateShippingLabel doit être appelé avec l'id 1", fakeOrdersRepo.generateLabelCalls.contains(1L))
+        }
+
+    @Test
+    fun `onGenerateLabel sur succes met a jour hasShippingLabel et le tracking via le Flow`() =
+        runTest {
+            val orderSansLabel = buildOrder(1L).copy(
+                hasShippingLabel = false,
+                shipping = OrderShipping(carrierId = 1L, carrierName = "Colissimo", trackingNumber = null),
+            )
+            fakeOrdersRepo.setOrders(listOf(orderSansLabel))
+            fakeOrdersRepo.generateLabelTrackingNumber = "8R01234567890"
+            val vm = buildViewModel(orderId = 1L)
+
+            vm.uiState.test {
+                // advanceUntilIdle() dans le bloc test (collecteur actif) pour que
+                // le stateIn(WhileSubscribed) collecte et émette l'état initial avant toute action.
+                advanceUntilIdle()
+                val initial = expectMostRecentItem()
+                assertTrue("L'état initial doit être Success", initial is OrderDetailUiState.Success)
+                assertFalse((initial as OrderDetailUiState.Success).order.hasShippingLabel)
+
+                vm.onGenerateLabel()
+                advanceUntilIdle()
+
+                // Après génération, le Flow _ordersFlow est mis à jour → uiState émet Success(updatedOrder)
+                val updated = expectMostRecentItem()
+                assertTrue("L'état doit être Success après génération", updated is OrderDetailUiState.Success)
+                val order = (updated as OrderDetailUiState.Success).order
+                assertTrue("hasShippingLabel doit être true", order.hasShippingLabel)
+                assertEquals("8R01234567890", order.shipping?.trackingNumber)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            assertTrue("Un message de succès doit être émis", vm.actionState.value.message != null)
+            assertEquals(null, vm.actionState.value.error)
+        }
+
+    @Test
+    fun `onGenerateLabel sur erreur 422 expose un message carrier_not_supported`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L)))
+            fakeOrdersRepo.shouldThrowOnGenerateLabel = true
+            fakeOrdersRepo.generateLabelException = RuntimeException("Génération dispo uniquement pour Colissimo")
+            val vm = buildViewModel(orderId = 1L)
+            advanceUntilIdle()
+
+            vm.onGenerateLabel()
+            advanceUntilIdle()
+
+            val error = vm.actionState.value.error
+            assertNotNull("Une erreur doit être émise", error)
+            assertTrue("Le message doit mentionner Colissimo", error!!.contains("Colissimo"))
+            assertEquals(null, vm.actionState.value.message)
+        }
+
+    @Test
+    fun `onGenerateLabel sur erreur 502 expose le message transporteur`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L)))
+            fakeOrdersRepo.shouldThrowOnGenerateLabel = true
+            fakeOrdersRepo.generateLabelException = RuntimeException("Erreur transporteur : Compte Colissimo inactif")
+            val vm = buildViewModel(orderId = 1L)
+            advanceUntilIdle()
+
+            vm.onGenerateLabel()
+            advanceUntilIdle()
+
+            val error = vm.actionState.value.error
+            assertNotNull("Une erreur doit être émise", error)
+            assertTrue("Le message doit contenir le détail transporteur", error!!.contains("Compte Colissimo inactif"))
+        }
+
+    @Test
+    fun `onGenerateLabel ne lance pas inProgress pendant l appel`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L)))
+            val vm = buildViewModel(orderId = 1L)
+            advanceUntilIdle()
+
+            vm.actionState.test {
+                awaitItem() // état initial
+
+                vm.onGenerateLabel()
+
+                // Pendant la génération : inProgress = true, isGeneratingLabel = true
+                val loading = awaitItem()
+                assertTrue(loading.inProgress)
+                assertTrue(loading.isGeneratingLabel)
+
+                // Après succès : inProgress = false, isGeneratingLabel = false
+                val done = awaitItem()
+                assertFalse(done.inProgress)
+                assertFalse(done.isGeneratingLabel)
+                assertNotNull(done.message)
+
+                cancelAndIgnoreRemainingEvents()
+            }
         }
 
     // ─── Builders ─────────────────────────────────────────────────────────────

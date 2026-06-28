@@ -651,5 +651,7 @@ class AuthRepositoryImplTest {
         override suspend fun getBaskets(abandonedSinceDays: Int?) = throw UnsupportedOperationException()
 
         override suspend fun getBasketById(cartId: Int) = throw UnsupportedOperationException()
+
+        override suspend fun generateShippingLabel(orderId: Long) = throw UnsupportedOperationException()
     }
 }
