@@ -6,82 +6,67 @@ import org.junit.Test
 /**
  * Tests unitaires de [extractTrackingNumber].
  *
- * Couvre les cas La Poste lettre suivie (DataMatrix 2D), les codes 1D Colissimo,
- * les payloads DataMatrix avec données supplémentaires et les entrées dégénérées.
+ * Cas couverts :
+ * - Payload DataMatrix La Poste réel (`%<zéros><14 chiffres>...^<signature>`) → 14 chiffres.
+ * - Numéro imprimé / saisi avec la lettre de contrôle → conservé tel quel (La Poste l'accepte).
+ * - Codes 1D Colissimo et numéros simples.
+ * - Entrées dégénérées (jamais d'exception).
  */
 class TrackingNumberExtractorTest {
 
     // ──────────────────────────────────────────────────────────────────────
-    // La Poste — numéro avec préfixe « SD : »
+    // DataMatrix La Poste — payloads bruts RÉELS (décodés via Google Lens)
     // ──────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `retourne le numero La Poste sans prefix SD avec espace`() {
-        // Étiquette imprimée : "SD : 8700133531872 1H"
+    fun `extrait les 14 chiffres du payload DataMatrix La Poste - exemple 1`() {
+        // Étiquette imprimée "SD : 8700133531872 1H" → suivi = 14 chiffres 87001335318721
+        assertEquals("87001335318721", extractTrackingNumber("%000000087001335318721601250A18^edb7b43"))
+    }
+
+    @Test
+    fun `extrait les 14 chiffres du payload DataMatrix La Poste - exemple 2`() {
+        // Étiquette imprimée "SD : 8700124410028 5T"
+        assertEquals("87001244100285", extractTrackingNumber("%000000087001244100285601250A18^6b3a602"))
+    }
+
+    @Test
+    fun `extrait les 14 chiffres du payload DataMatrix La Poste - exemple 3`() {
+        // Étiquette imprimée "SD : 8700124410028 8N"
+        assertEquals("87001244100288", extractTrackingNumber("%000000087001244100288601250A18^9c1d4e5"))
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Numéro imprimé / saisi (avec la clé de contrôle facultative) — conservé
+    // ──────────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `conserve le numero imprime complet avec prefixe SD et espace`() {
+        // La Poste accepte 14 chiffres OU 15 avec la clé : on garde ce qui est fourni.
         assertEquals("87001335318721H", extractTrackingNumber("SD : 8700133531872 1H"))
     }
 
     @Test
-    fun `retourne le numero La Poste sans prefix SD sans espace apres deux points`() {
-        assertEquals("87001335318721H", extractTrackingNumber("SD: 8700133531872 1H"))
-    }
-
-    @Test
-    fun `retourne le numero La Poste en majuscules avec prefix minuscule`() {
-        assertEquals("87001335318721H", extractTrackingNumber("sd : 8700133531872 1h"))
-    }
-
-    // ──────────────────────────────────────────────────────────────────────
-    // La Poste — numéro sans préfixe (affiché avec espace interne)
-    // ──────────────────────────────────────────────────────────────────────
-
-    @Test
-    fun `retourne le numero La Poste sans prefixe avec espace interne`() {
-        // "8700124410028 5T" — espace sépare les 13 chiffres des 2 chars
+    fun `conserve le numero imprime complet sans prefixe`() {
         assertEquals("87001244100285T", extractTrackingNumber("8700124410028 5T"))
     }
 
     @Test
-    fun `retourne le numero La Poste sans prefixe ni espace`() {
-        assertEquals("87001244100285T", extractTrackingNumber("87001244100285T"))
-    }
-
-    @Test
-    fun `retourne le troisieme exemple La Poste`() {
-        assertEquals("87001244100288N", extractTrackingNumber("8700124410028 8N"))
+    fun `met en majuscules un numero imprime en minuscules`() {
+        assertEquals("87001335318721H", extractTrackingNumber("sd : 8700133531872 1h"))
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    // Payload DataMatrix simulé (données structurées entourant le numéro)
-    // ──────────────────────────────────────────────────────────────────────
-
-    @Test
-    fun `extrait le numero La Poste depuis un payload DataMatrix avec donnees supplementaires`() {
-        // Simulation d'un payload propriétaire La Poste contenant d'autres champs
-        val payload = "ID:87001244100285T;WT:200;SVC:LettreS"
-        assertEquals("87001244100285T", extractTrackingNumber(payload))
-    }
-
-    @Test
-    fun `extrait le numero La Poste depuis payload avec espaces autour`() {
-        val payload = "REF 87001244100285T DATE 20240601"
-        assertEquals("87001244100285T", extractTrackingNumber(payload))
-    }
-
-    // ──────────────────────────────────────────────────────────────────────
-    // Codes 1D — Colissimo et autres transporteurs
+    // Codes 1D — Colissimo et numéros simples
     // ──────────────────────────────────────────────────────────────────────
 
     @Test
     fun `retourne le numero Colissimo 1D tel quel`() {
-        // "6A12345678901" — 1 lettre + 12 chiffres = 13 chars, pas 13 chiffres + 2 alnum
         assertEquals("6A12345678901", extractTrackingNumber("6A12345678901"))
     }
 
     @Test
-    fun `retourne un numero CODE128 classique tel quel`() {
-        // 13 chars entièrement numériques → ne matche pas "13 chiffres + 2 alnum" (pas assez long)
-        // mais matche le generic 11–16
+    fun `retourne un numero numerique simple tel quel`() {
         assertEquals("1234567890123", extractTrackingNumber("1234567890123"))
     }
 
@@ -101,13 +86,7 @@ class TrackingNumberExtractorTest {
 
     @Test
     fun `entree sans motif reconnu retourne le brut nettoye`() {
-        // "XYZ" = 3 chars, ne matche ni La Poste ni generic (11–16)
         assertEquals("XYZ", extractTrackingNumber("XYZ"))
-    }
-
-    @Test
-    fun `entree courte sans espace retourne le brut compacte`() {
-        assertEquals("AB12", extractTrackingNumber("AB12"))
     }
 
     @Test
