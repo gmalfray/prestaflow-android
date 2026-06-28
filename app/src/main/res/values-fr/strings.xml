@@ -184,6 +184,8 @@
     <string name="order_detail_total_paid">Total payé</string>
     <string name="order_detail_tracking_button">Suivi</string>
     <string name="order_detail_cancel">Annuler</string>
+    <string name="order_detail_scan_tracking_prompt">Pointez l\'appareil photo vers le code-barres du suivi</string>
+    <string name="order_detail_scan_tracking_content_description">Scanner le code-barres</string>
     <string name="order_detail_qty_label">Qté : %1$d</string>
     <string name="order_detail_tracking_display">Suivi : %1$s</string>
     <string name="order_detail_print_invoice">Imprimer la facture</string>

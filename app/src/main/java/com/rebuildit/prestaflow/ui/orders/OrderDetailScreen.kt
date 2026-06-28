@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.orders
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Print
@@ -59,12 +61,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.print.InvoicePrinter
 import com.rebuildit.prestaflow.core.print.PrintMode
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderItem
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
+import com.rebuildit.prestaflow.ui.auth.PortraitCaptureActivity
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
 import com.rebuildit.prestaflow.ui.components.formatCurrency
@@ -238,6 +243,15 @@ fun OrderDetailContent(
 ) {
     var showStatusDialog by remember { mutableStateOf(false) }
     var showTrackingDialog by remember { mutableStateOf(false) }
+    var pendingScannedTracking by remember { mutableStateOf<String?>(null) }
+
+    val scanTrackingPrompt = stringResource(R.string.order_detail_scan_tracking_prompt)
+    val scanLauncher =
+        rememberLauncherForActivityResult(ScanContract()) { result ->
+            if (result != null && !result.contents.isNullOrBlank()) {
+                pendingScannedTracking = result.contents.trim()
+            }
+        }
 
     if (showStatusDialog) {
         // Trouver l'id du statut courant pour la pré-sélection (match sur le nom)
@@ -255,17 +269,35 @@ fun OrderDetailContent(
     }
 
     if (showTrackingDialog) {
-        TextInputDialog(
-            title = stringResource(R.string.order_detail_tracking_title),
-            label = stringResource(R.string.order_detail_tracking_label),
+        TrackingInputDialog(
             initialValue = order.shipping?.trackingNumber.orEmpty(),
-            confirmLabel = stringResource(R.string.order_detail_tracking_save),
-            cancelLabel = stringResource(R.string.order_detail_cancel),
-            onConfirm = {
-                showTrackingDialog = false
-                onUpdateTracking(it)
+            scannedValue = pendingScannedTracking,
+            onScanBarcode = {
+                scanLauncher.launch(
+                    ScanOptions()
+                        .setDesiredBarcodeFormats(
+                            ScanOptions.CODE_128,
+                            ScanOptions.CODE_39,
+                            ScanOptions.ITF,
+                            ScanOptions.CODE_93,
+                            ScanOptions.EAN_13,
+                        )
+                        .setPrompt(scanTrackingPrompt)
+                        .setBeepEnabled(true)
+                        .setBarcodeImageEnabled(false)
+                        .setOrientationLocked(false)
+                        .setCaptureActivity(PortraitCaptureActivity::class.java),
+                )
             },
-            onDismiss = { showTrackingDialog = false },
+            onConfirm = { tracking ->
+                showTrackingDialog = false
+                pendingScannedTracking = null
+                onUpdateTracking(tracking)
+            },
+            onDismiss = {
+                showTrackingDialog = false
+                pendingScannedTracking = null
+            },
         )
     }
 
@@ -520,6 +552,65 @@ private fun TextInputDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(cancelLabel)
+            }
+        },
+    )
+}
+
+/**
+ * Dialog de saisie/scan du numéro de suivi.
+ *
+ * Affiche un [OutlinedTextField] pré-rempli avec [initialValue]. L'icône caméra (trailing)
+ * déclenche [onScanBarcode]. Quand [scannedValue] change (résultat ZXing), le champ est mis
+ * à jour automatiquement — l'utilisateur peut encore éditer avant de confirmer.
+ */
+@Composable
+private fun TrackingInputDialog(
+    initialValue: String,
+    scannedValue: String?,
+    onScanBarcode: () -> Unit,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var value by remember { mutableStateOf(initialValue) }
+    val scanDesc = stringResource(R.string.order_detail_scan_tracking_content_description)
+
+    LaunchedEffect(scannedValue) {
+        if (scannedValue != null) {
+            value = scannedValue
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.order_detail_tracking_title)) },
+        text = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = { value = it },
+                label = { Text(stringResource(R.string.order_detail_tracking_label)) },
+                singleLine = true,
+                trailingIcon = {
+                    IconButton(onClick = onScanBarcode) {
+                        Icon(
+                            imageVector = Icons.Outlined.CameraAlt,
+                            contentDescription = scanDesc,
+                        )
+                    }
+                },
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(value) },
+                enabled = value.isNotBlank(),
+            ) {
+                Text(stringResource(R.string.order_detail_tracking_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.order_detail_cancel))
             }
         },
     )

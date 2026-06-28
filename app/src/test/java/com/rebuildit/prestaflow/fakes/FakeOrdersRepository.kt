@@ -68,11 +68,21 @@ class FakeOrdersRepository : OrdersRepository {
         if (shouldThrowOnUpdateStatus || orderId in failingOrderIds) throw updateStatusException
     }
 
+    /** Appels reçus par [updateOrderShipping] : (orderId, trackingNumber). */
+    val updateShippingCalls = mutableListOf<Pair<Long, String>>()
+
+    /** Si vrai, [updateOrderShipping] lance une exception. */
+    var shouldThrowOnUpdateShipping = false
+    var updateShippingException: Throwable = RuntimeException("Erreur réseau simulée update shipping")
+
     override suspend fun updateOrderShipping(
         orderId: Long,
         trackingNumber: String,
         carrierId: Long?,
-    ) = Unit
+    ) {
+        updateShippingCalls += Pair(orderId, trackingNumber)
+        if (shouldThrowOnUpdateShipping) throw updateShippingException
+    }
 
     override suspend fun downloadInvoicePdf(orderId: Long): ByteArray? = null
 
