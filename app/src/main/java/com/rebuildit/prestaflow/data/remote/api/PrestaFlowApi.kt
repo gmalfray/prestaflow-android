@@ -102,7 +102,9 @@ interface PrestaFlowApi {
 
     @GET("dashboard/metrics")
     suspend fun getDashboardMetrics(
-        @Query("period") period: String,
+        @Query("period") period: String? = null,
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
     ): DashboardMetricsDto
 
     @GET("customers/stats")

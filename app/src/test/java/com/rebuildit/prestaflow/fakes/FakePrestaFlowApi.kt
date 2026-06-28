@@ -75,8 +75,11 @@ class FakePrestaFlowApi : PrestaFlowApi {
         body: StockUpdateRequestDto,
     ) = throw UnsupportedOperationException("Non utilisé dans ce test")
 
-    override suspend fun getDashboardMetrics(period: String): DashboardMetricsDto =
-        throw UnsupportedOperationException("Non utilisé dans ce test")
+    override suspend fun getDashboardMetrics(
+        period: String?,
+        from: String?,
+        to: String?,
+    ): DashboardMetricsDto = throw UnsupportedOperationException("Non utilisé dans ce test")
 
     override suspend fun getCustomerStats(): CustomerStatsDto = throw UnsupportedOperationException("Non utilisé dans ce test")
 
