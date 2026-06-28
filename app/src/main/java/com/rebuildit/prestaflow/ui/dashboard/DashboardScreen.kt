@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -66,6 +68,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -87,6 +91,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 @Composable
@@ -722,11 +727,71 @@ private fun DashboardChartCard(
 
 // ─── Graphique double axe (commandes + CA) ───────────────────────────────────
 
-// Marges internes du canvas (converties en px dans DrawScope / PointerInputScope)
+// Marges internes du canvas
 private val chartPadLeft = 52.dp
-private val chartPadRight = 58.dp
-private val chartPadTop = 8.dp
-private val chartPadBottom = 20.dp
+private val chartPadRight = 60.dp
+private val chartPadTop = 12.dp
+private val chartPadBottom = 28.dp
+
+/** Arrondit rawMax à la prochaine valeur "ronde" supérieure (5, 10, 25, 50…). */
+private fun niceMaxInt(rawMax: Int): Int {
+    if (rawMax <= 0) return 5
+    val magnitude = when {
+        rawMax <= 20 -> 5
+        rawMax <= 50 -> 10
+        rawMax <= 100 -> 25
+        rawMax <= 200 -> 50
+        rawMax <= 500 -> 100
+        rawMax <= 1_000 -> 250
+        else -> 500
+    }
+    return ((rawMax + magnitude - 1) / magnitude) * magnitude
+}
+
+/** Arrondit rawMax Double au prochain multiple "rond" supérieur. */
+private fun niceMaxDouble(rawMax: Double): Double {
+    if (rawMax <= 0.0) return 100.0
+    val magnitude = when {
+        rawMax <= 10.0 -> 5.0
+        rawMax <= 50.0 -> 10.0
+        rawMax <= 100.0 -> 25.0
+        rawMax <= 200.0 -> 50.0
+        rawMax <= 500.0 -> 100.0
+        rawMax <= 1_000.0 -> 250.0
+        rawMax <= 2_000.0 -> 500.0
+        rawMax <= 5_000.0 -> 1_000.0
+        rawMax <= 10_000.0 -> 2_500.0
+        else -> 5_000.0
+    }
+    return ceil(rawMax / magnitude) * magnitude
+}
+
+/** Formate une valeur de CA pour les labels d'axe (ex: 0€, 450€, 1,5k€, 2,0M€). */
+private fun formatCaLabel(value: Double): String = when {
+    value >= 1_000_000.0 -> "${"%.1f".format(value / 1_000_000.0)}M€"
+    value >= 1_000.0 -> "${"%.1f".format(value / 1_000.0)}k€"
+    else -> "${value.toInt()}€"
+}
+
+/** Construit un Path lissé via Catmull-Rom converti en Bézier cubique. */
+private fun catmullRomPath(offsets: List<Offset>): Path {
+    val path = Path()
+    if (offsets.size < 2) return path
+    path.moveTo(offsets[0].x, offsets[0].y)
+    val n = offsets.size
+    for (i in 0 until n - 1) {
+        val p0 = if (i > 0) offsets[i - 1] else offsets[i]
+        val p1 = offsets[i]
+        val p2 = offsets[i + 1]
+        val p3 = if (i + 2 < n) offsets[i + 2] else offsets[i + 1]
+        val cp1x = p1.x + (p2.x - p0.x) / 6f
+        val cp1y = p1.y + (p2.y - p0.y) / 6f
+        val cp2x = p2.x - (p3.x - p1.x) / 6f
+        val cp2y = p2.y - (p3.y - p1.y) / 6f
+        path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y)
+    }
+    return path
+}
 
 @Suppress("LongMethod", "ComplexMethod")
 @Composable
@@ -738,10 +803,20 @@ internal fun DualAxisSalesChart(
     if (points.isEmpty()) return
 
     val colorOrders = MaterialTheme.colorScheme.primary
-    val colorTurnover = Color(0xFF1976D2)
+    val colorTurnover = Color(0xFF1976D2) // bleu Material — contraste accessible fond clair/sombre
     val colorGrid = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+    val colorLabel = MaterialTheme.colorScheme.onSurfaceVariant
+    val colorSurface = MaterialTheme.colorScheme.surfaceContainerLowest
+    val colorOnSurface = MaterialTheme.colorScheme.onSurface
     val chartDesc = rememberChartContentDescription(points)
+    val textMeasurer = rememberTextMeasurer()
+    val labelStyle = MaterialTheme.typography.labelSmall
 
+    // Maxima arrondis à la prochaine valeur "ronde" supérieure au pic
+    val maxOrders = niceMaxInt(points.maxOf { it.orders })
+    val maxTurnover = niceMaxDouble(points.maxOf { it.turnover })
+
+    // Animation d'apparition (0 → 1 en 700 ms)
     var animProgress by remember { mutableFloatStateOf(0f) }
     val animatedProgress by animateFloatAsState(
         targetValue = animProgress,
@@ -750,110 +825,194 @@ internal fun DualAxisSalesChart(
     )
     LaunchedEffect(points) { animProgress = 1f }
 
+    // Sélection interactive au tap
     var selectedIndex by remember { mutableIntStateOf(-1) }
 
+    // Indices à afficher pour les labels X (max 6, espacés uniformément)
+    val maxXLabels = 6
+    val xLabelIndices: List<Int> = if (points.size <= maxXLabels) {
+        points.indices.toList()
+    } else {
+        val step = (points.size - 1).toFloat() / (maxXLabels - 1)
+        (0 until maxXLabels)
+            .map { i -> (i * step).roundToInt().coerceIn(0, points.size - 1) }
+            .distinct()
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(height)
-                .semantics(mergeDescendants = true) { contentDescription = chartDesc }
-                .pointerInput(points) {
-                    detectTapGestures { offset ->
-                        val n = points.size
-                        if (n < 2) return@detectTapGestures
-                        val pl = chartPadLeft.toPx()
-                        val pr = chartPadRight.toPx()
-                        val step = (size.width.toFloat() - pl - pr) / (n - 1)
-                        val idx = ((offset.x - pl) / step).roundToInt().coerceIn(0, n - 1)
-                        selectedIndex = if (selectedIndex == idx) -1 else idx
-                    }
-                },
-        ) {
-            val n = points.size
-            if (n < 2) return@Canvas
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val totalWidthDp = maxWidth
 
-            val pl = chartPadLeft.toPx()
-            val pr = chartPadRight.toPx()
-            val pt = chartPadTop.toPx()
-            val pb = chartPadBottom.toPx()
-            val cw = size.width - pl - pr
-            val ch = size.height - pt - pb
-            val stepX = cw / (n - 1)
-
-            val maxOrders = points.maxOf { it.orders }.toFloat().coerceAtLeast(1f)
-            val maxTurnover = points.maxOf { it.turnover }.toFloat().coerceAtLeast(1f)
-
-            fun ordY(v: Int) = pt + ch - ch * (v / maxOrders).coerceIn(0f, 1f) * animatedProgress
-            fun caY(v: Double) = pt + ch - ch * (v.toFloat() / maxTurnover).coerceIn(0f, 1f) * animatedProgress
-
-            val ordOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, ordY(p.orders)) }
-            val caOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, caY(p.turnover)) }
-
-            // Grille horizontale pointillée
-            val gridCount = 4
-            val dash = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))
-            repeat(gridCount + 1) { i ->
-                val y = pt + ch * i / gridCount
-                drawLine(colorGrid, Offset(pl, y), Offset(pl + cw, y), 1.dp.toPx(), pathEffect = dash)
-            }
-
-            // Courbe commandes (axe gauche)
-            drawPath(
-                path = Path().apply {
-                    ordOffsets.forEachIndexed { i, o -> if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) }
-                },
-                color = colorOrders,
-                style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
-            )
-            // Courbe CA (axe droit)
-            drawPath(
-                path = Path().apply {
-                    caOffsets.forEachIndexed { i, o -> if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) }
-                },
-                color = colorTurnover,
-                style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
-            )
-
-            // Marqueurs sur chaque point
-            val mr = 4.dp.toPx()
-            ordOffsets.forEachIndexed { i, o ->
-                val sel = i == selectedIndex
-                drawCircle(colorOrders, if (sel) mr * 1.8f else mr, o)
-                if (sel) drawCircle(Color.White, mr * 0.7f, o)
-            }
-            caOffsets.forEachIndexed { i, o ->
-                val sel = i == selectedIndex
-                drawCircle(colorTurnover, if (sel) mr * 1.8f else mr, o)
-                if (sel) drawCircle(Color.White, mr * 0.7f, o)
-            }
-
-            // Cercle highlight sur le point sélectionné
-            if (selectedIndex in points.indices) {
-                drawCircle(colorOrders.copy(alpha = 0.15f), 12.dp.toPx(), ordOffsets[selectedIndex])
-                drawCircle(colorTurnover.copy(alpha = 0.15f), 12.dp.toPx(), caOffsets[selectedIndex])
-            }
-        }
-
-        // Labels X : premier et dernier point
-        if (points.size >= 2) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(height)
+                    .semantics(mergeDescendants = true) { contentDescription = chartDesc }
+                    .pointerInput(points) {
+                        detectTapGestures { offset ->
+                            val n = points.size
+                            if (n < 2) return@detectTapGestures
+                            val pl = chartPadLeft.toPx()
+                            val pr = chartPadRight.toPx()
+                            val step = (size.width.toFloat() - pl - pr) / (n - 1)
+                            val idx = ((offset.x - pl) / step).roundToInt().coerceIn(0, n - 1)
+                            selectedIndex = if (selectedIndex == idx) -1 else idx
+                        }
+                    },
             ) {
-                listOf(points.first().label, points.last().label).forEach { lbl ->
-                    Text(
-                        text = lbl,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                val n = points.size
+                if (n < 2) return@Canvas
+
+                val pl = chartPadLeft.toPx()
+                val pr = chartPadRight.toPx()
+                val pt = chartPadTop.toPx()
+                val pb = chartPadBottom.toPx()
+                val cw = size.width - pl - pr
+                val ch = size.height - pt - pb
+                val stepX = if (n > 1) cw / (n - 1) else cw
+
+                fun ordY(v: Int): Float =
+                    pt + ch - ch * (v.toFloat() / maxOrders).coerceIn(0f, 1f) * animatedProgress
+
+                fun caY(v: Double): Float =
+                    pt + ch - ch * (v.toFloat() / maxTurnover.toFloat()).coerceIn(0f, 1f) * animatedProgress
+
+                val ordOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, ordY(p.orders)) }
+                val caOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, caY(p.turnover)) }
+
+                // ── Labels axe Y gauche (commandes) ──────────────────────────────────
+                val gridCount = 4
+                repeat(gridCount + 1) { i ->
+                    val fraction = i.toFloat() / gridCount
+                    val value = (maxOrders * (1f - fraction)).roundToInt()
+                    val measured = textMeasurer.measure(value.toString(), style = labelStyle)
+                    val y = pt + ch * fraction
+                    drawText(
+                        textLayoutResult = measured,
+                        color = colorLabel,
+                        topLeft = Offset(
+                            x = pl - measured.size.width.toFloat() - 6.dp.toPx(),
+                            y = y - measured.size.height / 2f,
+                        ),
+                    )
+                }
+
+                // ── Labels axe Y droit (CA) ───────────────────────────────────────────
+                repeat(gridCount + 1) { i ->
+                    val fraction = i.toFloat() / gridCount
+                    val value = maxTurnover * (1.0 - fraction)
+                    val label = formatCaLabel(value)
+                    val measured = textMeasurer.measure(label, style = labelStyle)
+                    val y = pt + ch * fraction
+                    drawText(
+                        textLayoutResult = measured,
+                        color = colorLabel,
+                        topLeft = Offset(
+                            x = pl + cw + 6.dp.toPx(),
+                            y = y - measured.size.height / 2f,
+                        ),
+                    )
+                }
+
+                // ── Grille horizontale pointillée ─────────────────────────────────────
+                val dash = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))
+                repeat(gridCount + 1) { i ->
+                    val y = pt + ch * i / gridCount
+                    drawLine(
+                        color = colorGrid,
+                        start = Offset(pl, y),
+                        end = Offset(pl + cw, y),
+                        strokeWidth = 1.dp.toPx(),
+                        pathEffect = dash,
+                    )
+                }
+
+                // ── Courbes lissées Catmull-Rom ───────────────────────────────────────
+                drawPath(
+                    path = catmullRomPath(ordOffsets),
+                    color = colorOrders,
+                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
+                )
+                drawPath(
+                    path = catmullRomPath(caOffsets),
+                    color = colorTurnover,
+                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
+                )
+
+                // ── Marqueurs sur les vrais points ────────────────────────────────────
+                val mr = 4.dp.toPx()
+                ordOffsets.forEachIndexed { i, o ->
+                    val sel = i == selectedIndex
+                    drawCircle(colorOrders, if (sel) mr * 1.8f else mr, o)
+                    if (sel) drawCircle(Color.White, mr * 0.7f, o)
+                }
+                caOffsets.forEachIndexed { i, o ->
+                    val sel = i == selectedIndex
+                    drawCircle(colorTurnover, if (sel) mr * 1.8f else mr, o)
+                    if (sel) drawCircle(Color.White, mr * 0.7f, o)
+                }
+
+                // ── Indicateur vertical de sélection ─────────────────────────────────
+                if (selectedIndex in points.indices) {
+                    val selX = ordOffsets[selectedIndex].x
+                    drawLine(
+                        color = colorLabel.copy(alpha = 0.35f),
+                        start = Offset(selX, pt),
+                        end = Offset(selX, pt + ch),
+                        strokeWidth = 1.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx())),
+                    )
+                    drawCircle(colorOrders.copy(alpha = 0.15f), 12.dp.toPx(), ordOffsets[selectedIndex])
+                    drawCircle(colorTurnover.copy(alpha = 0.15f), 12.dp.toPx(), caOffsets[selectedIndex])
+                }
+
+                // ── Labels X intelligents (max 6, espacés) ────────────────────────────
+                xLabelIndices.forEach { idx ->
+                    val lbl = points[idx].label
+                    val measured = textMeasurer.measure(lbl, style = labelStyle)
+                    val xPos = pl + stepX * idx
+                    drawText(
+                        textLayoutResult = measured,
+                        color = colorLabel,
+                        topLeft = Offset(
+                            x = (xPos - measured.size.width / 2f)
+                                .coerceIn(pl, pl + cw - measured.size.width),
+                            y = pt + ch + 4.dp.toPx(),
+                        ),
                     )
                 }
             }
+
+            // ── Tooltip overlay Compose ───────────────────────────────────────────────
+            if (selectedIndex in points.indices) {
+                val selectedPt = points[selectedIndex]
+                val n = points.size
+                val usableW = totalWidthDp - chartPadLeft - chartPadRight
+                val stepXDp = if (n > 1) usableW / (n - 1) else usableW
+                val rawX = chartPadLeft + stepXDp * selectedIndex
+                val tooltipW = 140.dp
+                val clampedX = rawX.coerceIn(0.dp, totalWidthDp - tooltipW)
+
+                ChartTooltipBubble(
+                    modifier = Modifier
+                        .offset(x = clampedX, y = chartPadTop + 8.dp)
+                        .width(tooltipW),
+                    label = selectedPt.label,
+                    orders = selectedPt.orders,
+                    turnover = selectedPt.turnover,
+                    colorOrders = colorOrders,
+                    colorTurnover = colorTurnover,
+                    containerColor = colorSurface,
+                    onContainerColor = colorOnSurface,
+                )
+            }
         }
 
-        // Légende sous le graphe
+        // ── Légende sous le graphe ────────────────────────────────────────────────────
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -872,6 +1031,55 @@ internal fun DualAxisSalesChart(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+@Composable
+private fun ChartTooltipBubble(
+    label: String,
+    orders: Int,
+    turnover: Double,
+    colorOrders: Color,
+    colorTurnover: Color,
+    containerColor: Color,
+    onContainerColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = containerColor,
+        shadowElevation = 6.dp,
+        tonalElevation = 2.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = onContainerColor,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorOrders))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Cmd : $orders",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onContainerColor,
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorTurnover))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "CA : ${formatCaLabel(turnover)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onContainerColor,
+                )
+            }
         }
     }
 }
