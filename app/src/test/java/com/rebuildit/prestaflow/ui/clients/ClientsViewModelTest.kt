@@ -570,6 +570,115 @@ class ClientsViewModelTest {
             assertEquals(ClientsRepository.PAGE_SIZE, fakeClientsRepo.lastFetchClientsCall?.limit)
         }
 
+    // ─── onNavigationFilter (ré-navigation depuis le dashboard KPI) ─────────
+
+    @Test
+    fun `onNavigationFilter NEW_THIS_MONTH applique le mode meme si le VM est en TOP_CLIENTS`() =
+        runTest {
+            fakeClientsRepo.fetchClientsResult =
+                ClientsPage(clients = listOf(buildClient(1L)), hasNext = false, nextOffset = 0)
+
+            val vm = buildViewModel(filterArg = null) // Clients ouvert via barre de nav → TOP
+            advanceUntilIdle()
+            assertEquals(ClientFilter.TOP_CLIENTS, vm.uiState.value.activeFilter)
+
+            // Simulation d'une ré-navigation via KPI (le LaunchedEffect de ClientsRoute appelle cette méthode)
+            vm.onNavigationFilter(ClientFilter.NEW_THIS_MONTH)
+            advanceUntilIdle()
+
+            assertEquals(
+                "onNavigationFilter doit forcer NEW_THIS_MONTH même si le mode était TOP_CLIENTS",
+                ClientFilter.NEW_THIS_MONTH,
+                vm.uiState.value.activeFilter,
+            )
+        }
+
+    @Test
+    fun `onNavigationFilter NEW_THIS_MONTH declenche le chargement avec createdFrom`() =
+        runTest {
+            val newClients = listOf(buildClient(5L))
+            fakeClientsRepo.fetchClientsResult =
+                ClientsPage(clients = newClients, hasNext = false, nextOffset = 0)
+
+            val vm = buildViewModel(filterArg = null)
+            advanceUntilIdle()
+
+            vm.onNavigationFilter(ClientFilter.NEW_THIS_MONTH)
+            advanceUntilIdle()
+
+            val call = fakeClientsRepo.lastFetchClientsCall
+            assertNotNull("fetchClients doit être appelé après onNavigationFilter(NEW)", call)
+            val expectedFirstOfMonth =
+                LocalDate.now().withDayOfMonth(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            assertEquals(expectedFirstOfMonth, call?.createdFrom)
+            assertEquals(1, vm.uiState.value.clients.size)
+        }
+
+    @Test
+    fun `onNavigationFilter est idempotent si le mode est deja correct`() =
+        runTest {
+            fakeClientsRepo.fetchClientsResult =
+                ClientsPage(clients = listOf(buildClient(1L)), hasNext = false, nextOffset = 0)
+
+            val vm = buildViewModel(filterArg = "new") // init → NEW_THIS_MONTH
+            advanceUntilIdle()
+            val callCountAfterInit = fakeClientsRepo.lastFetchClientsCall
+
+            // Ré-appel avec le même mode : ne doit pas déclencher de nouveau chargement
+            vm.onNavigationFilter(ClientFilter.NEW_THIS_MONTH)
+            advanceUntilIdle()
+
+            assertEquals(
+                "onNavigationFilter idempotent : lastFetchClientsCall ne doit pas changer",
+                callCountAfterInit,
+                fakeClientsRepo.lastFetchClientsCall,
+            )
+        }
+
+    @Test
+    fun `onNavigationFilter apres changement interactif ré-applique le mode cible`() =
+        runTest {
+            fakeClientsRepo.fetchClientsResult =
+                ClientsPage(clients = emptyList(), hasNext = false, nextOffset = 0)
+
+            val vm = buildViewModel(filterArg = "new") // init → NEW_THIS_MONTH
+            advanceUntilIdle()
+
+            // L'utilisateur bascule manuellement vers TOP via les cartes KPI (re-tap)
+            vm.onFilterChange(ClientFilter.NEW_THIS_MONTH) // re-tap = retour TOP
+            advanceUntilIdle()
+            assertEquals(ClientFilter.TOP_CLIENTS, vm.uiState.value.activeFilter)
+
+            // Nouvelle navigation depuis le dashboard (LaunchedEffect re-déclenché)
+            fakeClientsRepo.fetchClientsResult =
+                ClientsPage(clients = listOf(buildClient(99L)), hasNext = false, nextOffset = 0)
+            vm.onNavigationFilter(ClientFilter.NEW_THIS_MONTH)
+            advanceUntilIdle()
+
+            assertEquals(
+                "onNavigationFilter doit ré-appliquer NEW après un changement interactif",
+                ClientFilter.NEW_THIS_MONTH,
+                vm.uiState.value.activeFilter,
+            )
+            assertEquals(1, vm.uiState.value.clients.size)
+        }
+
+    @Test
+    fun `navigationFilterFlow emet new quand le savedStateHandle contient filter=new`() =
+        runTest {
+            val vm = buildViewModel(filterArg = "new")
+            advanceUntilIdle()
+            assertEquals("new", vm.navigationFilterFlow.value)
+        }
+
+    @Test
+    fun `navigationFilterFlow emet null quand aucun filtre de navigation`() =
+        runTest {
+            val vm = buildViewModel(filterArg = null)
+            advanceUntilIdle()
+            assertNull(vm.navigationFilterFlow.value)
+        }
+
     // ─── Builders ────────────────────────────────────────────────────────────
 
     private fun buildClient(
