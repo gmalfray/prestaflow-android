@@ -1,53 +1,53 @@
 package com.rebuildit.prestaflow.ui.orders
 
 /**
- * Extraction heuristique d'un numéro de suivi à partir d'un contenu brut scanné.
+ * Extraction du numéro de suivi à partir d'un contenu brut scanné.
  *
- * Contexte : les étiquettes La Poste « Lettre suivie » / « Courrier suivi » portent un
- * DataMatrix 2D dont le payload exact est propriétaire et non documenté publiquement.
- * Les numéros imprimés suivent le schéma « 13 chiffres + 2 caractères alphanumériques »
- * (ex. `8700124410028 5T` → compact `87001244100285T`).
+ * Deux cas gérés :
  *
- * ⚠️ **Note** : le format réel du payload DataMatrix La Poste n'a PAS été confirmé sur
- * un exemplaire décodé — cette extraction est **heuristique**. Si un scan réel révèle un
- * contenu structuré différent (paires clé=valeur, GS1, etc.), il faudra affiner la regex.
- * L'utilisateur voit toujours le résultat dans le champ éditable et peut corriger.
+ * 1. **DataMatrix La Poste « Lettre suivie » / « Courrier suivi »** — payload structuré
+ *    de la forme `%<zéros de padding><14 chiffres = n° de suivi><données date/lot>^<signature>`.
+ *    Exemples réels (décodés via Google Lens) :
+ *      `%000000087001335318721601250A18^edb7b43` → `87001335318721`
+ *      `%000000087001244100285601250A18^6b3a602` → `87001244100285`
+ *    Le n° de suivi La Poste = les **14 chiffres** situés après les zéros de tête. La « lettre »
+ *    imprimée en plus (1H / 5T / 8N) est une clé de contrôle FACULTATIVE (modulo 23) que
+ *    laposte.fr recalcule lui-même : elle n'est pas dans le code et n'est PAS nécessaire au suivi
+ *    (le suivi fonctionne avec les 14 chiffres seuls — vérifié en réel sur laposte.fr).
+ *
+ * 2. **Code-barres 1D (Colissimo colis, etc.) ou numéro simple** — le contenu EST le numéro :
+ *    on retire un préfixe « SD : » éventuel et les espaces, puis on garde le token.
+ *
+ * Ne lève jamais d'exception ; en dernier recours renvoie le contenu nettoyé (champ éditable).
  */
 
-/** Regex : 13 chiffres consécutifs suivis de 2 caractères alphanumériques — format La Poste lettre suivie. */
-private val LAPOSTE_TRACKING_REGEX = Regex("""(\d{13}[A-Za-z0-9]{2})""")
+/** 14 chiffres consécutifs = n° de suivi La Poste (après retrait des zéros de padding). */
+private val LAPOSTE_14_DIGITS = Regex("""\d{14}""")
 
-/** Regex de repli : token alphanumérique de 11 à 16 caractères (Colissimo colis, UPS, etc.). */
-private val GENERIC_TRACKING_REGEX = Regex("""([A-Za-z0-9]{11,16})""")
+/** Repli : token alphanumérique de 11 à 18 caractères (Colissimo colis, numéro complet collé, etc.). */
+private val GENERIC_TRACKING_REGEX = Regex("""([A-Za-z0-9]{11,18})""")
 
-/**
- * Extrait le numéro de suivi le plus probable de [raw].
- *
- * Algorithme :
- * 1. Trim + suppression du préfixe « SD : »/« SD: » (label imprimé sur certaines étiquettes).
- * 2. Suppression des espaces internes (les numéros La Poste sont souvent affichés avec espace).
- * 3. Recherche du motif La Poste 15 chars (13 chiffres + 2 alnum) → retourné en majuscules.
- * 4. Sinon : recherche d'un token générique alphanumérique 11–16 chars → retourné en majuscules.
- * 5. Sinon : retourne la chaîne nettoyée telle quelle (repli éditable par l'utilisateur).
- *
- * Jamais d'exception, même sur entrée vide ou inattendue.
- */
 fun extractTrackingNumber(raw: String): String {
     if (raw.isBlank()) return raw.trim()
 
-    // Normalisation 1 : retire le préfixe éventuel "SD : " ou "SD: " (insensible à la casse)
-    val withoutPrefix = raw.trim().replace(Regex("""^SD\s*:\s*""", RegexOption.IGNORE_CASE), "")
+    val trimmed = raw.trim()
 
-    // Normalisation 2 : supprime les espaces internes
-    // ("8700124410028 5T" → "87001244100285T")
-    val compact = withoutPrefix.replace(" ", "")
+    // Cas 1 — payload DataMatrix La Poste : "%<zéros><14 chiffres>...^<signature>".
+    // On isole la partie avant la signature '^', on retire les zéros de tête, puis on lit
+    // les 14 premiers chiffres = le numéro de suivi.
+    if (trimmed.startsWith("%") || trimmed.contains("^")) {
+        val core = trimmed.removePrefix("%").substringBefore("^").trimStart('0')
+        LAPOSTE_14_DIGITS.find(core)?.let { return it.value }
+    }
 
-    // Étape 3 : motif La Poste lettre suivie — 13 chiffres + 2 alnum
-    LAPOSTE_TRACKING_REGEX.find(compact)?.let { return it.value.uppercase() }
+    // Normalisation : retire un préfixe "SD :"/"SD:" (insensible à la casse) et les espaces.
+    val compact = trimmed
+        .replace(Regex("""^SD\s*:\s*""", RegexOption.IGNORE_CASE), "")
+        .replace(" ", "")
 
-    // Étape 4 : token générique alphanumérique 11–16 chars (Colissimo, etc.)
+    // Cas 2 — token générique (code-barres 1D Colissimo, numéro simple).
     GENERIC_TRACKING_REGEX.find(compact)?.let { return it.value.uppercase() }
 
-    // Étape 5 : repli — brut nettoyé (l'utilisateur peut corriger à la main)
-    return compact.ifBlank { raw.trim() }
+    // Repli — contenu nettoyé, éditable par l'utilisateur.
+    return compact.ifBlank { trimmed }
 }
