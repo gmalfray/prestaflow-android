@@ -36,7 +36,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,12 +48,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,10 +95,14 @@ import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.Locale
 import kotlin.math.ceil
+import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Composable
@@ -110,6 +121,7 @@ fun DashboardRoute(
         state = state,
         connections = connections,
         onPeriodSelected = viewModel::onPeriodSelected,
+        onCustomRangeSelected = viewModel::onCustomRangeSelected,
         onRefresh = viewModel::onRefresh,
         onSwitchShop = shopsViewModel::switchShop,
         onAddShop = onAddShop,
@@ -124,6 +136,7 @@ fun DashboardScreen(
     state: DashboardUiState,
     connections: List<ShopConnection> = emptyList(),
     onPeriodSelected: (DashboardPeriod) -> Unit,
+    onCustomRangeSelected: (String, String) -> Unit = { _, _ -> },
     onRefresh: () -> Unit,
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
@@ -142,10 +155,12 @@ fun DashboardScreen(
                 modifier = modifier,
                 snapshot = requireNotNull(state.snapshot),
                 selectedPeriod = state.selectedPeriod,
+                customRange = state.customRange,
                 isRefreshing = state.isRefreshing,
                 errorMessage = errorMessage,
                 connections = connections,
                 onPeriodSelected = onPeriodSelected,
+                onCustomRangeSelected = onCustomRangeSelected,
                 onRefresh = onRefresh,
                 onSwitchShop = onSwitchShop,
                 onAddShop = onAddShop,
@@ -211,10 +226,12 @@ private fun DashboardContent(
     modifier: Modifier,
     snapshot: DashboardSnapshot,
     selectedPeriod: DashboardPeriod,
+    customRange: Pair<String, String>?,
     isRefreshing: Boolean,
     errorMessage: String?,
     connections: List<ShopConnection>,
     onPeriodSelected: (DashboardPeriod) -> Unit,
+    onCustomRangeSelected: (String, String) -> Unit,
     onRefresh: () -> Unit,
     onSwitchShop: (String) -> Unit,
     onAddShop: () -> Unit,
@@ -251,7 +268,9 @@ private fun DashboardContent(
                     isRefreshing = isRefreshing,
                     onRefresh = onRefresh,
                     selectedPeriod = selectedPeriod,
+                    customRange = customRange,
                     onPeriodSelected = onPeriodSelected,
+                    onCustomRangeSelected = onCustomRangeSelected,
                     onSwitchShop = onSwitchShop,
                     onAddShop = onAddShop,
                 )
@@ -314,7 +333,8 @@ private fun DashboardContent(
                     totalText = turnoverText,
                     currentTurnover = snapshot.turnover,
                     previousTurnover = snapshot.previousTurnover,
-                    selectedPeriod = selectedPeriod,
+                    // En mode plage libre, on n'affiche pas le comparatif "vs période précédente"
+                    selectedPeriod = if (customRange == null) selectedPeriod else null,
                 )
             }
 
@@ -336,13 +356,16 @@ private fun DashboardContent(
 
 // ─── En-tête ─────────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DashboardHeader(
     connections: List<ShopConnection>,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     selectedPeriod: DashboardPeriod,
+    customRange: Pair<String, String>?,
     onPeriodSelected: (DashboardPeriod) -> Unit,
+    onCustomRangeSelected: (String, String) -> Unit,
     onSwitchShop: (String) -> Unit,
     onAddShop: () -> Unit,
     modifier: Modifier = Modifier,
@@ -353,6 +376,54 @@ private fun DashboardHeader(
         activeShop?.label
             ?: activeShop?.shopUrl?.substringAfter("://")?.trimEnd('/')
             ?: stringResource(id = R.string.app_name)
+
+    // État du DateRangePicker
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    val datePickerState = rememberDateRangePickerState()
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val startMs = datePickerState.selectedStartDateMillis
+                        val endMs = datePickerState.selectedEndDateMillis
+                        if (startMs != null && endMs != null) {
+                            val from = LocalDate.ofInstant(
+                                Instant.ofEpochMilli(startMs),
+                                ZoneOffset.UTC,
+                            ).toString()
+                            val to = LocalDate.ofInstant(
+                                Instant.ofEpochMilli(endMs),
+                                ZoneOffset.UTC,
+                            ).toString()
+                            onCustomRangeSelected(from, to)
+                        }
+                        showDatePicker = false
+                    },
+                ) {
+                    Text(text = stringResource(id = R.string.action_ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(text = stringResource(id = R.string.action_cancel))
+                }
+            },
+        ) {
+            DateRangePicker(
+                state = datePickerState,
+                title = {
+                    Text(
+                        text = stringResource(id = R.string.dashboard_date_picker_title),
+                        modifier = Modifier.padding(start = 64.dp, end = 12.dp, top = 16.dp),
+                    )
+                },
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -379,6 +450,12 @@ private fun DashboardHeader(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    // En mode plage libre, afficher les dates sous le nom de la boutique
+                    val subtitleText = if (customRange != null) {
+                        formatCustomRangeDisplay(customRange.first, customRange.second)
+                    } else {
+                        null
+                    }
                     Text(
                         text = shopName,
                         style = MaterialTheme.typography.headlineMedium,
@@ -386,6 +463,13 @@ private fun DashboardHeader(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    if (subtitleText != null) {
+                        Text(
+                            text = subtitleText,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                     // Sélecteur de boutique — chip sous le titre (visible si connexion définie)
                     if (connections.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(Dimensions.spacingXs))
@@ -428,10 +512,12 @@ private fun DashboardHeader(
                 }
             }
 
-            // Sélecteur de période : chips pill horizontaux
+            // Sélecteur de période : chips pill horizontaux + chip "Personnalisé"
             PeriodChipRow(
                 selectedPeriod = selectedPeriod,
+                isCustomMode = customRange != null,
                 onPeriodSelected = onPeriodSelected,
+                onCustomRangeClick = { showDatePicker = true },
             )
         }
     }
@@ -442,7 +528,9 @@ private fun DashboardHeader(
 @Composable
 private fun PeriodChipRow(
     selectedPeriod: DashboardPeriod,
+    isCustomMode: Boolean,
     onPeriodSelected: (DashboardPeriod) -> Unit,
+    onCustomRangeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
@@ -454,7 +542,7 @@ private fun PeriodChipRow(
         horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
     ) {
         DashboardPeriod.values().forEach { period ->
-            val isSelected = period == selectedPeriod
+            val isSelected = !isCustomMode && period == selectedPeriod
             val label =
                 when (period) {
                     DashboardPeriod.TODAY -> stringResource(id = R.string.dashboard_period_today)
@@ -469,6 +557,12 @@ private fun PeriodChipRow(
                 onClick = { onPeriodSelected(period) },
             )
         }
+        // Chip "Personnalisé" — toujours à la fin
+        PeriodChip(
+            label = stringResource(id = R.string.dashboard_period_custom),
+            isSelected = isCustomMode,
+            onClick = onCustomRangeClick,
+        )
     }
 }
 
@@ -631,15 +725,22 @@ private fun KpiCard(
 
 // ─── Carte graphique ──────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DashboardChartCard(
     points: List<DashboardChartPoint>,
     totalText: String,
     currentTurnover: Double,
     previousTurnover: Double?,
-    selectedPeriod: DashboardPeriod,
+    /**
+     * Null en mode plage libre : le comparatif "vs période précédente" n'est alors pas affiché.
+     */
+    selectedPeriod: DashboardPeriod?,
     modifier: Modifier = Modifier,
 ) {
+    // Toggle 3ᵉ série "Nouveaux clients" — local à la carte
+    var showNewCustomers by remember { mutableStateOf(false) }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimensions.cardCornerRadius),
@@ -665,9 +766,8 @@ private fun DashboardChartCard(
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
-                    // Comparatif vs période précédente — affiché uniquement si le connecteur
-                    // fournit le CA précédent (champ previous_turnover, disponible dès v1.5.x).
-                    if (previousTurnover != null) {
+                    // Comparatif vs période précédente — masqué en mode plage libre
+                    if (previousTurnover != null && selectedPeriod != null) {
                         val delta =
                             if (previousTurnover > 0.0) {
                                 (currentTurnover - previousTurnover) / previousTurnover * 100.0
@@ -684,7 +784,7 @@ private fun DashboardChartCard(
                                 style = MaterialTheme.typography.labelLarge,
                                 color =
                                     if (isPositive) {
-                                        Color(0xFF2E7D32) // vert success accessible
+                                        Color(0xFF2E7D32)
                                     } else {
                                         MaterialTheme.colorScheme.error
                                     },
@@ -711,6 +811,29 @@ private fun DashboardChartCard(
                 }
             }
 
+            // Toggle 3ᵉ série : chip compact "Nouveaux clients"
+            if (points.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    FilterChip(
+                        selected = showNewCustomers,
+                        onClick = { showNewCustomers = !showNewCustomers },
+                        label = {
+                            Text(
+                                text = stringResource(id = R.string.dashboard_chart_new_customers),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = colorNewCustomers.copy(alpha = 0.15f),
+                            selectedLabelColor = colorNewCustomers,
+                        ),
+                    )
+                }
+            }
+
             // Graphique ou état vide
             if (points.isEmpty()) {
                 Text(
@@ -719,11 +842,19 @@ private fun DashboardChartCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                DualAxisSalesChart(points = points, height = 160.dp)
+                DualAxisSalesChart(
+                    points = points,
+                    height = 160.dp,
+                    showNewCustomers = showNewCustomers,
+                )
             }
         }
     }
 }
+
+// ─── Couleur "Nouveaux clients" (vert success accessible, distinct de primary) ──
+
+private val colorNewCustomers = Color(0xFF2E7D32)
 
 // ─── Graphique double axe (commandes + CA) ───────────────────────────────────
 
@@ -798,12 +929,14 @@ private fun catmullRomPath(offsets: List<Offset>): Path {
 internal fun DualAxisSalesChart(
     points: List<DashboardChartPoint>,
     height: Dp = 200.dp,
+    showNewCustomers: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     if (points.isEmpty()) return
 
     val colorOrders = MaterialTheme.colorScheme.primary
-    val colorTurnover = Color(0xFF1976D2) // bleu Material — contraste accessible fond clair/sombre
+    val colorTurnover = Color(0xFF1976D2)
+    val colorNewCust = colorNewCustomers
     val colorGrid = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
     val colorLabel = MaterialTheme.colorScheme.onSurfaceVariant
     val colorSurface = MaterialTheme.colorScheme.surfaceContainerLowest
@@ -812,8 +945,13 @@ internal fun DualAxisSalesChart(
     val textMeasurer = rememberTextMeasurer()
     val labelStyle = MaterialTheme.typography.labelSmall
 
-    // Maxima arrondis à la prochaine valeur "ronde" supérieure au pic
-    val maxOrders = niceMaxInt(points.maxOf { it.orders })
+    // Axe gauche = max(orders, newCustomers si série active)
+    val rawMaxLeft = if (showNewCustomers) {
+        max(points.maxOf { it.orders }, points.maxOf { it.newCustomers })
+    } else {
+        points.maxOf { it.orders }
+    }
+    val maxOrders = niceMaxInt(rawMaxLeft)
     val maxTurnover = niceMaxDouble(points.maxOf { it.turnover })
 
     // Animation d'apparition (0 → 1 en 700 ms)
@@ -879,8 +1017,13 @@ internal fun DualAxisSalesChart(
 
                 val ordOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, ordY(p.orders)) }
                 val caOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, caY(p.turnover)) }
+                val newCustOffsets = if (showNewCustomers) {
+                    points.mapIndexed { i, p -> Offset(pl + stepX * i, ordY(p.newCustomers)) }
+                } else {
+                    emptyList()
+                }
 
-                // ── Labels axe Y gauche (commandes) ──────────────────────────────────
+                // ── Labels axe Y gauche (commandes / nouveaux clients) ────────────────
                 val gridCount = 4
                 repeat(gridCount + 1) { i ->
                     val fraction = i.toFloat() / gridCount
@@ -938,6 +1081,19 @@ internal fun DualAxisSalesChart(
                     color = colorTurnover,
                     style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
                 )
+                if (showNewCustomers && newCustOffsets.isNotEmpty()) {
+                    drawPath(
+                        path = catmullRomPath(newCustOffsets),
+                        color = colorNewCust,
+                        style = Stroke(
+                            width = 2.5.dp.toPx(),
+                            cap = StrokeCap.Round,
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(8.dp.toPx(), 4.dp.toPx()),
+                            ),
+                        ),
+                    )
+                }
 
                 // ── Marqueurs sur les vrais points ────────────────────────────────────
                 val mr = 4.dp.toPx()
@@ -950,6 +1106,13 @@ internal fun DualAxisSalesChart(
                     val sel = i == selectedIndex
                     drawCircle(colorTurnover, if (sel) mr * 1.8f else mr, o)
                     if (sel) drawCircle(Color.White, mr * 0.7f, o)
+                }
+                if (showNewCustomers) {
+                    newCustOffsets.forEachIndexed { i, o ->
+                        val sel = i == selectedIndex
+                        drawCircle(colorNewCust, if (sel) mr * 1.8f else mr, o)
+                        if (sel) drawCircle(Color.White, mr * 0.7f, o)
+                    }
                 }
 
                 // ── Indicateur vertical de sélection ─────────────────────────────────
@@ -964,6 +1127,9 @@ internal fun DualAxisSalesChart(
                     )
                     drawCircle(colorOrders.copy(alpha = 0.15f), 12.dp.toPx(), ordOffsets[selectedIndex])
                     drawCircle(colorTurnover.copy(alpha = 0.15f), 12.dp.toPx(), caOffsets[selectedIndex])
+                    if (showNewCustomers && newCustOffsets.isNotEmpty()) {
+                        drawCircle(colorNewCust.copy(alpha = 0.15f), 12.dp.toPx(), newCustOffsets[selectedIndex])
+                    }
                 }
 
                 // ── Labels X intelligents (max 6, espacés) ────────────────────────────
@@ -990,7 +1156,7 @@ internal fun DualAxisSalesChart(
                 val usableW = totalWidthDp - chartPadLeft - chartPadRight
                 val stepXDp = if (n > 1) usableW / (n - 1) else usableW
                 val rawX = chartPadLeft + stepXDp * selectedIndex
-                val tooltipW = 140.dp
+                val tooltipW = 160.dp
                 val clampedX = rawX.coerceIn(0.dp, totalWidthDp - tooltipW)
 
                 ChartTooltipBubble(
@@ -1000,8 +1166,10 @@ internal fun DualAxisSalesChart(
                     label = selectedPt.label,
                     orders = selectedPt.orders,
                     turnover = selectedPt.turnover,
+                    newCustomers = if (showNewCustomers) selectedPt.newCustomers else null,
                     colorOrders = colorOrders,
                     colorTurnover = colorTurnover,
+                    colorNewCustomers = colorNewCust,
                     containerColor = colorSurface,
                     onContainerColor = colorOnSurface,
                 )
@@ -1031,6 +1199,16 @@ internal fun DualAxisSalesChart(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (showNewCustomers) {
+                Spacer(modifier = Modifier.width(Dimensions.spacingM))
+                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(colorNewCustomers))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = stringResource(id = R.string.dashboard_chart_new_customers),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -1040,8 +1218,10 @@ private fun ChartTooltipBubble(
     label: String,
     orders: Int,
     turnover: Double,
+    newCustomers: Int?,
     colorOrders: Color,
     colorTurnover: Color,
+    colorNewCustomers: Color,
     containerColor: Color,
     onContainerColor: Color,
     modifier: Modifier = Modifier,
@@ -1066,7 +1246,7 @@ private fun ChartTooltipBubble(
                 Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorOrders))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Cmd : $orders",
+                    text = "Cmd : $orders",
                     style = MaterialTheme.typography.bodySmall,
                     color = onContainerColor,
                 )
@@ -1075,10 +1255,21 @@ private fun ChartTooltipBubble(
                 Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorTurnover))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "CA : ${formatCaLabel(turnover)}",
+                    text = "CA : ${formatCaLabel(turnover)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = onContainerColor,
                 )
+            }
+            if (newCustomers != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorNewCustomers))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Nv. clients : $newCustomers",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = onContainerColor,
+                    )
+                }
             }
         }
     }
@@ -1166,6 +1357,18 @@ private fun formatLastUpdated(isoString: String): String =
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(zoned)
     }.getOrElse { isoString }
 
+/**
+ * Formate une plage de dates libre pour l'affichage dans l'en-tête.
+ * Ex : "12 mai – 18 juin" (locale système).
+ */
+private fun formatCustomRangeDisplay(from: String, to: String): String =
+    runCatching {
+        val fmt = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
+        val fromFmt = LocalDate.parse(from).format(fmt)
+        val toFmt = LocalDate.parse(to).format(fmt)
+        "$fromFmt – $toFmt"
+    }.getOrElse { "$from – $to" }
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /** Retourne le string resource correspondant au libellé "vs période précédente" selon la période active. */
@@ -1208,13 +1411,48 @@ private fun PreviewDashboardContent() {
                             productsCount = 142,
                             chart =
                                 listOf(
-                                    DashboardChartPoint(label = "Lun", orders = 12, customers = 3, turnover = 400.0),
-                                    DashboardChartPoint(label = "Mar", orders = 20, customers = 5, turnover = 700.0),
-                                    DashboardChartPoint(label = "Mer", orders = 16, customers = 4, turnover = 550.0),
-                                    DashboardChartPoint(label = "Jeu", orders = 26, customers = 7, turnover = 900.0),
-                                    DashboardChartPoint(label = "Ven", orders = 19, customers = 5, turnover = 650.0),
-                                    DashboardChartPoint(label = "Sam", orders = 31, customers = 8, turnover = 1100.0),
-                                    DashboardChartPoint(label = "Dim", orders = 38, customers = 9, turnover = 1240.5),
+                                    DashboardChartPoint(label = "Lun", orders = 12, customers = 3, turnover = 400.0, newCustomers = 2),
+                                    DashboardChartPoint(label = "Mar", orders = 20, customers = 5, turnover = 700.0, newCustomers = 4),
+                                    DashboardChartPoint(label = "Mer", orders = 16, customers = 4, turnover = 550.0, newCustomers = 1),
+                                    DashboardChartPoint(label = "Jeu", orders = 26, customers = 7, turnover = 900.0, newCustomers = 6),
+                                    DashboardChartPoint(label = "Ven", orders = 19, customers = 5, turnover = 650.0, newCustomers = 3),
+                                    DashboardChartPoint(label = "Sam", orders = 31, customers = 8, turnover = 1100.0, newCustomers = 5),
+                                    DashboardChartPoint(label = "Dim", orders = 38, customers = 9, turnover = 1240.5, newCustomers = 7),
+                                ),
+                            lastUpdatedIso = "2026-06-19T10:30:00Z",
+                        ),
+                    isLoading = false,
+                    isRefreshing = false,
+                    error = null,
+                ),
+            onPeriodSelected = {},
+            onRefresh = {},
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Dashboard — plage libre")
+@Composable
+private fun PreviewDashboardCustomRange() {
+    PrestaFlowTheme {
+        DashboardScreen(
+            state =
+                DashboardUiState(
+                    selectedPeriod = DashboardPeriod.WEEK,
+                    customRange = Pair("2026-05-12", "2026-06-18"),
+                    snapshot =
+                        DashboardSnapshot(
+                            period = DashboardPeriod.TODAY,
+                            turnover = 3580.0,
+                            ordersCount = 92,
+                            customersCount = 24,
+                            productsCount = 142,
+                            chart =
+                                listOf(
+                                    DashboardChartPoint(label = "S1", orders = 12, customers = 3, turnover = 400.0, newCustomers = 2),
+                                    DashboardChartPoint(label = "S2", orders = 20, customers = 5, turnover = 700.0, newCustomers = 8),
+                                    DashboardChartPoint(label = "S3", orders = 26, customers = 7, turnover = 900.0, newCustomers = 6),
+                                    DashboardChartPoint(label = "S4", orders = 34, customers = 9, turnover = 1580.0, newCustomers = 8),
                                 ),
                             lastUpdatedIso = "2026-06-19T10:30:00Z",
                         ),

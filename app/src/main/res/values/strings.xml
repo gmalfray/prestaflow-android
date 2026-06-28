@@ -63,7 +63,14 @@
     <string name="dashboard_period_month">30 days</string>
     <string name="dashboard_period_quarter">Quarter</string>
     <string name="dashboard_period_year">Year</string>
+    <string name="dashboard_period_custom">Custom</string>
+    <!-- Args: 1=date début, 2=date fin -->
+    <string name="dashboard_custom_range_label">%1$s – %2$s</string>
+    <string name="dashboard_date_picker_title">Select date range</string>
+    <string name="dashboard_chart_new_customers">New customers</string>
     <string name="dashboard_action_refresh">Refresh</string>
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Cancel</string>
     <!-- Accessibility: chart content description. Args: 1=formatted value, 2=trend (rising/falling) -->
     <string name="dashboard_chart_content_description">Turnover for the period: %1$s, trend: %2$s</string>
     <string name="dashboard_chart_trend_rising">rising</string>

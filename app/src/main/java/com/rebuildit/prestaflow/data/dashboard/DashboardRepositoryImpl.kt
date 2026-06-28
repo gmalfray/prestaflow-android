@@ -36,12 +36,17 @@ class DashboardRepositoryImpl
         override fun observeDashboard(period: DashboardPeriod): Flow<DashboardSnapshot?> =
             dashboardDao.observeByPeriod(period.name).map { entity -> entity?.toDomain(period) }
 
+        override fun observeCustomDashboard(from: String, to: String): Flow<DashboardSnapshot?> =
+            dashboardDao.observeByPeriod(customCacheKey(from, to)).map { entity ->
+                entity?.toDomainCustom()
+            }
+
         override suspend fun refresh(
             period: DashboardPeriod,
             forceRemote: Boolean,
         ) {
             withContext(ioDispatcher) {
-                val result = runCatching { api.getDashboardMetrics(period.queryValue) }
+                val result = runCatching { api.getDashboardMetrics(period = period.queryValue) }
                 result.fold(
                     onSuccess = { payload ->
                         val entity =
@@ -65,6 +70,38 @@ class DashboardRepositoryImpl
             }
         }
 
+        override suspend fun refreshCustom(
+            from: String,
+            to: String,
+            forceRemote: Boolean,
+        ) {
+            withContext(ioDispatcher) {
+                val result = runCatching { api.getDashboardMetrics(from = from, to = to) }
+                result.fold(
+                    onSuccess = { payload ->
+                        val entity =
+                            DashboardMetricEntity(
+                                period = customCacheKey(from, to),
+                                turnover = payload.turnover,
+                                ordersCount = payload.ordersCount,
+                                customersCount = payload.customersCount,
+                                productsCount = payload.productsCount,
+                                lastUpdatedIso = java.time.Instant.now().toString(),
+                                chartJson = json.encodeToString(chartSerializer, payload.chart),
+                                previousTurnover = payload.previousTurnover,
+                            )
+                        dashboardDao.upsert(entity)
+                    },
+                    onFailure = { error ->
+                        Timber.w(networkErrorMapper.map(error).toString())
+                        if (forceRemote) throw error
+                    },
+                )
+            }
+        }
+
+        // ── Mappers ───────────────────────────────────────────────────────────────
+
         private fun DashboardMetricEntity.toDomain(period: DashboardPeriod): DashboardSnapshot {
             val chartPoints =
                 runCatching {
@@ -82,12 +119,39 @@ class DashboardRepositoryImpl
             )
         }
 
-        @Suppress("UnusedPrivateMember") // Faux positif detekt : utilisée ligne 72 via it.toDomain()
+        /**
+         * Mapper pour les snapshots en mode plage libre.
+         * `period` est un placeholder (`TODAY`) car la plage custom n'a pas de preset associé —
+         * ce champ n'est pas utilisé dans l'UI qui repose sur `DashboardUiState.customRange`.
+         */
+        private fun DashboardMetricEntity.toDomainCustom(): DashboardSnapshot {
+            val chartPoints =
+                runCatching {
+                    json.decodeFromString(chartSerializer, chartJson)
+                }.getOrElse { emptyList() }
+            return DashboardSnapshot(
+                period = DashboardPeriod.TODAY,
+                turnover = turnover,
+                ordersCount = ordersCount,
+                customersCount = customersCount,
+                productsCount = productsCount,
+                chart = chartPoints.map { it.toDomain() },
+                lastUpdatedIso = lastUpdatedIso,
+                previousTurnover = previousTurnover,
+            )
+        }
+
+        @Suppress("UnusedPrivateMember") // Faux positif detekt : utilisée via it.toDomain()
         private fun ChartPointDto.toDomain(): DashboardChartPoint =
             DashboardChartPoint(
                 label = label,
                 orders = orders,
                 customers = customers,
                 turnover = turnover,
+                newCustomers = newCustomers,
             )
+
+        // ── Helpers ───────────────────────────────────────────────────────────────
+
+        private fun customCacheKey(from: String, to: String) = "custom:$from:$to"
     }

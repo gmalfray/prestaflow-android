@@ -23,4 +23,9 @@ data class ChartPointDto(
     @SerialName("orders") val orders: Int,
     @SerialName("customers") val customers: Int,
     @SerialName("turnover") val turnover: Double,
+    /**
+     * Nouveaux clients inscrits dans ce bucket — champ v1.6.x+.
+     * Valeur par défaut 0 : les caches existants (JSON sans ce champ) se désérialisent sans erreur.
+     */
+    @SerialName("new_customers") val newCustomers: Int = 0,
 )

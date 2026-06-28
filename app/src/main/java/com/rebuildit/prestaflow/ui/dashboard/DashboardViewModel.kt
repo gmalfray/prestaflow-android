@@ -12,6 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
@@ -30,6 +31,13 @@ class DashboardViewModel
         private val authRepository: AuthRepository,
     ) : ViewModel() {
         private val selectedPeriodFlow = MutableStateFlow(DashboardPeriod.WEEK)
+
+        /**
+         * Plage de dates libre active (from ISO à to ISO).
+         * `null` = mode preset ([selectedPeriodFlow] actif).
+         */
+        private val customRangeFlow = MutableStateFlow<Pair<String, String>?>(null)
+
         private val _uiState = MutableStateFlow(DashboardUiState())
         val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
@@ -40,21 +48,47 @@ class DashboardViewModel
         }
 
         fun onPeriodSelected(period: DashboardPeriod) {
-            if (period == selectedPeriodFlow.value) return
+            if (period == selectedPeriodFlow.value && customRangeFlow.value == null) return
             _uiState.update {
                 it.copy(
                     selectedPeriod = period,
+                    customRange = null,
                     isLoading = it.snapshot == null,
                     isRefreshing = true,
                     error = null,
                 )
             }
+            customRangeFlow.value = null
             selectedPeriodFlow.value = period
             refresh(period, forceRemote = true, notifyOnError = true)
         }
 
+        /**
+         * Charge les métriques pour une plage de dates libre.
+         *
+         * @param from date de début `YYYY-MM-DD`
+         * @param to   date de fin `YYYY-MM-DD`
+         */
+        fun onCustomRangeSelected(from: String, to: String) {
+            _uiState.update {
+                it.copy(
+                    customRange = Pair(from, to),
+                    isLoading = it.snapshot == null,
+                    isRefreshing = true,
+                    error = null,
+                )
+            }
+            customRangeFlow.value = Pair(from, to)
+            refreshCustom(from = from, to = to, notifyOnError = true)
+        }
+
         fun onRefresh() {
-            refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = true)
+            val custom = customRangeFlow.value
+            if (custom != null) {
+                refreshCustom(from = custom.first, to = custom.second, notifyOnError = true)
+            } else {
+                refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = true)
+            }
         }
 
         private fun observeActiveShopSwitch() {
@@ -64,10 +98,11 @@ class DashboardViewModel
                     .distinctUntilChanged()
                     .drop(1) // ignore la valeur initiale déjà traitée dans init
                     .collect {
-                        // Réinitialise l'état et recharge les données pour la nouvelle boutique.
+                        // Réinitialise l'état et recharge pour la nouvelle boutique.
                         _uiState.update { current ->
-                            current.copy(snapshot = null, isLoading = true, error = null)
+                            current.copy(snapshot = null, customRange = null, isLoading = true, error = null)
                         }
+                        customRangeFlow.value = null
                         refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = true)
                     }
             }
@@ -75,26 +110,34 @@ class DashboardViewModel
 
         private fun observeDashboard() {
             viewModelScope.launch {
-                selectedPeriodFlow
-                    .flatMapLatest { period ->
-                        dashboardRepository.observeDashboard(period).map { snapshot ->
-                            period to snapshot
-                        }
+                combine(selectedPeriodFlow, customRangeFlow) { period, customRange ->
+                    period to customRange
+                }.flatMapLatest { (period, customRange) ->
+                    if (customRange != null) {
+                        dashboardRepository.observeCustomDashboard(customRange.first, customRange.second)
+                            .map { snapshot -> Triple(period, customRange, snapshot) }
+                    } else {
+                        dashboardRepository.observeDashboard(period)
+                            .map { snapshot -> Triple(period, null as Pair<String, String>?, snapshot) }
                     }
-                    .collect { (period, snapshot) ->
-                        _uiState.update { current ->
-                            val previousSnapshot =
-                                if (current.selectedPeriod == period) current.snapshot else null
-                            val resolvedSnapshot = snapshot ?: previousSnapshot
-                            current.copy(
-                                selectedPeriod = period,
-                                snapshot = resolvedSnapshot,
-                                isLoading = resolvedSnapshot == null && current.error == null,
-                                isRefreshing = if (snapshot != null) false else current.isRefreshing,
-                                error = if (snapshot != null) null else current.error,
-                            )
-                        }
+                }.collect { (period, customRange, snapshot) ->
+                    _uiState.update { current ->
+                        // Garde l'ancien snapshot si on est toujours sur la même sélection
+                        // (pour éviter un flash "vide" lors du rechargement).
+                        val sameSelection =
+                            current.selectedPeriod == period && current.customRange == customRange
+                        val previousSnapshot = if (sameSelection) current.snapshot else null
+                        val resolvedSnapshot = snapshot ?: previousSnapshot
+                        current.copy(
+                            selectedPeriod = period,
+                            customRange = customRange,
+                            snapshot = resolvedSnapshot,
+                            isLoading = resolvedSnapshot == null && current.error == null,
+                            isRefreshing = if (snapshot != null) false else current.isRefreshing,
+                            error = if (snapshot != null) null else current.error,
+                        )
                     }
+                }
             }
         }
 
@@ -142,10 +185,60 @@ class DashboardViewModel
                     }
             }
         }
+
+        private fun refreshCustom(
+            from: String,
+            to: String,
+            notifyOnError: Boolean,
+        ) {
+            viewModelScope.launch {
+                _uiState.update { current ->
+                    current.copy(
+                        isRefreshing = true,
+                        isLoading = current.snapshot == null,
+                        error = if (notifyOnError) null else current.error,
+                    )
+                }
+
+                val result = runCatching { dashboardRepository.refreshCustom(from, to, forceRemote = true) }
+                result
+                    .onSuccess {
+                        _uiState.update { current ->
+                            current.copy(
+                                isRefreshing = false,
+                                isLoading = current.snapshot == null && current.error == null,
+                            )
+                        }
+                    }
+                    .onFailure { error ->
+                        Timber.w(error, "Failed to refresh dashboard for custom range %s–%s", from, to)
+                        _uiState.update { current ->
+                            if (!notifyOnError) {
+                                current.copy(
+                                    isRefreshing = false,
+                                    isLoading = current.snapshot == null,
+                                    error = current.error,
+                                )
+                            } else {
+                                current.copy(
+                                    isRefreshing = false,
+                                    isLoading = false,
+                                    error = networkErrorMapper.map(error),
+                                )
+                            }
+                        }
+                    }
+            }
+        }
     }
 
 data class DashboardUiState(
     val selectedPeriod: DashboardPeriod = DashboardPeriod.WEEK,
+    /**
+     * Plage de dates libre active (from ISO, to ISO).
+     * `null` = mode preset ([selectedPeriod] actif).
+     */
+    val customRange: Pair<String, String>? = null,
     val snapshot: DashboardSnapshot? = null,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
