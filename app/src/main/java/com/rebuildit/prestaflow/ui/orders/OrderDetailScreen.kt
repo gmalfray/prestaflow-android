@@ -302,6 +302,7 @@ fun OrderDetailContent(
         )
     }
 
+    val editStatusDesc = stringResource(R.string.order_detail_status_edit_content_description)
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM) }
 
     Column(
@@ -333,7 +334,21 @@ fun OrderDetailContent(
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
-                    OrderStatusBadge(status = order.status)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        OrderStatusBadge(status = order.status)
+                        IconButton(
+                            onClick = { showStatusDialog = true },
+                            enabled = !actionInProgress,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = editStatusDesc,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(Dimensions.spacingM))
                 Text(
@@ -431,16 +446,6 @@ fun OrderDetailContent(
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-        }
-
-        // Actions — bouton pill Stitch
-        OutlinedButton(
-            onClick = { showStatusDialog = true },
-            enabled = !actionInProgress,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(50),
-        ) {
-            Text(stringResource(R.string.order_detail_change_status))
         }
 
         // Bouton impression facture — visible uniquement si has_invoice
