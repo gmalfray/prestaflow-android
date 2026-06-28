@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Print
@@ -301,6 +302,7 @@ fun OrderDetailContent(
         )
     }
 
+    val editStatusDesc = stringResource(R.string.order_detail_status_edit_content_description)
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM) }
 
     Column(
@@ -332,7 +334,21 @@ fun OrderDetailContent(
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
-                    OrderStatusBadge(status = order.status)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        OrderStatusBadge(status = order.status)
+                        IconButton(
+                            onClick = { showStatusDialog = true },
+                            enabled = !actionInProgress,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = editStatusDesc,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(Dimensions.spacingM))
                 Text(
@@ -363,9 +379,22 @@ fun OrderDetailContent(
 
         // Shipping Card
         if (order.shipping != null) {
+            val editTrackingDesc = stringResource(R.string.order_detail_tracking_edit_content_description)
             SectionCard(
                 title = stringResource(R.string.order_detail_shipping_section),
                 icon = Icons.Outlined.LocalShipping,
+                headerAction = {
+                    IconButton(
+                        onClick = { showTrackingDialog = true },
+                        enabled = !actionInProgress,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = editTrackingDesc,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
             ) {
                 Text(
                     text = order.shipping.carrierName,
@@ -416,29 +445,6 @@ fun OrderDetailContent(
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
-            }
-        }
-
-        // Actions — boutons pill Stitch
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
-        ) {
-            OutlinedButton(
-                onClick = { showStatusDialog = true },
-                enabled = !actionInProgress,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(50),
-            ) {
-                Text(stringResource(R.string.order_detail_change_status))
-            }
-            Button(
-                onClick = { showTrackingDialog = true },
-                enabled = !actionInProgress,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(50),
-            ) {
-                Text(stringResource(R.string.order_detail_tracking_button))
             }
         }
 
@@ -620,11 +626,13 @@ private fun TrackingInputDialog(
 fun SectionCard(
     title: String,
     icon: ImageVector,
+    headerAction: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     SoftCard {
         Column(modifier = Modifier.padding(Dimensions.cardPadding)) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
             ) {
@@ -638,7 +646,11 @@ fun SectionCard(
                     text = title,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
                 )
+                if (headerAction != null) {
+                    headerAction()
+                }
             }
             Spacer(modifier = Modifier.height(Dimensions.spacingM))
             content()

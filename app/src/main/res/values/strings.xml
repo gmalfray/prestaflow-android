@@ -186,6 +186,8 @@
     <string name="order_detail_cancel">Cancel</string>
     <string name="order_detail_scan_tracking_prompt">Point the camera at the shipment barcode</string>
     <string name="order_detail_scan_tracking_content_description">Scan barcode</string>
+    <string name="order_detail_tracking_edit_content_description">Edit tracking number</string>
+    <string name="order_detail_status_edit_content_description">Edit order status</string>
     <string name="order_detail_qty_label">Qty: %1$d</string>
     <string name="order_detail_tracking_display">Tracking: %1$s</string>
     <string name="order_detail_print_invoice">Print invoice</string>
