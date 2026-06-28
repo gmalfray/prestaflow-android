@@ -35,6 +35,7 @@ import com.rebuildit.prestaflow.data.notifications.NotificationCategoriesReposit
 import com.rebuildit.prestaflow.data.notifications.NotificationsRepositoryImpl
 import com.rebuildit.prestaflow.data.orders.OrdersPreferencesRepositoryImpl
 import com.rebuildit.prestaflow.data.orders.OrdersRepositoryImpl
+import com.rebuildit.prestaflow.data.printer.ThermalPrinterPreferencesRepositoryImpl
 import com.rebuildit.prestaflow.data.products.ProductsRepositoryImpl
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.interceptor.AuthInterceptor
@@ -52,6 +53,7 @@ import com.rebuildit.prestaflow.domain.notifications.NotificationCategoriesRepos
 import com.rebuildit.prestaflow.domain.notifications.NotificationsRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersPreferencesRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
+import com.rebuildit.prestaflow.domain.printer.ThermalPrinterPreferencesRepository
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.sync.SyncQueueRepository
 import com.rebuildit.prestaflow.domain.theme.ThemeRepository
@@ -224,6 +226,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideThemeRepository(impl: ThemeRepositoryImpl): ThemeRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideThermalPrinterPreferencesRepository(impl: ThermalPrinterPreferencesRepositoryImpl): ThermalPrinterPreferencesRepository = impl
 
     @Provides
     @Singleton

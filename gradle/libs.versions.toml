@@ -31,6 +31,7 @@ securityCrypto = "1.1.0-alpha06"
 googleServices = "4.4.2"
 coroutinesPlayServices = "1.9.0"
 jacoco = "0.8.12"
+escposPrinter = "3.3.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -81,6 +82,9 @@ timber-jdk = { module = "com.jakewharton.timber:timber-jdk18", version.ref = "ti
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutinesPlayServices" }
 androidx-compose-material3-windowsizeclass = { module = "androidx.compose.material3:material3-window-size-class" }
+
+# Impression thermique Bluetooth ESC/POS
+escpos-thermal-printer = { module = "com.github.DantSu:ESCPOS-ThermalPrinter-Android", version.ref = "escposPrinter" }
 
 # Testing
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutinesPlayServices" }
