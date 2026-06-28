@@ -65,9 +65,11 @@ import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.notifications.SaleNotifications
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.theme.DarkThemeConfig
 import com.rebuildit.prestaflow.domain.theme.PrestaFlowSkin
 import com.rebuildit.prestaflow.domain.theme.ThemeSettings
+import com.rebuildit.prestaflow.ui.dashboard.labelRes
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import com.rebuildit.prestaflow.ui.theme.ThemeViewModel
@@ -79,10 +81,12 @@ fun SettingsRoute(
     onNotifCategoriesClick: () -> Unit = {},
     themeViewModel: ThemeViewModel = hiltViewModel(),
     shopsViewModel: ShopsViewModel = hiltViewModel(),
+    dashboardPrefsViewModel: DashboardPrefsViewModel = hiltViewModel(),
 ) {
     val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     val addState by shopsViewModel.addState.collectAsStateWithLifecycle()
+    val defaultPeriod by dashboardPrefsViewModel.defaultPeriod.collectAsStateWithLifecycle()
     SettingsScreen(
         settings = themeState.settings,
         onSkinSelected = themeViewModel::selectSkin,
@@ -99,6 +103,8 @@ fun SettingsRoute(
         onAddShopKeyChange = shopsViewModel::onKeyChange,
         onAddShopLabelChange = shopsViewModel::onLabelChange,
         onSubmitAddShop = shopsViewModel::submitAdd,
+        dashboardDefaultPeriod = defaultPeriod,
+        onDashboardDefaultPeriodSelected = dashboardPrefsViewModel::setDefaultPeriod,
     )
 }
 
@@ -120,6 +126,8 @@ fun SettingsScreen(
     onAddShopKeyChange: (String) -> Unit = {},
     onAddShopLabelChange: (String) -> Unit = {},
     onSubmitAddShop: () -> Unit = {},
+    dashboardDefaultPeriod: DashboardPeriod = DashboardPeriod.WEEK,
+    onDashboardDefaultPeriodSelected: (DashboardPeriod) -> Unit = {},
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -208,6 +216,14 @@ fun SettingsScreen(
             DarkModeSelector(
                 current = settings.darkThemeConfig,
                 onSelected = onDarkThemeSelected,
+            )
+        }
+
+        // Section DASHBOARD — période par défaut
+        SettingsSection(label = stringResource(R.string.settings_dashboard_label)) {
+            DashboardDefaultPeriodSelector(
+                current = dashboardDefaultPeriod,
+                onSelected = onDashboardDefaultPeriodSelected,
             )
         }
 
@@ -571,6 +587,48 @@ private fun DarkModeSelector(
                     ),
                 modifier = Modifier.weight(1f),
             )
+        }
+    }
+}
+
+// ─── Période par défaut du dashboard ─────────────────────────────────────────
+
+@Composable
+private fun DashboardDefaultPeriodSelector(
+    current: DashboardPeriod,
+    onSelected: (DashboardPeriod) -> Unit,
+) {
+    Text(
+        text = stringResource(R.string.settings_dashboard_default_period),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs)) {
+        DashboardPeriod.values().forEach { period ->
+            val label = stringResource(period.labelRes())
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            onClickLabel = label,
+                            role = Role.RadioButton,
+                        ) { onSelected(period) }
+                        .padding(vertical = Dimensions.spacingXs)
+                        .semantics { role = Role.RadioButton },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+            ) {
+                RadioButton(
+                    selected = period == current,
+                    onClick = { onSelected(period) },
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
         }
     }
 }

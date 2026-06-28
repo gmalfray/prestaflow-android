@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
+import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -27,6 +29,7 @@ class DashboardViewModel
     @Inject
     constructor(
         private val dashboardRepository: DashboardRepository,
+        private val dashboardPrefsRepository: DashboardPreferencesRepository,
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
     ) : ViewModel() {
@@ -42,9 +45,16 @@ class DashboardViewModel
         val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
         init {
-            observeDashboard()
-            refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = false)
-            observeActiveShopSwitch()
+            viewModelScope.launch {
+                // Lire la préférence de période par défaut AVANT de lancer les observations,
+                // afin que la période initiale reflète le choix persisté de l'utilisateur.
+                val defaultPeriod = dashboardPrefsRepository.defaultPeriod.first()
+                selectedPeriodFlow.value = defaultPeriod
+                _uiState.update { it.copy(selectedPeriod = defaultPeriod) }
+                observeDashboard()
+                refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = false)
+                observeActiveShopSwitch()
+            }
         }
 
         fun onPeriodSelected(period: DashboardPeriod) {

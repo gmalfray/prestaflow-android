@@ -273,6 +273,8 @@
     <string name="settings_logout_confirm_message">You will need to reconnect to your shop.</string>
     <string name="settings_logout_confirm">Log out</string>
     <string name="settings_logout_cancel">Cancel</string>
+    <string name="settings_dashboard_label">Dashboard</string>
+    <string name="settings_dashboard_default_period">Default period</string>
 
     <!-- Shop switcher -->
     <string name="shop_switcher_content_description">Active shop, tap to switch</string>

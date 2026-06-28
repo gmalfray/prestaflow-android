@@ -279,6 +279,8 @@
     <string name="settings_logout_confirm_message">Vous devrez vous reconnecter à votre boutique.</string>
     <string name="settings_logout_confirm">Se déconnecter</string>
     <string name="settings_logout_cancel">Annuler</string>
+    <string name="settings_dashboard_label">Dashboard</string>
+    <string name="settings_dashboard_default_period">Période par défaut</string>
 
     <!-- Écran Paniers -->
     <string name="carts_list_empty">Aucun panier trouvé.</string>

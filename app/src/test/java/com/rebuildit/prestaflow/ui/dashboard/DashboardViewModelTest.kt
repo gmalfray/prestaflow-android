@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
+import com.rebuildit.prestaflow.fakes.FakeDashboardPreferencesRepository
 import com.rebuildit.prestaflow.fakes.FakeDashboardRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,6 +34,7 @@ class DashboardViewModelTest {
 
     private lateinit var fakeRepo: FakeDashboardRepository
     private lateinit var fakeAuth: FakeAuthRepository
+    private lateinit var fakePrefs: FakeDashboardPreferencesRepository
     private lateinit var viewModel: DashboardViewModel
 
     @Before
@@ -40,8 +42,10 @@ class DashboardViewModelTest {
         Dispatchers.setMain(testDispatcher)
         fakeRepo = FakeDashboardRepository()
         fakeAuth = FakeAuthRepository()
+        fakePrefs = FakeDashboardPreferencesRepository(initialPeriod = DashboardPeriod.WEEK)
         viewModel = DashboardViewModel(
             dashboardRepository = fakeRepo,
+            dashboardPrefsRepository = fakePrefs,
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = fakeAuth,
         )
