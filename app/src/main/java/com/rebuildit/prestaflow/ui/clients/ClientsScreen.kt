@@ -69,6 +69,7 @@ fun ClientsRoute(
         onRefresh = viewModel::onRefresh,
         onClientClick = onClientClick,
         onQueryChange = viewModel::onQueryChange,
+        onFilterChange = viewModel::onFilterChange,
         onSwitchShop = shopsViewModel::switchShop,
         onAddShop = onAddShop,
     )
@@ -82,6 +83,7 @@ fun ClientsScreen(
     modifier: Modifier = Modifier,
     connections: List<ShopConnection> = emptyList(),
     onQueryChange: (String) -> Unit = {},
+    onFilterChange: (ClientFilter) -> Unit = {},
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
 ) {
@@ -102,8 +104,10 @@ fun ClientsScreen(
                 clients = state.visibleClients,
                 totalClients = state.stats?.total ?: state.clients.size,
                 newThisMonth = state.stats?.newThisMonth ?: 0,
+                activeFilter = state.activeFilter,
                 query = state.query,
                 onQueryChange = onQueryChange,
+                onFilterChange = onFilterChange,
                 isRefreshing = state.isRefreshing,
                 errorMessage = errorMessage,
                 connections = connections,
@@ -123,8 +127,10 @@ private fun ClientList(
     clients: List<Client>,
     totalClients: Int,
     newThisMonth: Int,
+    activeFilter: ClientFilter,
     query: String,
     onQueryChange: (String) -> Unit,
+    onFilterChange: (ClientFilter) -> Unit,
     isRefreshing: Boolean,
     errorMessage: String?,
     connections: List<ShopConnection>,
@@ -159,11 +165,13 @@ private fun ClientList(
                         ),
                     verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
                 ) {
-                    // KPI stats : total clients + nouveaux ce mois
+                    // KPI stats : total clients + nouveaux ce mois (cartes cliquables)
                     item {
                         ClientsStatsRow(
                             totalClients = totalClients,
                             newThisMonth = newThisMonth,
+                            activeFilter = activeFilter,
+                            onFilterChange = onFilterChange,
                         )
                     }
 
@@ -248,6 +256,8 @@ private fun ClientList(
 private fun ClientsStatsRow(
     totalClients: Int,
     newThisMonth: Int,
+    activeFilter: ClientFilter,
+    onFilterChange: (ClientFilter) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -258,44 +268,95 @@ private fun ClientsStatsRow(
             modifier = Modifier.weight(1f),
             label = stringResource(R.string.clients_stats_total),
             value = totalClients.toString(),
+            selected = activeFilter == ClientFilter.ALL,
+            onClick = { onFilterChange(ClientFilter.ALL) },
         )
         ClientStatCard(
             modifier = Modifier.weight(1f),
             label = stringResource(R.string.clients_stats_new_month),
             value = newThisMonth.toString(),
+            selected = activeFilter == ClientFilter.NEW_THIS_MONTH,
+            onClick = { onFilterChange(ClientFilter.NEW_THIS_MONTH) },
         )
     }
 }
 
+/**
+ * Carte KPI de l'écran Clients.
+ *
+ * [selected] : carte mise en évidence (fond primaryContainer) quand son filtre est actif.
+ * [onClick]  : callback de sélection/désélection du filtre.
+ */
 @Composable
 private fun ClientStatCard(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-            ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(Dimensions.cardPadding),
-            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+    val containerColor = if (selected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerLowest
+    }
+    val contentColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val labelColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    if (onClick != null) {
+        Card(
+            onClick = onClick,
+            modifier = modifier,
+            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+            colors = CardDefaults.cardColors(containerColor = containerColor),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
-            Text(
-                text = label.uppercase(),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            Column(
+                modifier = Modifier.padding(Dimensions.cardPadding),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+            ) {
+                Text(
+                    text = label.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = labelColor,
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = contentColor,
+                )
+            }
+        }
+    } else {
+        Card(
+            modifier = modifier,
+            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+            colors = CardDefaults.cardColors(containerColor = containerColor),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(Dimensions.cardPadding),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+            ) {
+                Text(
+                    text = label.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = labelColor,
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = contentColor,
+                )
+            }
         }
     }
 }
@@ -373,7 +434,7 @@ private fun ClientRow(
 
 // ─── Previews ─────────────────────────────────────────────────────────────────
 
-@Preview(showBackground = true, name = "Clients — liste")
+@Preview(showBackground = true, name = "Clients — liste (filtre ALL)")
 @Composable
 private fun PreviewClientsList() {
     PrestaFlowTheme {
@@ -401,8 +462,40 @@ private fun PreviewClientsList() {
                                 lastOrderAtIso = null,
                             ),
                         ),
+                    stats = com.rebuildit.prestaflow.domain.clients.model.ClientStats(total = 42, newThisMonth = 8),
                     isLoading = false,
                     isRefreshing = false,
+                    activeFilter = ClientFilter.ALL,
+                ),
+            onRefresh = {},
+            onClientClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Clients — filtre Nouveaux actif")
+@Composable
+private fun PreviewClientsListFilterNew() {
+    PrestaFlowTheme {
+        ClientsScreen(
+            state =
+                ClientsUiState(
+                    clients =
+                        listOf(
+                            Client(
+                                id = 1L,
+                                firstName = "Alice",
+                                lastName = "Bernard",
+                                email = "alice@test.fr",
+                                ordersCount = 3,
+                                totalSpent = 75.0,
+                                lastOrderAtIso = null,
+                            ),
+                        ),
+                    stats = com.rebuildit.prestaflow.domain.clients.model.ClientStats(total = 42, newThisMonth = 8),
+                    isLoading = false,
+                    isRefreshing = false,
+                    activeFilter = ClientFilter.NEW_THIS_MONTH,
                 ),
             onRefresh = {},
             onClientClick = {},

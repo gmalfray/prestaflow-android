@@ -242,8 +242,11 @@ private fun DashboardContent(
     val numberFormatter = rememberNumberFormatter()
     val turnoverText = remember(snapshot.turnover) { currencyFormatter.format(snapshot.turnover) }
     val ordersText = remember(snapshot.ordersCount) { numberFormatter.format(snapshot.ordersCount) }
-    val customersText =
-        remember(snapshot.customersCount) { numberFormatter.format(snapshot.customersCount) }
+    // Nouveaux clients = somme de newCustomers sur les points du graphe.
+    // Cohérent avec la série "Nouveaux clients" de DualAxisSalesChart.
+    // Vaut 0 tant que le connecteur < v1.7 ne remplit pas ce champ.
+    val newCustomersTotal = remember(snapshot.chart) { snapshot.chart.sumOf { it.newCustomers } }
+    val newCustomersTotalText = remember(newCustomersTotal) { numberFormatter.format(newCustomersTotal) }
     val avgCart =
         remember(snapshot.turnover, snapshot.ordersCount) {
             if (snapshot.ordersCount > 0) snapshot.turnover / snapshot.ordersCount else 0.0
@@ -314,7 +317,7 @@ private fun DashboardContent(
                             ),
                             KpiItem(
                                 title = stringResource(id = R.string.dashboard_kpi_customers),
-                                value = customersText,
+                                value = newCustomersTotalText,
                                 icon = Icons.Outlined.Group,
                                 onClick = onClientsClick,
                             ),
@@ -966,8 +969,8 @@ internal fun DualAxisSalesChart(
     // Sélection interactive au tap
     var selectedIndex by remember { mutableIntStateOf(-1) }
 
-    // Indices à afficher pour les labels X (max 6, espacés uniformément)
-    val maxXLabels = 6
+    // Indices à afficher pour les labels X (max 4, espacés uniformément — évite le chevauchement)
+    val maxXLabels = 4
     val xLabelIndices: List<Int> = if (points.size <= maxXLabels) {
         points.indices.toList()
     } else {
@@ -1132,9 +1135,9 @@ internal fun DualAxisSalesChart(
                     }
                 }
 
-                // ── Labels X intelligents (max 6, espacés) ────────────────────────────
+                // ── Labels X intelligents (max 4, format court dd/MM pour les dates ISO) ──
                 xLabelIndices.forEach { idx ->
-                    val lbl = points[idx].label
+                    val lbl = formatXAxisLabel(points[idx].label)
                     val measured = textMeasurer.measure(lbl, style = labelStyle)
                     val xPos = pl + stepX * idx
                     drawText(
@@ -1368,6 +1371,19 @@ private fun formatCustomRangeDisplay(from: String, to: String): String =
         val toFmt = LocalDate.parse(to).format(fmt)
         "$fromFmt – $toFmt"
     }.getOrElse { "$from – $to" }
+
+/**
+ * Formate un label d'axe X pour l'affichage sous le graphe.
+ *
+ * Si [raw] est une date ISO `yyyy-MM-dd` (labels journaliers du connecteur),
+ * retourne le format court `dd/MM` (ex : `26/06`).
+ * Sinon — labels de preset ("Lun", "S1", "Semaine 1"…) — retourne [raw] tel quel.
+ */
+internal fun formatXAxisLabel(raw: String): String =
+    runCatching {
+        val date = LocalDate.parse(raw) // parser ISO yyyy-MM-dd
+        date.format(DateTimeFormatter.ofPattern("dd/MM"))
+    }.getOrElse { raw }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

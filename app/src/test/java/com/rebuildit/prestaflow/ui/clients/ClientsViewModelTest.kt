@@ -154,6 +154,61 @@ class ClientsViewModelTest {
             assertEquals(3, vm.uiState.value.visibleClients.size)
         }
 
+    // ─── Filtre de carte KPI ─────────────────────────────────────────────────
+
+    @Test
+    fun `onFilterChange NEW_THIS_MONTH active le filtre`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onFilterChange(ClientFilter.NEW_THIS_MONTH)
+            advanceUntilIdle()
+
+            assertEquals(ClientFilter.NEW_THIS_MONTH, vm.uiState.value.activeFilter)
+        }
+
+    @Test
+    fun `onFilterChange retap meme filtre revient a ALL`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onFilterChange(ClientFilter.NEW_THIS_MONTH)
+            advanceUntilIdle()
+            vm.onFilterChange(ClientFilter.NEW_THIS_MONTH) // re-tap = désélection
+            advanceUntilIdle()
+
+            assertEquals(ClientFilter.ALL, vm.uiState.value.activeFilter)
+        }
+
+    @Test
+    fun `onFilterChange ALL depuis NEW_THIS_MONTH remet ALL`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onFilterChange(ClientFilter.NEW_THIS_MONTH)
+            advanceUntilIdle()
+            vm.onFilterChange(ClientFilter.ALL)
+            advanceUntilIdle()
+
+            assertEquals(ClientFilter.ALL, vm.uiState.value.activeFilter)
+        }
+
+    @Test
+    fun `filtre ALL retap quand deja ALL reste ALL`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            // Déjà en ALL, un re-tap "toggle" doit rester ALL (ALL est le filtre neutre)
+            vm.onFilterChange(ClientFilter.ALL)
+            advanceUntilIdle()
+
+            assertEquals(ClientFilter.ALL, vm.uiState.value.activeFilter)
+        }
+
     // ─── État d'erreur ───────────────────────────────────────────────────────
 
     @Test

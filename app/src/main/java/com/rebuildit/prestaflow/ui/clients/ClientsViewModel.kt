@@ -47,6 +47,17 @@ class ClientsViewModel
             _uiState.update { it.copy(query = query) }
         }
 
+        /**
+         * Active ou désactive un filtre de carte sur la liste des clients.
+         * Un tap sur la carte déjà active la désélectionne (retour à ALL).
+         */
+        fun onFilterChange(filter: ClientFilter) {
+            _uiState.update { current ->
+                val newFilter = if (current.activeFilter == filter) ClientFilter.ALL else filter
+                current.copy(activeFilter = newFilter)
+            }
+        }
+
         private fun observeActiveShopSwitch() {
             viewModelScope.launch {
                 authRepository.connections
@@ -122,6 +133,16 @@ class ClientsViewModel
         }
     }
 
+/**
+ * Filtre actif sur la liste des clients de l'écran Clients.
+ *
+ * [NEW_THIS_MONTH] : visuellement sélectionné, mais NE filtre PAS réellement la liste :
+ * le DTO [com.rebuildit.prestaflow.data.remote.dto.CustomerDto] (endpoint `/customers/top`)
+ * ne contient pas de champ `date_add` (date d'inscription). Pour activer un filtrage réel,
+ * le connecteur doit exposer `date_add` dans la réponse de la liste clients.
+ */
+enum class ClientFilter { ALL, NEW_THIS_MONTH }
+
 data class ClientsUiState(
     val clients: List<Client> = emptyList(),
     /**
@@ -133,8 +154,15 @@ data class ClientsUiState(
     val isRefreshing: Boolean = false,
     val error: UiText? = null,
     val query: String = "",
+    /** Filtre actif via les cartes KPI en haut de l'écran. */
+    val activeFilter: ClientFilter = ClientFilter.ALL,
 ) {
-    /** Liste filtrée par [query] sur le nom complet et l'e-mail (insensible à la casse). */
+    /**
+     * Liste filtrée par [query] sur le nom complet et l'e-mail (insensible à la casse).
+     *
+     * Note : le filtre [ClientFilter.NEW_THIS_MONTH] ne réduit pas encore la liste
+     * car `date_add` est absent du DTO customer (voir [ClientFilter]).
+     */
     val visibleClients: List<Client>
         get() =
             if (query.isBlank()) {
