@@ -153,10 +153,37 @@ class OrderDetailViewModel
                 }
             }
         }
+
+        /**
+         * Génère l'étiquette Colissimo via le webservice transporteur.
+         * Au succès, Room est mis à jour (refreshOrder) → le Flow [uiState] émet automatiquement
+         * le nouvel état avec [Order.hasShippingLabel] = true et le n° de suivi mis à jour.
+         * En cas d'erreur, un message explicite est émis via [actionState].
+         */
+        fun onGenerateLabel() {
+            viewModelScope.launch {
+                _actionState.update { it.copy(inProgress = true, isGeneratingLabel = true, error = null) }
+                runCatching {
+                    ordersRepository.generateShippingLabel(orderId)
+                }.onSuccess {
+                    _actionState.update { it.copy(inProgress = false, isGeneratingLabel = false, message = "Étiquette générée avec succès") }
+                }.onFailure { error ->
+                    _actionState.update {
+                        it.copy(
+                            inProgress = false,
+                            isGeneratingLabel = false,
+                            error = error.message ?: "Échec de la génération de l'étiquette",
+                        )
+                    }
+                }
+            }
+        }
     }
 
 data class OrderActionState(
     val inProgress: Boolean = false,
+    /** Vrai uniquement pendant l'appel à generateShippingLabel (spinner dans le bouton). */
+    val isGeneratingLabel: Boolean = false,
     val message: String? = null,
     val error: String? = null,
 )

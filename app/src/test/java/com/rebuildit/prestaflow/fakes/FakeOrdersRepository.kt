@@ -2,10 +2,12 @@ package com.rebuildit.prestaflow.fakes
 
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
+import com.rebuildit.prestaflow.domain.orders.model.OrderShipping
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 
 /**
  * Fake en mémoire de [OrdersRepository] pour les tests JVM.
@@ -42,7 +44,8 @@ class FakeOrdersRepository : OrdersRepository {
 
     override fun observeOrders(): Flow<List<Order>> = _ordersFlow.asStateFlow()
 
-    override fun getOrder(orderId: Long): Flow<Order?> = MutableStateFlow(_ordersFlow.value.find { it.id == orderId })
+    // Flow réactif : réagit aux mises à jour de _ordersFlow (ex. après generateShippingLabel)
+    override fun getOrder(orderId: Long): Flow<Order?> = _ordersFlow.map { orders -> orders.find { it.id == orderId } }
 
     var orderStatuses: List<OrderStatusFilter> = emptyList()
 
@@ -87,4 +90,38 @@ class FakeOrdersRepository : OrdersRepository {
     override suspend fun downloadInvoicePdf(orderId: Long): ByteArray? = null
 
     override suspend fun downloadShippingLabel(orderId: Long): ByteArray? = null
+
+    /** Appels reçus par [generateShippingLabel] : orderId. */
+    val generateLabelCalls = mutableListOf<Long>()
+
+    /** Si vrai, [generateShippingLabel] lance une exception. */
+    var shouldThrowOnGenerateLabel = false
+    var generateLabelException: Throwable = RuntimeException("Génération dispo uniquement pour Colissimo")
+
+    /**
+     * N° de suivi à placer sur la commande après génération.
+     * Si non null et [generateLabelUpdatesOrder] = true, met à jour [_ordersFlow].
+     */
+    var generateLabelTrackingNumber: String? = "8R01234567890"
+
+    /** Si vrai, met à jour la commande dans [_ordersFlow] pour simuler le refreshOrder. */
+    var generateLabelUpdatesOrder: Boolean = true
+
+    override suspend fun generateShippingLabel(orderId: Long) {
+        generateLabelCalls += orderId
+        if (shouldThrowOnGenerateLabel) throw generateLabelException
+        if (generateLabelUpdatesOrder) {
+            val currentOrders = _ordersFlow.value.toMutableList()
+            val idx = currentOrders.indexOfFirst { it.id == orderId }
+            if (idx >= 0) {
+                val order = currentOrders[idx]
+                currentOrders[idx] = order.copy(
+                    hasShippingLabel = true,
+                    shipping = order.shipping?.copy(trackingNumber = generateLabelTrackingNumber)
+                        ?: OrderShipping(carrierName = "", trackingNumber = generateLabelTrackingNumber),
+                )
+                _ordersFlow.value = currentOrders
+            }
+        }
+    }
 }

@@ -192,6 +192,8 @@
     <string name="order_detail_tracking_display">Suivi : %1$s</string>
     <string name="order_detail_print_invoice">Imprimer la facture</string>
     <string name="order_detail_print_shipping_label">Imprimer le bordereau</string>
+    <string name="order_detail_generate_label">Générer l\'étiquette</string>
+    <string name="order_detail_generate_label_content_description">Générer l\'étiquette de transport Colissimo</string>
 
     <!-- Dialogue de choix du mode d'impression -->
     <string name="print_mode_dialog_title">Mode d\'impression</string>

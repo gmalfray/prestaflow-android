@@ -9,6 +9,7 @@ import com.rebuildit.prestaflow.data.remote.dto.CustomerListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerStatsDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
 import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.GenerateLabelResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto
@@ -82,6 +83,18 @@ interface PrestaFlowApi {
     suspend fun getShippingLabelPdf(
         @Path("id") orderId: Long,
     ): Response<ResponseBody>
+
+    /**
+     * Génère l'étiquette Colissimo pour la commande [orderId] via le webservice transporteur.
+     * 200 = étiquette déjà existante (idempotent) ; 201 = nouvellement générée.
+     * Erreurs : 404 not_found, 422 carrier_not_supported, 501 generation_not_configured,
+     * 502 carrier_webservice_error (+ message).
+     * On utilise [Response] pour accéder au code et au body d'erreur sans relancer d'exception.
+     */
+    @POST("orders/{id}/shipping-label")
+    suspend fun generateShippingLabel(
+        @Path("id") orderId: Long,
+    ): Response<GenerateLabelResponseDto>
 
     @GET("products")
     suspend fun getProducts(

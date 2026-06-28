@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.LocalShipping
@@ -128,6 +129,7 @@ fun OrderDetailRoute(
                 )
             }
         },
+        onGenerateLabel = viewModel::onGenerateLabel,
     )
 }
 
@@ -145,6 +147,7 @@ fun OrderDetailScreen(
     onConsumeFeedback: () -> Unit = {},
     onPrintInvoice: (Order) -> Unit = {},
     onPrintShippingLabel: (Order) -> Unit = {},
+    onGenerateLabel: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val backDesc = stringResource(R.string.content_description_back)
@@ -218,11 +221,13 @@ fun OrderDetailScreen(
                     OrderDetailContent(
                         order = state.order,
                         actionInProgress = actionState.inProgress,
+                        isGeneratingLabel = actionState.isGeneratingLabel,
                         availableStatuses = availableStatuses,
                         onUpdateStatus = onUpdateStatus,
                         onUpdateTracking = onUpdateTracking,
                         onPrintInvoice = { onPrintInvoice(state.order) },
                         onPrintShippingLabel = { onPrintShippingLabel(state.order) },
+                        onGenerateLabel = onGenerateLabel,
                     )
                 }
             }
@@ -236,11 +241,13 @@ fun OrderDetailScreen(
 fun OrderDetailContent(
     order: Order,
     actionInProgress: Boolean = false,
+    isGeneratingLabel: Boolean = false,
     availableStatuses: List<OrderStatusFilter> = emptyList(),
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
     onPrintInvoice: () -> Unit = {},
     onPrintShippingLabel: () -> Unit = {},
+    onGenerateLabel: () -> Unit = {},
 ) {
     var showStatusDialog by remember { mutableStateOf(false) }
     var showTrackingDialog by remember { mutableStateOf(false) }
@@ -450,6 +457,36 @@ fun OrderDetailContent(
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
+            }
+        }
+
+        // Bouton génération étiquette Colissimo — visible uniquement si pas encore d'étiquette
+        if (!order.hasShippingLabel) {
+            val generateLabelDesc = stringResource(R.string.order_detail_generate_label_content_description)
+            Button(
+                onClick = onGenerateLabel,
+                enabled = !actionInProgress,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = generateLabelDesc },
+                shape = RoundedCornerShape(50),
+            ) {
+                if (isGeneratingLabel) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimensions.iconSizeSmall),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.Label,
+                        contentDescription = null,
+                        modifier = Modifier.size(Dimensions.iconSizeSmall),
+                    )
+                }
+                Spacer(modifier = Modifier.size(Dimensions.spacingS))
+                Text(stringResource(R.string.order_detail_generate_label))
             }
         }
 

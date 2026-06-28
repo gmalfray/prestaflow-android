@@ -10,6 +10,7 @@ import com.rebuildit.prestaflow.data.remote.dto.CustomerListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerStatsDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
 import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.GenerateLabelResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto
@@ -60,6 +61,9 @@ class FakePrestaFlowApi : PrestaFlowApi {
         throw UnsupportedOperationException("Non utilisé dans ce test")
 
     override suspend fun getShippingLabelPdf(orderId: Long): Response<ResponseBody> =
+        throw UnsupportedOperationException("Non utilisé dans ce test")
+
+    override suspend fun generateShippingLabel(orderId: Long): Response<GenerateLabelResponseDto> =
         throw UnsupportedOperationException("Non utilisé dans ce test")
 
     override suspend fun getProducts(
