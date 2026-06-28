@@ -96,6 +96,7 @@ import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -1375,15 +1376,22 @@ private fun formatCustomRangeDisplay(from: String, to: String): String =
 /**
  * Formate un label d'axe X pour l'affichage sous le graphe.
  *
- * Si [raw] est une date ISO `yyyy-MM-dd` (labels journaliers du connecteur),
- * retourne le format court `dd/MM` (ex : `26/06`).
- * Sinon — labels de preset ("Lun", "S1", "Semaine 1"…) — retourne [raw] tel quel.
+ * Trois cas couverts :
+ * - `"yyyy-MM-dd HH:mm:ss"` (horodatage horaire, période « Aujourd'hui ») → `"HH'h'"` (ex : `"15h"`).
+ * - `"yyyy-MM-dd"` (label journalier) → `"dd/MM"` (ex : `"26/06"`).
+ * - Preset non parseable (`"Lun"`, `"S1"`, `"Semaine 1"`…) → retourné tel quel.
  */
 internal fun formatXAxisLabel(raw: String): String =
     runCatching {
-        val date = LocalDate.parse(raw) // parser ISO yyyy-MM-dd
-        date.format(DateTimeFormatter.ofPattern("dd/MM"))
-    }.getOrElse { raw }
+        // Cas 1 : horodatage "yyyy-MM-dd HH:mm:ss" — labels horaires de la période Aujourd'hui
+        val dt = LocalDateTime.parse(raw, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+        dt.format(DateTimeFormatter.ofPattern("HH'h'"))
+    }.getOrElse {
+        runCatching {
+            // Cas 2 : date ISO "yyyy-MM-dd" — labels journaliers
+            LocalDate.parse(raw).format(DateTimeFormatter.ofPattern("dd/MM"))
+        }.getOrElse { raw } // Cas 3 : preset non parseable — retourné brut
+    }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
