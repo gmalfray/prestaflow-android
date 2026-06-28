@@ -50,10 +50,13 @@ fun PrestaFlowNavGraph(
                     navController.navigate("${AppDestination.Orders.route}?period=${period.queryValue}")
                 },
                 onClientsClick = {
-                    // Le KPI "Nouveaux clients" du dashboard navigue avec filter=new pour
-                    // pré-sélectionner le mode NEW_THIS_MONTH dès l'ouverture de l'écran Clients.
+                    // Le KPI "Nouveaux clients" navigue toujours vers une entrée Clients fraîche
+                    // avec filter=new (mode NEW_THIS_MONTH). On purge d'abord toute entrée Clients
+                    // présente dans le back-stack (active ou sauvegardée via saveState) pour
+                    // garantir qu'un nouveau ViewModel est créé — le filtre est ainsi toujours
+                    // appliqué même si l'utilisateur avait déjà visité l'onglet Clients.
                     navController.navigate("${AppDestination.Clients.route}?filter=new") {
-                        launchSingleTop = true
+                        popUpTo(AppDestination.Clients.route) { inclusive = true }
                     }
                 },
             )

@@ -13,12 +13,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -59,6 +61,19 @@ class ClientsViewModel
                 "new" -> ClientFilter.NEW_THIS_MONTH
                 else -> ClientFilter.TOP_CLIENTS
             }
+
+        /**
+         * Argument de navigation "filter" exposé comme [StateFlow] réactif.
+         *
+         * Navigation Component met à jour le [SavedStateHandle] quand il navigue vers
+         * cette destination avec `launchSingleTop = true` et un nouvel argument. En observant
+         * ce flux dans [ClientsRoute] via un `LaunchedEffect`, on ré-applique le mode
+         * [ClientFilter.NEW_THIS_MONTH] même si le ViewModel est réutilisé (ViewModel conservé
+         * dans la back-stack sauvegardée puis restauré par `restoreState = true`).
+         */
+        val navigationFilterFlow: StateFlow<String?> =
+            savedStateHandle.getStateFlow<String?>("filter", null)
+                .stateIn(viewModelScope, SharingStarted.Eagerly, savedStateHandle.get<String?>("filter"))
 
         private val _uiState = MutableStateFlow(ClientsUiState(activeFilter = initialFilter))
         val uiState: StateFlow<ClientsUiState> = _uiState.asStateFlow()
@@ -125,6 +140,36 @@ class ClientsViewModel
                 observeTopClients()
             } else {
                 fetchClientsForMode(mode = newMode, query = query, resetPage = true, notifyOnError = true)
+            }
+        }
+
+        /**
+         * Applique le filtre transmis par la navigation **sans logique de toggle**.
+         *
+         * Appelé depuis [ClientsRoute] via `LaunchedEffect` chaque fois que l'argument
+         * de navigation "filter" change (y compris lors d'une ré-navigation sur un ViewModel
+         * existant via `launchSingleTop`). Idempotent : sans effet si le mode est déjà correct.
+         *
+         * Ne pas confondre avec [onFilterChange] qui implémente le toggle KPI (tap = activer,
+         * re-tap = retour TOP) utilisé par les cartes de l'écran Clients lui-même.
+         */
+        fun onNavigationFilter(filter: ClientFilter) {
+            val currentMode = _uiState.value.activeFilter
+            if (currentMode == filter) return
+            val query = _uiState.value.query
+            _uiState.update { current ->
+                current.copy(
+                    activeFilter = filter,
+                    clients = if (filter == ClientFilter.TOP_CLIENTS) current.clients else emptyList(),
+                    hasNextPage = false,
+                    nextOffset = 0,
+                    isLoadingMore = false,
+                )
+            }
+            if (filter == ClientFilter.TOP_CLIENTS) {
+                observeTopClients()
+            } else {
+                fetchClientsForMode(mode = filter, query = query, resetPage = true, notifyOnError = true)
             }
         }
 

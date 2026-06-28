@@ -25,6 +25,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -64,6 +65,20 @@ fun ClientsRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
+
+    // Filet de sécurité : ré-applique le filtre de navigation quand le SavedStateHandle
+    // est mis à jour par Navigation (cas launchSingleTop + ViewModel réutilisé depuis
+    // la back-stack sauvegardée). Sans ce LaunchedEffect, un ViewModel restauré via
+    // restoreState resterait dans son ancien mode (TOP_CLIENTS) malgré filter=new.
+    val filterArg by viewModel.navigationFilterFlow.collectAsStateWithLifecycle()
+    LaunchedEffect(filterArg) {
+        val targetFilter = when (filterArg) {
+            "new" -> ClientFilter.NEW_THIS_MONTH
+            else -> null // null = pas de forçage (le mode TOP par défaut est géré par l'init du VM)
+        }
+        targetFilter?.let { viewModel.onNavigationFilter(it) }
+    }
+
     ClientsScreen(
         modifier = modifier,
         state = state,
