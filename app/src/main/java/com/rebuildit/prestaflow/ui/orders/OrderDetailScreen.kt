@@ -250,7 +250,7 @@ fun OrderDetailContent(
     val scanLauncher =
         rememberLauncherForActivityResult(ScanContract()) { result ->
             if (result != null && !result.contents.isNullOrBlank()) {
-                pendingScannedTracking = result.contents.trim()
+                pendingScannedTracking = extractTrackingNumber(result.contents)
             }
         }
 
@@ -277,11 +277,16 @@ fun OrderDetailContent(
                 scanLauncher.launch(
                     ScanOptions()
                         .setDesiredBarcodeFormats(
+                            // Formats 1D — étiquettes Colissimo colis, codes-barres classiques
                             ScanOptions.CODE_128,
                             ScanOptions.CODE_39,
                             ScanOptions.ITF,
                             ScanOptions.CODE_93,
                             ScanOptions.EAN_13,
+                            // Formats 2D — DataMatrix La Poste (Lettre suivie, Courrier suivi),
+                            // QR code (certains transporteurs alternatifs)
+                            ScanOptions.DATA_MATRIX,
+                            ScanOptions.QR_CODE,
                         )
                         .setPrompt(scanTrackingPrompt)
                         .setBeepEnabled(true)
