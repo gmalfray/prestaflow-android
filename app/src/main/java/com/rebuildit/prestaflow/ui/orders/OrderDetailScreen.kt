@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.orders
 
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Print
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -60,6 +62,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -129,9 +132,43 @@ fun OrderDetailRoute(
                 )
             }
         },
+        onShareShippingLabel = { order ->
+            viewModel.fetchShippingLabelPdf { pdfBytes ->
+                shareShippingLabelPdf(context, pdfBytes, order.reference)
+            }
+        },
         onGenerateLabel = viewModel::onGenerateLabel,
     )
 }
+
+/**
+ * Écrit les octets PDF dans le répertoire cache, puis déclenche un Intent de partage
+ * via [FileProvider] (ouvre le sélecteur d'apps : Munbyn Print, lecteur PDF, e-mail…).
+ */
+private fun shareShippingLabelPdf(
+    context: android.content.Context,
+    pdfBytes: ByteArray,
+    reference: String,
+) {
+    val file = java.io.File(context.cacheDir, "bordereau_$reference.pdf")
+    file.writeBytes(pdfBytes)
+    val uri =
+        FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file,
+        )
+    val intent =
+        Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    val chooser = Intent.createChooser(intent, context.getString(R.string.order_detail_share_chooser_title))
+    chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(chooser)
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 // Composable écran : paramètres = callbacks requis, longueur inhérente à la mise en page Compose
@@ -147,6 +184,7 @@ fun OrderDetailScreen(
     onConsumeFeedback: () -> Unit = {},
     onPrintInvoice: (Order) -> Unit = {},
     onPrintShippingLabel: (Order) -> Unit = {},
+    onShareShippingLabel: (Order) -> Unit = {},
     onGenerateLabel: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -227,6 +265,7 @@ fun OrderDetailScreen(
                         onUpdateTracking = onUpdateTracking,
                         onPrintInvoice = { onPrintInvoice(state.order) },
                         onPrintShippingLabel = { onPrintShippingLabel(state.order) },
+                        onShareShippingLabel = { onShareShippingLabel(state.order) },
                         onGenerateLabel = onGenerateLabel,
                     )
                 }
@@ -247,6 +286,7 @@ fun OrderDetailContent(
     onUpdateTracking: (String) -> Unit = {},
     onPrintInvoice: () -> Unit = {},
     onPrintShippingLabel: () -> Unit = {},
+    onShareShippingLabel: () -> Unit = {},
     onGenerateLabel: () -> Unit = {},
 ) {
     var showStatusDialog by remember { mutableStateOf(false) }
@@ -508,8 +548,9 @@ fun OrderDetailContent(
             }
         }
 
-        // Bouton impression bordereau — visible uniquement si has_shipping_label
+        // Boutons bordereau — visibles uniquement si has_shipping_label
         if (order.hasShippingLabel) {
+            // Impression système (PrintManager / PDF)
             OutlinedButton(
                 onClick = onPrintShippingLabel,
                 enabled = !actionInProgress,
@@ -523,6 +564,26 @@ fun OrderDetailContent(
                 )
                 Spacer(modifier = Modifier.size(Dimensions.spacingS))
                 Text(stringResource(R.string.order_detail_print_shipping_label))
+            }
+
+            // Partage du PDF (ouvrir avec Munbyn Print, visionneuse PDF, etc.)
+            val shareDesc = stringResource(R.string.order_detail_share_shipping_label_content_description)
+            OutlinedButton(
+                onClick = onShareShippingLabel,
+                enabled = !actionInProgress,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = shareDesc },
+                shape = RoundedCornerShape(50),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Share,
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimensions.iconSizeSmall),
+                )
+                Spacer(modifier = Modifier.size(Dimensions.spacingS))
+                Text(stringResource(R.string.order_detail_share_shipping_label))
             }
         }
     }

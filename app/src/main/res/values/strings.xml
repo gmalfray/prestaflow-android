@@ -192,8 +192,30 @@
     <string name="order_detail_tracking_display">Tracking: %1$s</string>
     <string name="order_detail_print_invoice">Print invoice</string>
     <string name="order_detail_print_shipping_label">Print shipping label</string>
+    <string name="order_detail_share_shipping_label">Share label PDF</string>
+    <string name="order_detail_share_shipping_label_content_description">Share shipping label PDF</string>
+    <string name="order_detail_share_chooser_title">Share label</string>
     <string name="order_detail_generate_label">Generate label</string>
     <string name="order_detail_generate_label_content_description">Generate Colissimo shipping label</string>
+    <!-- Imprimante thermique Bluetooth -->
+    <string name="order_detail_print_thermal">Print on thermal printer</string>
+    <string name="order_detail_print_thermal_content_description">Print shipping label on Bluetooth thermal printer</string>
+    <string name="order_detail_thermal_no_printer">No thermal printer configured. Please select one in Settings.</string>
+    <string name="order_detail_thermal_bt_disabled">Bluetooth is disabled. Please enable it to print.</string>
+    <string name="order_detail_thermal_bt_permission_denied">Bluetooth permission required to connect to the printer.</string>
+    <string name="order_detail_thermal_connecting">Connecting to printer…</string>
+    <string name="order_detail_thermal_success">Label printed successfully.</string>
+    <string name="order_detail_thermal_error">Thermal print failed: %1$s</string>
+    <!-- Settings — section imprimante thermique -->
+    <string name="settings_thermal_printer_label">Thermal Printer</string>
+    <string name="settings_thermal_printer_none">No printer selected</string>
+    <string name="settings_thermal_printer_selected">Selected: %1$s (%2$s)</string>
+    <string name="settings_thermal_printer_choose">Choose a printer</string>
+    <string name="settings_thermal_printer_clear">Remove printer</string>
+    <string name="settings_thermal_printer_dialog_title">Paired Bluetooth devices</string>
+    <string name="settings_thermal_printer_dialog_empty">No paired Bluetooth device found.</string>
+    <string name="settings_thermal_printer_dialog_cancel">Cancel</string>
+    <string name="settings_thermal_printer_hint">Select the Munbyn or other ESC/POS thermal printer paired with this device.</string>
 
     <!-- Dialogue de choix du mode d'impression -->
     <string name="print_mode_dialog_title">Print mode</string>
