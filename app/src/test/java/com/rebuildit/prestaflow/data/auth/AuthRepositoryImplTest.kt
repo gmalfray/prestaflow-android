@@ -632,6 +632,15 @@ class AuthRepositoryImplTest {
 
         override suspend fun getTopCustomers(limit: Int) = throw UnsupportedOperationException()
 
+        override suspend fun getCustomers(
+            limit: Int?,
+            offset: Int?,
+            search: String?,
+            sort: String?,
+            createdFrom: String?,
+            createdTo: String?,
+        ) = throw UnsupportedOperationException()
+
         override suspend fun getCustomer(customerId: Long) = throw UnsupportedOperationException()
 
         override suspend fun registerDevice(body: com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto) =

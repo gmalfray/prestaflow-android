@@ -115,6 +115,29 @@ interface PrestaFlowApi {
         @Query("limit") limit: Int,
     ): CustomerListResponseDto
 
+    /**
+     * Liste paginée et filtrable de tous les clients (`GET /customers`).
+     *
+     * Les filtres de date suivent le format PHP de tableau d'URL : `filter[created_from]`.
+     * Retrofit encode les crochets en `%5B`/`%5D` — PHP les décode correctement via `$_GET`.
+     *
+     * @param limit Nombre de clients par page (défaut serveur : 20).
+     * @param offset Décalage depuis lequel commencer (pour la pagination).
+     * @param search Recherche full-text sur nom/prénom/email (LIKE côté SQL).
+     * @param sort Ordre de tri : `date_desc` (défaut), `date_asc`, `orders_desc`, `spent_desc`.
+     * @param createdFrom Borne inférieure de `date_add` (format `YYYY-MM-DD`).
+     * @param createdTo Borne supérieure de `date_add` (format `YYYY-MM-DD`).
+     */
+    @GET("customers")
+    suspend fun getCustomers(
+        @Query("limit") limit: Int? = null,
+        @Query("offset") offset: Int? = null,
+        @Query("search") search: String? = null,
+        @Query("sort") sort: String? = null,
+        @Query("filter[created_from]") createdFrom: String? = null,
+        @Query("filter[created_to]") createdTo: String? = null,
+    ): CustomerListResponseDto
+
     @GET("customers/{id}")
     suspend fun getCustomer(
         @Path("id") customerId: Long,

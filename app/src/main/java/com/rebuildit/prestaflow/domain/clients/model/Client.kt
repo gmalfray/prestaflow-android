@@ -12,6 +12,8 @@ data class Client(
     val totalSpent: Double,
     val lastOrderAtIso: String?,
     val orders: List<ClientOrder> = emptyList(),
+    /** Date d'inscription (`date_add` PrestaShop, format `YYYY-MM-DD HH:MM:SS`). Null pour les clients venant de `customers/top`. */
+    val dateAddIso: String? = null,
 ) {
     val fullName: String
         get() =
@@ -19,6 +21,19 @@ data class Client(
                 .filter { it.isNotBlank() }
                 .joinToString(" ")
 }
+
+/**
+ * Page paginée de clients issue de `GET /customers`.
+ *
+ * @param clients Liste des clients de cette page.
+ * @param hasNext `true` si une page suivante est disponible côté serveur.
+ * @param nextOffset Offset à passer pour charger la page suivante (`0` si [hasNext] est `false`).
+ */
+data class ClientsPage(
+    val clients: List<Client>,
+    val hasNext: Boolean,
+    val nextOffset: Int,
+)
 
 @Serializable
 data class ClientOrder(

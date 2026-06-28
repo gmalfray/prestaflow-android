@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.ui.clients
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,8 +13,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -49,8 +53,6 @@ import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 @Composable
 fun ClientsRoute(
@@ -70,6 +72,7 @@ fun ClientsRoute(
         onClientClick = onClientClick,
         onQueryChange = viewModel::onQueryChange,
         onFilterChange = viewModel::onFilterChange,
+        onLoadMore = viewModel::onLoadMore,
         onSwitchShop = shopsViewModel::switchShop,
         onAddShop = onAddShop,
     )
@@ -84,6 +87,7 @@ fun ClientsScreen(
     connections: List<ShopConnection> = emptyList(),
     onQueryChange: (String) -> Unit = {},
     onFilterChange: (ClientFilter) -> Unit = {},
+    onLoadMore: () -> Unit = {},
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
 ) {
@@ -105,9 +109,13 @@ fun ClientsScreen(
                 totalClients = state.stats?.total ?: state.clients.size,
                 newThisMonth = state.stats?.newThisMonth ?: 0,
                 activeFilter = state.activeFilter,
+                listMode = state.listMode,
                 query = state.query,
                 onQueryChange = onQueryChange,
                 onFilterChange = onFilterChange,
+                hasNextPage = state.hasNextPage,
+                isLoadingMore = state.isLoadingMore,
+                onLoadMore = onLoadMore,
                 isRefreshing = state.isRefreshing,
                 errorMessage = errorMessage,
                 connections = connections,
@@ -128,9 +136,13 @@ private fun ClientList(
     totalClients: Int,
     newThisMonth: Int,
     activeFilter: ClientFilter,
+    listMode: ClientListMode,
     query: String,
     onQueryChange: (String) -> Unit,
     onFilterChange: (ClientFilter) -> Unit,
+    hasNextPage: Boolean,
+    isLoadingMore: Boolean,
+    onLoadMore: () -> Unit,
     isRefreshing: Boolean,
     errorMessage: String?,
     connections: List<ShopConnection>,
@@ -140,7 +152,14 @@ private fun ClientList(
     onAddShop: () -> Unit,
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
-    val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
+
+    val sectionTitle =
+        when (listMode) {
+            ClientListMode.TOP -> stringResource(R.string.clients_list_section_title)
+            ClientListMode.ALL -> stringResource(R.string.clients_list_section_all)
+            ClientListMode.NEW -> stringResource(R.string.clients_list_section_new)
+            ClientListMode.SEARCH -> stringResource(R.string.clients_list_section_search)
+        }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -188,14 +207,12 @@ private fun ClientList(
                         }
                     }
 
-                    // En-tête section
+                    // En-tête section (titre dynamique selon le mode)
                     item {
-                        SectionHeader(
-                            title = stringResource(R.string.clients_list_section_title),
-                        )
+                        SectionHeader(title = sectionTitle)
                     }
 
-                    // Champ de recherche
+                    // Champ de recherche (pleine base, debounce 300ms)
                     item {
                         SearchField(
                             query = query,
@@ -230,7 +247,6 @@ private fun ClientList(
                                         ClientRow(
                                             client = client,
                                             currencyFormatter = currencyFormatter,
-                                            dateFormatter = dateFormatter,
                                             onClick = { onClientClick(client.id) },
                                         )
                                         if (index < clients.lastIndex) {
@@ -243,10 +259,55 @@ private fun ClientList(
                                 }
                             }
                         }
+
+                        // Bouton "charger plus" pour les modes paginés (ALL / NEW / SEARCH)
+                        if (listMode != ClientListMode.TOP && hasNextPage) {
+                            item {
+                                LoadMoreButton(
+                                    isLoading = isLoadingMore,
+                                    onClick = onLoadMore,
+                                )
+                            }
+                        }
                     }
                 }
             } // fin Column
         } // fin PullToRefreshBox
+    }
+}
+
+// ─── Bouton charger plus ──────────────────────────────────────────────────────
+
+@Composable
+private fun LoadMoreButton(
+    isLoading: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.padding(Dimensions.spacingM),
+                color = MaterialTheme.colorScheme.primary,
+            )
+        } else {
+            Button(
+                onClick = onClick,
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+            ) {
+                Text(
+                    text = stringResource(R.string.clients_load_more),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
     }
 }
 
@@ -268,8 +329,8 @@ private fun ClientsStatsRow(
             modifier = Modifier.weight(1f),
             label = stringResource(R.string.clients_stats_total),
             value = totalClients.toString(),
-            selected = activeFilter == ClientFilter.ALL,
-            onClick = { onFilterChange(ClientFilter.ALL) },
+            selected = activeFilter == ClientFilter.ALL_CLIENTS,
+            onClick = { onFilterChange(ClientFilter.ALL_CLIENTS) },
         )
         ClientStatCard(
             modifier = Modifier.weight(1f),
@@ -284,8 +345,8 @@ private fun ClientsStatsRow(
 /**
  * Carte KPI de l'écran Clients.
  *
- * [selected] : carte mise en évidence (fond primaryContainer) quand son filtre est actif.
- * [onClick]  : callback de sélection/désélection du filtre.
+ * [selected] : carte mise en évidence (fond primaryContainer) quand son mode est actif.
+ * [onClick]  : callback de sélection/désélection du mode.
  */
 @Composable
 private fun ClientStatCard(
@@ -295,21 +356,24 @@ private fun ClientStatCard(
     selected: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
-    val containerColor = if (selected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surfaceContainerLowest
-    }
-    val contentColor = if (selected) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
-    val labelColor = if (selected) {
-        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val containerColor =
+        if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLowest
+        }
+    val contentColor =
+        if (selected) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
+    val labelColor =
+        if (selected) {
+            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
 
     if (onClick != null) {
         Card(
@@ -367,7 +431,6 @@ private fun ClientStatCard(
 private fun ClientRow(
     client: Client,
     currencyFormatter: NumberFormat,
-    dateFormatter: DateTimeFormatter,
     onClick: () -> Unit,
 ) {
     val displayName = client.fullName.ifBlank { client.email }
@@ -434,7 +497,7 @@ private fun ClientRow(
 
 // ─── Previews ─────────────────────────────────────────────────────────────────
 
-@Preview(showBackground = true, name = "Clients — liste (filtre ALL)")
+@Preview(showBackground = true, name = "Clients — liste top (aucune carte active)")
 @Composable
 private fun PreviewClientsList() {
     PrestaFlowTheme {
@@ -462,10 +525,10 @@ private fun PreviewClientsList() {
                                 lastOrderAtIso = null,
                             ),
                         ),
-                    stats = com.rebuildit.prestaflow.domain.clients.model.ClientStats(total = 42, newThisMonth = 8),
+                    stats = com.rebuildit.prestaflow.domain.clients.model.ClientStats(total = 4384, newThisMonth = 42),
                     isLoading = false,
                     isRefreshing = false,
-                    activeFilter = ClientFilter.ALL,
+                    activeFilter = ClientFilter.TOP_CLIENTS,
                 ),
             onRefresh = {},
             onClientClick = {},
@@ -473,9 +536,9 @@ private fun PreviewClientsList() {
     }
 }
 
-@Preview(showBackground = true, name = "Clients — filtre Nouveaux actif")
+@Preview(showBackground = true, name = "Clients — mode Tous les clients (pagination)")
 @Composable
-private fun PreviewClientsListFilterNew() {
+private fun PreviewClientsAllMode() {
     PrestaFlowTheme {
         ClientsScreen(
             state =
@@ -492,7 +555,38 @@ private fun PreviewClientsListFilterNew() {
                                 lastOrderAtIso = null,
                             ),
                         ),
-                    stats = com.rebuildit.prestaflow.domain.clients.model.ClientStats(total = 42, newThisMonth = 8),
+                    stats = com.rebuildit.prestaflow.domain.clients.model.ClientStats(total = 4384, newThisMonth = 42),
+                    isLoading = false,
+                    isRefreshing = false,
+                    activeFilter = ClientFilter.ALL_CLIENTS,
+                    hasNextPage = true,
+                ),
+            onRefresh = {},
+            onClientClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Clients — mode Nouveaux du mois actif")
+@Composable
+private fun PreviewClientsNewMode() {
+    PrestaFlowTheme {
+        ClientsScreen(
+            state =
+                ClientsUiState(
+                    clients =
+                        listOf(
+                            Client(
+                                id = 1L,
+                                firstName = "Alice",
+                                lastName = "Bernard",
+                                email = "alice@test.fr",
+                                ordersCount = 3,
+                                totalSpent = 75.0,
+                                lastOrderAtIso = null,
+                            ),
+                        ),
+                    stats = com.rebuildit.prestaflow.domain.clients.model.ClientStats(total = 4384, newThisMonth = 42),
                     isLoading = false,
                     isRefreshing = false,
                     activeFilter = ClientFilter.NEW_THIS_MONTH,

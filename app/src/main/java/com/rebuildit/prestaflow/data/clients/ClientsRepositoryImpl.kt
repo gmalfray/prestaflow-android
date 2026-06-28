@@ -8,6 +8,7 @@ import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.clients.model.Client
 import com.rebuildit.prestaflow.domain.clients.model.ClientStats
+import com.rebuildit.prestaflow.domain.clients.model.ClientsPage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -83,5 +84,31 @@ class ClientsRepositoryImpl
                             null
                         },
                     )
+            }
+
+        override suspend fun fetchClients(
+            query: String?,
+            sort: String?,
+            createdFrom: String?,
+            createdTo: String?,
+            limit: Int,
+            offset: Int,
+        ): ClientsPage =
+            withContext(ioDispatcher) {
+                val response =
+                    api.getCustomers(
+                        limit = limit,
+                        offset = offset,
+                        search = query?.takeIf { it.isNotBlank() },
+                        sort = sort,
+                        createdFrom = createdFrom,
+                        createdTo = createdTo,
+                    )
+                val pagination = response.pagination
+                ClientsPage(
+                    clients = response.customers.map { it.toDomain() },
+                    hasNext = pagination?.hasNext == true,
+                    nextOffset = pagination?.nextOffset ?: (offset + response.customers.size),
+                )
             }
     }
