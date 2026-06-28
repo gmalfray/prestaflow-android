@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,18 +46,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -84,6 +87,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlin.math.roundToInt
 
 @Composable
 fun DashboardRoute(
@@ -710,104 +714,164 @@ private fun DashboardChartCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                TurnoverAreaChart(points = points, height = 160.dp)
+                DualAxisSalesChart(points = points, height = 160.dp)
             }
         }
     }
 }
 
-// ─── Graphique zone ───────────────────────────────────────────────────────────
+// ─── Graphique double axe (commandes + CA) ───────────────────────────────────
 
-@Suppress("LongMethod")
+// Marges internes du canvas (converties en px dans DrawScope / PointerInputScope)
+private val chartPadLeft = 52.dp
+private val chartPadRight = 58.dp
+private val chartPadTop = 8.dp
+private val chartPadBottom = 20.dp
+
+@Suppress("LongMethod", "ComplexMethod")
 @Composable
-private fun TurnoverAreaChart(
+internal fun DualAxisSalesChart(
     points: List<DashboardChartPoint>,
-    height: Dp,
+    height: Dp = 200.dp,
     modifier: Modifier = Modifier,
 ) {
-    val chartDesc = rememberChartContentDescription(points)
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    if (points.isEmpty()) return
 
-    // Animation d'entrée : progress de 0 à 1
+    val colorOrders = MaterialTheme.colorScheme.primary
+    val colorTurnover = Color(0xFF1976D2)
+    val colorGrid = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+    val chartDesc = rememberChartContentDescription(points)
+
     var animProgress by remember { mutableFloatStateOf(0f) }
     val animatedProgress by animateFloatAsState(
         targetValue = animProgress,
         animationSpec = tween(durationMillis = 700),
-        label = "chart_anim",
+        label = "dual_chart_anim",
     )
     LaunchedEffect(points) { animProgress = 1f }
 
-    Canvas(
-        modifier =
-            modifier
+    var selectedIndex by remember { mutableIntStateOf(-1) }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Canvas(
+            modifier = Modifier
                 .fillMaxWidth()
                 .height(height)
-                .semantics(mergeDescendants = true) { contentDescription = chartDesc },
-    ) {
-        if (points.size < 2) return@Canvas
-
-        val maxValue = points.maxOf { it.turnover }.takeIf { it > 0.0 } ?: 1.0
-        val verticalPadding = size.height * 0.08f
-        val usableHeight = size.height - (verticalPadding * 2)
-        val stepX = size.width / (points.size - 1)
-
-        val allPoints =
-            points.mapIndexed { i, p ->
-                val normalized = (p.turnover / maxValue).coerceIn(0.0, 1.0)
-                val x = stepX * i
-                val y = size.height - verticalPadding - (usableHeight * normalized.toFloat() * animatedProgress)
-                Offset(x, y)
-            }
-
-        // Remplissage dégradé
-        val fillPath =
-            Path().apply {
-                moveTo(allPoints.first().x, size.height)
-                allPoints.forEach { lineTo(it.x, it.y) }
-                lineTo(allPoints.last().x, size.height)
-                close()
-            }
-        drawPath(
-            path = fillPath,
-            brush =
-                Brush.verticalGradient(
-                    colors =
-                        listOf(
-                            primaryContainer.copy(alpha = 0.35f),
-                            primaryContainer.copy(alpha = 0f),
-                        ),
-                    startY = 0f,
-                    endY = size.height,
-                ),
-        )
-
-        // Ligne
-        val linePath =
-            Path().apply {
-                allPoints.firstOrNull()?.let { moveTo(it.x, it.y) }
-                allPoints.drop(1).forEach { lineTo(it.x, it.y) }
-            }
-        drawPath(
-            path = linePath,
-            color = primaryColor,
-            style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
-        )
-    }
-
-    // Labels début/fin
-    if (points.size >= 2) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .semantics(mergeDescendants = true) { contentDescription = chartDesc }
+                .pointerInput(points) {
+                    detectTapGestures { offset ->
+                        val n = points.size
+                        if (n < 2) return@detectTapGestures
+                        val pl = chartPadLeft.toPx()
+                        val pr = chartPadRight.toPx()
+                        val step = (size.width.toFloat() - pl - pr) / (n - 1)
+                        val idx = ((offset.x - pl) / step).roundToInt().coerceIn(0, n - 1)
+                        selectedIndex = if (selectedIndex == idx) -1 else idx
+                    }
+                },
         ) {
-            listOf(points.first().label, points.last().label).forEach { label ->
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            val n = points.size
+            if (n < 2) return@Canvas
+
+            val pl = chartPadLeft.toPx()
+            val pr = chartPadRight.toPx()
+            val pt = chartPadTop.toPx()
+            val pb = chartPadBottom.toPx()
+            val cw = size.width - pl - pr
+            val ch = size.height - pt - pb
+            val stepX = cw / (n - 1)
+
+            val maxOrders = points.maxOf { it.orders }.toFloat().coerceAtLeast(1f)
+            val maxTurnover = points.maxOf { it.turnover }.toFloat().coerceAtLeast(1f)
+
+            fun ordY(v: Int) = pt + ch - ch * (v / maxOrders).coerceIn(0f, 1f) * animatedProgress
+            fun caY(v: Double) = pt + ch - ch * (v.toFloat() / maxTurnover).coerceIn(0f, 1f) * animatedProgress
+
+            val ordOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, ordY(p.orders)) }
+            val caOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, caY(p.turnover)) }
+
+            // Grille horizontale pointillée
+            val gridCount = 4
+            val dash = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))
+            repeat(gridCount + 1) { i ->
+                val y = pt + ch * i / gridCount
+                drawLine(colorGrid, Offset(pl, y), Offset(pl + cw, y), 1.dp.toPx(), pathEffect = dash)
             }
+
+            // Courbe commandes (axe gauche)
+            drawPath(
+                path = Path().apply {
+                    ordOffsets.forEachIndexed { i, o -> if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) }
+                },
+                color = colorOrders,
+                style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
+            )
+            // Courbe CA (axe droit)
+            drawPath(
+                path = Path().apply {
+                    caOffsets.forEachIndexed { i, o -> if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) }
+                },
+                color = colorTurnover,
+                style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
+            )
+
+            // Marqueurs sur chaque point
+            val mr = 4.dp.toPx()
+            ordOffsets.forEachIndexed { i, o ->
+                val sel = i == selectedIndex
+                drawCircle(colorOrders, if (sel) mr * 1.8f else mr, o)
+                if (sel) drawCircle(Color.White, mr * 0.7f, o)
+            }
+            caOffsets.forEachIndexed { i, o ->
+                val sel = i == selectedIndex
+                drawCircle(colorTurnover, if (sel) mr * 1.8f else mr, o)
+                if (sel) drawCircle(Color.White, mr * 0.7f, o)
+            }
+
+            // Cercle highlight sur le point sélectionné
+            if (selectedIndex in points.indices) {
+                drawCircle(colorOrders.copy(alpha = 0.15f), 12.dp.toPx(), ordOffsets[selectedIndex])
+                drawCircle(colorTurnover.copy(alpha = 0.15f), 12.dp.toPx(), caOffsets[selectedIndex])
+            }
+        }
+
+        // Labels X : premier et dernier point
+        if (points.size >= 2) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                listOf(points.first().label, points.last().label).forEach { lbl ->
+                    Text(
+                        text = lbl,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        // Légende sous le graphe
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(colorOrders))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "Commandes",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.width(Dimensions.spacingM))
+            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(colorTurnover))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "Chiffre d'affaires",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
