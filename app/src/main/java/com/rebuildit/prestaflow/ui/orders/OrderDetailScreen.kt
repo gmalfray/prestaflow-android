@@ -51,6 +51,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,20 +81,35 @@ import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.orders.components.StatusPickerDialog
+import com.rebuildit.prestaflow.ui.settings.ThermalPrinterViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlinx.coroutines.launch
 
 @Composable
 fun OrderDetailRoute(
     onBackClick: () -> Unit,
     viewModel: OrderDetailViewModel = hiltViewModel(),
+    thermalViewModel: ThermalPrinterViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val actionState by viewModel.actionState.collectAsStateWithLifecycle()
     val availableStatuses by viewModel.availableStatuses.collectAsStateWithLifecycle()
+    val savedDevice by thermalViewModel.savedDevice.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
     var pendingPrintOrder by remember { mutableStateOf<Order?>(null) }
+
+    // Permission Bluetooth (API 31+) — demandée juste avant l'impression thermique
+    val btPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (!granted) {
+                viewModel.reportFeedback(error = context.getString(R.string.order_detail_thermal_bt_permission_denied))
+            }
+        }
 
     if (pendingPrintOrder != null) {
         val order = pendingPrintOrder!!
@@ -137,6 +153,29 @@ fun OrderDetailRoute(
                 shareShippingLabelPdf(context, pdfBytes, order.reference)
             }
         },
+        onPrintThermalLabel = { order ->
+            val device = savedDevice
+            when {
+                device == null ->
+                    viewModel.reportFeedback(error = context.getString(R.string.order_detail_thermal_no_printer))
+                !isBluetooth(context) ->
+                    viewModel.reportFeedback(error = context.getString(R.string.order_detail_thermal_bt_disabled))
+                !hasBtConnectPermission(context) ->
+                    btPermissionLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT)
+                else ->
+                    viewModel.fetchShippingLabelPdf { pdfBytes ->
+                        viewModel.reportFeedback(message = context.getString(R.string.order_detail_thermal_connecting))
+                        scope.launch {
+                            viewModel.printOnThermalPrinter(
+                                context = context,
+                                pdfBytes = pdfBytes,
+                                macAddress = device.address,
+                                reference = order.reference,
+                            )
+                        }
+                    }
+            }
+        },
         onGenerateLabel = viewModel::onGenerateLabel,
     )
 }
@@ -169,6 +208,21 @@ private fun shareShippingLabelPdf(
     context.startActivity(chooser)
 }
 
+/** Retourne vrai si le Bluetooth est disponible et activé sur l'appareil. */
+private fun isBluetooth(context: android.content.Context): Boolean {
+    val bm = context.getSystemService(android.content.Context.BLUETOOTH_SERVICE) as? android.bluetooth.BluetoothManager
+    return bm?.adapter?.isEnabled == true
+}
+
+/**
+ * Retourne vrai si la permission [android.Manifest.permission.BLUETOOTH_CONNECT] est accordée.
+ * Sur API < 31, elle n'existe pas — retourne toujours vrai.
+ */
+private fun hasBtConnectPermission(context: android.content.Context): Boolean {
+    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) return true
+    return context.checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) ==
+        android.content.pm.PackageManager.PERMISSION_GRANTED
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 // Composable écran : paramètres = callbacks requis, longueur inhérente à la mise en page Compose
@@ -185,6 +239,7 @@ fun OrderDetailScreen(
     onPrintInvoice: (Order) -> Unit = {},
     onPrintShippingLabel: (Order) -> Unit = {},
     onShareShippingLabel: (Order) -> Unit = {},
+    onPrintThermalLabel: (Order) -> Unit = {},
     onGenerateLabel: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -266,6 +321,7 @@ fun OrderDetailScreen(
                         onPrintInvoice = { onPrintInvoice(state.order) },
                         onPrintShippingLabel = { onPrintShippingLabel(state.order) },
                         onShareShippingLabel = { onShareShippingLabel(state.order) },
+                        onPrintThermalLabel = { onPrintThermalLabel(state.order) },
                         onGenerateLabel = onGenerateLabel,
                     )
                 }
@@ -287,6 +343,7 @@ fun OrderDetailContent(
     onPrintInvoice: () -> Unit = {},
     onPrintShippingLabel: () -> Unit = {},
     onShareShippingLabel: () -> Unit = {},
+    onPrintThermalLabel: () -> Unit = {},
     onGenerateLabel: () -> Unit = {},
 ) {
     var showStatusDialog by remember { mutableStateOf(false) }
@@ -584,6 +641,26 @@ fun OrderDetailContent(
                 )
                 Spacer(modifier = Modifier.size(Dimensions.spacingS))
                 Text(stringResource(R.string.order_detail_share_shipping_label))
+            }
+
+            // Impression directe via imprimante thermique Bluetooth (ESC/POS raster)
+            val thermalDesc = stringResource(R.string.order_detail_print_thermal_content_description)
+            OutlinedButton(
+                onClick = onPrintThermalLabel,
+                enabled = !actionInProgress,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = thermalDesc },
+                shape = RoundedCornerShape(50),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Print,
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimensions.iconSizeSmall),
+                )
+                Spacer(modifier = Modifier.size(Dimensions.spacingS))
+                Text(stringResource(R.string.order_detail_print_thermal))
             }
         }
     }

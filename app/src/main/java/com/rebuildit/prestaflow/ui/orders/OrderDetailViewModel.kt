@@ -1,12 +1,15 @@
 package com.rebuildit.prestaflow.ui.orders
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rebuildit.prestaflow.core.print.ThermalLabelPrinter
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +18,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -108,6 +112,52 @@ class OrderDetailViewModel
 
         fun consumeActionFeedback() {
             _actionState.update { it.copy(message = null, error = null) }
+        }
+
+        /**
+         * Permet au composable Route de remonter un message ou une erreur dans [actionState]
+         * (ex. résultat d'une impression thermique).
+         */
+        fun reportFeedback(
+            message: String? = null,
+            error: String? = null,
+        ) {
+            _actionState.update { it.copy(message = message, error = error) }
+        }
+
+        /**
+         * Imprime l'étiquette de transport sur l'imprimante thermique Bluetooth.
+         *
+         * Le rendu PDF → bitmap et l'envoi ESC/POS se font sur [Dispatchers.IO].
+         * Le résultat (succès ou erreur) est remonté dans [actionState] sur le Main.
+         *
+         * @param context    Contexte Android (pour PdfRenderer et BluetoothManager).
+         * @param pdfBytes   Octets du PDF de l'étiquette (déjà téléchargés).
+         * @param macAddress Adresse MAC de l'imprimante thermique cible.
+         * @param reference  Référence de la commande (pour les logs uniquement).
+         */
+        suspend fun printOnThermalPrinter(
+            context: Context,
+            pdfBytes: ByteArray,
+            macAddress: String,
+            reference: String,
+        ) {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    ThermalLabelPrinter.print(context, pdfBytes, macAddress)
+                }
+            }.onSuccess {
+                Timber.i("Impression thermique réussie — commande %s", reference)
+                _actionState.update { it.copy(inProgress = false, message = "Bordereau imprimé avec succès.") }
+            }.onFailure { error ->
+                Timber.e(error, "Impression thermique échouée — commande %s", reference)
+                _actionState.update {
+                    it.copy(
+                        inProgress = false,
+                        error = "Impression thermique échouée : ${error.message ?: "erreur inconnue"}",
+                    )
+                }
+            }
         }
 
         /**
