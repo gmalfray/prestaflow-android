@@ -22,6 +22,7 @@ import com.rebuildit.prestaflow.core.security.TokenStorage
 import com.rebuildit.prestaflow.data.auth.AuthRepositoryImpl
 import com.rebuildit.prestaflow.data.carts.CartsRepositoryImpl
 import com.rebuildit.prestaflow.data.clients.ClientsRepositoryImpl
+import com.rebuildit.prestaflow.data.dashboard.DashboardPreferencesRepositoryImpl
 import com.rebuildit.prestaflow.data.dashboard.DashboardRepositoryImpl
 import com.rebuildit.prestaflow.data.local.dao.ClientDao
 import com.rebuildit.prestaflow.data.local.dao.DashboardDao
@@ -45,6 +46,7 @@ import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
 import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
+import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
 import com.rebuildit.prestaflow.domain.notifications.NotificationCategoriesRepository
 import com.rebuildit.prestaflow.domain.notifications.NotificationsRepository
@@ -194,6 +196,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDashboardRepository(impl: DashboardRepositoryImpl): DashboardRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideDashboardPreferencesRepository(impl: DashboardPreferencesRepositoryImpl): DashboardPreferencesRepository = impl
 
     @Provides
     @Singleton
