@@ -414,6 +414,9 @@ dependencies {
 
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
+    // Impression thermique Bluetooth ESC/POS — MUNBYN ITPP941B et imprimantes 4×6 compatibles
+    implementation(libs.escpos.thermal.printer)
+
     kaptTest(libs.androidx.room.compiler)
     kaptAndroidTest(libs.androidx.room.compiler)
     kaptTest(libs.hilt.compiler)
