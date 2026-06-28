@@ -163,6 +163,66 @@ class OrderDetailViewModelTest {
             assertEquals(null, vm.actionState.value.error)
         }
 
+    // ─── Mise à jour du numéro de suivi ─────────────────────────────────────────
+
+    @Test
+    fun `updateTracking appelle updateOrderShipping avec le numero trimme`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L)))
+            val vm = buildViewModel(orderId = 1L)
+            advanceUntilIdle()
+
+            // Simule un résultat de scan avec espaces parasites (ex. artefact lecteur)
+            vm.updateTracking("  1Z999AA10123456784  ")
+            advanceUntilIdle()
+
+            val call = fakeOrdersRepo.updateShippingCalls.lastOrNull()
+            assertEquals(1L, call?.first)
+            assertEquals("1Z999AA10123456784", call?.second)
+        }
+
+    @Test
+    fun `updateTracking ignore les valeurs blanches`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L)))
+            val vm = buildViewModel(orderId = 1L)
+            advanceUntilIdle()
+
+            vm.updateTracking("   ")
+            advanceUntilIdle()
+
+            assertTrue("updateOrderShipping ne doit pas être appelé pour une valeur vide", fakeOrdersRepo.updateShippingCalls.isEmpty())
+        }
+
+    @Test
+    fun `updateTracking expose un message de succes via actionState`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L)))
+            val vm = buildViewModel(orderId = 1L)
+            advanceUntilIdle()
+
+            vm.updateTracking("1Z999AA10123456784")
+            advanceUntilIdle()
+
+            assertTrue("Un message de succès doit être émis", vm.actionState.value.message != null)
+            assertEquals(null, vm.actionState.value.error)
+        }
+
+    @Test
+    fun `updateTracking expose une erreur via actionState en cas d echec`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L)))
+            fakeOrdersRepo.shouldThrowOnUpdateShipping = true
+            val vm = buildViewModel(orderId = 1L)
+            advanceUntilIdle()
+
+            vm.updateTracking("1Z999AA10123456784")
+            advanceUntilIdle()
+
+            assertTrue("Une erreur doit être émise", vm.actionState.value.error != null)
+            assertEquals(null, vm.actionState.value.message)
+        }
+
     // ─── Builders ─────────────────────────────────────────────────────────────
 
     private fun buildOrder(id: Long) =
