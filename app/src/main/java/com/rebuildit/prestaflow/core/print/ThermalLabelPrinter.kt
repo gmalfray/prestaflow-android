@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection
 import com.dantsu.escposprinter.EscPosPrinter
 import com.dantsu.escposprinter.textparser.PrinterTextParserImg
 import kotlinx.coroutines.Dispatchers
@@ -138,7 +137,9 @@ object ThermalLabelPrinter {
         @Suppress("MissingPermission")
         Timber.d("Connexion à l'imprimante thermique : ${device.name} ($macAddress)")
 
-        val connection = BluetoothConnection(device)
+        // Connexion robuste (fallback de sockets) — la BluetoothConnection de la lib échoue
+        // sur de nombreuses imprimantes bas coût avec « Unable to connect to bluetooth device ».
+        val connection = RobustBluetoothConnection(device, adapter)
         val printer = EscPosPrinter(connection, PRINTER_DPI, PRINTER_WIDTH_MM, PRINTER_CHARS_PER_LINE)
         try {
             val imageHex = PrinterTextParserImg.bitmapToHexadecimalString(printer, bitmap)
