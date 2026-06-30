@@ -4,6 +4,8 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.Matrix
+import android.graphics.Rect
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import kotlinx.coroutines.Dispatchers
@@ -65,16 +67,21 @@ object ThermalLabelPrinter {
         }
     }
 
-    /** Largeur de rendu maximale (dots) avant recadrage, pour borner la mémoire sur grandes pages A4. */
-    private const val MAX_RENDER_WIDTH = 1700
+    /** Largeur du rendu d'analyse (px) servant à détecter la zone de contenu (bbox). */
+    private const val ANALYZE_WIDTH = 720
 
-    /** Marge (en dots de l'image de rendu) conservée autour du contenu détecté lors du recadrage. */
-    private const val CROP_MARGIN = 12
+    /** Marge (en px du rendu d'analyse) conservée autour du contenu détecté. */
+    private const val CROP_MARGIN = 10
 
     /**
-     * Rend la première page du PDF, **recadre automatiquement sur la zone imprimée** (utile pour
-     * les bordereaux fournis sur une page A4 — ex. Mondial Relay — où l'étiquette n'occupe qu'une
-     * partie de la page), puis met à l'échelle à [PRINT_WIDTH_DOTS] de large. Fond blanc.
+     * Rend la première page du PDF **directement à la résolution d'impression** sur la zone de
+     * contenu détectée, sans redimensionnement bilinéaire intermédiaire (qui produisait un moiré
+     * de rayures verticales sur les codes-barres). Deux passes sur la même page :
+     *  1. rendu d'analyse basse résolution → détection de la bbox du contenu ;
+     *  2. rendu net de cette bbox, mis à l'échelle à [PRINT_WIDTH_DOTS] via une matrice.
+     *
+     * Le recadrage gère les bordereaux fournis en A4 (ex. Mondial Relay) où l'étiquette n'occupe
+     * qu'une partie de la page.
      */
     internal fun renderFirstPage(
         context: Context,
@@ -84,36 +91,52 @@ object ThermalLabelPrinter {
         tmp.writeBytes(pdfBytes)
         val pfd = ParcelFileDescriptor.open(tmp, ParcelFileDescriptor.MODE_READ_ONLY)
         val renderer = PdfRenderer(pfd)
-        val rendered: Bitmap
         try {
             val page = renderer.openPage(0)
-            // Rendu à ~8 dots/mm (densité imprimante), borné à MAX_RENDER_WIDTH pour l'A4
-            val renderWidth = minOf(MAX_RENDER_WIDTH, (page.width * DOTS_PER_MM * 25.4f / 72f).roundToInt())
-            val renderHeight = (renderWidth.toFloat() * page.height / page.width).roundToInt()
-            rendered = Bitmap.createBitmap(renderWidth, renderHeight, Bitmap.Config.ARGB_8888)
-            rendered.eraseColor(Color.WHITE)
-            page.render(rendered, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
+
+            // Passe 1 : rendu d'analyse pour trouver la zone de contenu
+            val analyzeHeight = (ANALYZE_WIDTH.toFloat() * page.height / page.width).roundToInt().coerceAtLeast(1)
+            val analyze = Bitmap.createBitmap(ANALYZE_WIDTH, analyzeHeight, Bitmap.Config.ARGB_8888)
+            analyze.eraseColor(Color.WHITE)
+            page.render(analyze, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
+            val bounds = contentBounds(analyze)
+            analyze.recycle()
+
+            // bbox (px analyse) → coordonnées page (points), avec marge
+            val pxPerPointX = ANALYZE_WIDTH.toFloat() / page.width
+            val pxPerPointY = analyzeHeight.toFloat() / page.height
+            val cropXpt = bounds.left / pxPerPointX
+            val cropYpt = bounds.top / pxPerPointY
+            val cropWpt = (bounds.width()).coerceAtLeast(1) / pxPerPointX
+            val cropHpt = (bounds.height()).coerceAtLeast(1) / pxPerPointY
+
+            // Passe 2 : rendu net de la zone recadrée à la largeur d'impression
+            val finalWidth = PRINT_WIDTH_DOTS
+            val finalHeight = (finalWidth.toFloat() * cropHpt / cropWpt).roundToInt().coerceAtLeast(1)
+            val sx = finalWidth / cropWpt
+            val sy = finalHeight / cropHpt
+            val matrix =
+                Matrix().apply {
+                    setScale(sx, sy)
+                    postTranslate(-cropXpt * sx, -cropYpt * sy)
+                }
+            val out = Bitmap.createBitmap(finalWidth, finalHeight, Bitmap.Config.ARGB_8888)
+            out.eraseColor(Color.WHITE)
+            page.render(out, null, matrix, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
             page.close()
+            return out
         } finally {
             renderer.close()
             runCatching { tmp.delete() }
         }
-
-        // Recadrage sur le contenu (bbox des pixels noirs), puis mise à l'échelle à la largeur d'impression
-        val cropped = cropToContent(rendered)
-        if (cropped !== rendered) rendered.recycle()
-        val finalHeight = (PRINT_WIDTH_DOTS.toFloat() * cropped.height / cropped.width).roundToInt().coerceAtLeast(1)
-        val scaled = Bitmap.createScaledBitmap(cropped, PRINT_WIDTH_DOTS, finalHeight, true)
-        if (scaled !== cropped) cropped.recycle()
-        return scaled
     }
 
     /**
-     * Retourne un recadrage de [src] limité à la zone contenant des pixels sombres (+ marge),
-     * ou [src] tel quel si la page est vide. Élimine les grandes marges blanches (cas A4).
+     * Retourne la zone (bbox, en px) contenant des pixels sombres dans [src], élargie de
+     * [CROP_MARGIN], ou la page entière si elle est vide. Élimine les grandes marges (cas A4).
      */
     @Suppress("NestedBlockDepth")
-    private fun cropToContent(src: Bitmap): Bitmap {
+    private fun contentBounds(src: Bitmap): Rect {
         val w = src.width
         val h = src.height
         val pixels = IntArray(w * h)
@@ -135,12 +158,13 @@ object ThermalLabelPrinter {
                 }
             }
         }
-        if (maxX < minX || maxY < minY) return src // page vide → pas de recadrage
-        val x0 = (minX - CROP_MARGIN).coerceAtLeast(0)
-        val y0 = (minY - CROP_MARGIN).coerceAtLeast(0)
-        val x1 = (maxX + CROP_MARGIN).coerceAtMost(w - 1)
-        val y1 = (maxY + CROP_MARGIN).coerceAtMost(h - 1)
-        return Bitmap.createBitmap(src, x0, y0, x1 - x0 + 1, y1 - y0 + 1)
+        if (maxX < minX || maxY < minY) return Rect(0, 0, w, h) // page vide → pas de recadrage
+        return Rect(
+            (minX - CROP_MARGIN).coerceAtLeast(0),
+            (minY - CROP_MARGIN).coerceAtLeast(0),
+            (maxX + CROP_MARGIN).coerceAtMost(w - 1) + 1,
+            (maxY + CROP_MARGIN).coerceAtMost(h - 1) + 1,
+        )
     }
 
     /**
