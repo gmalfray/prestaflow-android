@@ -1,7 +1,6 @@
 package com.rebuildit.prestaflow.ui.settings
 
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -37,6 +36,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -678,27 +678,6 @@ private fun DashboardDefaultPeriodSelector(
 // ─── Imprimante thermique Bluetooth ──────────────────────────────────────────
 
 /**
- * Retourne vrai si [android.Manifest.permission.BLUETOOTH_CONNECT] est accordée.
- * Sur API < 31 (Android 11 et avant), la permission n'existe pas → toujours vrai.
- */
-private fun hasBtConnectPermission(context: Context): Boolean {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
-    return context.checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) ==
-        PackageManager.PERMISSION_GRANTED
-}
-
-/**
- * Lit la liste des appareils Bluetooth **appairés** (SPP classique / ESC-POS).
- * Doit être appelée uniquement après avoir vérifié [hasBtConnectPermission].
- */
-private fun readBondedDevices(context: Context): List<BluetoothDevice> =
-    runCatching {
-        val bm = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
-        @Suppress("MissingPermission") // Appelée uniquement après vérification de hasBtConnectPermission
-        bm?.adapter?.bondedDevices?.toList() ?: emptyList()
-    }.getOrDefault(emptyList())
-
-/**
  * Section de sélection d'imprimante thermique Bluetooth dans les Réglages.
  *
  * Liste les appareils Bluetooth **appairés** ([android.bluetooth.BluetoothAdapter.bondedDevices])
@@ -719,16 +698,17 @@ private fun ThermalPrinterSection(
     onClear: () -> Unit,
 ) {
     var showDialog by remember { mutableStateOf(false) }
-    // Rafraîchi à chaque ouverture du dialogue (pas de cache remember sans clé)
-    var bondedDevices by remember { mutableStateOf<List<BluetoothDevice>>(emptyList()) }
+    // Découverte Bluetooth (appairés + scan), à la manière de l'app constructeur :
+    // pas besoin d'appairer l'imprimante au préalable dans les réglages Android.
+    val scan = rememberBluetoothDeviceScan(context)
 
-    // Demande la permission BLUETOOTH_CONNECT au runtime (obligatoire API 31+)
+    // Demande les permissions Bluetooth runtime (SCAN + CONNECT, API 31+), puis lance le scan
     val btPermissionLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
-        ) { granted ->
-            if (granted) {
-                bondedDevices = readBondedDevices(context)
+            contract = ActivityResultContracts.RequestMultiplePermissions(),
+        ) { results ->
+            if (BT_SCAN_PERMISSIONS.all { results[it] == true }) {
+                scan.start()
                 showDialog = true
             }
             // Si refusée : showDialog reste false, l'utilisateur doit accorder la permission
@@ -766,11 +746,11 @@ private fun ThermalPrinterSection(
     ) {
         OutlinedButton(
             onClick = {
-                if (hasBtConnectPermission(context)) {
-                    bondedDevices = readBondedDevices(context)
+                if (hasBtScanPermissions(context)) {
+                    scan.start()
                     showDialog = true
                 } else {
-                    btPermissionLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT)
+                    btPermissionLauncher.launch(BT_SCAN_PERMISSIONS)
                 }
             },
             modifier = Modifier.weight(1f),
@@ -799,7 +779,9 @@ private fun ThermalPrinterSection(
 
     if (showDialog) {
         BluetoothDevicePickerDialog(
-            devices = bondedDevices,
+            devices = scan.devices,
+            isScanning = scan.isScanning,
+            onRescan = scan.start,
             onDeviceSelected = { device ->
                 showDialog = false
                 @Suppress("MissingPermission")
@@ -810,10 +792,34 @@ private fun ThermalPrinterSection(
     }
 }
 
-/** Dialogue de sélection parmi la liste des appareils Bluetooth appairés. */
+/**
+ * Permissions Bluetooth runtime nécessaires à la **découverte** d'imprimantes (API 31+) :
+ * BLUETOOTH_SCAN pour `startDiscovery`, BLUETOOTH_CONNECT pour lire le nom et se connecter.
+ */
+private val BT_SCAN_PERMISSIONS =
+    arrayOf(
+        android.Manifest.permission.BLUETOOTH_SCAN,
+        android.Manifest.permission.BLUETOOTH_CONNECT,
+    )
+
+/** Vrai si toutes les [BT_SCAN_PERMISSIONS] sont accordées. Toujours vrai sur API < 31. */
+private fun hasBtScanPermissions(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+    return BT_SCAN_PERMISSIONS.all {
+        context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+    }
+}
+
+/**
+ * Dialogue de sélection d'imprimante : liste fusionnée des appareils Bluetooth appairés **et**
+ * découverts par le scan ([isScanning] indique un scan en cours). [onRescan] relance la découverte.
+ */
+@Suppress("LongMethod")
 @Composable
 private fun BluetoothDevicePickerDialog(
     devices: List<BluetoothDevice>,
+    isScanning: Boolean,
+    onRescan: () -> Unit,
     onDeviceSelected: (BluetoothDevice) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -822,14 +828,44 @@ private fun BluetoothDevicePickerDialog(
         shape = RoundedCornerShape(Dimensions.cardCornerRadius),
         title = { Text(stringResource(R.string.settings_thermal_printer_dialog_title)) },
         text = {
-            if (devices.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.settings_thermal_printer_dialog_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs)) {
+                // Bandeau d'état du scan (recherche en cours / relance)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+                ) {
+                    if (isScanning) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimensions.iconSizeSmall),
+                            strokeWidth = 2.dp,
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_thermal_printer_scanning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.settings_thermal_printer_scan_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onRescan) {
+                            Text(stringResource(R.string.settings_thermal_printer_rescan))
+                        }
+                    }
+                }
+
+                if (devices.isEmpty() && !isScanning) {
+                    Text(
+                        text = stringResource(R.string.settings_thermal_printer_dialog_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
                     devices.forEach { device ->
                         @Suppress("MissingPermission")
                         val deviceName = device.name ?: device.address

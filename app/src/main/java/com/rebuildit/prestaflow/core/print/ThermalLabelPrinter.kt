@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection
 import com.dantsu.escposprinter.EscPosPrinter
 import com.dantsu.escposprinter.textparser.PrinterTextParserImg
 import kotlinx.coroutines.Dispatchers
@@ -131,14 +130,19 @@ object ThermalLabelPrinter {
         val adapter = bluetoothManager.adapter
             ?: throw IllegalStateException("Bluetooth non supporté sur cet appareil")
 
-        @Suppress("MissingPermission") // Permission vérifiée en amont dans le composable Route
-        val device = adapter.bondedDevices.firstOrNull { it.address.equals(macAddress, ignoreCase = true) }
-            ?: throw IllegalArgumentException("Imprimante non trouvée parmi les appareils appairés : $macAddress")
+        // getRemoteDevice fonctionne pour n'importe quelle MAC valide, appairée ou non :
+        // pour une imprimante découverte (non appairée), Android déclenche l'appairage à la
+        // connexion RFCOMM — pas besoin d'appairer manuellement au préalable.
+        val device =
+            runCatching { adapter.getRemoteDevice(macAddress) }
+                .getOrElse { throw IllegalArgumentException("Adresse d'imprimante invalide : $macAddress", it) }
 
         @Suppress("MissingPermission")
         Timber.d("Connexion à l'imprimante thermique : ${device.name} ($macAddress)")
 
-        val connection = BluetoothConnection(device)
+        // Connexion robuste (fallback de sockets) — la BluetoothConnection de la lib échoue
+        // sur de nombreuses imprimantes bas coût avec « Unable to connect to bluetooth device ».
+        val connection = RobustBluetoothConnection(device, adapter)
         val printer = EscPosPrinter(connection, PRINTER_DPI, PRINTER_WIDTH_MM, PRINTER_CHARS_PER_LINE)
         try {
             val imageHex = PrinterTextParserImg.bitmapToHexadecimalString(printer, bitmap)
