@@ -57,6 +57,14 @@ object ThermalLabelPrinter {
         macAddress: String,
     ) {
         withContext(Dispatchers.IO) {
+            // DEBUG : si un job brut est déposé (test_job.bin), on le rejoue tel quel — sert à
+            // isoler génération vs transmission en renvoyant un job connu-bon. À retirer ensuite.
+            val replay = context.getExternalFilesDir(null)?.let { File(it, "test_job.bin") }?.takeIf { it.exists() }
+            if (replay != null) {
+                Timber.w("DEBUG : rejeu du job brut %s (%d octets)", replay.name, replay.length())
+                sendToPrinter(context, replay.readBytes(), macAddress)
+                return@withContext
+            }
             val bitmap = renderFirstPage(context, pdfBytes)
             try {
                 val tspl = buildTsplJob(bitmap)
@@ -124,6 +132,14 @@ object ThermalLabelPrinter {
             out.eraseColor(Color.WHITE)
             page.render(out, null, matrix, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
             page.close()
+            // DEBUG : dump du rendu pour inspection (à retirer après mise au point)
+            runCatching {
+                context.getExternalFilesDir(null)?.let { dir ->
+                    File(dir, "last_label_render.png").outputStream().use {
+                        out.compress(Bitmap.CompressFormat.PNG, 100, it)
+                    }
+                }
+            }
             return out
         } finally {
             renderer.close()
@@ -170,11 +186,17 @@ object ThermalLabelPrinter {
     /**
      * Construit le job TSPL complet (en-tête + BITMAP compressé zlib + PRINT) pour [bitmap].
      */
+    /**
+     * Hauteur (dots) d'une bande BITMAP. On découpe l'image en bandes empilées pour éviter qu'une
+     * seule commande trop volumineuse ne sature le tampon de l'imprimante (un envoi unique de
+     * ~110 Ko la figeait).
+     */
+    private const val BAND_HEIGHT = 256
+
     internal fun buildTsplJob(bitmap: Bitmap): ByteArray {
         val widthBytes = (bitmap.width + 7) / 8
         val heightDots = bitmap.height
         val mono = toMonochrome1Bpp(bitmap, widthBytes)
-        val compressed = deflateZlib(mono)
 
         val widthMm = (bitmap.width.toFloat() / DOTS_PER_MM).roundToInt()
         val heightMm = (heightDots.toFloat() / DOTS_PER_MM).roundToInt()
@@ -187,20 +209,32 @@ object ThermalLabelPrinter {
                     "DIRECTION 0,0\r\n" +
                     "SET GAP ON\r\n" +
                     "SPEED 4.0\r\n" +
-                    "DENSITY 5\r\n" +
+                    "DENSITY 8\r\n" +
                     "REFERENCE 0,0\r\n" +
-                    "CLS\r\n" +
-                    // mode 3 = bitmap compressé zlib ; suivi de la taille compressée puis des données
-                    "BITMAP 0,0,$widthBytes,$heightDots,3,${compressed.size},"
+                    "CLS\r\n"
             ).toByteArray(Charsets.US_ASCII),
         )
-        out.write(compressed)
-        out.write("\r\nPRINT 1,1\r\n".toByteArray(Charsets.US_ASCII))
+
+        // Bandes verticales en BITMAP **mode 0** (1bpp brut, NON compressé) — format TSPL standard.
+        // On évite le mode 3 (compressé) qui est un encodage propriétaire du firmware, non reproductible.
+        var y = 0
+        while (y < heightDots) {
+            val bandHeight = minOf(BAND_HEIGHT, heightDots - y)
+            val bandMono = mono.copyOfRange(y * widthBytes, (y + bandHeight) * widthBytes)
+            out.write("BITMAP 0,$y,$widthBytes,$bandHeight,0,".toByteArray(Charsets.US_ASCII))
+            out.write(bandMono)
+            out.write("\r\n".toByteArray(Charsets.US_ASCII))
+            y += bandHeight
+        }
+        out.write("PRINT 1,1\r\n".toByteArray(Charsets.US_ASCII))
         return out.toByteArray()
     }
 
     /**
-     * Convertit [bitmap] en données monochrome 1 bit/pixel, paddées à [widthBytes] octets/ligne.
+     * Convertit [bitmap] en données monochrome 1 bit/pixel, paddées à [widthBytes] octets/ligne,
+     * par **tramage Floyd-Steinberg** (diffusion d'erreur) — comme l'app constructeur. Évite les
+     * artefacts de rayures verticales qu'un seuillage brut produit sur une étiquette rasterisée.
+     *
      * Convention TSPL : bit **1 = blanc** (pas de point), bit **0 = noir** (point imprimé), MSB d'abord.
      */
     private fun toMonochrome1Bpp(
@@ -211,22 +245,35 @@ object ThermalLabelPrinter {
         val height = bitmap.height
         val pixels = IntArray(width * height)
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        // Buffer de luminance mutable (pour la diffusion d'erreur)
+        val gray = IntArray(width * height)
+        for (i in pixels.indices) {
+            val p = pixels[i]
+            gray[i] = (((p shr 16) and 0xFF) * 77 + ((p shr 8) and 0xFF) * 150 + (p and 0xFF) * 29) shr 8
+        }
+
         val out = ByteArray(widthBytes * height)
         for (y in 0 until height) {
             val rowOffset = y * widthBytes
+            val base = y * width
             for (x in 0 until width) {
-                val p = pixels[y * width + x]
-                val r = (p shr 16) and 0xFF
-                val g = (p shr 8) and 0xFF
-                val b = p and 0xFF
-                // Luminance perceptuelle (entiers) ; pixels transparents déjà fond blanc
-                val luma = (r * 77 + g * 150 + b * 29) shr 8
-                if (luma >= LUMINANCE_THRESHOLD) {
-                    // blanc → bit 1
+                val idx = base + x
+                val old = gray[idx].coerceIn(0, 255)
+                val white = old >= LUMINANCE_THRESHOLD
+                if (white) {
                     out[rowOffset + (x ushr 3)] =
                         (out[rowOffset + (x ushr 3)].toInt() or (0x80 ushr (x and 7))).toByte()
                 }
-                // noir → bit 0 (déjà 0 par défaut)
+                // Diffusion d'erreur Floyd-Steinberg (noir=0, blanc=255)
+                val err = old - (if (white) 255 else 0)
+                if (x + 1 < width) gray[idx + 1] += err * 7 / 16
+                if (y + 1 < height) {
+                    val next = idx + width
+                    if (x > 0) gray[next - 1] += err * 3 / 16
+                    gray[next] += err * 5 / 16
+                    if (x + 1 < width) gray[next + 1] += err / 16
+                }
             }
         }
         return out
@@ -275,5 +322,5 @@ object ThermalLabelPrinter {
     }
 
     /** Délai après écriture avant fermeture du socket (évite de tronquer l'envoi). */
-    private const val WRITE_DRAIN_MS = 600L
+    private const val WRITE_DRAIN_MS = 1200L
 }
