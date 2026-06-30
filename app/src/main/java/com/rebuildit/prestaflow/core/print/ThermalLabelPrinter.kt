@@ -130,9 +130,12 @@ object ThermalLabelPrinter {
         val adapter = bluetoothManager.adapter
             ?: throw IllegalStateException("Bluetooth non supporté sur cet appareil")
 
-        @Suppress("MissingPermission") // Permission vérifiée en amont dans le composable Route
-        val device = adapter.bondedDevices.firstOrNull { it.address.equals(macAddress, ignoreCase = true) }
-            ?: throw IllegalArgumentException("Imprimante non trouvée parmi les appareils appairés : $macAddress")
+        // getRemoteDevice fonctionne pour n'importe quelle MAC valide, appairée ou non :
+        // pour une imprimante découverte (non appairée), Android déclenche l'appairage à la
+        // connexion RFCOMM — pas besoin d'appairer manuellement au préalable.
+        val device =
+            runCatching { adapter.getRemoteDevice(macAddress) }
+                .getOrElse { throw IllegalArgumentException("Adresse d'imprimante invalide : $macAddress", it) }
 
         @Suppress("MissingPermission")
         Timber.d("Connexion à l'imprimante thermique : ${device.name} ($macAddress)")

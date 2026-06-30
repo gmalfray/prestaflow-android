@@ -212,10 +212,13 @@
     <string name="settings_thermal_printer_selected">Selected: %1$s (%2$s)</string>
     <string name="settings_thermal_printer_choose">Choose a printer</string>
     <string name="settings_thermal_printer_clear">Remove printer</string>
-    <string name="settings_thermal_printer_dialog_title">Paired Bluetooth devices</string>
-    <string name="settings_thermal_printer_dialog_empty">No paired Bluetooth device found.</string>
+    <string name="settings_thermal_printer_dialog_title">Bluetooth printers</string>
+    <string name="settings_thermal_printer_dialog_empty">No printer found. Make sure it is powered on and nearby, then rescan.</string>
     <string name="settings_thermal_printer_dialog_cancel">Cancel</string>
-    <string name="settings_thermal_printer_hint">Select the Munbyn or other ESC/POS thermal printer paired with this device.</string>
+    <string name="settings_thermal_printer_scanning">Searching for nearby printers…</string>
+    <string name="settings_thermal_printer_scan_hint">Paired and nearby detected devices.</string>
+    <string name="settings_thermal_printer_rescan">Rescan</string>
+    <string name="settings_thermal_printer_hint">Search for and select your Munbyn or other ESC/POS thermal printer (no prior pairing needed).</string>
 
     <!-- Dialogue de choix du mode d'impression -->
     <string name="print_mode_dialog_title">Print mode</string>
