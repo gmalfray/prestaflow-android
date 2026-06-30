@@ -219,7 +219,7 @@
 
     <!-- Dialogue de choix du mode d'impression -->
     <string name="print_mode_dialog_title">Print mode</string>
-    <string name="print_mode_two_up">Two per page (paper saving)</string>
+    <string name="print_mode_two_up">Two per page</string>
     <string name="print_mode_one_per_page">One per page</string>
     <string name="print_mode_cancel">Cancel</string>
 

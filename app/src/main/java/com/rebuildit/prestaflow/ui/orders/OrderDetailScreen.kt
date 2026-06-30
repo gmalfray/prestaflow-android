@@ -87,6 +87,8 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlinx.coroutines.launch
 
+// Route : câblage des callbacks d'impression (facture/bordereau/thermique) + gestion des permissions
+@Suppress("LongMethod")
 @Composable
 fun OrderDetailRoute(
     onBackClick: () -> Unit,
@@ -100,16 +102,67 @@ fun OrderDetailRoute(
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
     var pendingPrintOrder by remember { mutableStateOf<Order?>(null) }
+    // Commande en attente d'impression thermique, le temps d'obtenir les permissions Bluetooth
+    var pendingThermalOrder by remember { mutableStateOf<Order?>(null) }
 
-    // Permission Bluetooth (API 31+) — demandée juste avant l'impression thermique
+    // Lance l'impression thermique du bordereau (permissions déjà vérifiées en amont)
+    val startThermalPrint: (Order, String) -> Unit = { order, macAddress ->
+        viewModel.fetchShippingLabelPdf { pdfBytes ->
+            viewModel.reportFeedback(message = context.getString(R.string.order_detail_thermal_connecting))
+            scope.launch {
+                viewModel.printOnThermalPrinter(
+                    context = context,
+                    pdfBytes = pdfBytes,
+                    macAddress = macAddress,
+                    reference = order.reference,
+                )
+            }
+        }
+    }
+
+    // Permissions Bluetooth (API 31+) — la lib ESC/POS appelle cancelDiscovery() qui exige
+    // BLUETOOTH_SCAN en plus de BLUETOOTH_CONNECT. On les demande ensemble, puis on relance
+    // l'impression de la commande mise en attente une fois tout accordé.
     val btPermissionLauncher =
         rememberLauncherForActivityResult(
-            contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
-        ) { granted ->
-            if (!granted) {
+            contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+        ) { results ->
+            val order = pendingThermalOrder
+            pendingThermalOrder = null
+            val allGranted = BT_RUNTIME_PERMISSIONS.all { results[it] == true }
+            val device = savedDevice
+            if (allGranted && order != null && device != null) {
+                startThermalPrint(order, device.address)
+            } else if (!allGranted) {
                 viewModel.reportFeedback(error = context.getString(R.string.order_detail_thermal_bt_permission_denied))
             }
         }
+
+    // Impression du bordereau : route automatiquement vers l'imprimante thermique si une est
+    // configurée, sinon vers l'impression système (PrintManager / PDF).
+    val printShippingLabel: (Order) -> Unit = { order ->
+        val device = savedDevice
+        if (device == null) {
+            viewModel.fetchShippingLabelPdf { pdfBytes ->
+                InvoicePrinter.print(
+                    context = context,
+                    pdfBytesList = listOf(pdfBytes),
+                    jobName = "Bordereau ${order.reference}",
+                    mode = PrintMode.ONE_PER_PAGE,
+                )
+            }
+        } else {
+            when {
+                !isBluetooth(context) ->
+                    viewModel.reportFeedback(error = context.getString(R.string.order_detail_thermal_bt_disabled))
+                !hasBtPermissions(context) -> {
+                    pendingThermalOrder = order
+                    btPermissionLauncher.launch(BT_RUNTIME_PERMISSIONS)
+                }
+                else -> startThermalPrint(order, device.address)
+            }
+        }
+    }
 
     if (pendingPrintOrder != null) {
         val order = pendingPrintOrder!!
@@ -138,47 +191,26 @@ fun OrderDetailRoute(
         onUpdateTracking = viewModel::updateTracking,
         onConsumeFeedback = viewModel::consumeActionFeedback,
         onPrintInvoice = { order -> pendingPrintOrder = order },
-        onPrintShippingLabel = { order ->
-            viewModel.fetchShippingLabelPdf { pdfBytes ->
-                InvoicePrinter.print(
-                    context = context,
-                    pdfBytesList = listOf(pdfBytes),
-                    jobName = "Bordereau ${order.reference}",
-                    mode = PrintMode.ONE_PER_PAGE,
-                )
-            }
-        },
+        onPrintShippingLabel = printShippingLabel,
         onShareShippingLabel = { order ->
             viewModel.fetchShippingLabelPdf { pdfBytes ->
                 shareShippingLabelPdf(context, pdfBytes, order.reference)
             }
         },
-        onPrintThermalLabel = { order ->
-            val device = savedDevice
-            when {
-                device == null ->
-                    viewModel.reportFeedback(error = context.getString(R.string.order_detail_thermal_no_printer))
-                !isBluetooth(context) ->
-                    viewModel.reportFeedback(error = context.getString(R.string.order_detail_thermal_bt_disabled))
-                !hasBtConnectPermission(context) ->
-                    btPermissionLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT)
-                else ->
-                    viewModel.fetchShippingLabelPdf { pdfBytes ->
-                        viewModel.reportFeedback(message = context.getString(R.string.order_detail_thermal_connecting))
-                        scope.launch {
-                            viewModel.printOnThermalPrinter(
-                                context = context,
-                                pdfBytes = pdfBytes,
-                                macAddress = device.address,
-                                reference = order.reference,
-                            )
-                        }
-                    }
-            }
-        },
         onGenerateLabel = viewModel::onGenerateLabel,
     )
 }
+
+/**
+ * Permissions Bluetooth runtime requises (API 31+) pour se connecter et imprimer sur
+ * l'imprimante thermique. [android.Manifest.permission.BLUETOOTH_SCAN] est nécessaire car
+ * la bibliothèque ESC/POS appelle `BluetoothAdapter.cancelDiscovery()` lors de la connexion.
+ */
+private val BT_RUNTIME_PERMISSIONS =
+    arrayOf(
+        android.Manifest.permission.BLUETOOTH_CONNECT,
+        android.Manifest.permission.BLUETOOTH_SCAN,
+    )
 
 /**
  * Écrit les octets PDF dans le répertoire cache, puis déclenche un Intent de partage
@@ -215,13 +247,14 @@ private fun isBluetooth(context: android.content.Context): Boolean {
 }
 
 /**
- * Retourne vrai si la permission [android.Manifest.permission.BLUETOOTH_CONNECT] est accordée.
- * Sur API < 31, elle n'existe pas — retourne toujours vrai.
+ * Retourne vrai si toutes les permissions Bluetooth runtime ([BT_RUNTIME_PERMISSIONS]) sont
+ * accordées. Sur API < 31, ces permissions n'existent pas — retourne toujours vrai.
  */
-private fun hasBtConnectPermission(context: android.content.Context): Boolean {
+private fun hasBtPermissions(context: android.content.Context): Boolean {
     if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) return true
-    return context.checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) ==
-        android.content.pm.PackageManager.PERMISSION_GRANTED
+    return BT_RUNTIME_PERMISSIONS.all {
+        context.checkSelfPermission(it) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -239,7 +272,6 @@ fun OrderDetailScreen(
     onPrintInvoice: (Order) -> Unit = {},
     onPrintShippingLabel: (Order) -> Unit = {},
     onShareShippingLabel: (Order) -> Unit = {},
-    onPrintThermalLabel: (Order) -> Unit = {},
     onGenerateLabel: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -321,7 +353,6 @@ fun OrderDetailScreen(
                         onPrintInvoice = { onPrintInvoice(state.order) },
                         onPrintShippingLabel = { onPrintShippingLabel(state.order) },
                         onShareShippingLabel = { onShareShippingLabel(state.order) },
-                        onPrintThermalLabel = { onPrintThermalLabel(state.order) },
                         onGenerateLabel = onGenerateLabel,
                     )
                 }
@@ -343,7 +374,6 @@ fun OrderDetailContent(
     onPrintInvoice: () -> Unit = {},
     onPrintShippingLabel: () -> Unit = {},
     onShareShippingLabel: () -> Unit = {},
-    onPrintThermalLabel: () -> Unit = {},
     onGenerateLabel: () -> Unit = {},
 ) {
     var showStatusDialog by remember { mutableStateOf(false) }
@@ -607,7 +637,8 @@ fun OrderDetailContent(
 
         // Boutons bordereau — visibles uniquement si has_shipping_label
         if (order.hasShippingLabel) {
-            // Impression système (PrintManager / PDF)
+            // Impression du bordereau : route vers l'imprimante thermique si configurée,
+            // sinon vers l'impression système (PrintManager / PDF). Décision dans la Route.
             OutlinedButton(
                 onClick = onPrintShippingLabel,
                 enabled = !actionInProgress,
@@ -642,33 +673,13 @@ fun OrderDetailContent(
                 Spacer(modifier = Modifier.size(Dimensions.spacingS))
                 Text(stringResource(R.string.order_detail_share_shipping_label))
             }
-
-            // Impression directe via imprimante thermique Bluetooth (ESC/POS raster)
-            val thermalDesc = stringResource(R.string.order_detail_print_thermal_content_description)
-            OutlinedButton(
-                onClick = onPrintThermalLabel,
-                enabled = !actionInProgress,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .semantics { contentDescription = thermalDesc },
-                shape = RoundedCornerShape(50),
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Print,
-                    contentDescription = null,
-                    modifier = Modifier.size(Dimensions.iconSizeSmall),
-                )
-                Spacer(modifier = Modifier.size(Dimensions.spacingS))
-                Text(stringResource(R.string.order_detail_print_thermal))
-            }
         }
     }
 }
 
 /**
  * Dialogue Material3 permettant de choisir le mode d'impression avant de lancer le travail.
- * Deux options : 2-up paysage (économie de papier) ou 1 par page portrait.
+ * Deux options : deux par page (paysage) ou une par page (portrait).
  */
 @Composable
 fun PrintModeDialog(
