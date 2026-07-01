@@ -94,9 +94,14 @@ fun rememberBluetoothDeviceScan(context: Context): BluetoothScanState {
         ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         onDispose {
             runCatching { context.unregisterReceiver(receiver) }
+            // Tout le bloc Bluetooth est gardé : le getter `isDiscovering` lui-même lève une
+            // SecurityException sur API 31+ sans BLUETOOTH_SCAN (crash à la disposition de l'écran
+            // quand la permission n'est pas accordée). runCatching englobe donc getter + cancel.
             @SuppressLint("MissingPermission")
-            if (adapter?.isDiscovering == true) {
-                runCatching { adapter.cancelDiscovery() }
+            runCatching {
+                if (adapter?.isDiscovering == true) {
+                    adapter.cancelDiscovery()
+                }
             }
         }
     }
