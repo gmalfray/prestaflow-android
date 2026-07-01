@@ -95,12 +95,14 @@ fun SettingsRoute(
     shopsViewModel: ShopsViewModel = hiltViewModel(),
     dashboardPrefsViewModel: DashboardPrefsViewModel = hiltViewModel(),
     thermalPrinterViewModel: ThermalPrinterViewModel = hiltViewModel(),
+    swipePrefsViewModel: SwipePrefsViewModel = hiltViewModel(),
 ) {
     val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     val addState by shopsViewModel.addState.collectAsStateWithLifecycle()
     val defaultPeriod by dashboardPrefsViewModel.defaultPeriod.collectAsStateWithLifecycle()
     val savedPrinterDevice by thermalPrinterViewModel.savedDevice.collectAsStateWithLifecycle()
+    val swipePrefsState by swipePrefsViewModel.uiState.collectAsStateWithLifecycle()
     SettingsScreen(
         settings = themeState.settings,
         onSkinSelected = themeViewModel::selectSkin,
@@ -122,10 +124,15 @@ fun SettingsRoute(
         savedPrinterDevice = savedPrinterDevice,
         onSelectPrinterDevice = thermalPrinterViewModel::selectDevice,
         onClearPrinterDevice = thermalPrinterViewModel::clearDevice,
+        swipePrefsState = swipePrefsState,
+        onSwipeEnabledChanged = swipePrefsViewModel::setSwipeEnabled,
+        onSwipeSourceStatusSelected = swipePrefsViewModel::setSwipeSourceStatusId,
+        onSwipeLeftStatusSelected = swipePrefsViewModel::setSwipeLeftTargetStatusId,
+        onSwipeRightStatusSelected = swipePrefsViewModel::setSwipeRightTargetStatusId,
     )
 }
 
-@Suppress("LongMethod", "LongParameterList") // Écran Réglages : thème + boutiques + notifs + logout + imprimante
+@Suppress("LongMethod", "LongParameterList") // Écran Réglages : thème + boutiques + notifs + logout + imprimante + swipe
 @Composable
 fun SettingsScreen(
     settings: ThemeSettings,
@@ -148,8 +155,16 @@ fun SettingsScreen(
     savedPrinterDevice: SavedPrinterDevice? = null,
     onSelectPrinterDevice: (SavedPrinterDevice) -> Unit = {},
     onClearPrinterDevice: () -> Unit = {},
+    swipePrefsState: SwipePrefsUiState = SwipePrefsUiState(),
+    onSwipeEnabledChanged: (Boolean) -> Unit = {},
+    onSwipeSourceStatusSelected: (Int?) -> Unit = {},
+    onSwipeLeftStatusSelected: (Int?) -> Unit = {},
+    onSwipeRightStatusSelected: (Int?) -> Unit = {},
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
+    /** ID de la boutique dont la suppression est en attente de confirmation. */
+    var shopToRemoveId by remember { mutableStateOf<String?>(null) }
+    val shopToRemove = shopToRemoveId?.let { id -> connections.firstOrNull { it.id == id } }
 
     if (addState.visible) {
         AddShopDialog(
@@ -187,6 +202,39 @@ fun SettingsScreen(
         )
     }
 
+    // P1-b — Confirmation suppression boutique
+    if (shopToRemove != null) {
+        AlertDialog(
+            onDismissRequest = { shopToRemoveId = null },
+            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+            title = { Text(stringResource(R.string.settings_shops_remove_confirm_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.settings_shops_remove_confirm_message,
+                        shopToRemove.label.ifBlank { shopToRemove.shopUrl },
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onRemoveShop(shopToRemove.id)
+                    shopToRemoveId = null
+                }) {
+                    Text(
+                        stringResource(R.string.settings_shops_remove_confirm_action),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { shopToRemoveId = null }) {
+                    Text(stringResource(R.string.settings_logout_cancel))
+                }
+            },
+        )
+    }
+
     Column(
         modifier =
             Modifier
@@ -202,7 +250,7 @@ fun SettingsScreen(
                 ShopRow(
                     connection = connection,
                     onSwitch = { onSwitchShop(connection.id) },
-                    onRemove = { onRemoveShop(connection.id) },
+                    onRemove = { shopToRemoveId = connection.id },
                 )
             }
             OutlinedButton(
@@ -258,19 +306,14 @@ fun SettingsScreen(
             )
         }
 
-        // Section À PROPOS
-        SettingsSection(label = stringResource(R.string.settings_about_label)) {
-            AboutRow(
-                label = stringResource(R.string.settings_about_app),
-                value = stringResource(R.string.app_name),
-            )
-            AboutRow(
-                label = stringResource(R.string.settings_about_version),
-                value = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-            )
-            AboutRow(
-                label = stringResource(R.string.settings_about_environment),
-                value = BuildConfig.ENVIRONMENT_NAME,
+        // Section SWIPE COMMANDES — config source + cibles gauche/droite
+        SettingsSection(label = stringResource(R.string.settings_swipe_label)) {
+            SwipeCommandsSection(
+                state = swipePrefsState,
+                onSwipeEnabledChanged = onSwipeEnabledChanged,
+                onSwipeSourceStatusSelected = onSwipeSourceStatusSelected,
+                onSwipeLeftStatusSelected = onSwipeLeftStatusSelected,
+                onSwipeRightStatusSelected = onSwipeRightStatusSelected,
             )
         }
 
@@ -306,6 +349,22 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.titleSmall,
                 )
             }
+        }
+
+        // Section À PROPOS — en pied de page (convention Android)
+        SettingsSection(label = stringResource(R.string.settings_about_label)) {
+            AboutRow(
+                label = stringResource(R.string.settings_about_app),
+                value = stringResource(R.string.app_name),
+            )
+            AboutRow(
+                label = stringResource(R.string.settings_about_version),
+                value = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            )
+            AboutRow(
+                label = stringResource(R.string.settings_about_environment),
+                value = BuildConfig.ENVIRONMENT_NAME,
+            )
         }
 
         Spacer(modifier = Modifier.height(Dimensions.spacingM))
@@ -451,7 +510,14 @@ private fun AddShopDialog(
         },
         confirmButton = {
             TextButton(onClick = onSubmit, enabled = !state.loading) {
-                Text(stringResource(R.string.auth_action_connect))
+                if (state.loading) {
+                    CircularProgressIndicator(
+                        modifier = androidx.compose.ui.Modifier.size(Dimensions.iconSizeSmall),
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Text(stringResource(R.string.auth_action_connect))
+                }
             }
         },
         dismissButton = {
@@ -698,6 +764,7 @@ private fun ThermalPrinterSection(
     onClear: () -> Unit,
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    var showBtPermissionDenied by remember { mutableStateOf(false) }
     // Découverte Bluetooth (appairés + scan), à la manière de l'app constructeur :
     // pas besoin d'appairer l'imprimante au préalable dans les réglages Android.
     val scan = rememberBluetoothDeviceScan(context)
@@ -708,11 +775,13 @@ private fun ThermalPrinterSection(
             contract = ActivityResultContracts.RequestMultiplePermissions(),
         ) { results ->
             if (BT_SCAN_PERMISSIONS.all { results[it] == true }) {
+                showBtPermissionDenied = false
                 scan.start()
                 showDialog = true
+            } else {
+                // P1-c : afficher un message si la permission est refusée
+                showBtPermissionDenied = true
             }
-            // Si refusée : showDialog reste false, l'utilisateur doit accorder la permission
-            // depuis les paramètres système (comportement standard Android 12+)
         }
 
     // Texte descriptif de l'imprimante sélectionnée
@@ -740,12 +809,23 @@ private fun ThermalPrinterSection(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 
+    // P1-c : feedback permission refusée
+    if (showBtPermissionDenied) {
+        Text(
+            text = stringResource(R.string.settings_thermal_printer_bt_permission_denied),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(top = Dimensions.spacingXs),
+        )
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
     ) {
         OutlinedButton(
             onClick = {
+                showBtPermissionDenied = false
                 if (hasBtScanPermissions(context)) {
                     scan.start()
                     showDialog = true
@@ -899,6 +979,150 @@ private fun BluetoothDevicePickerDialog(
             }
         },
     )
+}
+
+// ─── Section swipe commandes ─────────────────────────────────────────────────
+
+/**
+ * Section de configuration du swipe dans les Réglages.
+ *
+ * - Switch « Activer le swipe »
+ * - 3 dropdowns (source, gauche, droite) peuplés depuis [SwipePrefsUiState.availableStatuses].
+ * - Quand le switch est off, les dropdowns sont désactivés.
+ * - Si la liste des statuts est vide (chargement ou erreur), les dropdowns affichent un état neutre.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongParameterList")
+@Composable
+private fun SwipeCommandsSection(
+    state: SwipePrefsUiState,
+    onSwipeEnabledChanged: (Boolean) -> Unit,
+    onSwipeSourceStatusSelected: (Int?) -> Unit,
+    onSwipeLeftStatusSelected: (Int?) -> Unit,
+    onSwipeRightStatusSelected: (Int?) -> Unit,
+) {
+    // Ligne Switch
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = stringResource(R.string.settings_swipe_enabled),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        androidx.compose.material3.Switch(
+            checked = state.swipeEnabled,
+            onCheckedChange = onSwipeEnabledChanged,
+        )
+    }
+
+    // Les 3 dropdowns ne sont actifs que si le swipe est activé
+    val enabled = state.swipeEnabled
+    val statuses = state.availableStatuses
+
+    SwipeStatusDropdown(
+        label = stringResource(R.string.settings_swipe_source_status),
+        selectedId = state.swipeSourceStatusId,
+        statuses = statuses,
+        enabled = enabled,
+        onSelected = onSwipeSourceStatusSelected,
+    )
+    SwipeStatusDropdown(
+        label = stringResource(R.string.settings_swipe_left_status),
+        selectedId = state.swipeLeftTargetStatusId,
+        statuses = statuses,
+        enabled = enabled,
+        onSelected = onSwipeLeftStatusSelected,
+    )
+    SwipeStatusDropdown(
+        label = stringResource(R.string.settings_swipe_right_status),
+        selectedId = state.swipeRightTargetStatusId,
+        statuses = statuses,
+        enabled = enabled,
+        onSelected = onSwipeRightStatusSelected,
+    )
+}
+
+/**
+ * Dropdown Material 3 pour sélectionner un statut (ou laisser le défaut par nom).
+ *
+ * L'option [null] représente « Défaut (par nom) » — comportement historique.
+ * Si [statuses] est vide, affiche un état neutre (chargement).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeStatusDropdown(
+    label: String,
+    selectedId: Int?,
+    statuses: List<com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter>,
+    enabled: Boolean,
+    onSelected: (Int?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedName = if (selectedId == null || statuses.isEmpty()) {
+        stringResource(R.string.settings_swipe_status_default)
+    } else {
+        statuses.firstOrNull { it.id == selectedId }?.name
+            ?: stringResource(R.string.settings_swipe_status_default)
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded && enabled && statuses.isNotEmpty(),
+        onExpandedChange = { if (enabled && statuses.isNotEmpty()) expanded = it },
+    ) {
+        OutlinedTextField(
+            value = if (statuses.isEmpty() && enabled) stringResource(R.string.settings_swipe_no_statuses) else selectedName,
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            enabled = enabled && statuses.isNotEmpty(),
+            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+            trailingIcon = {
+                if (statuses.isNotEmpty()) {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded && enabled)
+                }
+            },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth(),
+        )
+        if (statuses.isNotEmpty()) {
+            ExposedDropdownMenu(
+                expanded = expanded && enabled,
+                onDismissRequest = { expanded = false },
+            ) {
+                // Option « Défaut »
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            stringResource(R.string.settings_swipe_status_default),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    },
+                    onClick = {
+                        onSelected(null)
+                        expanded = false
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                )
+                statuses.forEach { status ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(status.name, style = MaterialTheme.typography.bodyMedium)
+                        },
+                        onClick = {
+                            onSelected(status.id)
+                            expanded = false
+                        },
+                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                    )
+                }
+            }
+        }
+    }
 }
 
 // ─── Previews ─────────────────────────────────────────────────────────────────

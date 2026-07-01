@@ -1,6 +1,7 @@
 package com.rebuildit.prestaflow.ui.orders
 
 import app.cash.turbine.test
+import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderShipping
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
@@ -292,7 +293,10 @@ class OrderDetailViewModelTest {
 
             val error = vm.actionState.value.error
             assertNotNull("Une erreur doit être émise", error)
-            assertTrue("Le message doit mentionner Colissimo", error!!.contains("Colissimo"))
+            assertTrue(
+                "Le message doit mentionner Colissimo",
+                (error as UiText.Dynamic).value.contains("Colissimo"),
+            )
             assertEquals(null, vm.actionState.value.message)
         }
 
@@ -310,7 +314,10 @@ class OrderDetailViewModelTest {
 
             val error = vm.actionState.value.error
             assertNotNull("Une erreur doit être émise", error)
-            assertTrue("Le message doit contenir le détail transporteur", error!!.contains("Compte Colissimo inactif"))
+            assertTrue(
+                "Le message doit contenir le détail transporteur",
+                (error as UiText.Dynamic).value.contains("Compte Colissimo inactif"),
+            )
         }
 
     @Test

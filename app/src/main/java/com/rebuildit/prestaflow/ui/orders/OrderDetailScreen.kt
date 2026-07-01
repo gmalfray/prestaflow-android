@@ -108,7 +108,7 @@ fun OrderDetailRoute(
     // Lance l'impression thermique du bordereau (permissions déjà vérifiées en amont)
     val startThermalPrint: (Order, String) -> Unit = { order, macAddress ->
         viewModel.fetchShippingLabelPdf { pdfBytes ->
-            viewModel.reportFeedback(message = context.getString(R.string.order_detail_thermal_connecting))
+            viewModel.reportFeedback(message = com.rebuildit.prestaflow.core.ui.UiText.Dynamic(context.getString(R.string.order_detail_thermal_connecting)))
             scope.launch {
                 viewModel.printOnThermalPrinter(
                     context = context,
@@ -134,7 +134,7 @@ fun OrderDetailRoute(
             if (allGranted && order != null && device != null) {
                 startThermalPrint(order, device.address)
             } else if (!allGranted) {
-                viewModel.reportFeedback(error = context.getString(R.string.order_detail_thermal_bt_permission_denied))
+                viewModel.reportFeedback(error = com.rebuildit.prestaflow.core.ui.UiText.FromResources(R.string.order_detail_thermal_bt_permission_denied))
             }
         }
 
@@ -154,7 +154,7 @@ fun OrderDetailRoute(
         } else {
             when {
                 !isBluetooth(context) ->
-                    viewModel.reportFeedback(error = context.getString(R.string.order_detail_thermal_bt_disabled))
+                    viewModel.reportFeedback(error = com.rebuildit.prestaflow.core.ui.UiText.Dynamic(context.getString(R.string.order_detail_thermal_bt_disabled)))
                 !hasBtPermissions(context) -> {
                     pendingThermalOrder = order
                     btPermissionLauncher.launch(BT_RUNTIME_PERMISSIONS)
@@ -276,11 +276,12 @@ fun OrderDetailScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val backDesc = stringResource(R.string.content_description_back)
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(actionState.message, actionState.error) {
         val feedback = actionState.error ?: actionState.message
         if (feedback != null) {
-            snackbarHostState.showSnackbar(feedback)
+            snackbarHostState.showSnackbar(feedback.resolve(context))
             onConsumeFeedback()
         }
     }

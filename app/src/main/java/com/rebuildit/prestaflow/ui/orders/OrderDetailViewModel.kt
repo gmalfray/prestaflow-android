@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.print.ThermalLabelPrinter
+import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
@@ -62,7 +64,7 @@ class OrderDetailViewModel
                     // pour diagnostiquer (ex. endpoint détail du connecteur indisponible).
                     Timber.w(error, "Échec du chargement du détail commande #%d", orderId)
                     _actionState.update {
-                        it.copy(error = "Détail indisponible : affichage des données en cache")
+                        it.copy(error = UiText.Dynamic("Détail indisponible : affichage des données en cache"))
                     }
                 }
             }
@@ -88,9 +90,16 @@ class OrderDetailViewModel
                 runCatching {
                     ordersRepository.updateOrderStatus(orderId, trimmed)
                 }.onSuccess {
-                    _actionState.update { state -> state.copy(inProgress = false, message = "Status updated") }
+                    _actionState.update { state ->
+                        state.copy(inProgress = false, message = UiText.FromResources(R.string.order_detail_status_updated))
+                    }
                 }.onFailure { error ->
-                    _actionState.update { state -> state.copy(inProgress = false, error = error.message ?: "Update failed") }
+                    _actionState.update { state ->
+                        state.copy(
+                            inProgress = false,
+                            error = UiText.Dynamic(error.message ?: "Update failed"),
+                        )
+                    }
                 }
             }
         }
@@ -103,9 +112,16 @@ class OrderDetailViewModel
                 runCatching {
                     ordersRepository.updateOrderShipping(orderId, trimmed)
                 }.onSuccess {
-                    _actionState.update { state -> state.copy(inProgress = false, message = "Tracking updated") }
+                    _actionState.update { state ->
+                        state.copy(inProgress = false, message = UiText.FromResources(R.string.order_detail_tracking_updated))
+                    }
                 }.onFailure { error ->
-                    _actionState.update { state -> state.copy(inProgress = false, error = error.message ?: "Update failed") }
+                    _actionState.update { state ->
+                        state.copy(
+                            inProgress = false,
+                            error = UiText.Dynamic(error.message ?: "Update failed"),
+                        )
+                    }
                 }
             }
         }
@@ -119,8 +135,8 @@ class OrderDetailViewModel
          * (ex. résultat d'une impression thermique).
          */
         fun reportFeedback(
-            message: String? = null,
-            error: String? = null,
+            message: UiText? = null,
+            error: UiText? = null,
         ) {
             _actionState.update { it.copy(message = message, error = error) }
         }
@@ -148,13 +164,15 @@ class OrderDetailViewModel
                 }
             }.onSuccess {
                 Timber.i("Impression thermique réussie — commande %s", reference)
-                _actionState.update { it.copy(inProgress = false, message = "Bordereau imprimé avec succès.") }
+                _actionState.update {
+                    it.copy(inProgress = false, message = UiText.FromResources(R.string.order_detail_thermal_print_success))
+                }
             }.onFailure { error ->
                 Timber.e(error, "Impression thermique échouée — commande %s", reference)
                 _actionState.update {
                     it.copy(
                         inProgress = false,
-                        error = "Impression thermique échouée : ${error.message ?: "erreur inconnue"}",
+                        error = UiText.Dynamic("Impression thermique échouée : ${error.message ?: "erreur inconnue"}"),
                     )
                 }
             }
@@ -174,10 +192,14 @@ class OrderDetailViewModel
                     if (bytes != null) {
                         onReady(bytes)
                     } else {
-                        _actionState.update { it.copy(error = "Cette commande n'a pas de facture disponible.") }
+                        _actionState.update {
+                            it.copy(error = UiText.FromResources(R.string.order_detail_invoice_unavailable))
+                        }
                     }
                 }.onFailure { error ->
-                    _actionState.update { it.copy(inProgress = false, error = error.message ?: "Échec du téléchargement de la facture") }
+                    _actionState.update {
+                        it.copy(inProgress = false, error = UiText.Dynamic(error.message ?: "Échec du téléchargement de la facture"))
+                    }
                 }
             }
         }
@@ -196,10 +218,14 @@ class OrderDetailViewModel
                     if (bytes != null) {
                         onReady(bytes)
                     } else {
-                        _actionState.update { it.copy(error = "Aucun bordereau disponible pour cette commande.") }
+                        _actionState.update {
+                            it.copy(error = UiText.FromResources(R.string.order_detail_shipping_label_unavailable))
+                        }
                     }
                 }.onFailure { error ->
-                    _actionState.update { it.copy(inProgress = false, error = error.message ?: "Échec du téléchargement du bordereau") }
+                    _actionState.update {
+                        it.copy(inProgress = false, error = UiText.Dynamic(error.message ?: "Échec du téléchargement du bordereau"))
+                    }
                 }
             }
         }
@@ -216,13 +242,15 @@ class OrderDetailViewModel
                 runCatching {
                     ordersRepository.generateShippingLabel(orderId)
                 }.onSuccess {
-                    _actionState.update { it.copy(inProgress = false, isGeneratingLabel = false, message = "Étiquette générée avec succès") }
+                    _actionState.update {
+                        it.copy(inProgress = false, isGeneratingLabel = false, message = UiText.FromResources(R.string.order_detail_label_generated))
+                    }
                 }.onFailure { error ->
                     _actionState.update {
                         it.copy(
                             inProgress = false,
                             isGeneratingLabel = false,
-                            error = error.message ?: "Échec de la génération de l'étiquette",
+                            error = UiText.Dynamic(error.message ?: "Échec de la génération de l'étiquette"),
                         )
                     }
                 }
@@ -234,8 +262,8 @@ data class OrderActionState(
     val inProgress: Boolean = false,
     /** Vrai uniquement pendant l'appel à generateShippingLabel (spinner dans le bouton). */
     val isGeneratingLabel: Boolean = false,
-    val message: String? = null,
-    val error: String? = null,
+    val message: UiText? = null,
+    val error: UiText? = null,
 )
 
 sealed interface OrderDetailUiState {

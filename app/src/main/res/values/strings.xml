@@ -275,6 +275,32 @@
     <string name="orders_swipe_left_label">In preparation</string>
     <string name="orders_swipe_right_label">Done</string>
 
+    <!-- OrderDetail — messages d'action (externalisés pour i18n) -->
+    <string name="order_detail_status_updated">Status updated</string>
+    <string name="order_detail_update_failed">Update failed</string>
+    <string name="order_detail_tracking_updated">Tracking updated</string>
+    <string name="order_detail_invoice_unavailable">This order has no invoice available.</string>
+    <string name="order_detail_shipping_label_unavailable">No shipping label available for this order.</string>
+    <string name="order_detail_label_generated">Label generated successfully</string>
+    <string name="order_detail_thermal_print_success">Label printed on thermal printer.</string>
+
+    <!-- Settings — confirmation suppression boutique -->
+    <string name="settings_shops_remove_confirm_title">Remove shop?</string>
+    <string name="settings_shops_remove_confirm_message">This will log you out of the shop %1$s.</string>
+    <string name="settings_shops_remove_confirm_action">Remove</string>
+
+    <!-- Settings — permission Bluetooth refusée -->
+    <string name="settings_thermal_printer_bt_permission_denied">Bluetooth permission required to choose a printer. Please grant it in system settings.</string>
+
+    <!-- Settings — section Swipe commandes -->
+    <string name="settings_swipe_label">Order Swipe</string>
+    <string name="settings_swipe_enabled">Enable swipe</string>
+    <string name="settings_swipe_source_status">Swipe active on</string>
+    <string name="settings_swipe_left_status">Swipe ← (left)</string>
+    <string name="settings_swipe_right_status">Swipe → (right)</string>
+    <string name="settings_swipe_status_default">Default (by name)</string>
+    <string name="settings_swipe_no_statuses">Loading statuses…</string>
+
     <!-- Filtres stock produits -->
     <string name="products_filter_all">All</string>
     <string name="products_filter_in_stock">In stock</string>

@@ -2,6 +2,8 @@ package com.rebuildit.prestaflow.ui.orders
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rebuildit.prestaflow.R
+import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -98,9 +100,15 @@ class OrderDetailPaneViewModel
                 runCatching {
                     ordersRepository.updateOrderStatus(id, trimmed)
                 }.onSuccess {
-                    _actionState.value = _actionState.value.copy(inProgress = false, message = "Status updated")
+                    _actionState.value = _actionState.value.copy(
+                        inProgress = false,
+                        message = UiText.FromResources(R.string.order_detail_status_updated),
+                    )
                 }.onFailure { error ->
-                    _actionState.value = _actionState.value.copy(inProgress = false, error = error.message ?: "Update failed")
+                    _actionState.value = _actionState.value.copy(
+                        inProgress = false,
+                        error = UiText.Dynamic(error.message ?: "Update failed"),
+                    )
                 }
             }
         }
@@ -114,9 +122,15 @@ class OrderDetailPaneViewModel
                 runCatching {
                     ordersRepository.updateOrderShipping(id, trimmed)
                 }.onSuccess {
-                    _actionState.value = _actionState.value.copy(inProgress = false, message = "Tracking updated")
+                    _actionState.value = _actionState.value.copy(
+                        inProgress = false,
+                        message = UiText.FromResources(R.string.order_detail_tracking_updated),
+                    )
                 }.onFailure { error ->
-                    _actionState.value = _actionState.value.copy(inProgress = false, error = error.message ?: "Update failed")
+                    _actionState.value = _actionState.value.copy(
+                        inProgress = false,
+                        error = UiText.Dynamic(error.message ?: "Update failed"),
+                    )
                 }
             }
         }
