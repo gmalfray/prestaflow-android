@@ -17,6 +17,16 @@ data class Order(
     val hasShippingLabel: Boolean = false,
     val items: List<OrderItem> = emptyList(),
     val shipping: OrderShipping? = null,
+    /**
+     * Couleur hexadécimale du statut (`#RRGGBB`) retournée par le connecteur v1.9+.
+     * Null si le connecteur n'est pas encore déployé (fallback depuis [availableStatuses]).
+     */
+    val statusColor: String? = null,
+    /**
+     * ID numérique du statut PrestaShop — retourné par l'endpoint liste v1.9+.
+     * 0 si absent (ancien connecteur).
+     */
+    val currentStateId: Int = 0,
 )
 
 @Serializable

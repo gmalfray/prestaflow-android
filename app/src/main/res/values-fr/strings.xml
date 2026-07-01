@@ -251,6 +251,24 @@
     <string name="orders_filter_empty">Aucune commande pour ce statut.</string>
     <string name="orders_filter_reset">Réinitialiser les filtres</string>
 
+    <!-- Tri commandes -->
+    <string name="orders_sort_label">Trier les commandes</string>
+    <string name="orders_sort_date_desc">Date (récent en premier)</string>
+    <string name="orders_sort_date_asc">Date (ancien en premier)</string>
+    <string name="orders_sort_amount_desc">Montant (décroissant)</string>
+    <string name="orders_sort_amount_asc">Montant (croissant)</string>
+    <string name="orders_sort_status">Statut</string>
+    <string name="orders_sort_reference">Référence</string>
+
+    <!-- Pagination commandes -->
+    <string name="orders_load_more">Charger plus</string>
+
+    <!-- Swipe statut commande -->
+    <string name="orders_swipe_pending">Commande %1$s → %2$s</string>
+    <string name="orders_swipe_undo">Annuler</string>
+    <string name="orders_swipe_left_label">En préparation</string>
+    <string name="orders_swipe_right_label">Terminé</string>
+
     <!-- Filtres stock produits -->
     <string name="products_filter_all">Tous</string>
     <string name="products_filter_in_stock">En stock</string>

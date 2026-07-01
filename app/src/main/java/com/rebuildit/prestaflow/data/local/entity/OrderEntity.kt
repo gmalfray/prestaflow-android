@@ -18,4 +18,8 @@ data class OrderEntity(
     @ColumnInfo(name = "has_shipping_label", defaultValue = "0") val hasShippingLabel: Boolean = false,
     @ColumnInfo(name = "items_json") val itemsJson: String? = null,
     @ColumnInfo(name = "shipping_json") val shippingJson: String? = null,
+    /** Couleur hex du statut (`#RRGGBB`), null si absent (connecteur < v1.9). */
+    @ColumnInfo(name = "status_color") val statusColor: String? = null,
+    /** ID numérique du statut PrestaShop, 0 si absent. */
+    @ColumnInfo(name = "current_state_id", defaultValue = "0") val currentStateId: Int = 0,
 )

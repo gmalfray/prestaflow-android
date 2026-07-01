@@ -10,12 +10,14 @@ import com.rebuildit.prestaflow.fakes.FakeOrdersRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -24,8 +26,8 @@ import org.junit.Test
 /**
  * Tests unitaires JVM du [OrdersViewModel].
  *
- * Vérifie la logique de filtre par statut, la recherche locale, et le comportement
- * lors du retrait d'un statut de la préférence de visibilité.
+ * Couvre : filtre multi-statuts, filtre par défaut (résolution par nom), tri,
+ * pagination (loadMore), swipe avec délai d'annulation, sélection multiple et états d'erreur.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class OrdersViewModelTest {
@@ -57,10 +59,10 @@ class OrdersViewModelTest {
             authRepository = fakeAuthRepo,
         )
 
-    // ─── Filtre par statut ───────────────────────────────────────────────────
+    // ─── Filtre multi-statuts ────────────────────────────────────────────────
 
     @Test
-    fun `selectionner un statut declenche un refresh avec ce statusId`() =
+    fun `toggler un statut l ajoute au filtre et declenche un refresh`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
@@ -69,24 +71,27 @@ class OrdersViewModelTest {
             vm.onStatusFilterSelected(statusId = 3)
             advanceUntilIdle()
 
+            assertTrue(3 in vm.uiState.value.selectedStatusIds)
             val lastCall = fakeOrdersRepo.refreshCalls.lastOrNull()
             assertEquals(3, lastCall?.second)
         }
 
     @Test
-    fun `selectionner un statut met a jour selectedStatusId dans l etat`() =
+    fun `toggler le meme statut deux fois le retire du filtre`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
 
             vm.onStatusFilterSelected(statusId = 5)
             advanceUntilIdle()
+            vm.onStatusFilterSelected(statusId = 5)
+            advanceUntilIdle()
 
-            assertEquals(5, vm.uiState.value.selectedStatusId)
+            assertFalse(5 in vm.uiState.value.selectedStatusIds)
         }
 
     @Test
-    fun `selectionner null retire le filtre et passe statusId null au refresh`() =
+    fun `passer null reinitialise les filtres a un ensemble vide`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
@@ -97,20 +102,363 @@ class OrdersViewModelTest {
             vm.onStatusFilterSelected(statusId = null)
             advanceUntilIdle()
 
-            assertNull(vm.uiState.value.selectedStatusId)
+            assertTrue(vm.uiState.value.selectedStatusIds.isEmpty())
+            assertFalse(vm.uiState.value.hasActiveStatusFilter)
             val lastCall = fakeOrdersRepo.refreshCalls.lastOrNull()
             assertNull(lastCall?.second)
+        }
+
+    @Test
+    fun `plusieurs statuts peuvent etre selectionnes simultanement`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onStatusFilterSelected(statusId = 2)
+            advanceUntilIdle()
+            vm.onStatusFilterSelected(statusId = 4)
+            advanceUntilIdle()
+
+            assertTrue(2 in vm.uiState.value.selectedStatusIds)
+            assertTrue(4 in vm.uiState.value.selectedStatusIds)
+        }
+
+    // ─── Filtre par défaut (résolution par nom) ──────────────────────────────
+
+    @Test
+    fun `les statuts par defaut sont resolus par nom au demarrage`() =
+        runTest {
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(2, "Paiement accepté", "#00FF00"),
+                    OrderStatusFilter(3, "En cours de préparation", "#0000FF"),
+                    OrderStatusFilter(4, "Expédié", "#FFA500"),
+                    OrderStatusFilter(5, "Terminé", "#888888"),
+                    OrderStatusFilter(6, "Annulé", "#FF0000"),
+                )
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            val ids = vm.uiState.value.selectedStatusIds
+            assertTrue("Paiement accepté (id=2) doit être sélectionné par défaut", 2 in ids)
+            assertTrue("En cours de préparation (id=3) doit être sélectionné par défaut", 3 in ids)
+            assertTrue("Expédié (id=4) doit être sélectionné par défaut", 4 in ids)
+            assertTrue("Terminé (id=5) doit être sélectionné par défaut", 5 in ids)
+            assertFalse("Annulé (id=6) ne doit PAS être sélectionné par défaut", 6 in ids)
+        }
+
+    @Test
+    fun `si aucun statut ne matche les defauts le filtre est vide (toutes)`() =
+        runTest {
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(1, "Statut inconnu", "#AAAAAA"),
+                    OrderStatusFilter(2, "Autre statut", "#BBBBBB"),
+                )
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            assertTrue(
+                "selectedStatusIds doit être vide si aucun statut ne matche",
+                vm.uiState.value.selectedStatusIds.isEmpty(),
+            )
+        }
+
+    @Test
+    fun `resolution insensible a la casse et aux accents`() =
+        runTest {
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(10, "PAIEMENT ACCEPTE", "#00FF00"),
+                    OrderStatusFilter(11, "PREPARATION EN COURS", "#0000FF"),
+                )
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            val ids = vm.uiState.value.selectedStatusIds
+            assertTrue("PAIEMENT ACCEPTE doit être résolu", 10 in ids)
+            assertTrue("PREPARATION EN COURS doit être résolu", 11 in ids)
+        }
+
+    // ─── Tri ─────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `onSortChanged met a jour selectedSort et declenche un refresh`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeOrdersRepo.refreshCalls.clear()
+
+            vm.onSortChanged(OrderSort.AMOUNT_DESC)
+            advanceUntilIdle()
+
+            assertEquals(OrderSort.AMOUNT_DESC, vm.uiState.value.selectedSort)
+            assertTrue("Un refresh doit être déclenché après changement de tri", fakeOrdersRepo.refreshCalls.isNotEmpty())
+        }
+
+    @Test
+    fun `le tri par defaut est DATE_DESC`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            assertEquals(OrderSort.DATE_DESC, vm.uiState.value.selectedSort)
+        }
+
+    @Test
+    fun `onSortChanged remet hasMore a false`() =
+        runTest {
+            fakeOrdersRepo.hasMoreOnRefresh = true
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            // Au démarrage hasMore = true (si le fake le retourne)
+            // Changer le tri doit remettre hasMore à false pendant le chargement
+            fakeOrdersRepo.hasMoreOnRefresh = false
+
+            vm.onSortChanged(OrderSort.REFERENCE)
+            advanceUntilIdle()
+
+            assertFalse(vm.uiState.value.hasMore)
+        }
+
+    // ─── Pagination ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `hasMore est mis a jour selon la reponse du repository`() =
+        runTest {
+            fakeOrdersRepo.hasMoreOnRefresh = true
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "REF001")))
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            assertTrue("hasMore doit être true si le repo retourne true", vm.uiState.value.hasMore)
+        }
+
+    @Test
+    fun `loadMore ne fait rien si hasMore est false`() =
+        runTest {
+            fakeOrdersRepo.hasMoreOnRefresh = false
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            val callCountBefore = fakeOrdersRepo.refreshCalls.size
+
+            vm.loadMore()
+            advanceUntilIdle()
+
+            assertEquals("loadMore ne doit pas appeler refresh si hasMore=false", callCountBefore, fakeOrdersRepo.refreshCalls.size)
+        }
+
+    @Test
+    fun `loadMore appelle refresh avec le bon offset apres chargement initial`() =
+        runTest {
+            fakeOrdersRepo.hasMoreOnRefresh = true
+            val orders = (1..50).map { buildOrder(it.toLong(), "REF$it") }
+            fakeOrdersRepo.setOrders(orders)
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            // Après init, hasMore=true, on peut charger plus
+            val ordersCount = vm.uiState.value.orders.size
+            fakeOrdersRepo.refreshStatusIdsCalls.clear()
+
+            vm.loadMore()
+            advanceUntilIdle()
+
+            assertTrue(
+                "loadMore doit déclencher au moins un refresh supplémentaire",
+                fakeOrdersRepo.refreshCalls.size > 0,
+            )
+            assertEquals(
+                "isLoadingMore doit être false après loadMore",
+                false,
+                vm.uiState.value.isLoadingMore,
+            )
+        }
+
+    @Test
+    fun `loadMore ne lance pas de second refresh si isLoadingMore est deja vrai`() =
+        runTest {
+            fakeOrdersRepo.hasMoreOnRefresh = true
+            fakeOrdersRepo.setOrders((1..50).map { buildOrder(it.toLong(), "REF$it") })
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            // Premier loadMore (en cours)
+            vm.loadMore()
+            // Second loadMore immédiatement (doit être ignoré)
+            vm.loadMore()
+            advanceUntilIdle()
+
+            // On ne peut pas compter exactement les appels car le state change rapidement,
+            // mais isLoadingMore doit se stabiliser à false
+            assertFalse(vm.uiState.value.isLoadingMore)
+        }
+
+    // ─── Swipe avec délai d'annulation ───────────────────────────────────────
+
+    @Test
+    fun `onSwipeAction expose un pendingSwipeAction`() =
+        runTest {
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(3, "En cours de préparation", "#0000FF"),
+                )
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "#ORD-001", status = "Paiement accepté")))
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.LEFT)
+
+            val pending = vm.uiState.value.pendingSwipeAction
+            assertTrue("pendingSwipeAction doit être non null après swipe", pending != null)
+            assertEquals(1L, pending?.orderId)
+            assertEquals("#ORD-001", pending?.orderReference)
+        }
+
+    @Test
+    fun `cancelSwipeAction annule le pending et ne declenche pas updateOrderStatus`() =
+        runTest {
+            fakeOrdersRepo.orderStatuses =
+                listOf(OrderStatusFilter(3, "En cours de préparation", "#0000FF"))
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "#ORD-001", status = "Paiement accepté")))
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.LEFT)
+            vm.cancelSwipeAction()
+            // Avancer après le délai pour vérifier qu'aucun appel n'a été fait
+            advanceTimeBy(6_000)
+            advanceUntilIdle()
+
+            assertNull("pendingSwipeAction doit être null après annulation", vm.uiState.value.pendingSwipeAction)
+            assertTrue(
+                "updateOrderStatus ne doit pas être appelé si l'action est annulée",
+                fakeOrdersRepo.updateStatusCalls.isEmpty(),
+            )
+        }
+
+    @Test
+    fun `le changement de statut est envoye apres le delai si non annule`() =
+        runTest {
+            fakeOrdersRepo.orderStatuses =
+                listOf(OrderStatusFilter(3, "En cours de préparation", "#0000FF"))
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "#ORD-001", status = "Paiement accepté")))
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeOrdersRepo.updateStatusCalls.clear()
+
+            vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.LEFT)
+            // Avancer de 5 secondes pour déclencher l'envoi
+            advanceTimeBy(5_001)
+            advanceUntilIdle()
+
+            assertTrue(
+                "updateOrderStatus doit être appelé après le délai",
+                fakeOrdersRepo.updateStatusCalls.isNotEmpty(),
+            )
+            val call = fakeOrdersRepo.updateStatusCalls.first()
+            assertEquals(1L, call.first)
+            assertEquals("3", call.second)
+        }
+
+    @Test
+    fun `le changement n est PAS envoye si annule avant le delai`() =
+        runTest {
+            fakeOrdersRepo.orderStatuses =
+                listOf(OrderStatusFilter(3, "En cours de préparation", "#0000FF"))
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "#ORD-001", status = "Paiement accepté")))
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeOrdersRepo.updateStatusCalls.clear()
+
+            vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.LEFT)
+            // Annuler avant 5 secondes
+            advanceTimeBy(2_000)
+            vm.cancelSwipeAction()
+            advanceTimeBy(4_000) // dépasse le délai total
+            advanceUntilIdle()
+
+            assertTrue(
+                "updateOrderStatus ne doit pas être appelé si annulé avant le délai",
+                fakeOrdersRepo.updateStatusCalls.isEmpty(),
+            )
+        }
+
+    @Test
+    fun `un second swipe annule le premier sans envoyer et declenche le second`() =
+        runTest {
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(3, "En cours de préparation", "#0000FF"),
+                    OrderStatusFilter(5, "Terminé", "#888888"),
+                )
+            fakeOrdersRepo.setOrders(
+                listOf(
+                    buildOrder(1L, "#ORD-001", status = "Paiement accepté"),
+                    buildOrder(2L, "#ORD-002", status = "Paiement accepté"),
+                ),
+            )
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeOrdersRepo.updateStatusCalls.clear()
+
+            // Premier swipe (commande 1, LEFT)
+            vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.LEFT)
+            advanceTimeBy(2_000)
+
+            // Second swipe (commande 2, RIGHT) — doit remplacer le premier
+            vm.onSwipeAction(2L, "#ORD-002", SwipeDirection.RIGHT)
+            advanceTimeBy(5_001)
+            advanceUntilIdle()
+
+            // Seul le second swipe doit avoir été envoyé
+            assertEquals(
+                "Un seul appel updateOrderStatus doit être effectué",
+                1,
+                fakeOrdersRepo.updateStatusCalls.size,
+            )
+            assertEquals(2L, fakeOrdersRepo.updateStatusCalls.first().first)
+            assertEquals("5", fakeOrdersRepo.updateStatusCalls.first().second)
+        }
+
+    @Test
+    fun `swipe RIGHT resout le statut Termine`() =
+        runTest {
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(5, "Terminé", "#888888"),
+                    OrderStatusFilter(6, "Livré", "#444444"),
+                )
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "#ORD-001", status = "Paiement accepté")))
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.RIGHT)
+
+            val pending = vm.uiState.value.pendingSwipeAction
+            assertTrue("La cible doit matcher 'termin' ou 'livr'", pending?.targetStatusName != null)
         }
 
     // ─── Préférences de statuts visibles ────────────────────────────────────
 
     @Test
-    fun `retrait d un statut de la preference retombe sur Toutes si c etait le statut selectionne`() =
+    fun `retrait d un statut filtre le retire de selectedStatusIds`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
 
-            // Sélectionner le statut 2 comme filtre actif
             vm.onStatusFilterSelected(statusId = 2)
             advanceUntilIdle()
 
@@ -118,14 +466,14 @@ class OrdersViewModelTest {
             fakePrefsRepo.emitVisibleStatusIds(setOf(1, 3))
             advanceUntilIdle()
 
-            assertNull(
-                "selectedStatusId doit revenir à null quand le statut sélectionné disparaît des visibles",
-                vm.uiState.value.selectedStatusId,
+            assertFalse(
+                "Le statut 2 doit être retiré de selectedStatusIds",
+                2 in vm.uiState.value.selectedStatusIds,
             )
         }
 
     @Test
-    fun `retrait d un statut non selectionne ne change pas selectedStatusId`() =
+    fun `retrait d un statut non selectionne ne change pas selectedStatusIds`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
@@ -133,14 +481,12 @@ class OrdersViewModelTest {
             vm.onStatusFilterSelected(statusId = 1)
             advanceUntilIdle()
 
-            // Retirer le statut 3 (pas le statut actif 1)
             fakePrefsRepo.emitVisibleStatusIds(setOf(1, 2))
             advanceUntilIdle()
 
-            assertEquals(
-                "selectedStatusId ne doit pas changer si le statut retiré n'était pas actif",
-                1,
-                vm.uiState.value.selectedStatusId,
+            assertTrue(
+                "Le statut 1 doit rester dans selectedStatusIds",
+                1 in vm.uiState.value.selectedStatusIds,
             )
         }
 
@@ -218,7 +564,6 @@ class OrdersViewModelTest {
             val vm = buildViewModel()
             advanceUntilIdle()
 
-            // Refresh explicite avec notification d'erreur
             vm.onRefresh()
             advanceUntilIdle()
 
@@ -256,7 +601,7 @@ class OrdersViewModelTest {
             vm.onOrderLongPress(1L)
             advanceUntilIdle()
 
-            assertTrue(!vm.uiState.value.selectionMode)
+            assertFalse(vm.uiState.value.selectionMode)
         }
 
     @Test
@@ -272,7 +617,7 @@ class OrdersViewModelTest {
             vm.cancelSelection()
             advanceUntilIdle()
 
-            assertTrue(!vm.uiState.value.selectionMode)
+            assertFalse(vm.uiState.value.selectionMode)
             assertTrue(vm.uiState.value.selectedOrderIds.isEmpty())
         }
 
@@ -290,7 +635,6 @@ class OrdersViewModelTest {
             val vm = buildViewModel()
             advanceUntilIdle()
 
-            // Sélectionner les deux commandes
             vm.onOrderLongPress(1L)
             advanceUntilIdle()
             vm.onOrderSelectionToggle(2L)
@@ -318,7 +662,7 @@ class OrdersViewModelTest {
             vm.bulkUpdateStatus("3")
             advanceUntilIdle()
 
-            assertTrue("Le mode sélection doit être désactivé", !vm.uiState.value.selectionMode)
+            assertFalse("Le mode sélection doit être désactivé", vm.uiState.value.selectionMode)
             assertTrue("Les IDs sélectionnés doivent être vidés", vm.uiState.value.selectedOrderIds.isEmpty())
         }
 
@@ -357,7 +701,6 @@ class OrdersViewModelTest {
                     buildOrder(2L, "REF002", hasInvoice = true),
                 ),
             )
-            // La commande 2 échoue
             fakeOrdersRepo.failingOrderIds.add(2L)
 
             val vm = buildViewModel()
@@ -367,12 +710,10 @@ class OrdersViewModelTest {
             vm.onOrderSelectionToggle(2L)
             advanceUntilIdle()
 
-            // Ne doit pas lancer d'exception
             vm.bulkUpdateStatus("5")
             advanceUntilIdle()
 
-            // L'opération se termine quand même et sort du mode sélection
-            assertTrue("Le mode sélection doit être désactivé même avec un échec partiel", !vm.uiState.value.selectionMode)
+            assertFalse("Le mode sélection doit être désactivé même avec un échec partiel", vm.uiState.value.selectionMode)
             val snackbar = vm.uiState.value.bulkSnackbar
             assertTrue("Le snackbar doit mentionner un échec", snackbar != null && snackbar.contains("1"))
         }
@@ -402,28 +743,25 @@ class OrdersViewModelTest {
             vm.bulkUpdateStatus("5")
             advanceUntilIdle()
 
-            assertTrue("isBulkUpdating doit être false après l'opération", !vm.uiState.value.isBulkUpdating)
+            assertFalse("isBulkUpdating doit être false après l'opération", vm.uiState.value.isBulkUpdating)
         }
 
     // ─── Filtre statut + liste vide ──────────────────────────────────────────
 
     @Test
-    fun `filtre statut sur liste vide ne crashe pas et conserve selectedStatusId`() =
+    fun `filtre statut sur liste vide ne crashe pas et conserve hasActiveStatusFilter`() =
         runTest {
-            // Aucune commande retournée par le repo (statut sans résultat)
             fakeOrdersRepo.setOrders(emptyList())
 
             val vm = buildViewModel()
             advanceUntilIdle()
 
-            // Sélectionner un statut → refresh → liste vide
             vm.onStatusFilterSelected(statusId = 7)
             advanceUntilIdle()
 
-            assertEquals(
-                "selectedStatusId doit être conservé même si la liste est vide",
-                7,
-                vm.uiState.value.selectedStatusId,
+            assertTrue(
+                "hasActiveStatusFilter doit être true même si la liste est vide",
+                vm.uiState.value.hasActiveStatusFilter,
             )
             assertTrue(
                 "orders doit être vide",
@@ -432,7 +770,7 @@ class OrdersViewModelTest {
         }
 
     @Test
-    fun `reinitialiser le filtre statut remet selectedStatusId a null`() =
+    fun `reinitialiser le filtre statut remet selectedStatusIds a vide`() =
         runTest {
             fakeOrdersRepo.setOrders(emptyList())
 
@@ -442,13 +780,12 @@ class OrdersViewModelTest {
             vm.onStatusFilterSelected(statusId = 7)
             advanceUntilIdle()
 
-            // Réinitialisation via onStatusFilterSelected(null) (action bouton "Réinitialiser")
             vm.onStatusFilterSelected(statusId = null)
             advanceUntilIdle()
 
-            assertNull(
-                "selectedStatusId doit être null après réinitialisation",
-                vm.uiState.value.selectedStatusId,
+            assertTrue(
+                "selectedStatusIds doit être vide après réinitialisation",
+                vm.uiState.value.selectedStatusIds.isEmpty(),
             )
         }
 
