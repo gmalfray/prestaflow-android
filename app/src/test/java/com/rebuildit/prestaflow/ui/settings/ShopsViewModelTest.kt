@@ -44,7 +44,7 @@ class ShopsViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeAuth = ControlledFakeAuthRepository()
-        viewModel = ShopsViewModel(fakeAuth)
+        viewModel = ShopsViewModel(fakeAuth, ShopUrlValidator())
     }
 
     @After
@@ -371,7 +371,7 @@ class ShopsViewModelTest {
             fakeAuth.emitConnections(listOf(shop))
 
             // Recrée le ViewModel pour que stateIn lise la nouvelle valeur initiale
-            viewModel = ShopsViewModel(fakeAuth)
+            viewModel = ShopsViewModel(fakeAuth, ShopUrlValidator())
 
             assertEquals(1, viewModel.connections.value.size)
             assertEquals("https://shop-init.test", viewModel.connections.value.first().id)
@@ -385,7 +385,7 @@ class ShopsViewModelTest {
             val shop2 = FakeAuthRepository.singleActiveConnection("https://shop2.test")
             fakeAuth.emitConnections(listOf(shop1, shop2))
 
-            viewModel = ShopsViewModel(fakeAuth)
+            viewModel = ShopsViewModel(fakeAuth, ShopUrlValidator())
             advanceUntilIdle()
 
             assertEquals(2, viewModel.connections.value.size)

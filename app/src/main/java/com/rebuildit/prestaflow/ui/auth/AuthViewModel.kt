@@ -1,7 +1,5 @@
 package com.rebuildit.prestaflow.ui.auth
 
-import android.net.Uri
-import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.R
@@ -9,15 +7,14 @@ import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.auth.AuthFailure
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.AuthResult
+import com.rebuildit.prestaflow.domain.auth.QrCodeParser
 import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import javax.inject.Inject
-import kotlin.text.Charsets
 
 @HiltViewModel
 class AuthViewModel
@@ -76,7 +73,7 @@ class AuthViewModel
         }
 
         fun onQrScanned(rawValue: String) {
-            val result = parseQrContent(rawValue.trim())
+            val result = QrCodeParser.parse(rawValue.trim())
             if (result == null) {
                 _uiState.update { it.copy(formError = UiText.FromResources(R.string.auth_error_qr_invalid)) }
                 return
@@ -175,29 +172,6 @@ class AuthViewModel
             }
         }
 
-        @Suppress("ReturnCount") // Parsing défensif QR code : early-returns sur chaque étape de décodage/validation
-        private fun parseQrContent(raw: String): Pair<String, String>? {
-            if (raw.isBlank()) return null
-
-            val jsonString =
-                if (raw.startsWith("prestaflow://", ignoreCase = true)) {
-                    val uri = runCatching { Uri.parse(raw) }.getOrNull() ?: return null
-                    val encoded = uri.getQueryParameter("data") ?: return null
-                    val decoded = runCatching { Base64.decode(encoded, Base64.DEFAULT) }.getOrElse { return null }
-                    String(decoded, Charsets.UTF_8)
-                } else {
-                    raw
-                }
-
-            val json = runCatching { JSONObject(jsonString) }.getOrNull() ?: return null
-            val shopUrl = json.optString("shopUrl")
-            val apiKey = json.optString("apiKey")
-            if (shopUrl.isNullOrBlank() || apiKey.isNullOrBlank()) {
-                return null
-            }
-
-            return shopUrl to apiKey
-        }
     }
 
 data class AuthUiState(

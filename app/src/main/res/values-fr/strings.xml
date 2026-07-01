@@ -341,6 +341,7 @@
     <string name="settings_dark_mode_title">Mode sombre</string>
     <string name="settings_shops_label">Boutiques</string>
     <string name="settings_shops_add">Ajouter une boutique</string>
+    <string name="settings_shops_scan_qr">Scanner le QR code</string>
     <string name="settings_shops_remove">Supprimer la boutique</string>
     <string name="shops_add_label_optional">Nom (optionnel)</string>
     <string name="shops_add_error_required">L\'URL de la boutique et la clé API sont requises.</string>

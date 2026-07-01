@@ -8,6 +8,9 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
+import com.rebuildit.prestaflow.ui.auth.PortraitCaptureActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -103,6 +106,16 @@ fun SettingsRoute(
     val defaultPeriod by dashboardPrefsViewModel.defaultPeriod.collectAsStateWithLifecycle()
     val savedPrinterDevice by thermalPrinterViewModel.savedDevice.collectAsStateWithLifecycle()
     val swipePrefsState by swipePrefsViewModel.uiState.collectAsStateWithLifecycle()
+
+    val qrScanPrompt = stringResource(id = R.string.auth_scan_prompt)
+    val qrScanLauncher =
+        rememberLauncherForActivityResult(ScanContract()) { result ->
+            if (!result?.contents.isNullOrBlank()) {
+                shopsViewModel.onQrScanned(result!!.contents)
+            }
+            // Annulé ou vide → rien (le dialog reste ouvert, l'utilisateur peut saisir manuellement)
+        }
+
     SettingsScreen(
         settings = themeState.settings,
         onSkinSelected = themeViewModel::selectSkin,
@@ -119,6 +132,17 @@ fun SettingsRoute(
         onAddShopKeyChange = shopsViewModel::onKeyChange,
         onAddShopLabelChange = shopsViewModel::onLabelChange,
         onSubmitAddShop = shopsViewModel::submitAdd,
+        onAddShopScanQr = {
+            val options =
+                ScanOptions()
+                    .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                    .setPrompt(qrScanPrompt)
+                    .setBeepEnabled(false)
+                    .setBarcodeImageEnabled(false)
+                    .setOrientationLocked(false)
+                    .setCaptureActivity(PortraitCaptureActivity::class.java)
+            qrScanLauncher.launch(options)
+        },
         dashboardDefaultPeriod = defaultPeriod,
         onDashboardDefaultPeriodSelected = dashboardPrefsViewModel::setDefaultPeriod,
         savedPrinterDevice = savedPrinterDevice,
@@ -150,6 +174,7 @@ fun SettingsScreen(
     onAddShopKeyChange: (String) -> Unit = {},
     onAddShopLabelChange: (String) -> Unit = {},
     onSubmitAddShop: () -> Unit = {},
+    onAddShopScanQr: () -> Unit = {},
     dashboardDefaultPeriod: DashboardPeriod = DashboardPeriod.WEEK,
     onDashboardDefaultPeriodSelected: (DashboardPeriod) -> Unit = {},
     savedPrinterDevice: SavedPrinterDevice? = null,
@@ -174,6 +199,7 @@ fun SettingsScreen(
             onLabelChange = onAddShopLabelChange,
             onSubmit = onSubmitAddShop,
             onDismiss = onDismissAddShop,
+            onScanQr = onAddShopScanQr,
         )
     }
 
@@ -469,6 +495,7 @@ private fun AddShopDialog(
     onLabelChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onDismiss: () -> Unit,
+    onScanQr: () -> Unit = {},
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -476,6 +503,13 @@ private fun AddShopDialog(
         title = { Text(stringResource(R.string.settings_shops_add)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS)) {
+                OutlinedButton(
+                    onClick = onScanQr,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.loading,
+                ) {
+                    Text(stringResource(R.string.settings_shops_scan_qr))
+                }
                 OutlinedTextField(
                     value = state.shopUrl,
                     onValueChange = onUrlChange,

@@ -7,6 +7,8 @@ import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.auth.AuthFailure
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.AuthResult
+import com.rebuildit.prestaflow.domain.auth.QrCodeParser
+import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +25,7 @@ class ShopsViewModel
     @Inject
     constructor(
         private val authRepository: AuthRepository,
+        private val shopUrlValidator: ShopUrlValidator,
     ) : ViewModel() {
         val connections: StateFlow<List<ShopConnection>> =
             authRepository.connections.stateIn(
@@ -55,6 +58,36 @@ class ShopsViewModel
         fun onKeyChange(value: String) = _addState.update { it.copy(apiKey = value, error = null) }
 
         fun onLabelChange(value: String) = _addState.update { it.copy(label = value, error = null) }
+
+        /**
+         * Traite le contenu brut d'un QR code scanné depuis le dialog d'ajout de boutique.
+         *
+         * En cas de succès : pré-remplit les champs URL et clé API (l'utilisateur peut vérifier
+         * et valider avant de soumettre). En cas d'échec : pose une erreur visible dans le dialog.
+         * Scan annulé (null/vide) : ne fait rien.
+         */
+        fun onQrScanned(rawValue: String) {
+            val result = QrCodeParser.parse(rawValue.trim())
+            if (result == null) {
+                _addState.update { it.copy(error = UiText.FromResources(R.string.auth_error_qr_invalid)) }
+                return
+            }
+
+            val (shopUrl, apiKey) = result
+            val normalizedUrl =
+                when (val validation = shopUrlValidator.validate(shopUrl)) {
+                    is ShopUrlValidator.Result.Valid -> validation.normalizedUrl
+                    is ShopUrlValidator.Result.Invalid -> shopUrl // pas de normalisation possible, on laisse l'URL brute
+                }
+
+            _addState.update {
+                it.copy(
+                    shopUrl = normalizedUrl,
+                    apiKey = apiKey,
+                    error = null,
+                )
+            }
+        }
 
         fun submitAdd() {
             val current = _addState.value
