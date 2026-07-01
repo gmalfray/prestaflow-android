@@ -52,36 +52,42 @@ class OrdersRepositoryImpl
 
         override suspend fun refresh(
             forceRemote: Boolean,
-            statusId: Int?,
+            statusIds: Set<Int>,
+            sort: String,
             dateFrom: String?,
             dateTo: String?,
-        ) {
+            offset: Int,
+            limit: Int,
+        ): Boolean =
             withContext(ioDispatcher) {
                 val filters =
                     buildMap {
-                        put("sort", "-date_add")
-                        put("limit", "50")
-                        if (statusId != null) put("status", statusId.toString())
+                        put("sort", sort)
+                        put("limit", limit.toString())
+                        put("offset", offset.toString())
+                        // Filtre multi-statuts : CSV d'IDs (param `statuses=2,3,4`)
+                        if (statusIds.isNotEmpty()) put("statuses", statusIds.joinToString(","))
                         if (dateFrom != null) put("date_from", dateFrom)
                         if (dateTo != null) put("date_to", dateTo)
                     }
                 val result = runCatching { api.getOrders(filters) }
                 result.fold(
                     onSuccess = { payload ->
-                        // Vider la table avant l'upsert pour que la liste Room reflète
-                        // exactement le résultat de l'API (filtré ou non) — sans quoi les
-                        // commandes d'autres statuts restent visibles après un changement de filtre.
-                        orderDao.clear()
+                        // Première page : vider la table pour que Room reflète exactement
+                        // le résultat de l'API. Pages suivantes : upsert sans clear (accumulation).
+                        if (offset == 0) orderDao.clear()
                         val entities = payload.orders.map { it.toEntity() }
                         orderDao.upsertOrders(entities)
+                        // hasMore : la page était pleine → il y a probablement des suivantes
+                        payload.orders.size >= limit
                     },
                     onFailure = { error ->
                         Timber.w(networkErrorMapper.map(error).toString())
                         if (forceRemote) throw error
+                        false
                     },
                 )
             }
-        }
 
         override suspend fun refreshOrder(orderId: Long) {
             withContext(ioDispatcher) {

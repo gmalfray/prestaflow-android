@@ -28,6 +28,10 @@ data class OrderListItemDto(
     @SerialName("date_upd") val dateUpdated: String? = null,
     @SerialName("customer") val customer: OrderListCustomerDto,
     @SerialName("has_invoice") val hasInvoice: Boolean = false,
+    /** Couleur hex du statut — connecteur v1.9+. Null sur anciens déploiements (ignoreUnknownKeys). */
+    @SerialName("status_color") val statusColor: String? = null,
+    /** ID numérique du statut — connecteur v1.9+. 0 sur anciens déploiements. */
+    @SerialName("current_state_id") val currentStateId: Int = 0,
 )
 
 @Serializable

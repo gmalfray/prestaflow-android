@@ -120,13 +120,13 @@ class OrdersUiStateTest {
         query: String = "",
         availableStatuses: List<OrderStatusFilter> = emptyList(),
         visibleStatusIds: Set<Int>? = null,
-        selectedStatusId: Int? = null,
+        selectedStatusIds: Set<Int> = emptySet(),
     ) = OrdersUiState(
         orders = orders,
         query = query,
         availableStatuses = availableStatuses,
         visibleStatusIds = visibleStatusIds,
-        selectedStatusId = selectedStatusId,
+        selectedStatusIds = selectedStatusIds,
     )
 
     private fun buildOrder(

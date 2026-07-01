@@ -23,8 +23,14 @@ class FakeOrdersRepository : OrdersRepository {
         _ordersFlow.value = orders
     }
 
-    /** Liste des paires (forceRemote, statusId) reçues par [refresh]. */
+    /** Liste des paires (forceRemote, statusId du premier statut sélectionné) reçues par [refresh]. */
     val refreshCalls = mutableListOf<Pair<Boolean, Int?>>()
+
+    /** Liste des jeux de statusIds reçus lors de chaque appel à [refresh]. */
+    val refreshStatusIdsCalls = mutableListOf<Set<Int>>()
+
+    /** Retourne [hasMore] sur le prochain appel à [refresh]. */
+    var hasMoreOnRefresh = false
 
     var shouldThrowOnRefresh = false
     var refreshException: Throwable = RuntimeException("Erreur réseau simulée")
@@ -53,12 +59,17 @@ class FakeOrdersRepository : OrdersRepository {
 
     override suspend fun refresh(
         forceRemote: Boolean,
-        statusId: Int?,
+        statusIds: Set<Int>,
+        sort: String,
         dateFrom: String?,
         dateTo: String?,
-    ) {
-        refreshCalls += Pair(forceRemote, statusId)
+        offset: Int,
+        limit: Int,
+    ): Boolean {
+        refreshCalls += Pair(forceRemote, statusIds.firstOrNull())
+        refreshStatusIdsCalls += statusIds
         if (shouldThrowOnRefresh) throw refreshException
+        return hasMoreOnRefresh
     }
 
     override suspend fun refreshOrder(orderId: Long) = Unit

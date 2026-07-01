@@ -47,6 +47,8 @@ fun OrderEntity.toDomain(): Order {
         hasShippingLabel = hasShippingLabel,
         items = itemsList,
         shipping = shippingInfo,
+        statusColor = statusColor,
+        currentStateId = currentStateId,
     )
 }
 
@@ -69,6 +71,8 @@ fun OrderListItemDto.toEntity(): OrderEntity =
         hasShippingLabel = false,
         itemsJson = null,
         shippingJson = null,
+        statusColor = statusColor,
+        currentStateId = currentStateId,
     )
 
 /**
@@ -100,6 +104,9 @@ fun OrderDto.toEntity(): OrderEntity {
         hasShippingLabel = shippingLabel?.hasShippingLabel ?: false,
         itemsJson = itemsJsonStr,
         shippingJson = shippingJsonStr,
+        // L'endpoint détail ne retourne pas status_color / current_state_id : valeurs par défaut
+        statusColor = null,
+        currentStateId = status.id.toInt(),
     )
 }
 

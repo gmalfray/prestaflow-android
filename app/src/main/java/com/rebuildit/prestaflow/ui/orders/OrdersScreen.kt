@@ -24,14 +24,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Print
+import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -39,16 +47,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -78,8 +92,10 @@ import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
 import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
+import com.rebuildit.prestaflow.ui.components.contrastTextColor
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
+import com.rebuildit.prestaflow.ui.components.parseHexColor
 import com.rebuildit.prestaflow.ui.orders.components.StatusPickerDialog
 import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
@@ -114,6 +130,23 @@ fun OrdersRoute(
         if (msg != null) {
             snackbarHostState.showSnackbar(msg)
             viewModel.consumeBulkSnackbar()
+        }
+    }
+
+    // Snackbar « Annuler » pour le swipe — durée indéfinie jusqu'à l'exécution ou l'annulation
+    LaunchedEffect(uiState.pendingSwipeAction) {
+        val action = uiState.pendingSwipeAction ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = context.getString(
+                R.string.orders_swipe_pending,
+                action.orderReference,
+                action.targetStatusName,
+            ),
+            actionLabel = context.getString(R.string.orders_swipe_undo),
+            duration = SnackbarDuration.Indefinite,
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            viewModel.cancelSwipeAction()
         }
     }
 
@@ -168,6 +201,9 @@ fun OrdersRoute(
             onVisibleStatusIdsChanged = viewModel::onVisibleStatusIdsChanged,
             onPrintSelected = { showPrintModeDialog = true },
             onBulkChangeStatus = { showBulkStatusDialog = true },
+            onSortChanged = viewModel::onSortChanged,
+            onLoadMore = viewModel::loadMore,
+            onSwipeAction = viewModel::onSwipeAction,
         )
         SnackbarHost(
             hostState = snackbarHostState,
@@ -193,15 +229,16 @@ fun OrdersScreen(
     onAddShop: () -> Unit = {},
     onStatusFilterSelected: (Int?) -> Unit = {},
     onVisibleStatusIdsChanged: (Set<Int>) -> Unit = {},
+    onSortChanged: (OrderSort) -> Unit = {},
+    onLoadMore: () -> Unit = {},
+    onSwipeAction: (Long, String, SwipeDirection) -> Unit = { _, _, _ -> },
 ) {
     val errorMessage = uiState.error?.asString()
 
-    // Quand un filtre de statut est actif, on reste sur OrdersList même si la liste est vide,
-    // afin que la barre de filtres reste accessible et que l'utilisateur puisse réinitialiser.
-    val hasActiveStatusFilter = uiState.selectedStatusId != null
     when {
-        uiState.isLoading && uiState.orders.isEmpty() && !hasActiveStatusFilter -> LoadingState(modifier)
-        uiState.orders.isEmpty() && !hasActiveStatusFilter ->
+        uiState.isLoading && uiState.orders.isEmpty() && !uiState.hasActiveStatusFilter ->
+            LoadingState(modifier)
+        uiState.orders.isEmpty() && !uiState.hasActiveStatusFilter ->
             EmptyState(
                 message = stringResource(R.string.orders_list_empty),
                 modifier = modifier,
@@ -233,9 +270,15 @@ fun OrdersScreen(
                 availableStatuses = uiState.availableStatuses,
                 filteredStatuses = uiState.filteredStatuses,
                 visibleStatusIds = uiState.visibleStatusIds,
-                selectedStatusId = uiState.selectedStatusId,
+                selectedStatusIds = uiState.selectedStatusIds,
                 onStatusFilterSelected = onStatusFilterSelected,
                 onVisibleStatusIdsChanged = onVisibleStatusIdsChanged,
+                selectedSort = uiState.selectedSort,
+                onSortChanged = onSortChanged,
+                hasMore = uiState.hasMore,
+                isLoadingMore = uiState.isLoadingMore,
+                onLoadMore = onLoadMore,
+                onSwipeAction = onSwipeAction,
             )
     }
 }
@@ -267,9 +310,15 @@ private fun OrdersList(
     availableStatuses: List<OrderStatusFilter> = emptyList(),
     filteredStatuses: List<OrderStatusFilter> = emptyList(),
     visibleStatusIds: Set<Int>? = null,
-    selectedStatusId: Int? = null,
+    selectedStatusIds: Set<Int> = emptySet(),
     onStatusFilterSelected: (Int?) -> Unit = {},
     onVisibleStatusIdsChanged: (Set<Int>) -> Unit = {},
+    selectedSort: OrderSort = OrderSort.DATE_DESC,
+    onSortChanged: (OrderSort) -> Unit = {},
+    hasMore: Boolean = false,
+    isLoadingMore: Boolean = false,
+    onLoadMore: () -> Unit = {},
+    onSwipeAction: (Long, String, SwipeDirection) -> Unit = { _, _, _ -> },
 ) {
     val dateFormatter = rememberDateFormatter()
     var showStatusPrefsSheet by rememberSaveable { mutableStateOf(false) }
@@ -364,14 +413,17 @@ private fun OrdersList(
                             )
                         }
 
-                        // Barre de filtres par statut (visible seulement si l'API a retourné des statuts)
+                        // Barre de filtres par statut + tri
                         if (availableStatuses.isNotEmpty()) {
                             item {
                                 StatusFilterBar(
                                     statuses = filteredStatuses,
-                                    selectedStatusId = selectedStatusId,
-                                    onStatusSelected = onStatusFilterSelected,
+                                    selectedStatusIds = selectedStatusIds,
+                                    onStatusToggle = { id -> onStatusFilterSelected(id) },
+                                    onClearFilter = { onStatusFilterSelected(null) },
                                     onConfigureClick = { showStatusPrefsSheet = true },
+                                    selectedSort = selectedSort,
+                                    onSortChanged = onSortChanged,
                                 )
                             }
                         }
@@ -379,7 +431,7 @@ private fun OrdersList(
 
                     if (orders.isEmpty()) {
                         // Filtre statut actif sans résultat → bouton de réinitialisation
-                        if (selectedStatusId != null && query.isBlank()) {
+                        if (selectedStatusIds.isNotEmpty() && query.isBlank()) {
                             item {
                                 Column(
                                     modifier = Modifier.padding(vertical = Dimensions.spacingM),
@@ -399,7 +451,6 @@ private fun OrdersList(
                                 }
                             }
                         } else {
-                            // Recherche texte sans résultat
                             item {
                                 Text(
                                     text = stringResource(R.string.list_no_results, query),
@@ -410,7 +461,7 @@ private fun OrdersList(
                             }
                         }
                     } else {
-                        // Carte conteneur groupée
+                        // Carte conteneur groupée — chaque ligne peut être swipée
                         item {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -423,14 +474,20 @@ private fun OrdersList(
                             ) {
                                 Column {
                                     orders.forEachIndexed { index, order ->
-                                        OrderRow(
-                                            order = order,
-                                            dateFormatter = dateFormatter,
-                                            selectionMode = selectionMode,
-                                            isSelected = order.id in selectedOrderIds,
-                                            onClick = { onOrderClick(order.id) },
-                                            onLongPress = { onOrderLongPress(order.id) },
-                                        )
+                                        key(order.id) {
+                                            SwipeableOrderRow(
+                                                order = order,
+                                                dateFormatter = dateFormatter,
+                                                selectionMode = selectionMode,
+                                                isSelected = order.id in selectedOrderIds,
+                                                onClick = { onOrderClick(order.id) },
+                                                onLongPress = { onOrderLongPress(order.id) },
+                                                onSwipeAction = { direction ->
+                                                    onSwipeAction(order.id, order.reference, direction)
+                                                },
+                                                availableStatuses = availableStatuses,
+                                            )
+                                        }
                                         if (index < orders.lastIndex) {
                                             HorizontalDivider(
                                                 color = MaterialTheme.colorScheme.surfaceContainer,
@@ -441,18 +498,159 @@ private fun OrdersList(
                                 }
                             }
                         }
+
+                        // Bouton « Charger plus » (pagination)
+                        if (hasMore || isLoadingMore) {
+                            item {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = Dimensions.spacingS),
+                                    horizontalArrangement = Arrangement.Center,
+                                ) {
+                                    if (isLoadingMore) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(Dimensions.iconSizeMedium),
+                                            strokeWidth = 2.dp,
+                                        )
+                                    } else {
+                                        Button(onClick = onLoadMore) {
+                                            Text(stringResource(R.string.orders_load_more))
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
-        } // fin PullToRefreshBox
+        }
     }
 }
 
+// ─── Ligne commande avec swipe ────────────────────────────────────────────────
+
 /**
- * Barre contextuelle affichée en haut de l'écran lors de la sélection multiple.
- * Affiche le nombre de commandes sélectionnées, un bouton Annuler, un bouton
- * « Changer le statut » (si des statuts sont disponibles) et un bouton Imprimer.
+ * Enveloppe une [OrderRow] avec un [SwipeToDismissBox] pour les commandes en « Paiement accepté ».
+ * - Swipe GAUCHE (EndToStart) → « En cours de préparation »
+ * - Swipe DROITE (StartToEnd) → « Terminé »
+ * La ligne reprend toujours sa position (confirmValueChange = false) ; le callback déclenche l'action.
  */
+@OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongParameterList")
+@Composable
+private fun SwipeableOrderRow(
+    order: Order,
+    dateFormatter: DateTimeFormatter,
+    selectionMode: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onLongPress: () -> Unit,
+    onSwipeAction: (SwipeDirection) -> Unit,
+    availableStatuses: List<OrderStatusFilter>,
+) {
+    // Le swipe est réservé aux commandes en « Paiement accepté » (matcher "paiement accepte")
+    val isPaiementAccepte = remember(order.status, availableStatuses) {
+        order.status.normalizeForMatch().contains("paiement accepte")
+    }
+
+    if (!isPaiementAccepte || selectionMode) {
+        // Hors contexte swipe : simple ligne
+        OrderRow(
+            order = order,
+            dateFormatter = dateFormatter,
+            selectionMode = selectionMode,
+            isSelected = isSelected,
+            onClick = onClick,
+            onLongPress = onLongPress,
+            availableStatuses = availableStatuses,
+        )
+        return
+    }
+
+    val leftActionColor = MaterialTheme.colorScheme.tertiary
+    val rightActionColor = Color(0xFF2E7D32)
+
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            when (value) {
+                SwipeToDismissBoxValue.EndToStart -> {
+                    onSwipeAction(SwipeDirection.LEFT)
+                    false // snap back
+                }
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    onSwipeAction(SwipeDirection.RIGHT)
+                    false // snap back
+                }
+                SwipeToDismissBoxValue.Settled -> false
+            }
+        },
+        positionalThreshold = { totalDistance -> totalDistance * 0.35f },
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val targetValue = dismissState.targetValue
+            val bgColor = when (targetValue) {
+                SwipeToDismissBoxValue.EndToStart -> leftActionColor
+                SwipeToDismissBoxValue.StartToEnd -> rightActionColor
+                SwipeToDismissBoxValue.Settled -> Color.Transparent
+            }
+            val isLeftSwipe = targetValue == SwipeToDismissBoxValue.EndToStart
+            val isRightSwipe = targetValue == SwipeToDismissBoxValue.StartToEnd
+            val swipeIcon = if (isLeftSwipe) Icons.Outlined.ArrowUpward else Icons.Outlined.Done
+            val swipeLabel = when {
+                isLeftSwipe -> stringResource(R.string.orders_swipe_left_label)
+                isRightSwipe -> stringResource(R.string.orders_swipe_right_label)
+                else -> ""
+            }
+            val swipeAlign = if (isRightSwipe) Alignment.CenterStart else Alignment.CenterEnd
+            val onBgColor = contrastTextColor(bgColor)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(bgColor)
+                    .padding(horizontal = Dimensions.spacingL),
+                contentAlignment = swipeAlign,
+            ) {
+                if (isLeftSwipe || isRightSwipe) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+                    ) {
+                        Icon(
+                            imageVector = swipeIcon,
+                            contentDescription = null,
+                            tint = onBgColor,
+                            modifier = Modifier.size(Dimensions.iconSizeSmall),
+                        )
+                        Text(
+                            text = swipeLabel,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = onBgColor,
+                        )
+                    }
+                }
+            }
+        },
+        enableDismissFromStartToEnd = true,
+        enableDismissFromEndToStart = true,
+    ) {
+        OrderRow(
+            order = order,
+            dateFormatter = dateFormatter,
+            selectionMode = selectionMode,
+            isSelected = isSelected,
+            onClick = onClick,
+            onLongPress = onLongPress,
+            availableStatuses = availableStatuses,
+        )
+    }
+}
+
+// ─── Barre d'action sélection ────────────────────────────────────────────────
+
 @Suppress("LongParameterList")
 @Composable
 private fun SelectionActionBar(
@@ -543,14 +741,11 @@ private fun SelectionActionBar(
     }
 }
 
+// ─── Ligne de commande ────────────────────────────────────────────────────────
+
 /**
  * Ligne de commande — design Stitch : avatar initiales, nom + référence,
  * badge statut coloré, montant aligné à droite.
- *
- * En mode sélection :
- *  - Les commandes avec [Order.hasInvoice] = true sont sélectionnables (clic = toggle).
- *  - Les commandes sans facture sont grisées et non sélectionnables.
- *  - Une coche verte remplace l'avatar pour les commandes sélectionnées.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Suppress("LongParameterList")
@@ -562,6 +757,7 @@ private fun OrderRow(
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
+    availableStatuses: List<OrderStatusFilter> = emptyList(),
 ) {
     val amountText =
         remember(order.totalPaid, order.currency) {
@@ -573,7 +769,12 @@ private fun OrderRow(
         }
     val status = order.status.ifBlank { stringResource(id = R.string.orders_status_unknown) }
 
-    // En mode sélection, les commandes sans facture ne sont pas interactives
+    // Couleur du badge : depuis l'ordre (connecteur v1.9+) ou fallback dans availableStatuses
+    val resolvedStatusColor = remember(order.statusColor, order.currentStateId, availableStatuses) {
+        order.statusColor?.takeIf { it.isNotBlank() }
+            ?: availableStatuses.firstOrNull { it.id == order.currentStateId }?.color
+    }
+
     val isSelectable = !selectionMode || order.hasInvoice
     val rowAlpha = if (selectionMode && !order.hasInvoice) 0.4f else 1f
 
@@ -611,7 +812,6 @@ private fun OrderRow(
         horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Avatar ou coche de sélection
         if (isSelected) {
             Icon(
                 imageVector = Icons.Filled.CheckCircle,
@@ -625,12 +825,10 @@ private fun OrderRow(
             )
         }
 
-        // Contenu central
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
         ) {
-            // Nom + montant sur la même ligne
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -661,7 +859,6 @@ private fun OrderRow(
                 )
             }
 
-            // Date + badge statut
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -672,7 +869,7 @@ private fun OrderRow(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                OrderStatusBadge(status = status)
+                OrderStatusBadge(status = status, statusColor = resolvedStatusColor)
             }
         }
     }
@@ -684,25 +881,72 @@ private fun rememberDateFormatter(): DateTimeFormatter =
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
     }
 
-// ─── Barre de filtres par statut ──────────────────────────────────────────────
+// ─── Barre de filtres par statut + tri ────────────────────────────────────────
 
 /**
- * Ligne horizontale scrollable de chips permettant de filtrer les commandes par statut.
- * Le premier chip « Toutes » réinitialise le filtre (selectedStatusId = null).
- * Le bouton ⚙ en fin de ligne ouvre le panneau de personnalisation des statuts visibles.
+ * Ligne horizontale scrollable de chips multi-sélection + bouton de tri + bouton ⚙.
+ *
+ * - Chip « Toutes » : sélectionné quand [selectedStatusIds] est vide → appelle [onClearFilter]
+ * - Chaque chip de statut : indépendamment toggleable → appelle [onStatusToggle] avec l'ID
+ * - Bouton tri (Sort icon) : ouvre un menu déroulant avec les options de tri
+ * - Bouton ⚙ : ouvre la personnalisation des statuts visibles
  */
 @Composable
 private fun StatusFilterBar(
     statuses: List<OrderStatusFilter>,
-    selectedStatusId: Int?,
-    onStatusSelected: (Int?) -> Unit,
+    selectedStatusIds: Set<Int>,
+    onStatusToggle: (Int) -> Unit,
+    onClearFilter: () -> Unit,
     onConfigureClick: () -> Unit,
+    selectedSort: OrderSort,
+    onSortChanged: (OrderSort) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showSortMenu by remember { mutableStateOf(false) }
+
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Bouton de tri
+        Box {
+            IconButton(onClick = { showSortMenu = true }) {
+                Icon(
+                    imageVector = when (selectedSort) {
+                        OrderSort.DATE_ASC, OrderSort.AMOUNT_ASC -> Icons.Outlined.ArrowUpward
+                        OrderSort.DATE_DESC, OrderSort.AMOUNT_DESC -> Icons.Outlined.ArrowDownward
+                        else -> Icons.AutoMirrored.Outlined.Sort
+                    },
+                    contentDescription = stringResource(R.string.orders_sort_label),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            DropdownMenu(
+                expanded = showSortMenu,
+                onDismissRequest = { showSortMenu = false },
+            ) {
+                SortOption(OrderSort.DATE_DESC, selectedSort, stringResource(R.string.orders_sort_date_desc)) {
+                    onSortChanged(it); showSortMenu = false
+                }
+                SortOption(OrderSort.DATE_ASC, selectedSort, stringResource(R.string.orders_sort_date_asc)) {
+                    onSortChanged(it); showSortMenu = false
+                }
+                SortOption(OrderSort.AMOUNT_DESC, selectedSort, stringResource(R.string.orders_sort_amount_desc)) {
+                    onSortChanged(it); showSortMenu = false
+                }
+                SortOption(OrderSort.AMOUNT_ASC, selectedSort, stringResource(R.string.orders_sort_amount_asc)) {
+                    onSortChanged(it); showSortMenu = false
+                }
+                SortOption(OrderSort.STATUS, selectedSort, stringResource(R.string.orders_sort_status)) {
+                    onSortChanged(it); showSortMenu = false
+                }
+                SortOption(OrderSort.REFERENCE, selectedSort, stringResource(R.string.orders_sort_reference)) {
+                    onSortChanged(it); showSortMenu = false
+                }
+            }
+        }
+
+        // Chips de filtres multi-sélection
         Row(
             modifier =
                 Modifier
@@ -710,25 +954,22 @@ private fun StatusFilterBar(
                     .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
         ) {
-            // Chip « Toutes »
+            // Chip « Toutes » — actif quand aucun statut n'est sélectionné
             FilterChip(
-                selected = selectedStatusId == null,
-                onClick = { onStatusSelected(null) },
+                selected = selectedStatusIds.isEmpty(),
+                onClick = onClearFilter,
                 label = { Text(stringResource(R.string.orders_filter_all)) },
             )
             statuses.forEach { status ->
                 FilterChip(
-                    selected = selectedStatusId == status.id,
-                    onClick = {
-                        onStatusSelected(if (selectedStatusId == status.id) null else status.id)
-                    },
+                    selected = status.id in selectedStatusIds,
+                    onClick = { onStatusToggle(status.id) },
                     label = { Text(status.name) },
                 )
             }
         }
-        IconButton(
-            onClick = onConfigureClick,
-        ) {
+
+        IconButton(onClick = onConfigureClick) {
             Icon(
                 imageVector = Icons.Outlined.Tune,
                 contentDescription = stringResource(R.string.orders_filter_configure),
@@ -738,12 +979,26 @@ private fun StatusFilterBar(
     }
 }
 
+@Composable
+private fun SortOption(
+    sort: OrderSort,
+    currentSort: OrderSort,
+    label: String,
+    onSelect: (OrderSort) -> Unit,
+) {
+    DropdownMenuItem(
+        text = { Text(label) },
+        onClick = { onSelect(sort) },
+        leadingIcon = if (sort == currentSort) {
+            { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null) }
+        } else {
+            null
+        },
+    )
+}
+
 // ─── Bottom sheet de personnalisation des statuts visibles ────────────────────
 
-/**
- * Panneau modal permettant de cocher/décocher les statuts affichés dans la barre de filtres.
- * Par défaut (aucune préférence), tous les statuts sont cochés.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StatusPreferencesSheet(
@@ -753,7 +1008,6 @@ private fun StatusPreferencesSheet(
     onDismiss: () -> Unit,
     onConfirm: (Set<Int>) -> Unit,
 ) {
-    // Initialiser la sélection locale à partir de la préférence (ou tous si null)
     val initialSelection = visibleStatusIds ?: availableStatuses.map { it.id }.toSet()
     var localSelection by remember(availableStatuses, visibleStatusIds) {
         mutableStateOf(initialSelection)
@@ -776,7 +1030,6 @@ private fun StatusPreferencesSheet(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = Dimensions.spacingS),
             )
-            // Liste scrollable : chaque statut reste visible sans débordement
             LazyColumn(
                 modifier =
                     Modifier
@@ -816,7 +1069,6 @@ private fun StatusPreferencesSheet(
                     }
                 }
             }
-            // Boutons toujours visibles — fixes en bas du sheet
             Row(
                 modifier =
                     Modifier
@@ -828,9 +1080,7 @@ private fun StatusPreferencesSheet(
                 TextButton(onClick = onDismiss) {
                     Text(stringResource(R.string.orders_filter_prefs_cancel))
                 }
-                TextButton(
-                    onClick = { onConfirm(localSelection) },
-                ) {
+                TextButton(onClick = { onConfirm(localSelection) }) {
                     Text(stringResource(R.string.orders_filter_prefs_confirm))
                 }
             }
@@ -852,13 +1102,14 @@ private fun PreviewOrdersList() {
                             Order(
                                 id = 1L,
                                 reference = "#ORD-8492",
-                                status = "En attente",
+                                status = "Paiement accepté",
                                 totalPaid = 45.0,
                                 currency = "EUR",
                                 customerName = "Marie Dupont",
                                 createdAtIso = "2026-06-19T14:20:00Z",
                                 updatedAtIso = "2026-06-19T14:20:00Z",
                                 hasInvoice = true,
+                                statusColor = "#28A745",
                             ),
                             Order(
                                 id = 2L,

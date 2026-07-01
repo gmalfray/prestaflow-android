@@ -296,9 +296,12 @@ fun AvatarInitials(
 
 /**
  * Badge de statut coloré (chip pill) — adapté au contexte commande.
- * Sélectionne automatiquement la couleur selon le statut normalisé.
  *
- * Catégories reconnues (insensible à la casse, sous-chaîne) :
+ * Priorité couleur :
+ * 1. [statusColor] hex valide (`#RRGGBB`) → fond issu du connecteur, texte calculé (contraste W/B)
+ * 2. Sinon : mapping heuristique sur le nom [status] (catégories reconnues, insensible casse)
+ *
+ * Catégories de fallback :
  *  - "payé" / "paid"          → vert succès
  *  - "expédi" / "shipped" / "livr" → primary terracotta
  *  - "attente" / "pending"    → ambre/warning
@@ -309,24 +312,40 @@ fun AvatarInitials(
 fun OrderStatusBadge(
     status: String,
     modifier: Modifier = Modifier,
+    /** Couleur hexadécimale PrestaShop (`#RRGGBB`). Null ou invalide → fallback heuristique. */
+    statusColor: String? = null,
 ) {
-    val normalized = status.lowercase()
-    val (bgColor, textColor) =
-        when {
-            normalized.contains("pay") || normalized.contains("paid") ->
-                Color(0xFFDCFCE7) to Color(0xFF166534)
-            normalized.contains("expédi") || normalized.contains("shipped") ||
-                normalized.contains("livr") || normalized.contains("deliver") ->
-                MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
-            normalized.contains("attente") || normalized.contains("pending") ||
-                normalized.contains("en cours") ->
-                Color(0xFFFEF9C3) to Color(0xFF854D0E)
-            normalized.contains("annul") || normalized.contains("cancel") ||
-                normalized.contains("refus") ->
-                MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
-            else ->
-                MaterialTheme.colorScheme.surfaceContainer to MaterialTheme.colorScheme.onSurfaceVariant
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
+    val errorContainerColor = MaterialTheme.colorScheme.errorContainer
+    val onErrorContainerColor = MaterialTheme.colorScheme.onErrorContainer
+    val surfaceContainerColor = MaterialTheme.colorScheme.surfaceContainer
+    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    val (bgColor, textColor) = remember(status, statusColor) {
+        val parsed = parseHexColor(statusColor)
+        if (parsed != null) {
+            parsed to contrastTextColor(parsed)
+        } else {
+            // Fallback heuristique sur le nom du statut
+            val normalized = status.lowercase()
+            when {
+                normalized.contains("pay") || normalized.contains("paid") ->
+                    Color(0xFFDCFCE7) to Color(0xFF166534)
+                normalized.contains("expédi") || normalized.contains("shipped") ||
+                    normalized.contains("livr") || normalized.contains("deliver") ->
+                    primaryColor to onPrimaryColor
+                normalized.contains("attente") || normalized.contains("pending") ||
+                    normalized.contains("en cours") ->
+                    Color(0xFFFEF9C3) to Color(0xFF854D0E)
+                normalized.contains("annul") || normalized.contains("cancel") ||
+                    normalized.contains("refus") ->
+                    errorContainerColor to onErrorContainerColor
+                else ->
+                    surfaceContainerColor to onSurfaceVariantColor
+            }
         }
+    }
 
     Box(
         modifier =
@@ -342,6 +361,35 @@ fun OrderStatusBadge(
             maxLines = 1,
         )
     }
+}
+
+/**
+ * Parse une couleur hexadécimale PrestaShop (`#RRGGBB` ou `RRGGBB`).
+ * Retourne null si [hex] est null, vide ou invalide.
+ */
+fun parseHexColor(hex: String?): Color? {
+    if (hex.isNullOrBlank()) return null
+    val cleaned = hex.trimStart('#')
+    if (cleaned.length != 6) return null
+    return runCatching {
+        Color(0xFF000000 or cleaned.toLong(16))
+    }.getOrNull()
+}
+
+/**
+ * Retourne [Color.White] ou [Color.Black] selon la luminance relative de [background]
+ * (formule WCAG 2.1 simplifiée). Assure un ratio de contraste minimal lisible.
+ */
+fun contrastTextColor(background: Color): Color {
+    // Luminance relative (canal linéarisé)
+    fun linearize(c: Float): Float = if (c <= 0.04045f) c / 12.92f else ((c + 0.055f) / 1.055f).let {
+        it * it * it // approximation rapide (erreur < 1 %)
+    }
+    val r = linearize(background.red)
+    val g = linearize(background.green)
+    val b = linearize(background.blue)
+    val luminance = 0.2126f * r + 0.7152f * g + 0.0722f * b
+    return if (luminance > 0.179f) Color.Black else Color.White
 }
 
 /**

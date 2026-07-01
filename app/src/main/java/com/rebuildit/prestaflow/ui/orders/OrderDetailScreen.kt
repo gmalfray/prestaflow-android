@@ -476,7 +476,10 @@ fun OrderDetailContent(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        OrderStatusBadge(status = order.status)
+                        OrderStatusBadge(
+                            status = order.status,
+                            statusColor = order.statusColor,
+                        )
                         IconButton(
                             onClick = { showStatusDialog = true },
                             enabled = !actionInProgress,

@@ -12,6 +12,8 @@ import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,9 +23,74 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.text.Normalizer
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+
+/** Durée (ms) avant envoi effectif du changement de statut après un swipe. */
+private const val SWIPE_UNDO_DELAY_MS = 5_000L
+
+/** Taille de page par défaut pour la pagination. */
+private const val PAGE_SIZE = OrdersRepository.DEFAULT_PAGE_SIZE
+
+/**
+ * Noms de statuts PrestaShop à activer par défaut lors de l'ouverture de l'écran.
+ * Chaque entrée est comparée après normalisation (minuscules, sans accents, sans espaces superflus)
+ * au nom des statuts disponibles (correspondance par sous-chaîne).
+ */
+private val DEFAULT_STATUS_MATCHERS = listOf(
+    "paiement accepte",
+    "preparation",
+    "expedi",
+    "termin",
+)
+
+/**
+ * Normalise une chaîne pour la comparaison insensible à la casse et aux accents.
+ * `"Paiement accepté"` → `"paiement accepte"`.
+ */
+internal fun String.normalizeForMatch(): String =
+    Normalizer.normalize(this, Normalizer.Form.NFD)
+        .replace(Regex("\\p{M}"), "")
+        .lowercase()
+        .trim()
+
+/**
+ * Résout les IDs de statuts correspondant aux noms par défaut dans [availableStatuses].
+ * Retourne un ensemble vide si aucun statut ne correspond (fallback = tous).
+ */
+internal fun resolveDefaultStatusIds(availableStatuses: List<OrderStatusFilter>): Set<Int> =
+    availableStatuses
+        .filter { status ->
+            val n = status.name.normalizeForMatch()
+            DEFAULT_STATUS_MATCHERS.any { matcher -> n.contains(matcher) }
+        }
+        .map { it.id }
+        .toSet()
+
+/** Sens du swipe sur une ligne de commande. */
+enum class SwipeDirection { LEFT, RIGHT }
+
+/** Ordre de tri exposé à l'API (`sort` param). */
+enum class OrderSort(val queryValue: String) {
+    DATE_DESC("date_desc"),
+    DATE_ASC("date_asc"),
+    AMOUNT_DESC("total_desc"),
+    AMOUNT_ASC("total_asc"),
+    STATUS("status"),
+    REFERENCE("reference"),
+}
+
+/**
+ * Action de changement de statut en attente d'exécution (délai d'annulation 5 s).
+ */
+data class PendingSwipeAction(
+    val orderId: Long,
+    val orderReference: String,
+    val targetStatusId: Int,
+    val targetStatusName: String,
+)
 
 @HiltViewModel
 class OrdersViewModel
@@ -47,12 +114,33 @@ class OrdersViewModel
                 ?.let { periodValue -> DashboardPeriod.entries.find { it.queryValue == periodValue } }
                 ?.toDateRange()
 
+        /** Job en cours pour le swipe avec délai d'annulation. */
+        private var pendingSwipeJob: Job? = null
+
         init {
             observeOrders()
             observeVisibleStatusIds()
-            refresh(forceRemote = true, notifyOnError = false)
-            loadStatuses()
+            initializeData()
             observeActiveShopSwitch()
+        }
+
+        /**
+         * Charge les statuts disponibles PUIS déclenche le premier refresh avec les filtres par défaut.
+         * Séquential pour que les filtres par défaut soient connus avant la requête orders.
+         */
+        private fun initializeData() {
+            viewModelScope.launch {
+                val statuses = runCatching { ordersRepository.getOrderStatuses() }
+                    .getOrElse { error ->
+                        Timber.w(error, "Impossible de charger les statuts de commande")
+                        emptyList()
+                    }
+
+                val defaultIds = if (statuses.isNotEmpty()) resolveDefaultStatusIds(statuses) else emptySet()
+                _uiState.update { it.copy(availableStatuses = statuses, selectedStatusIds = defaultIds) }
+
+                refresh(forceRemote = true, notifyOnError = false)
+            }
         }
 
         fun onRefresh() {
@@ -63,26 +151,135 @@ class OrdersViewModel
             _uiState.update { it.copy(query = query) }
         }
 
-        /** Charge les statuts disponibles depuis l'API (silencieux en cas d'erreur). */
-        private fun loadStatuses() {
-            viewModelScope.launch {
-                runCatching { ordersRepository.getOrderStatuses() }
-                    .onSuccess { statuses ->
-                        _uiState.update { it.copy(availableStatuses = statuses) }
-                    }
-                    .onFailure { error ->
-                        Timber.w(error, "Impossible de charger les statuts de commande")
-                    }
-            }
-        }
+        // ─── Filtre multi-statuts ─────────────────────────────────────────────
 
-        /** Sélectionne (ou désélectionne) le filtre par statut puis recharge la liste. */
+        /**
+         * Bascule le statut [statusId] dans / hors du filtre actif puis recharge la liste.
+         * Si [statusId] est null, réinitialise tous les filtres.
+         */
         fun onStatusFilterSelected(statusId: Int?) {
-            _uiState.update { it.copy(selectedStatusId = statusId) }
+            if (statusId == null) {
+                _uiState.update { it.copy(selectedStatusIds = emptySet()) }
+            } else {
+                _uiState.update { current ->
+                    val ids = current.selectedStatusIds
+                    current.copy(
+                        selectedStatusIds = if (statusId in ids) ids - statusId else ids + statusId,
+                    )
+                }
+            }
             refresh(forceRemote = true, notifyOnError = true)
         }
 
-        // ─── Préférence de statuts visibles ─────────────────────────────────────
+        // ─── Tri ─────────────────────────────────────────────────────────────
+
+        /** Change l'ordre de tri et recharge depuis la première page. */
+        fun onSortChanged(sort: OrderSort) {
+            _uiState.update { it.copy(selectedSort = sort, hasMore = false) }
+            refresh(forceRemote = true, notifyOnError = true)
+        }
+
+        // ─── Pagination ──────────────────────────────────────────────────────
+
+        /**
+         * Charge la page suivante de commandes (offset = nombre de commandes déjà chargées).
+         * Ne fait rien si un chargement est déjà en cours ou s'il n'y a plus de page.
+         */
+        fun loadMore() {
+            val current = _uiState.value
+            if (current.isLoadingMore || !current.hasMore) return
+            val nextOffset = current.orders.size
+            _uiState.update { it.copy(isLoadingMore = true) }
+            viewModelScope.launch {
+                val (dateFrom, dateTo) = periodDateRange ?: Pair(null, null)
+                val hasMore = runCatching {
+                    ordersRepository.refresh(
+                        forceRemote = true,
+                        statusIds = current.selectedStatusIds,
+                        sort = current.selectedSort.queryValue,
+                        dateFrom = dateFrom,
+                        dateTo = dateTo,
+                        offset = nextOffset,
+                        limit = PAGE_SIZE,
+                    )
+                }.getOrElse { error ->
+                    Timber.w(error, "Échec loadMore commandes offset=$nextOffset")
+                    _uiState.update { it.copy(
+                        isLoadingMore = false,
+                        error = networkErrorMapper.map(error),
+                    )}
+                    return@launch
+                }
+                _uiState.update { it.copy(isLoadingMore = false, hasMore = hasMore) }
+            }
+        }
+
+        // ─── Swipe avec délai d'annulation ───────────────────────────────────
+
+        /**
+         * Déclenche un changement de statut via swipe sur une commande.
+         *
+         * - Swipe GAUCHE → "En cours de préparation" (matcher "preparation")
+         * - Swipe DROITE → "Terminé" (matcher "termin") ou "Livré" (matcher "livr")
+         *
+         * La résolution se fait par **nom normalisé** (insensible casse/accents).
+         * L'appel API n'est envoyé qu'après [SWIPE_UNDO_DELAY_MS] ms. Si un autre swipe
+         * arrive avant, le précédent est annulé (sans envoi).
+         */
+        fun onSwipeAction(
+            orderId: Long,
+            orderReference: String,
+            direction: SwipeDirection,
+        ) {
+            val statuses = _uiState.value.availableStatuses
+            val targetStatus = when (direction) {
+                SwipeDirection.LEFT ->
+                    statuses.firstOrNull { it.name.normalizeForMatch().contains("preparation") }
+                SwipeDirection.RIGHT ->
+                    statuses.firstOrNull { s ->
+                        val n = s.name.normalizeForMatch()
+                        n.contains("termin") || n.contains("livr")
+                    }
+            } ?: run {
+                Timber.d("Swipe ignoré : aucun statut cible trouvé pour direction=$direction")
+                return
+            }
+
+            // Annule l'action précédente (sans appel API)
+            pendingSwipeJob?.cancel()
+
+            _uiState.update {
+                it.copy(
+                    pendingSwipeAction = PendingSwipeAction(
+                        orderId = orderId,
+                        orderReference = orderReference,
+                        targetStatusId = targetStatus.id,
+                        targetStatusName = targetStatus.name,
+                    ),
+                )
+            }
+
+            pendingSwipeJob = viewModelScope.launch {
+                delay(SWIPE_UNDO_DELAY_MS)
+                // Délai écoulé → envoyer le changement
+                runCatching {
+                    ordersRepository.updateOrderStatus(orderId, targetStatus.id.toString())
+                }.onFailure { error ->
+                    Timber.w(error, "Swipe status update failed orderId=$orderId")
+                }
+                _uiState.update { it.copy(pendingSwipeAction = null) }
+                refresh(forceRemote = true, notifyOnError = false)
+            }
+        }
+
+        /** Annule l'action de swipe en attente (sans envoi API). */
+        fun cancelSwipeAction() {
+            pendingSwipeJob?.cancel()
+            pendingSwipeJob = null
+            _uiState.update { it.copy(pendingSwipeAction = null) }
+        }
+
+        // ─── Préférence de statuts visibles ──────────────────────────────────
 
         /** Observe la préférence DataStore et met à jour l'état. */
         private fun observeVisibleStatusIds() {
@@ -90,16 +287,14 @@ class OrdersViewModel
                 ordersPreferencesRepository.visibleStatusIds.collect { ids ->
                     _uiState.update { current ->
                         val newState = current.copy(visibleStatusIds = ids)
-                        // Si le statut sélectionné n'est plus visible, retomber sur « Toutes »
-                        val newSelectedId =
-                            if (ids != null && current.selectedStatusId != null &&
-                                current.selectedStatusId !in ids
-                            ) {
-                                null
+                        // Si un statut sélectionné n'est plus visible, le retirer du filtre
+                        val validSelectedIds =
+                            if (ids != null) {
+                                current.selectedStatusIds.intersect(ids)
                             } else {
-                                current.selectedStatusId
+                                current.selectedStatusIds
                             }
-                        newState.copy(selectedStatusId = newSelectedId)
+                        newState.copy(selectedStatusIds = validSelectedIds)
                     }
                 }
             }
@@ -107,7 +302,7 @@ class OrdersViewModel
 
         /**
          * Persiste les IDs de statuts à afficher dans la barre de filtres.
-         * Si [ids] est null ou vide, réinitialise la préférence (tous les statuts affichés).
+         * Si [ids] est vide, réinitialise la préférence (tous les statuts affichés).
          */
         fun onVisibleStatusIdsChanged(ids: Set<Int>) {
             viewModelScope.launch {
@@ -119,7 +314,7 @@ class OrdersViewModel
             }
         }
 
-        // ─── Sélection multiple ──────────────────────────────────────────────────
+        // ─── Sélection multiple ──────────────────────────────────────────────
 
         /** Active le mode sélection et sélectionne la commande [orderId] (appui long). */
         fun onOrderLongPress(orderId: Long) {
@@ -160,13 +355,6 @@ class OrdersViewModel
 
         /**
          * Change le statut de toutes les commandes sélectionnées vers [statusId].
-         *
-         * - Itère sur chaque commande sélectionnée et appelle [updateOrderStatus] individuellement
-         *   pour ne pas bloquer l'ensemble en cas d'échec partiel.
-         * - Expose [OrdersUiState.isBulkUpdating] pendant l'opération.
-         * - Émet un snackbar résumant les succès / échecs.
-         * - Rafraîchit la liste et quitte le mode sélection à la fin (succès ou non).
-         * - Robuste hors-ligne : une exception par commande est catchée individuellement.
          */
         fun bulkUpdateStatus(statusId: String) {
             val selectedIds = _uiState.value.selectedOrderIds.toList()
@@ -199,7 +387,6 @@ class OrdersViewModel
                         bulkSnackbar = message,
                     )
                 }
-                // Rafraîchir la liste pour refléter les nouveaux statuts
                 refresh(forceRemote = true, notifyOnError = false)
             }
         }
@@ -211,7 +398,6 @@ class OrdersViewModel
 
         /**
          * Télécharge les PDFs des commandes sélectionnées et invoque [onReady] avec les octets.
-         * Remet à zéro la sélection après succès.
          */
         fun printSelectedInvoices(onReady: (List<ByteArray>) -> Unit) {
             val selectedIds = _uiState.value.selectedOrderIds.toList()
@@ -235,7 +421,7 @@ class OrdersViewModel
             _uiState.update { it.copy(printError = null) }
         }
 
-        // ─── Rafraîchissement ────────────────────────────────────────────────────
+        // ─── Rafraîchissement ─────────────────────────────────────────────────
 
         private fun observeActiveShopSwitch() {
             viewModelScope.launch {
@@ -251,12 +437,12 @@ class OrdersViewModel
                                 error = null,
                                 selectionMode = false,
                                 selectedOrderIds = emptySet(),
-                                selectedStatusId = null,
+                                selectedStatusIds = emptySet(),
                                 availableStatuses = emptyList(),
+                                hasMore = false,
                             )
                         }
-                        loadStatuses()
-                        refresh(forceRemote = true, notifyOnError = true)
+                        initializeData()
                     }
             }
         }
@@ -285,55 +471,49 @@ class OrdersViewModel
                     current.copy(
                         isRefreshing = true,
                         isLoading = current.orders.isEmpty(),
+                        hasMore = false,
                         error = if (notifyOnError) null else current.error,
                     )
                 }
 
-                val statusId = _uiState.value.selectedStatusId
+                val current = _uiState.value
                 val (dateFrom, dateTo) = periodDateRange ?: Pair(null, null)
-                runCatching { ordersRepository.refresh(forceRemote, statusId, dateFrom, dateTo) }
-                    .onFailure { error ->
-                        Timber.w(error, "Failed to refresh orders")
-                        _uiState.update { current ->
-                            val mapped = networkErrorMapper.map(error)
-                            current.copy(
-                                isRefreshing = false,
-                                // Toujours false après une réponse (même vide), pour ne pas
-                                // bloquer l'UI sur le loader quand le filtre de période donne 0 résultats.
-                                // observeOrders() a déjà positionné isLoading = false via l'émission Room.
-                                isLoading = false,
-                                error = if (notifyOnError) mapped else current.error,
-                            )
-                        }
+                runCatching {
+                    ordersRepository.refresh(
+                        forceRemote = forceRemote,
+                        statusIds = current.selectedStatusIds,
+                        sort = current.selectedSort.queryValue,
+                        dateFrom = dateFrom,
+                        dateTo = dateTo,
+                        offset = 0,
+                        limit = PAGE_SIZE,
+                    )
+                }.onFailure { error ->
+                    Timber.w(error, "Failed to refresh orders")
+                    _uiState.update { state ->
+                        val mapped = networkErrorMapper.map(error)
+                        state.copy(
+                            isRefreshing = false,
+                            isLoading = false,
+                            error = if (notifyOnError) mapped else state.error,
+                        )
                     }
-                    .onSuccess {
-                        _uiState.update { current ->
-                            current.copy(
-                                isRefreshing = false,
-                                // Toujours false après succès : si la liste est vide (filtre de période
-                                // sans résultat), on affiche l'état vide plutôt qu'un spinner infini.
-                                // Si isLoading = current.orders.isEmpty() était utilisé, Room émet []
-                                // avant onSuccess et remet isLoading = false, puis onSuccess le repasse
-                                // à true → loader infini pour les listes vides filtrées.
-                                isLoading = false,
-                                error = null,
-                            )
-                        }
+                }.onSuccess { hasMore ->
+                    _uiState.update { state ->
+                        state.copy(
+                            isRefreshing = false,
+                            isLoading = false,
+                            error = null,
+                            hasMore = hasMore,
+                        )
                     }
+                }
             }
         }
     }
 
 /**
  * Convertit une [DashboardPeriod] en plage (dateFrom, dateTo) pour le filtre `GET /orders`.
- *
- * Le connecteur accepte les formats `Y-m-d` et `Y-m-d H:i:s` dans `date_from`/`date_to`.
- * Sans suffixe horaire, MySQL interprète une date nue comme `00:00:00` : la condition
- * `date_add <= "2024-01-15"` devient `date_add <= "2024-01-15 00:00:00"`, excluant toutes
- * les commandes passées après minuit le même jour. On aligne sur le comportement du Dashboard
- * (`DashboardService::resolvePeriodRange`) qui borne `date_to` à `23:59:59`.
- *
- * @param today Date courante (injectable pour les tests ; défaut = [LocalDate.now]).
  */
 internal fun DashboardPeriod.toDateRange(today: LocalDate = LocalDate.now()): Pair<String, String> {
     val dateFmt = DateTimeFormatter.ISO_LOCAL_DATE
@@ -345,9 +525,6 @@ internal fun DashboardPeriod.toDateRange(today: LocalDate = LocalDate.now()): Pa
             DashboardPeriod.QUARTER -> today.minusMonths(3)
             DashboardPeriod.YEAR -> today.withDayOfYear(1)
         }
-    // date_to avec 23:59:59 : sans ce suffixe, MySQL cast la date nue en 00:00:00,
-    // rendant le filtre du jour "aujourd'hui" vide et causant un écart de comptage
-    // par rapport au KPI Dashboard (qui lui applique le BETWEEN avec 23:59:59).
     return Pair(fromDate.format(dateFmt), "${today.format(dateFmt)} 23:59:59")
 }
 
@@ -371,17 +548,28 @@ data class OrdersUiState(
     val bulkSnackbar: String? = null,
     /** Statuts disponibles pour le filtre, chargés depuis l'API. */
     val availableStatuses: List<OrderStatusFilter> = emptyList(),
-    /** ID du statut sélectionné comme filtre, null = tous les statuts. */
-    val selectedStatusId: Int? = null,
+    /**
+     * IDs des statuts actuellement actifs dans le filtre.
+     * Ensemble vide = toutes les commandes (aucun filtre appliqué).
+     */
+    val selectedStatusIds: Set<Int> = emptySet(),
     /**
      * IDs des statuts à afficher dans la barre de filtres (préférence persistée).
      * Null = aucune préférence → tous les [availableStatuses] sont affichés.
      */
     val visibleStatusIds: Set<Int>? = null,
+    /** Ordre de tri courant. */
+    val selectedSort: OrderSort = OrderSort.DATE_DESC,
+    /** Vrai si d'autres commandes sont disponibles au-delà de celles déjà chargées. */
+    val hasMore: Boolean = false,
+    /** Vrai pendant le chargement d'une page supplémentaire (pagination). */
+    val isLoadingMore: Boolean = false,
+    /** Action de swipe en attente (délai d'annulation). Null = aucune action en cours. */
+    val pendingSwipeAction: PendingSwipeAction? = null,
 ) {
     /**
      * Statuts effectivement affichés dans la barre de filtres.
-     * Si [visibleStatusIds] est null, tous les [availableStatuses] sont retournés (comportement par défaut).
+     * Si [visibleStatusIds] est null, tous les [availableStatuses] sont retournés.
      */
     val filteredStatuses: List<OrderStatusFilter>
         get() =
@@ -400,4 +588,7 @@ data class OrdersUiState(
                         it.reference.contains(query, ignoreCase = true)
                 }
             }
+
+    /** Vrai si au moins un filtre de statut est actif. */
+    val hasActiveStatusFilter: Boolean get() = selectedStatusIds.isNotEmpty()
 }

@@ -15,16 +15,30 @@ interface OrdersRepository {
 
     /**
      * Rafraîchit la liste des commandes depuis le serveur.
-     * @param statusId Si non nul, filtre les commandes par ce statut.
-     * @param dateFrom Date de début au format Y-m-d (ex. "2026-06-01"). Null = pas de filtre date.
-     * @param dateTo Date de fin au format Y-m-d (ex. "2026-06-30"). Null = pas de filtre date.
+     *
+     * @param statusIds Si non vide, filtre les commandes par ces statuts (param `statuses` CSV).
+     *   Ensemble vide = toutes les commandes.
+     * @param sort Ordre de tri : `date_desc` (défaut), `date_asc`, `total_desc`, `total_asc`,
+     *   `status`, `reference`.
+     * @param dateFrom Date de début au format Y-m-d. Null = pas de filtre date.
+     * @param dateTo Date de fin au format Y-m-d. Null = pas de filtre date.
+     * @param offset Décalage pour la pagination (0 = première page, vide Room avant upsert).
+     * @param limit Nombre de commandes demandées (défaut [DEFAULT_PAGE_SIZE]).
+     * @return `true` si d'autres commandes sont probablement disponibles (la réponse était pleine).
      */
     suspend fun refresh(
         forceRemote: Boolean = false,
-        statusId: Int? = null,
+        statusIds: Set<Int> = emptySet(),
+        sort: String = "date_desc",
         dateFrom: String? = null,
         dateTo: String? = null,
-    )
+        offset: Int = 0,
+        limit: Int = DEFAULT_PAGE_SIZE,
+    ): Boolean
+
+    companion object {
+        const val DEFAULT_PAGE_SIZE = 50
+    }
 
     fun getOrder(orderId: Long): Flow<Order?>
 
