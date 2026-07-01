@@ -212,14 +212,17 @@
     <string name="settings_thermal_printer_selected">Sélectionnée : %1$s (%2$s)</string>
     <string name="settings_thermal_printer_choose">Choisir une imprimante</string>
     <string name="settings_thermal_printer_clear">Supprimer l\'imprimante</string>
-    <string name="settings_thermal_printer_dialog_title">Appareils Bluetooth appairés</string>
-    <string name="settings_thermal_printer_dialog_empty">Aucun appareil Bluetooth appairé trouvé.</string>
+    <string name="settings_thermal_printer_dialog_title">Imprimantes Bluetooth</string>
+    <string name="settings_thermal_printer_dialog_empty">Aucune imprimante trouvée. Vérifiez qu\'elle est allumée et à proximité, puis relancez la recherche.</string>
     <string name="settings_thermal_printer_dialog_cancel">Annuler</string>
-    <string name="settings_thermal_printer_hint">Sélectionnez l\'imprimante thermique Munbyn ou ESC/POS appairée à cet appareil.</string>
+    <string name="settings_thermal_printer_scanning">Recherche des imprimantes à proximité…</string>
+    <string name="settings_thermal_printer_scan_hint">Appareils appairés et détectés à proximité.</string>
+    <string name="settings_thermal_printer_rescan">Relancer</string>
+    <string name="settings_thermal_printer_hint">Recherchez et sélectionnez votre imprimante thermique Munbyn ou ESC/POS (appairage préalable non nécessaire).</string>
 
     <!-- Dialogue de choix du mode d'impression -->
     <string name="print_mode_dialog_title">Mode d\'impression</string>
-    <string name="print_mode_two_up">Deux par page (économie de papier)</string>
+    <string name="print_mode_two_up">Deux par page</string>
     <string name="print_mode_one_per_page">Une par page</string>
     <string name="print_mode_cancel">Annuler</string>
 

@@ -1,11 +1,13 @@
 package com.rebuildit.prestaflow.ui.settings
 
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,11 +36,17 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -615,40 +623,52 @@ private fun DarkModeSelector(
 
 // ─── Période par défaut du dashboard ─────────────────────────────────────────
 
+/**
+ * Sélecteur de période par défaut du dashboard — liste déroulante Material 3.
+ *
+ * Remplace l'ancienne liste de RadioButtons pour économiser de la place verticale.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DashboardDefaultPeriodSelector(
     current: DashboardPeriod,
     onSelected: (DashboardPeriod) -> Unit,
 ) {
-    Text(
-        text = stringResource(R.string.settings_dashboard_default_period),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs)) {
-        DashboardPeriod.values().forEach { period ->
-            val label = stringResource(period.labelRes())
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            onClickLabel = label,
-                            role = Role.RadioButton,
-                        ) { onSelected(period) }
-                        .padding(vertical = Dimensions.spacingXs)
-                        .semantics { role = Role.RadioButton },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
-            ) {
-                RadioButton(
-                    selected = period == current,
-                    onClick = { onSelected(period) },
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = stringResource(current.labelRes()),
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            label = { Text(stringResource(R.string.settings_dashboard_default_period)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            modifier =
+                Modifier
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            DashboardPeriod.values().forEach { period ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = stringResource(period.labelRes()),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    },
+                    onClick = {
+                        onSelected(period)
+                        expanded = false
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
                 )
             }
         }
@@ -660,12 +680,14 @@ private fun DashboardDefaultPeriodSelector(
 /**
  * Section de sélection d'imprimante thermique Bluetooth dans les Réglages.
  *
- * Liste les appareils Bluetooth **appairés** ([BluetoothAdapter.bondedDevices]) dans un dialogue
- * Material3 et persiste la sélection via [onDeviceSelected].
+ * Liste les appareils Bluetooth **appairés** ([android.bluetooth.BluetoothAdapter.bondedDevices])
+ * dans un dialogue Material 3. La liste est rechargée à chaque ouverture du dialogue, après
+ * avoir demandé/vérifié la permission [android.Manifest.permission.BLUETOOTH_CONNECT] (API 31+).
  *
- * Note : la lecture de [BluetoothAdapter.bondedDevices] requiert BLUETOOTH_CONNECT (API 31+)
- * ou BLUETOOTH (API < 31). La permission est déclarée dans le manifeste ; sur API ≥ 31, si elle
- * n'est pas accordée, la liste sera vide et un message invite l'utilisateur à l'accorder.
+ * Correction : la version précédente lisait bondedDevices dans `remember {}` (une seule fois
+ * à la composition, sans vérifier la permission runtime) → SecurityException silencieuse → liste
+ * vide sur Android 12+. La permission est désormais demandée explicitement via le launcher
+ * ActivityResult avant d'accéder à bondedDevices.
  */
 @Suppress("LongMethod")
 @Composable
@@ -676,32 +698,40 @@ private fun ThermalPrinterSection(
     onClear: () -> Unit,
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    // Découverte Bluetooth (appairés + scan), à la manière de l'app constructeur :
+    // pas besoin d'appairer l'imprimante au préalable dans les réglages Android.
+    val scan = rememberBluetoothDeviceScan(context)
 
-    // Récupération des appareils BT appairés (necessite permission au runtime sur API 31+)
-    val bondedDevices: List<BluetoothDevice> =
-        remember {
-            runCatching {
-                val bm = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
-                @Suppress("MissingPermission") // Vérifiée en amont via permission manifeste
-                bm?.adapter?.bondedDevices?.toList() ?: emptyList()
-            }.getOrDefault(emptyList())
+    // Demande les permissions Bluetooth runtime (SCAN + CONNECT, API 31+), puis lance le scan
+    val btPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestMultiplePermissions(),
+        ) { results ->
+            if (BT_SCAN_PERMISSIONS.all { results[it] == true }) {
+                scan.start()
+                showDialog = true
+            }
+            // Si refusée : showDialog reste false, l'utilisateur doit accorder la permission
+            // depuis les paramètres système (comportement standard Android 12+)
         }
 
     // Texte descriptif de l'imprimante sélectionnée
-    val deviceLabel = if (savedDevice != null) {
-        stringResource(R.string.settings_thermal_printer_selected, savedDevice.name, savedDevice.address)
-    } else {
-        stringResource(R.string.settings_thermal_printer_none)
-    }
+    val deviceLabel =
+        if (savedDevice != null) {
+            stringResource(R.string.settings_thermal_printer_selected, savedDevice.name, savedDevice.address)
+        } else {
+            stringResource(R.string.settings_thermal_printer_none)
+        }
 
     Text(
         text = deviceLabel,
         style = MaterialTheme.typography.bodyMedium,
-        color = if (savedDevice != null) {
-            MaterialTheme.colorScheme.onSurface
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        },
+        color =
+            if (savedDevice != null) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
     )
 
     Text(
@@ -715,7 +745,14 @@ private fun ThermalPrinterSection(
         horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
     ) {
         OutlinedButton(
-            onClick = { showDialog = true },
+            onClick = {
+                if (hasBtScanPermissions(context)) {
+                    scan.start()
+                    showDialog = true
+                } else {
+                    btPermissionLauncher.launch(BT_SCAN_PERMISSIONS)
+                }
+            },
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(50),
         ) {
@@ -742,7 +779,9 @@ private fun ThermalPrinterSection(
 
     if (showDialog) {
         BluetoothDevicePickerDialog(
-            devices = bondedDevices,
+            devices = scan.devices,
+            isScanning = scan.isScanning,
+            onRescan = scan.start,
             onDeviceSelected = { device ->
                 showDialog = false
                 @Suppress("MissingPermission")
@@ -753,10 +792,34 @@ private fun ThermalPrinterSection(
     }
 }
 
-/** Dialogue de sélection parmi la liste des appareils Bluetooth appairés. */
+/**
+ * Permissions Bluetooth runtime nécessaires à la **découverte** d'imprimantes (API 31+) :
+ * BLUETOOTH_SCAN pour `startDiscovery`, BLUETOOTH_CONNECT pour lire le nom et se connecter.
+ */
+private val BT_SCAN_PERMISSIONS =
+    arrayOf(
+        android.Manifest.permission.BLUETOOTH_SCAN,
+        android.Manifest.permission.BLUETOOTH_CONNECT,
+    )
+
+/** Vrai si toutes les [BT_SCAN_PERMISSIONS] sont accordées. Toujours vrai sur API < 31. */
+private fun hasBtScanPermissions(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+    return BT_SCAN_PERMISSIONS.all {
+        context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+    }
+}
+
+/**
+ * Dialogue de sélection d'imprimante : liste fusionnée des appareils Bluetooth appairés **et**
+ * découverts par le scan ([isScanning] indique un scan en cours). [onRescan] relance la découverte.
+ */
+@Suppress("LongMethod")
 @Composable
 private fun BluetoothDevicePickerDialog(
     devices: List<BluetoothDevice>,
+    isScanning: Boolean,
+    onRescan: () -> Unit,
     onDeviceSelected: (BluetoothDevice) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -765,14 +828,44 @@ private fun BluetoothDevicePickerDialog(
         shape = RoundedCornerShape(Dimensions.cardCornerRadius),
         title = { Text(stringResource(R.string.settings_thermal_printer_dialog_title)) },
         text = {
-            if (devices.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.settings_thermal_printer_dialog_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs)) {
+                // Bandeau d'état du scan (recherche en cours / relance)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+                ) {
+                    if (isScanning) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimensions.iconSizeSmall),
+                            strokeWidth = 2.dp,
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_thermal_printer_scanning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.settings_thermal_printer_scan_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onRescan) {
+                            Text(stringResource(R.string.settings_thermal_printer_rescan))
+                        }
+                    }
+                }
+
+                if (devices.isEmpty() && !isScanning) {
+                    Text(
+                        text = stringResource(R.string.settings_thermal_printer_dialog_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
                     devices.forEach { device ->
                         @Suppress("MissingPermission")
                         val deviceName = device.name ?: device.address
