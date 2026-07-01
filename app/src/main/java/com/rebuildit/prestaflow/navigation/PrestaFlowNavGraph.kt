@@ -107,6 +107,9 @@ fun PrestaFlowNavGraph(
                 onProductClick = { productId ->
                     navController.navigate("${AppDestination.Products.route}/$productId")
                 },
+                onClientClick = { clientId ->
+                    navController.navigate("${AppDestination.Clients.route}/$clientId")
+                },
             )
         }
         composable(AppDestination.Products.route) {

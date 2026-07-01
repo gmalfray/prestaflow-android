@@ -1042,10 +1042,12 @@ private fun StatusPreferencesSheet(
     onDismiss: () -> Unit,
     onConfirm: (Set<Int>) -> Unit,
 ) {
-    val initialSelection = visibleStatusIds ?: availableStatuses.map { it.id }.toSet()
+    // Quand aucune préférence n'est définie, pré-sélectionne le défaut curaté (≤ 3 chips)
+    val initialSelection = visibleStatusIds ?: resolveDefaultVisibleChips(availableStatuses).map { it.id }.toSet()
     var localSelection by remember(availableStatuses, visibleStatusIds) {
         mutableStateOf(initialSelection)
     }
+    val atLimit = localSelection.size >= MAX_VISIBLE_STATUS_CHIPS
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1062,6 +1064,12 @@ private fun StatusPreferencesSheet(
                 text = stringResource(R.string.orders_filter_prefs_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = Dimensions.spacingXs),
+            )
+            Text(
+                text = stringResource(R.string.orders_filter_prefs_max_hint, MAX_VISIBLE_STATUS_CHIPS),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (atLimit) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = Dimensions.spacingS),
             )
             LazyColumn(
@@ -1072,13 +1080,15 @@ private fun StatusPreferencesSheet(
                 verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
             ) {
                 items(availableStatuses, key = { it.id }) { status ->
+                    val isChecked = status.id in localSelection
+                    val isEnabled = isChecked || !atLimit
                     Row(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .clickable {
+                                .clickable(enabled = isEnabled) {
                                     localSelection =
-                                        if (status.id in localSelection) {
+                                        if (isChecked) {
                                             localSelection - status.id
                                         } else {
                                             localSelection + status.id
@@ -1089,16 +1099,18 @@ private fun StatusPreferencesSheet(
                         horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
                     ) {
                         Checkbox(
-                            checked = status.id in localSelection,
+                            checked = isChecked,
                             onCheckedChange = { checked ->
+                                if (checked && atLimit) return@Checkbox
                                 localSelection =
                                     if (checked) localSelection + status.id else localSelection - status.id
                             },
+                            enabled = isEnabled,
                         )
                         Text(
                             text = status.name,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                         )
                     }
                 }

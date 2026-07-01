@@ -59,6 +59,11 @@ data class OrderDto(
     @SerialName("history") val history: List<OrderHistoryDto>? = null,
     @SerialName("has_invoice") val hasInvoice: Boolean = false,
     @SerialName("shipping_label") val shippingLabel: OrderShippingLabelDto? = null,
+    /**
+     * ID PrestaShop du client — exposé par le connecteur (chantier en cours).
+     * Null si le champ n'est pas encore renvoyé (rétrocompatible).
+     */
+    @SerialName("customer_id") val customerId: Long? = null,
 )
 
 @Serializable

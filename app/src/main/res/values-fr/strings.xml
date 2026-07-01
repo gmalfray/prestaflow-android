@@ -76,6 +76,12 @@
     <string name="dashboard_chart_trend_rising">en hausse</string>
     <string name="dashboard_chart_trend_falling">en baisse</string>
     <string name="dashboard_chart_trend_stable">stable</string>
+    <!-- Dashboard — légende et tooltip graphe -->
+    <string name="dashboard_legend_orders">Commandes</string>
+    <string name="dashboard_legend_turnover">Chiffre d\'affaires</string>
+    <string name="dashboard_tooltip_orders">Cmd : %1$d</string>
+    <string name="dashboard_tooltip_turnover">CA : %1$s</string>
+    <string name="dashboard_tooltip_new_customers">Nv. clients : %1$d</string>
     <string name="dashboard_greeting">Bonjour</string>
     <string name="dashboard_recent_orders">Commandes récentes</string>
     <string name="dashboard_see_all">Voir tout</string>
@@ -152,6 +158,7 @@
     <string name="client_total_spent_label">Total dépensé</string>
     <string name="client_orders_count_label">Commandes</string>
     <string name="client_order_history_title">Historique des commandes</string>
+    <string name="client_show_all_orders">Voir tout (%1$d)</string>
 
     <string name="product_detail_title">Détails du produit</string>
     <string name="product_reference_label">Référence : %1$s</string>
@@ -251,6 +258,7 @@
     <string name="orders_filter_prefs_title">Statuts affichés dans la barre de filtres</string>
     <string name="orders_filter_prefs_cancel">Annuler</string>
     <string name="orders_filter_prefs_confirm">Appliquer</string>
+    <string name="orders_filter_prefs_max_hint">%1$d statuts maximum</string>
     <string name="orders_filter_empty">Aucune commande pour ce statut.</string>
     <string name="orders_filter_reset">Réinitialiser les filtres</string>
     <!-- Accessibilité chips : le libellé affiché est court, le contentDescription donne le nom complet -->
@@ -366,5 +374,7 @@
     <string name="carts_products_section">Produits</string>
     <string name="carts_detail_error">Erreur lors du chargement du panier</string>
     <string name="carts_detail_not_found">Panier introuvable.</string>
+    <string name="carts_search_placeholder">Rechercher par nom client</string>
+    <string name="carts_load_more">Charger plus</string>
 
 </resources>

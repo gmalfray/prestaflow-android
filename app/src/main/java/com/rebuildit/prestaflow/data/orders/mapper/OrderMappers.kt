@@ -49,6 +49,7 @@ fun OrderEntity.toDomain(): Order {
         shipping = shippingInfo,
         statusColor = statusColor,
         currentStateId = currentStateId,
+        customerId = customerId,
     )
 }
 
@@ -107,6 +108,7 @@ fun OrderDto.toEntity(): OrderEntity {
         // L'endpoint détail ne retourne pas status_color / current_state_id : valeurs par défaut
         statusColor = null,
         currentStateId = status.id.toInt(),
+        customerId = customerId,
     )
 }
 

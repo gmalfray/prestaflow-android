@@ -27,6 +27,11 @@ data class Order(
      * 0 si absent (ancien connecteur).
      */
     val currentStateId: Int = 0,
+    /**
+     * ID PrestaShop du client — renvoyé par l'endpoint détail (chantier connecteur en cours).
+     * Null si le connecteur ne le retourne pas encore (rétrocompatible).
+     */
+    val customerId: Long? = null,
 )
 
 @Serializable

@@ -77,16 +77,56 @@ class OrdersUiStateTest {
     // ─── filteredStatuses ────────────────────────────────────────────────────
 
     @Test
-    fun `filteredStatuses retourne tous les statuts si visibleStatusIds est null`() {
+    fun `filteredStatuses retourne le defaut curatie preparation expedi termin si visibleStatusIds est null`() {
+        // Cas nominal : les 3 statuts cibles sont présents
         val statuses =
             listOf(
                 OrderStatusFilter(1, "Paiement accepté", "#00FF00"),
                 OrderStatusFilter(2, "En préparation", "#0000FF"),
                 OrderStatusFilter(3, "Expédié", "#FFA500"),
+                OrderStatusFilter(4, "Terminé", "#008000"),
             )
         val state = buildState(availableStatuses = statuses, visibleStatusIds = null)
 
-        assertEquals(3, state.filteredStatuses.size)
+        val filtered = state.filteredStatuses
+        assertEquals(3, filtered.size)
+        assertTrue(filtered.any { it.id == 2 }) // En préparation
+        assertTrue(filtered.any { it.id == 3 }) // Expédié
+        assertTrue(filtered.any { it.id == 4 }) // Terminé
+    }
+
+    @Test
+    fun `filteredStatuses repli 3 premiers statuts si aucun nom ne matche et visibleStatusIds est null`() {
+        val statuses =
+            listOf(
+                OrderStatusFilter(10, "Inconnu A", "#000000"),
+                OrderStatusFilter(11, "Inconnu B", "#111111"),
+                OrderStatusFilter(12, "Inconnu C", "#222222"),
+                OrderStatusFilter(13, "Inconnu D", "#333333"),
+            )
+        val state = buildState(availableStatuses = statuses, visibleStatusIds = null)
+
+        val filtered = state.filteredStatuses
+        assertEquals(3, filtered.size)
+        assertEquals(10, filtered[0].id)
+        assertEquals(11, filtered[1].id)
+        assertEquals(12, filtered[2].id)
+    }
+
+    @Test
+    fun `filteredStatuses plafond MAX_VISIBLE_STATUS_CHIPS meme si les 3 matchers matchent plusieurs fois`() {
+        val statuses =
+            listOf(
+                OrderStatusFilter(1, "En cours de préparation", "#0000FF"),
+                OrderStatusFilter(2, "Préparation validée", "#0000EE"),
+                OrderStatusFilter(3, "Expédié", "#FFA500"),
+                OrderStatusFilter(4, "Terminé", "#008000"),
+            )
+        val state = buildState(availableStatuses = statuses, visibleStatusIds = null)
+
+        // preparation → id=1, expedi → id=3, termin → id=4 (id=2 "Préparation validée" écarté par distinctBy)
+        val filtered = state.filteredStatuses
+        assertEquals(MAX_VISIBLE_STATUS_CHIPS, filtered.size)
     }
 
     @Test

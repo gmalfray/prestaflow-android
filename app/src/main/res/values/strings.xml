@@ -76,6 +76,12 @@
     <string name="dashboard_chart_trend_rising">rising</string>
     <string name="dashboard_chart_trend_falling">falling</string>
     <string name="dashboard_chart_trend_stable">stable</string>
+    <!-- Dashboard — légende et tooltip graphe -->
+    <string name="dashboard_legend_orders">Orders</string>
+    <string name="dashboard_legend_turnover">Turnover</string>
+    <string name="dashboard_tooltip_orders">Ord: %1$d</string>
+    <string name="dashboard_tooltip_turnover">Sales: %1$s</string>
+    <string name="dashboard_tooltip_new_customers">New cust.: %1$d</string>
     <string name="dashboard_greeting">Hello</string>
     <string name="dashboard_recent_orders">Recent orders</string>
     <string name="dashboard_see_all">See all</string>
@@ -152,6 +158,7 @@
     <string name="client_total_spent_label">Total Spent</string>
     <string name="client_orders_count_label">Orders</string>
     <string name="client_order_history_title">Order History</string>
+    <string name="client_show_all_orders">Show all (%1$d)</string>
 
     <string name="product_detail_title">Product Details</string>
     <string name="product_reference_label">Reference: %1$s</string>
@@ -252,6 +259,7 @@
     <string name="orders_filter_prefs_title">Statuses shown in filter bar</string>
     <string name="orders_filter_prefs_cancel">Cancel</string>
     <string name="orders_filter_prefs_confirm">Apply</string>
+    <string name="orders_filter_prefs_max_hint">%1$d statuses max</string>
     <string name="orders_filter_empty">No orders for this status.</string>
     <string name="orders_filter_reset">Reset filters</string>
     <!-- Accessibilité chips : le libellé affiché est court, le contentDescription donne le nom complet -->
@@ -365,5 +373,7 @@
     <string name="carts_products_section">Products</string>
     <string name="carts_detail_error">Error loading cart</string>
     <string name="carts_detail_not_found">Cart not found.</string>
+    <string name="carts_search_placeholder">Search by customer name</string>
+    <string name="carts_load_more">Load more</string>
 
 </resources>

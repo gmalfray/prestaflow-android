@@ -94,6 +94,7 @@ import kotlinx.coroutines.launch
 fun OrderDetailRoute(
     onBackClick: () -> Unit,
     onProductClick: (Long) -> Unit = {},
+    onClientClick: (Long) -> Unit = {},
     viewModel: OrderDetailViewModel = hiltViewModel(),
     thermalViewModel: ThermalPrinterViewModel = hiltViewModel(),
 ) {
@@ -190,6 +191,7 @@ fun OrderDetailRoute(
         availableStatuses = availableStatuses,
         onBackClick = onBackClick,
         onProductClick = onProductClick,
+        onClientClick = onClientClick,
         onUpdateStatus = viewModel::updateStatus,
         onUpdateTracking = viewModel::updateTracking,
         onConsumeFeedback = viewModel::consumeActionFeedback,
@@ -270,6 +272,7 @@ fun OrderDetailScreen(
     availableStatuses: List<OrderStatusFilter> = emptyList(),
     onBackClick: () -> Unit,
     onProductClick: (Long) -> Unit = {},
+    onClientClick: (Long) -> Unit = {},
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
     onConsumeFeedback: () -> Unit = {},
@@ -354,6 +357,7 @@ fun OrderDetailScreen(
                         isGeneratingLabel = actionState.isGeneratingLabel,
                         availableStatuses = availableStatuses,
                         onProductClick = onProductClick,
+                        onClientClick = onClientClick,
                         onUpdateStatus = onUpdateStatus,
                         onUpdateTracking = onUpdateTracking,
                         onPrintInvoice = { onPrintInvoice(state.order) },
@@ -376,6 +380,7 @@ fun OrderDetailContent(
     isGeneratingLabel: Boolean = false,
     availableStatuses: List<OrderStatusFilter> = emptyList(),
     onProductClick: (Long) -> Unit = {},
+    onClientClick: (Long) -> Unit = {},
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
     onPrintInvoice: () -> Unit = {},
@@ -508,10 +513,12 @@ fun OrderDetailContent(
             }
         }
 
-        // Customer Card : avatar + nom + email (si disponible)
+        // Customer Card : avatar + nom — cliquable vers la fiche client si customerId disponible
         SectionCard(
             title = stringResource(R.string.order_detail_customer_section),
             icon = Icons.Outlined.Person,
+            clickable = order.customerId != null,
+            onClick = { order.customerId?.let { onClientClick(it) } },
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
@@ -832,9 +839,13 @@ fun SectionCard(
     title: String,
     icon: ImageVector,
     headerAction: (@Composable () -> Unit)? = null,
+    clickable: Boolean = false,
+    onClick: () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
-    SoftCard {
+    SoftCard(
+        modifier = if (clickable) Modifier.clickable(onClick = onClick) else Modifier,
+    ) {
         Column(modifier = Modifier.padding(Dimensions.cardPadding)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

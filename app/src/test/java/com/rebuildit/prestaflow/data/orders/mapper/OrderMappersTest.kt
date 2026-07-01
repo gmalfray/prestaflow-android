@@ -181,6 +181,44 @@ class OrderMappersTest {
         assertEquals(null, domain.shipping)
     }
 
+    // ─── customerId ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `OrderDto toEntity propage customerId quand present`() {
+        val dto = buildDetailDto(customerId = 42L)
+
+        val entity = dto.toEntity()
+
+        assertEquals(42L, entity.customerId)
+    }
+
+    @Test
+    fun `OrderDto toEntity donne customerId null quand absent`() {
+        val dto = buildDetailDto(customerId = null)
+
+        val entity = dto.toEntity()
+
+        assertEquals(null, entity.customerId)
+    }
+
+    @Test
+    fun `OrderEntity toDomain propage customerId quand present`() {
+        val entity = buildEntity(customerId = 99L)
+
+        val domain = entity.toDomain()
+
+        assertEquals(99L, domain.customerId)
+    }
+
+    @Test
+    fun `OrderEntity toDomain donne customerId null quand absent`() {
+        val entity = buildEntity(customerId = null)
+
+        val domain = entity.toDomain()
+
+        assertEquals(null, domain.customerId)
+    }
+
     // ─── Builders ───────────────────────────────────────────────────────────
 
     private fun buildListItemDto(
@@ -215,6 +253,7 @@ class OrderMappersTest {
         createdAt: String? = "2024-01-01T00:00:00+00:00",
         updatedAt: String? = "2024-01-02T00:00:00+00:00",
         hasInvoice: Boolean = false,
+        customerId: Long? = null,
     ) = OrderDto(
         id = id,
         reference = reference,
@@ -233,6 +272,7 @@ class OrderMappersTest {
                 null
             },
         hasInvoice = hasInvoice,
+        customerId = customerId,
     )
 
     private fun buildEntity(
@@ -247,6 +287,7 @@ class OrderMappersTest {
         hasInvoice: Boolean = false,
         itemsJson: String? = null,
         shippingJson: String? = null,
+        customerId: Long? = null,
     ) = OrderEntity(
         id = id,
         reference = reference,
@@ -259,5 +300,6 @@ class OrderMappersTest {
         hasInvoice = hasInvoice,
         itemsJson = itemsJson,
         shippingJson = shippingJson,
+        customerId = customerId,
     )
 }

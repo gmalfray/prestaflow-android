@@ -406,6 +406,9 @@ private fun DashboardHeader(
                         }
                         showDatePicker = false
                     },
+                    // Désactivé tant que la plage n'est pas complète (start ET end requis)
+                    enabled = datePickerState.selectedStartDateMillis != null &&
+                        datePickerState.selectedEndDateMillis != null,
                 ) {
                     Text(text = stringResource(id = R.string.action_ok))
                 }
@@ -1191,7 +1194,7 @@ internal fun DualAxisSalesChart(
             Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(colorOrders))
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "Commandes",
+                text = stringResource(id = R.string.dashboard_legend_orders),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1199,7 +1202,7 @@ internal fun DualAxisSalesChart(
             Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(colorTurnover))
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "Chiffre d'affaires",
+                text = stringResource(id = R.string.dashboard_legend_turnover),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1250,7 +1253,7 @@ private fun ChartTooltipBubble(
                 Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorOrders))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Cmd : $orders",
+                    text = stringResource(id = R.string.dashboard_tooltip_orders, orders),
                     style = MaterialTheme.typography.bodySmall,
                     color = onContainerColor,
                 )
@@ -1259,7 +1262,7 @@ private fun ChartTooltipBubble(
                 Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorTurnover))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "CA : ${formatCaLabel(turnover)}",
+                    text = stringResource(id = R.string.dashboard_tooltip_turnover, formatCaLabel(turnover)),
                     style = MaterialTheme.typography.bodySmall,
                     color = onContainerColor,
                 )
@@ -1269,7 +1272,7 @@ private fun ChartTooltipBubble(
                     Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorNewCustomers))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Nv. clients : $newCustomers",
+                        text = stringResource(id = R.string.dashboard_tooltip_new_customers, newCustomers),
                         style = MaterialTheme.typography.bodySmall,
                         color = onContainerColor,
                     )

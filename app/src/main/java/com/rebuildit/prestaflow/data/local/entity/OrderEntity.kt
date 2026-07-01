@@ -22,4 +22,6 @@ data class OrderEntity(
     @ColumnInfo(name = "status_color") val statusColor: String? = null,
     /** ID numérique du statut PrestaShop, 0 si absent. */
     @ColumnInfo(name = "current_state_id", defaultValue = "0") val currentStateId: Int = 0,
+    /** ID PrestaShop du client — null si le connecteur ne le renvoie pas encore. */
+    @ColumnInfo(name = "customer_id") val customerId: Long? = null,
 )

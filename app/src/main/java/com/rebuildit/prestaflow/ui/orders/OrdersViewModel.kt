@@ -61,6 +61,16 @@ private val DEFAULT_STATUS_MATCHERS = listOf(
 )
 
 /**
+ * Noms de statuts à afficher par défaut dans la barre de chips (quand aucune préférence n'est
+ * encore enregistrée). Correspondance par sous-chaîne après normalisation, dans l'ordre donné.
+ * Max [MAX_VISIBLE_STATUS_CHIPS] chips.
+ */
+private val DEFAULT_VISIBLE_CHIP_MATCHERS = listOf("preparation", "expedi", "termin")
+
+/** Nombre maximum de chips de statut dans la barre de filtres (hors chip « Toutes »). */
+internal const val MAX_VISIBLE_STATUS_CHIPS = 3
+
+/**
  * Résout les IDs de statuts correspondant aux noms par défaut dans [availableStatuses].
  * Retourne un ensemble vide si aucun statut ne correspond (fallback = tous).
  */
@@ -72,6 +82,22 @@ internal fun resolveDefaultStatusIds(availableStatuses: List<OrderStatusFilter>)
         }
         .map { it.id }
         .toSet()
+
+/**
+ * Résout la liste de statuts à afficher par défaut dans la barre de chips.
+ *
+ * Stratégie :
+ * - Pour chaque matcher de [DEFAULT_VISIBLE_CHIP_MATCHERS], prend le premier statut dont le nom
+ *   normalisé contient le matcher. Un statut ne peut apparaître qu'une seule fois (dedup par id).
+ * - Si aucun statut ne matche, repli sur les [MAX_VISIBLE_STATUS_CHIPS] premiers statuts disponibles.
+ * - Retourne au plus [MAX_VISIBLE_STATUS_CHIPS] entrées.
+ */
+internal fun resolveDefaultVisibleChips(availableStatuses: List<OrderStatusFilter>): List<OrderStatusFilter> {
+    val matched = DEFAULT_VISIBLE_CHIP_MATCHERS.mapNotNull { matcher ->
+        availableStatuses.firstOrNull { it.name.normalizeForMatch().contains(matcher) }
+    }.distinctBy { it.id }
+    return if (matched.isEmpty()) availableStatuses.take(MAX_VISIBLE_STATUS_CHIPS) else matched
+}
 
 /** Sens du swipe sur une ligne de commande. */
 enum class SwipeDirection { LEFT, RIGHT }
@@ -652,13 +678,14 @@ data class OrdersUiState(
 ) {
     /**
      * Statuts effectivement affichés dans la barre de filtres.
-     * Si [visibleStatusIds] est null, tous les [availableStatuses] sont retournés.
+     * Si [visibleStatusIds] est null (aucune préférence enregistrée), retourne le défaut curaté
+     * (jusqu'à [MAX_VISIBLE_STATUS_CHIPS] statuts résolus par nom via [resolveDefaultVisibleChips]).
      */
     val filteredStatuses: List<OrderStatusFilter>
         get() =
             visibleStatusIds?.let { ids ->
                 availableStatuses.filter { it.id in ids }
-            } ?: availableStatuses
+            } ?: resolveDefaultVisibleChips(availableStatuses)
 
     /** Liste filtrée par [query] sur le nom du client et la référence (insensible à la casse). */
     val visibleOrders: List<Order>
