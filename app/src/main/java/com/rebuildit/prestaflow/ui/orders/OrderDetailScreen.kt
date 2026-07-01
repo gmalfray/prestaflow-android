@@ -490,7 +490,12 @@ fun OrderDetailContent(
                     ) {
                         OrderStatusBadge(
                             status = order.status,
-                            statusColor = order.statusColor,
+                            // La couleur PS n'est pas renvoyée par l'endpoint détail : on la résout
+                            // par nom depuis availableStatuses (cohérent avec la liste des commandes).
+                            statusColor = order.statusColor?.takeIf { it.isNotBlank() }
+                                ?: availableStatuses.firstOrNull {
+                                    it.name.equals(order.status, ignoreCase = true)
+                                }?.color,
                         )
                         IconButton(
                             onClick = { showStatusDialog = true },
