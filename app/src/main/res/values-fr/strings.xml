@@ -128,7 +128,7 @@
     <string name="orders_status_unknown">Statut indisponible</string>
     <string name="orders_last_updated">Mise à jour le %1$s</string>
     <string name="orders_list_section_title">Commandes récentes</string>
-    <string name="orders_list_count">%1$d au total</string>
+    <string name="orders_list_count">%1$d chargées</string>
     <string name="orders_action_open">Ouvrir la commande</string>
     <string name="orders_customer_unknown">Client inconnu</string>
     <string name="products_list_empty">Aucun produit disponible.</string>
