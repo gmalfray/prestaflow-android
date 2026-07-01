@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.core.util.normalizeForMatch
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.orders.OrdersPreferencesRepository
@@ -23,7 +24,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.text.Normalizer
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -45,16 +45,6 @@ private val DEFAULT_STATUS_MATCHERS = listOf(
     "expedi",
     "termin",
 )
-
-/**
- * Normalise une chaîne pour la comparaison insensible à la casse et aux accents.
- * `"Paiement accepté"` → `"paiement accepte"`.
- */
-internal fun String.normalizeForMatch(): String =
-    Normalizer.normalize(this, Normalizer.Form.NFD)
-        .replace(Regex("\\p{M}"), "")
-        .lowercase()
-        .trim()
 
 /**
  * Résout les IDs de statuts correspondant aux noms par défaut dans [availableStatuses].

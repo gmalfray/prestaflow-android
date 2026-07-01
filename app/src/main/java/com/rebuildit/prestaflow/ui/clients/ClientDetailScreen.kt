@@ -32,8 +32,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
+import com.rebuildit.prestaflow.core.util.normalizeForMatch
 import com.rebuildit.prestaflow.domain.clients.model.Client
 import com.rebuildit.prestaflow.domain.clients.model.ClientOrder
+import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.NotFoundState
@@ -105,6 +107,7 @@ fun ClientDetailScreen(
                 ClientContent(
                     modifier = Modifier.padding(padding),
                     client = state.client,
+                    availableStatuses = state.availableStatuses,
                     onOrderClick = onOrderClick,
                 )
             else ->
@@ -121,6 +124,7 @@ fun ClientDetailScreen(
 @Composable
 private fun ClientContent(
     client: Client,
+    availableStatuses: List<OrderStatusFilter>,
     onOrderClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -246,6 +250,7 @@ private fun ClientContent(
                     client.orders.forEachIndexed { index, order ->
                         OrderHistoryRow(
                             order = order,
+                            availableStatuses = availableStatuses,
                             currencyFormatter = currencyFormatter,
                             dateFormatter = dateFormatter,
                             onClick = { onOrderClick(order.id) },
@@ -265,6 +270,7 @@ private fun ClientContent(
 @Composable
 private fun OrderHistoryRow(
     order: ClientOrder,
+    availableStatuses: List<OrderStatusFilter>,
     currencyFormatter: NumberFormat,
     dateFormatter: DateTimeFormatter,
     onClick: () -> Unit,
@@ -276,6 +282,11 @@ private fun OrderHistoryRow(
     val dateAdded =
         remember(order.dateAdded) {
             formatTimestamp(order.dateAdded, dateFormatter)
+        }
+    // Couleur résolue par nom contre la liste des statuts PrestaShop (match normalisé)
+    val resolvedStatusColor =
+        remember(order.status, availableStatuses) {
+            availableStatuses.firstOrNull { it.name.normalizeForMatch() == order.status.normalizeForMatch() }?.color
         }
 
     Row(
@@ -315,7 +326,7 @@ private fun OrderHistoryRow(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                OrderStatusBadge(status = order.status)
+                OrderStatusBadge(status = order.status, statusColor = resolvedStatusColor)
             }
         }
     }

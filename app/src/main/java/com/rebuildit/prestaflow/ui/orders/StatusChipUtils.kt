@@ -1,5 +1,7 @@
 package com.rebuildit.prestaflow.ui.orders
 
+import com.rebuildit.prestaflow.core.util.normalizeForMatch
+
 /**
  * Utilitaires pour les chips de filtre statut : libellés courts et accessibilité.
  *

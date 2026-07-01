@@ -55,7 +55,14 @@ class FakeOrdersRepository : OrdersRepository {
 
     var orderStatuses: List<OrderStatusFilter> = emptyList()
 
-    override suspend fun getOrderStatuses(): List<OrderStatusFilter> = orderStatuses
+    /** Si vrai, [getOrderStatuses] lance une exception. */
+    var shouldThrowOnGetStatuses = false
+    var getStatusesException: Throwable = RuntimeException("Erreur réseau statuts simulée")
+
+    override suspend fun getOrderStatuses(): List<OrderStatusFilter> {
+        if (shouldThrowOnGetStatuses) throw getStatusesException
+        return orderStatuses
+    }
 
     override suspend fun refresh(
         forceRemote: Boolean,
