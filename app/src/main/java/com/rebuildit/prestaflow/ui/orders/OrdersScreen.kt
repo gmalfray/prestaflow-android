@@ -208,6 +208,7 @@ fun OrdersRoute(
             onSortChanged = viewModel::onSortChanged,
             onLoadMore = viewModel::loadMore,
             onSwipeAction = viewModel::onSwipeAction,
+            swipeConfig = uiState.swipeConfig,
         )
         SnackbarHost(
             hostState = snackbarHostState,
@@ -236,6 +237,7 @@ fun OrdersScreen(
     onSortChanged: (OrderSort) -> Unit = {},
     onLoadMore: () -> Unit = {},
     onSwipeAction: (Long, String, SwipeDirection) -> Unit = { _, _, _ -> },
+    swipeConfig: SwipeConfig = SwipeConfig(),
 ) {
     val errorMessage = uiState.error?.asString()
 
@@ -283,6 +285,7 @@ fun OrdersScreen(
                 isLoadingMore = uiState.isLoadingMore,
                 onLoadMore = onLoadMore,
                 onSwipeAction = onSwipeAction,
+                swipeConfig = swipeConfig,
             )
     }
 }
@@ -323,6 +326,7 @@ private fun OrdersList(
     isLoadingMore: Boolean = false,
     onLoadMore: () -> Unit = {},
     onSwipeAction: (Long, String, SwipeDirection) -> Unit = { _, _, _ -> },
+    swipeConfig: SwipeConfig = SwipeConfig(),
 ) {
     val dateFormatter = rememberDateFormatter()
     var showStatusPrefsSheet by rememberSaveable { mutableStateOf(false) }
@@ -435,7 +439,8 @@ private fun OrdersList(
 
                     if (orders.isEmpty()) {
                         // Filtre statut actif sans résultat → bouton de réinitialisation
-                        if (selectedStatusIds.isNotEmpty() && query.isBlank()) {
+                        // Affiché dès qu'un filtre de statut est actif, même si une recherche est en cours
+                        if (selectedStatusIds.isNotEmpty()) {
                             item {
                                 Column(
                                     modifier = Modifier.padding(vertical = Dimensions.spacingM),
@@ -490,6 +495,7 @@ private fun OrdersList(
                                                     onSwipeAction(order.id, order.reference, direction)
                                                 },
                                                 availableStatuses = availableStatuses,
+                                                swipeConfig = swipeConfig,
                                             )
                                         }
                                         if (index < orders.lastIndex) {
@@ -552,13 +558,24 @@ private fun SwipeableOrderRow(
     onLongPress: () -> Unit,
     onSwipeAction: (SwipeDirection) -> Unit,
     availableStatuses: List<OrderStatusFilter>,
+    swipeConfig: SwipeConfig = SwipeConfig(),
 ) {
-    // Le swipe est réservé aux commandes en « Paiement accepté » (matcher "paiement accepte")
-    val isPaiementAccepte = remember(order.status, availableStatuses) {
-        order.status.normalizeForMatch().contains("paiement accepte")
+    // Le swipe est actif uniquement si le statut de la commande correspond à la source configurée.
+    // Par défaut (aucun ID configuré) : matcher "paiement accepte" (comportement historique).
+    val isSwipeSource = remember(order.status, order.currentStateId, swipeConfig, availableStatuses) {
+        if (!swipeConfig.enabled) {
+            false
+        } else {
+            val configuredId = swipeConfig.sourceStatusId
+            if (configuredId != null) {
+                order.currentStateId == configuredId
+            } else {
+                order.status.normalizeForMatch().contains("paiement accepte")
+            }
+        }
     }
 
-    if (!isPaiementAccepte || selectionMode) {
+    if (!isSwipeSource || selectionMode) {
         // Hors contexte swipe : simple ligne
         OrderRow(
             order = order,

@@ -839,6 +839,173 @@ class OrdersViewModelTest {
             )
         }
 
+    // ─── Config swipe : résolution source ───────────────────────────────────
+
+    @Test
+    fun `isSwipeSource retourne true par ID quand sourceStatusId configure et currentStateId correspond`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            val config = SwipeConfig(enabled = true, sourceStatusId = 2)
+            val statuses =
+                listOf(
+                    OrderStatusFilter(2, "Paiement accepté", "#00FF00"),
+                    OrderStatusFilter(3, "En préparation", "#0000FF"),
+                )
+
+            assertTrue(
+                "isSwipeSource doit retourner true quand currentStateId == sourceStatusId",
+                vm.isSwipeSource(config, "Paiement accepté", 2, statuses),
+            )
+            assertFalse(
+                "isSwipeSource doit retourner false quand currentStateId != sourceStatusId",
+                vm.isSwipeSource(config, "En préparation", 3, statuses),
+            )
+        }
+
+    @Test
+    fun `isSwipeSource se replie sur le nom quand swipeEnabled false retourne false`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            val config = SwipeConfig(enabled = false, sourceStatusId = null)
+            val statuses = listOf(OrderStatusFilter(2, "Paiement accepté", "#00FF00"))
+
+            assertFalse(
+                "isSwipeSource doit retourner false quand swipe désactivé",
+                vm.isSwipeSource(config, "Paiement accepté", 2, statuses),
+            )
+        }
+
+    @Test
+    fun `isSwipeSource se replie sur le nom quand sourceStatusId est null`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            val configSansId = SwipeConfig(enabled = true, sourceStatusId = null)
+            val statuses = listOf(OrderStatusFilter(2, "Paiement accepté", "#00FF00"))
+
+            assertTrue(
+                "isSwipeSource doit matcher par nom 'paiement accepte' quand sourceStatusId est null",
+                vm.isSwipeSource(configSansId, "Paiement accepté", 2, statuses),
+            )
+            assertFalse(
+                "Un statut sans 'paiement accepte' dans le nom ne doit pas matcher",
+                vm.isSwipeSource(configSansId, "En préparation", 3, statuses),
+            )
+        }
+
+    // ─── Config swipe : résolution cible ────────────────────────────────────
+
+    @Test
+    fun `resolveTargetStatus LEFT utilise l ID configure quand il existe dans les statuts`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            val config = SwipeConfig(enabled = true, leftTargetStatusId = 10)
+            val statuses =
+                listOf(
+                    OrderStatusFilter(3, "En cours de préparation", "#0000FF"),
+                    OrderStatusFilter(10, "Statut custom", "#AABBCC"),
+                )
+
+            val result = vm.resolveTargetStatus(config, statuses, SwipeDirection.LEFT)
+            assertEquals(
+                "resolveTargetStatus LEFT doit retourner le statut avec l'ID configuré",
+                10,
+                result?.id,
+            )
+        }
+
+    @Test
+    fun `resolveTargetStatus LEFT se replie sur le nom quand ID configure introuvable`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            // ID 99 n'existe pas dans la liste → repli par nom
+            val config = SwipeConfig(enabled = true, leftTargetStatusId = 99)
+            val statuses = listOf(OrderStatusFilter(3, "En cours de préparation", "#0000FF"))
+
+            val result = vm.resolveTargetStatus(config, statuses, SwipeDirection.LEFT)
+            assertEquals(
+                "Si l'ID configuré est introuvable, doit se replier sur le statut 'preparation'",
+                3,
+                result?.id,
+            )
+        }
+
+    @Test
+    fun `resolveTargetStatus RIGHT utilise l ID configure quand il existe dans les statuts`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            val config = SwipeConfig(enabled = true, rightTargetStatusId = 20)
+            val statuses =
+                listOf(
+                    OrderStatusFilter(5, "Terminé", "#888888"),
+                    OrderStatusFilter(20, "Archivé", "#CCCCCC"),
+                )
+
+            val result = vm.resolveTargetStatus(config, statuses, SwipeDirection.RIGHT)
+            assertEquals(
+                "resolveTargetStatus RIGHT doit retourner le statut avec l'ID configuré",
+                20,
+                result?.id,
+            )
+        }
+
+    @Test
+    fun `resolveTargetStatus RIGHT se replie sur Termine par nom quand ID introuvable`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            // ID 99 absent → repli par nom "termin"
+            val config = SwipeConfig(enabled = true, rightTargetStatusId = 99)
+            val statuses = listOf(OrderStatusFilter(5, "Terminé", "#888888"))
+
+            val result = vm.resolveTargetStatus(config, statuses, SwipeDirection.RIGHT)
+            assertEquals(
+                "Si l'ID RIGHT est introuvable, doit se replier sur le statut contenant 'termin'",
+                5,
+                result?.id,
+            )
+        }
+
+    @Test
+    fun `onSwipeAction ne fait rien quand swipe desactive`() =
+        runTest {
+            fakePrefsRepo.emitSwipeEnabled(false)
+            fakeOrdersRepo.orderStatuses = listOf(OrderStatusFilter(3, "En cours de préparation", "#0000FF"))
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "#ORD-001", status = "Paiement accepté")))
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            // S'assurer que le config est bien désactivé
+            fakePrefsRepo.emitSwipeEnabled(false)
+            advanceUntilIdle()
+            fakeOrdersRepo.updateStatusCalls.clear()
+
+            vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.LEFT)
+            advanceUntilIdle()
+
+            assertNull(
+                "pendingSwipeAction doit rester null quand swipe est désactivé",
+                vm.uiState.value.pendingSwipeAction,
+            )
+            assertTrue(
+                "updateOrderStatus ne doit pas être appelé quand swipe désactivé",
+                fakeOrdersRepo.updateStatusCalls.isEmpty(),
+            )
+        }
+
     // ─── Builders ────────────────────────────────────────────────────────────
 
     private fun buildOrder(

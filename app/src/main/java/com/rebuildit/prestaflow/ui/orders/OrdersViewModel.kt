@@ -31,6 +31,20 @@ import javax.inject.Inject
 /** Durée (ms) avant envoi effectif du changement de statut après un swipe. */
 private const val SWIPE_UNDO_DELAY_MS = 5_000L
 
+/**
+ * Configuration du swipe telle qu'exposée dans l'UiState.
+ *
+ * Les ids [sourceStatusId], [leftTargetStatusId] et [rightTargetStatusId] proviennent
+ * des préférences utilisateur. Quand ils sont null, la résolution se fait par nom
+ * (comportement historique). Cette résolution est effectuée dans [OrdersViewModel.onSwipeAction].
+ */
+data class SwipeConfig(
+    val enabled: Boolean = true,
+    val sourceStatusId: Int? = null,
+    val leftTargetStatusId: Int? = null,
+    val rightTargetStatusId: Int? = null,
+)
+
 /** Taille de page par défaut pour la pagination. */
 private const val PAGE_SIZE = OrdersRepository.DEFAULT_PAGE_SIZE
 
@@ -110,6 +124,7 @@ class OrdersViewModel
         init {
             observeOrders()
             observeVisibleStatusIds()
+            observeSwipeConfig()
             initializeData()
             observeActiveShopSwitch()
         }
@@ -204,15 +219,41 @@ class OrdersViewModel
             }
         }
 
+        // ─── Config swipe ──────────────────────────────────────────────────────
+
+        /** Observe les préférences de configuration du swipe et met à jour l'UiState. */
+        private fun observeSwipeConfig() {
+            viewModelScope.launch {
+                kotlinx.coroutines.flow.combine(
+                    ordersPreferencesRepository.swipeEnabled,
+                    ordersPreferencesRepository.swipeSourceStatusId,
+                    ordersPreferencesRepository.swipeLeftTargetStatusId,
+                    ordersPreferencesRepository.swipeRightTargetStatusId,
+                ) { enabled, sourceId, leftId, rightId ->
+                    SwipeConfig(
+                        enabled = enabled,
+                        sourceStatusId = sourceId,
+                        leftTargetStatusId = leftId,
+                        rightTargetStatusId = rightId,
+                    )
+                }.collect { config ->
+                    _uiState.update { it.copy(swipeConfig = config) }
+                }
+            }
+        }
+
         // ─── Swipe avec délai d'annulation ───────────────────────────────────
 
         /**
          * Déclenche un changement de statut via swipe sur une commande.
          *
-         * - Swipe GAUCHE → "En cours de préparation" (matcher "preparation")
-         * - Swipe DROITE → "Terminé" (matcher "termin") ou "Livré" (matcher "livr")
+         * La résolution de la source/cibles se fait :
+         * - **Par ID** si configuré dans les préférences swipe.
+         * - **Par nom normalisé** (repli) si l'ID est null ou introuvable :
+         *   - Source : matcher "paiement accepte"
+         *   - Gauche  : matcher "preparation"
+         *   - Droite  : matcher "termin" puis "livr"
          *
-         * La résolution se fait par **nom normalisé** (insensible casse/accents).
          * L'appel API n'est envoyé qu'après [SWIPE_UNDO_DELAY_MS] ms. Si un autre swipe
          * arrive avant, le précédent est annulé (sans envoi).
          */
@@ -221,14 +262,11 @@ class OrdersViewModel
             orderReference: String,
             direction: SwipeDirection,
         ) {
+            val config = _uiState.value.swipeConfig
+            if (!config.enabled) return
+
             val statuses = _uiState.value.availableStatuses
-            val targetStatus = when (direction) {
-                SwipeDirection.LEFT ->
-                    statuses.firstOrNull { it.name.normalizeForMatch().contains("preparation") }
-                SwipeDirection.RIGHT ->
-                    statuses.firstOrNull { it.name.normalizeForMatch().contains("termin") }
-                        ?: statuses.firstOrNull { it.name.normalizeForMatch().contains("livr") }
-            } ?: run {
+            val targetStatus = resolveTargetStatus(config, statuses, direction) ?: run {
                 Timber.d("Swipe ignoré : aucun statut cible trouvé pour direction=$direction")
                 return
             }
@@ -257,6 +295,61 @@ class OrdersViewModel
                 }
                 _uiState.update { it.copy(pendingSwipeAction = null) }
                 refresh(forceRemote = true, notifyOnError = false)
+            }
+        }
+
+        /**
+         * Résout le statut cible en fonction de la direction et de la config swipe.
+         *
+         * - Si un ID est configuré et trouvé dans [statuses] → utilise cet ID.
+         * - Sinon (null ou ID introuvable) → résolution par nom normalisé (repli historique).
+         */
+        internal fun resolveTargetStatus(
+            config: SwipeConfig,
+            statuses: List<com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter>,
+            direction: SwipeDirection,
+        ) = when (direction) {
+            SwipeDirection.LEFT -> {
+                val configuredId = config.leftTargetStatusId
+                if (configuredId != null) {
+                    statuses.firstOrNull { it.id == configuredId }
+                        ?: statuses.firstOrNull { it.name.normalizeForMatch().contains("preparation") }
+                } else {
+                    statuses.firstOrNull { it.name.normalizeForMatch().contains("preparation") }
+                }
+            }
+            SwipeDirection.RIGHT -> {
+                val configuredId = config.rightTargetStatusId
+                if (configuredId != null) {
+                    statuses.firstOrNull { it.id == configuredId }
+                        ?: (statuses.firstOrNull { it.name.normalizeForMatch().contains("termin") }
+                            ?: statuses.firstOrNull { it.name.normalizeForMatch().contains("livr") })
+                } else {
+                    statuses.firstOrNull { it.name.normalizeForMatch().contains("termin") }
+                        ?: statuses.firstOrNull { it.name.normalizeForMatch().contains("livr") }
+                }
+            }
+        }
+
+        /**
+         * Résout si une commande avec le statut [orderStatus] est éligible au swipe,
+         * selon la config source.
+         *
+         * - Si [SwipeConfig.sourceStatusId] est configuré et trouvé → compare par ID.
+         * - Sinon → repli par nom normalisé (matcher "paiement accepte").
+         */
+        internal fun isSwipeSource(
+            config: SwipeConfig,
+            orderStatus: String,
+            currentStateId: Int,
+            statuses: List<com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter>,
+        ): Boolean {
+            if (!config.enabled) return false
+            val configuredId = config.sourceStatusId
+            return if (configuredId != null) {
+                currentStateId == configuredId
+            } else {
+                orderStatus.normalizeForMatch().contains("paiement accepte")
             }
         }
 
@@ -554,6 +647,8 @@ data class OrdersUiState(
     val isLoadingMore: Boolean = false,
     /** Action de swipe en attente (délai d'annulation). Null = aucune action en cours. */
     val pendingSwipeAction: PendingSwipeAction? = null,
+    /** Configuration du swipe lue depuis les préférences persistées. */
+    val swipeConfig: SwipeConfig = SwipeConfig(),
 ) {
     /**
      * Statuts effectivement affichés dans la barre de filtres.
