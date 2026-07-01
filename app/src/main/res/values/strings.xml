@@ -254,6 +254,8 @@
     <string name="orders_filter_prefs_confirm">Apply</string>
     <string name="orders_filter_empty">No orders for this status.</string>
     <string name="orders_filter_reset">Reset filters</string>
+    <!-- Accessibilité chips : le libellé affiché est court, le contentDescription donne le nom complet -->
+    <string name="orders_filter_chip_description">Filter by status: %1$s</string>
 
     <!-- Tri commandes -->
     <string name="orders_sort_label">Sort orders</string>

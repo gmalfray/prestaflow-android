@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -74,6 +75,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -961,10 +964,23 @@ private fun StatusFilterBar(
                 label = { Text(stringResource(R.string.orders_filter_all)) },
             )
             statuses.forEach { status ->
+                val chipDescription = stringResource(R.string.orders_filter_chip_description, status.name)
+                val shortLabel = remember(status.name) { statusShortLabel(status.name) }
+                val dotColor = remember(status.color) { parseHexColor(status.color) }
                 FilterChip(
+                    modifier = Modifier.semantics { contentDescription = chipDescription },
                     selected = status.id in selectedStatusIds,
                     onClick = { onStatusToggle(status.id) },
-                    label = { Text(status.name) },
+                    leadingIcon = {
+                        if (dotColor != null) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(dotColor, CircleShape),
+                            )
+                        }
+                    },
+                    label = { Text(shortLabel) },
                 )
             }
         }
