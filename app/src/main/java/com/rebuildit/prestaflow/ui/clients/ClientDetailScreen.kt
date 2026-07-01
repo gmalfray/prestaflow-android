@@ -23,11 +23,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.TextButton
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
@@ -120,6 +125,9 @@ fun ClientDetailScreen(
     }
 }
 
+/** Nombre de commandes affichées avant de proposer « Voir tout ». */
+private const val MAX_ORDERS_COLLAPSED = 10
+
 @Suppress("LongMethod") // Composable contenu client : infos personnelles, adresses et historique commandes
 @Composable
 private fun ClientContent(
@@ -130,6 +138,7 @@ private fun ClientContent(
 ) {
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
+    var historyExpanded by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier =
@@ -237,6 +246,9 @@ private fun ClientContent(
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
+            val displayedOrders =
+                if (historyExpanded) client.orders else client.orders.take(MAX_ORDERS_COLLAPSED)
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(Dimensions.cardCornerRadius),
@@ -247,7 +259,7 @@ private fun ClientContent(
                 elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 2.dp),
             ) {
                 Column {
-                    client.orders.forEachIndexed { index, order ->
+                    displayedOrders.forEachIndexed { index, order ->
                         OrderHistoryRow(
                             order = order,
                             availableStatuses = availableStatuses,
@@ -255,12 +267,25 @@ private fun ClientContent(
                             dateFormatter = dateFormatter,
                             onClick = { onOrderClick(order.id) },
                         )
-                        if (index < client.orders.lastIndex) {
+                        if (index < displayedOrders.lastIndex) {
                             androidx.compose.material3.HorizontalDivider(
                                 color = MaterialTheme.colorScheme.surfaceContainer,
                             )
                         }
                     }
+                }
+            }
+
+            // Bouton « Voir tout » si l'historique est tronqué
+            if (!historyExpanded && client.orders.size > MAX_ORDERS_COLLAPSED) {
+                TextButton(
+                    onClick = { historyExpanded = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = stringResource(R.string.client_show_all_orders, client.orders.size),
+                        textAlign = TextAlign.Center,
+                    )
                 }
             }
         }

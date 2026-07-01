@@ -147,6 +147,12 @@ private fun CartDetailContent(
         remember(cart.updatedAtIso) {
             formatTimestamp(cart.updatedAtIso, dateFormatter)
         }
+    // F — Calcule le vrai nombre d'articles depuis les lignes produits (itemsCount peut valoir
+    // 0 si le backend ne remplit pas ce champ dans la réponse détail).
+    val realItemsCount =
+        remember(cart.products) {
+            if (cart.products.isNotEmpty()) cart.products.sumOf { it.quantity } else cart.itemsCount
+        }
 
     Column(
         modifier =
@@ -185,7 +191,7 @@ private fun CartDetailContent(
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Text(
-                        text = stringResource(R.string.carts_items_count, cart.itemsCount),
+                        text = stringResource(R.string.carts_items_count, realItemsCount),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )

@@ -17,11 +17,40 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class CartsUiState(
-    val carts: List<CartSummary> = emptyList(),
+    /** Liste complète chargée depuis l'API (déjà filtrée : paniers à 0 € exclus). */
+    val allCarts: List<CartSummary> = emptyList(),
+    val query: String = "",
+    val displayedCount: Int = PAGE_SIZE,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: UiText? = null,
-)
+) {
+    companion object {
+        const val PAGE_SIZE = 25
+    }
+
+    /** Paniers correspondant à la recherche en cours. */
+    private val matchingCarts: List<CartSummary>
+        get() {
+            val q = query.trim()
+            return if (q.isEmpty()) {
+                allCarts
+            } else {
+                allCarts.filter { cart ->
+                    cart.customerName.contains(q, ignoreCase = true) ||
+                        cart.customerEmail?.contains(q, ignoreCase = true) == true
+                }
+            }
+        }
+
+    /** Paniers à afficher (page courante). */
+    val carts: List<CartSummary>
+        get() = matchingCarts.take(displayedCount)
+
+    /** Vrai si d'autres paniers peuvent être chargés (pagination). */
+    val hasMore: Boolean
+        get() = displayedCount < matchingCarts.size
+}
 
 @HiltViewModel
 class CartsViewModel
@@ -43,7 +72,12 @@ class CartsViewModel
             viewModelScope.launch {
                 runCatching { cartsRepository.getCarts() }
                     .onSuccess { carts ->
-                        _uiState.update { it.copy(carts = carts, isRefreshing = false) }
+                        _uiState.update {
+                            it.copy(
+                                allCarts = carts.filter { c -> c.totalTaxIncl > 0 },
+                                isRefreshing = false,
+                            )
+                        }
                     }
                     .onFailure { error ->
                         _uiState.update {
@@ -56,6 +90,15 @@ class CartsViewModel
             }
         }
 
+        fun onQueryChanged(query: String) {
+            // Réinitialise la pagination à chaque changement de requête
+            _uiState.update { it.copy(query = query, displayedCount = CartsUiState.PAGE_SIZE) }
+        }
+
+        fun loadMore() {
+            _uiState.update { it.copy(displayedCount = it.displayedCount + CartsUiState.PAGE_SIZE) }
+        }
+
         private fun observeActiveShopSwitch() {
             viewModelScope.launch {
                 authRepository.connections
@@ -64,7 +107,13 @@ class CartsViewModel
                     .drop(1)
                     .collect {
                         _uiState.update { current ->
-                            current.copy(carts = emptyList(), isLoading = true, error = null)
+                            current.copy(
+                                allCarts = emptyList(),
+                                query = "",
+                                displayedCount = CartsUiState.PAGE_SIZE,
+                                isLoading = true,
+                                error = null,
+                            )
                         }
                         load()
                     }
@@ -76,7 +125,13 @@ class CartsViewModel
             viewModelScope.launch {
                 runCatching { cartsRepository.getCarts() }
                     .onSuccess { carts ->
-                        _uiState.update { it.copy(carts = carts, isLoading = false) }
+                        _uiState.update {
+                            it.copy(
+                                // G — Filtre les paniers vides (total ≤ 0 €)
+                                allCarts = carts.filter { c -> c.totalTaxIncl > 0 },
+                                isLoading = false,
+                            )
+                        }
                     }
                     .onFailure { error ->
                         _uiState.update {

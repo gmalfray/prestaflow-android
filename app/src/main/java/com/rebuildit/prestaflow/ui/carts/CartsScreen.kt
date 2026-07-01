@@ -16,6 +16,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -37,6 +38,7 @@ import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
+import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.components.SectionHeader
 import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
 import com.rebuildit.prestaflow.ui.components.formatCurrency
@@ -64,6 +66,8 @@ fun CartsRoute(
         onCartClick = onCartClick,
         onSwitchShop = shopsViewModel::switchShop,
         onAddShop = onAddShop,
+        onQueryChanged = viewModel::onQueryChanged,
+        onLoadMore = viewModel::loadMore,
     )
 }
 
@@ -76,12 +80,14 @@ fun CartsScreen(
     connections: List<ShopConnection> = emptyList(),
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
+    onQueryChanged: (String) -> Unit = {},
+    onLoadMore: () -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
 
     when {
-        state.isLoading && state.carts.isEmpty() -> LoadingState(modifier)
-        state.carts.isEmpty() ->
+        state.isLoading && state.allCarts.isEmpty() -> LoadingState(modifier)
+        state.allCarts.isEmpty() ->
             EmptyState(
                 message = stringResource(R.string.carts_list_empty),
                 modifier = modifier,
@@ -91,7 +97,7 @@ fun CartsScreen(
         else ->
             CartsList(
                 modifier = modifier,
-                carts = state.carts,
+                state = state,
                 isRefreshing = state.isRefreshing,
                 errorMessage = errorMessage,
                 connections = connections,
@@ -99,6 +105,8 @@ fun CartsScreen(
                 onCartClick = onCartClick,
                 onSwitchShop = onSwitchShop,
                 onAddShop = onAddShop,
+                onQueryChanged = onQueryChanged,
+                onLoadMore = onLoadMore,
             )
     }
 }
@@ -108,7 +116,7 @@ fun CartsScreen(
 @Composable
 private fun CartsList(
     modifier: Modifier,
-    carts: List<CartSummary>,
+    state: CartsUiState,
     isRefreshing: Boolean,
     errorMessage: String?,
     connections: List<ShopConnection>,
@@ -116,6 +124,8 @@ private fun CartsList(
     onCartClick: (Int) -> Unit,
     onSwitchShop: (String) -> Unit,
     onAddShop: () -> Unit,
+    onQueryChanged: (String) -> Unit,
+    onLoadMore: () -> Unit,
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -157,25 +167,57 @@ private fun CartsList(
                         )
                     }
 
+                    // Champ de recherche (filtre local par nom client)
                     item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                            colors =
-                                CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                                ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        ) {
-                            Column {
-                                carts.forEachIndexed { index, cart ->
-                                    CartRow(cart = cart, onClick = { onCartClick(cart.id) })
-                                    if (index < carts.lastIndex) {
-                                        HorizontalDivider(
-                                            color = MaterialTheme.colorScheme.surfaceContainer,
-                                            thickness = 1.dp,
-                                        )
+                        SearchField(
+                            query = state.query,
+                            onQueryChange = onQueryChanged,
+                            placeholder = stringResource(R.string.carts_search_placeholder),
+                        )
+                    }
+
+                    if (state.carts.isEmpty() && state.query.isNotBlank()) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.list_no_results, state.query),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = Dimensions.spacingM),
+                            )
+                        }
+                    } else if (state.carts.isNotEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                    ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            ) {
+                                Column {
+                                    state.carts.forEachIndexed { index, cart ->
+                                        CartRow(cart = cart, onClick = { onCartClick(cart.id) })
+                                        if (index < state.carts.lastIndex) {
+                                            HorizontalDivider(
+                                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                                thickness = 1.dp,
+                                            )
+                                        }
                                     }
+                                }
+                            }
+                        }
+
+                        // Bouton « Charger plus » si pagination disponible
+                        if (state.hasMore) {
+                            item {
+                                OutlinedButton(
+                                    onClick = onLoadMore,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text(text = stringResource(R.string.carts_load_more))
                                 }
                             }
                         }

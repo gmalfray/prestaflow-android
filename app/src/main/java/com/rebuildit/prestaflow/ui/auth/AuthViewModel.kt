@@ -30,8 +30,44 @@ class AuthViewModel
         val uiState: StateFlow<AuthUiState> = _uiState
 
         fun onShopUrlChanged(value: String) {
+            val shopUrlError = validateUrlRealTime(value)
             _uiState.update {
-                it.copy(shopUrl = value, shopUrlError = null, formError = null, showModuleNotInstalledGuide = false)
+                it.copy(
+                    shopUrl = value,
+                    shopUrlError = shopUrlError,
+                    formError = null,
+                    showModuleNotInstalledGuide = false,
+                )
+            }
+        }
+
+        /**
+         * Validation en temps réel de l'URL boutique, non-bloquante :
+         * - URL vide ou préfixe seul (« https:// ») → pas d'erreur (saisie en cours)
+         * - URL avec schéma http → erreur HTTPS requise
+         * - URL syntaxiquement invalide mais suffisamment longue → erreur malformée
+         * - URL valide → pas d'erreur
+         */
+        private fun validateUrlRealTime(value: String): UiText? {
+            if (value.isBlank()) return null
+            // Ne pas pénaliser la saisie du schéma seul
+            if (value == "http://" || value == "https://") return null
+            // Pas encore de schéma → pas d'erreur (l'utilisateur tape encore)
+            if (!value.contains("://")) return null
+            return when (shopUrlValidator.validate(value)) {
+                is ShopUrlValidator.Result.Valid -> null
+                ShopUrlValidator.Result.Invalid.Empty -> null
+                ShopUrlValidator.Result.Invalid.NonHttps ->
+                    UiText.FromResources(R.string.auth_error_shop_url_https)
+                ShopUrlValidator.Result.Invalid.Malformed -> {
+                    // N'afficher l'erreur de malformation que si le host semble suffisamment saisi
+                    val afterScheme = value.substringAfter("://")
+                    if (afterScheme.length >= 5) {
+                        UiText.FromResources(R.string.auth_error_shop_url_malformed)
+                    } else {
+                        null
+                    }
+                }
             }
         }
 
