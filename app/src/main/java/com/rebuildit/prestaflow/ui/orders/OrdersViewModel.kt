@@ -132,17 +132,13 @@ class OrdersViewModel
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
     ) : ViewModel() {
-        private val _uiState = MutableStateFlow(OrdersUiState())
+        private val _uiState = MutableStateFlow(
+            OrdersUiState(
+                activePeriod = savedStateHandle.get<String?>("period")
+                    ?.let { periodValue -> DashboardPeriod.entries.find { it.queryValue == periodValue } },
+            ),
+        )
         val uiState: StateFlow<OrdersUiState> = _uiState.asStateFlow()
-
-        /**
-         * Plage de dates dérivée de la période dashboard transmise via nav arg "period".
-         * Null si l'écran est ouvert sans filtre de période (accès direct depuis la barre de navigation).
-         */
-        private val periodDateRange: Pair<String, String>? =
-            savedStateHandle.get<String?>("period")
-                ?.let { periodValue -> DashboardPeriod.entries.find { it.queryValue == periodValue } }
-                ?.toDateRange()
 
         /** Job en cours pour le swipe avec délai d'annulation. */
         private var pendingSwipeJob: Job? = null
@@ -175,6 +171,15 @@ class OrdersViewModel
         }
 
         fun onRefresh() {
+            refresh(forceRemote = true, notifyOnError = true)
+        }
+
+        /**
+         * Efface le filtre de période hérité du dashboard et recharge la liste complète.
+         * Les filtres de statut et le tri sont conservés.
+         */
+        fun clearPeriodFilter() {
+            _uiState.update { it.copy(activePeriod = null) }
             refresh(forceRemote = true, notifyOnError = true)
         }
 
@@ -222,7 +227,7 @@ class OrdersViewModel
             val nextOffset = current.orders.size
             _uiState.update { it.copy(isLoadingMore = true) }
             viewModelScope.launch {
-                val (dateFrom, dateTo) = periodDateRange ?: Pair(null, null)
+                val (dateFrom, dateTo) = current.activePeriod?.toDateRange() ?: Pair(null, null)
                 val hasMore = runCatching {
                     ordersRepository.refresh(
                         forceRemote = true,
@@ -584,7 +589,7 @@ class OrdersViewModel
                 }
 
                 val current = _uiState.value
-                val (dateFrom, dateTo) = periodDateRange ?: Pair(null, null)
+                val (dateFrom, dateTo) = current.activePeriod?.toDateRange() ?: Pair(null, null)
                 runCatching {
                     ordersRepository.refresh(
                         forceRemote = forceRemote,
@@ -641,6 +646,11 @@ data class OrdersUiState(
     val isRefreshing: Boolean = false,
     val error: UiText? = null,
     val query: String = "",
+    /**
+     * Période dashboard active (héritée du nav arg "period").
+     * Null = aucun filtre de période actif (liste complète, accès direct via navigation).
+     */
+    val activePeriod: DashboardPeriod? = null,
     /** Mode sélection multiple actif (déclenché par appui long). */
     val selectionMode: Boolean = false,
     /** IDs des commandes sélectionnées (toutes avec has_invoice=true). */

@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -402,11 +406,25 @@ private fun ClientStatCard(
                 modifier = Modifier.padding(Dimensions.cardPadding),
                 verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
             ) {
-                Text(
-                    text = label.uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = labelColor,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = label.uppercase(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = labelColor,
+                    )
+                    if (selected) {
+                        Icon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = stringResource(R.string.clients_filter_dismiss),
+                            tint = labelColor,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
                 Text(
                     text = value,
                     style = MaterialTheme.typography.headlineMedium,

@@ -274,6 +274,13 @@
     <string name="orders_sort_status">Status</string>
     <string name="orders_sort_reference">Reference</string>
 
+    <!-- Chip de filtre période (depuis dashboard) -->
+    <string name="orders_period_chip">Period: %1$s</string>
+    <string name="orders_period_chip_clear">Clear period filter</string>
+
+    <!-- Clients : désactivation du filtre actif -->
+    <string name="clients_filter_dismiss">Deactivate filter</string>
+
     <!-- Pagination commandes -->
     <string name="orders_load_more">Load more</string>
 

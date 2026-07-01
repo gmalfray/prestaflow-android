@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.ui.orders
 
 import androidx.lifecycle.SavedStateHandle
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
@@ -1003,6 +1004,57 @@ class OrdersViewModelTest {
             assertTrue(
                 "updateOrderStatus ne doit pas être appelé quand swipe désactivé",
                 fakeOrdersRepo.updateStatusCalls.isEmpty(),
+            )
+        }
+
+    // ─── Filtre de période (depuis dashboard) ────────────────────────────────
+
+    @Test
+    fun `init avec nav arg period valide expose activePeriod dans l etat`() =
+        runTest {
+            val vm = buildViewModel(periodValue = "week")
+            advanceUntilIdle()
+
+            assertEquals(DashboardPeriod.WEEK, vm.uiState.value.activePeriod)
+        }
+
+    @Test
+    fun `init sans nav arg period expose activePeriod null`() =
+        runTest {
+            val vm = buildViewModel(periodValue = null)
+            advanceUntilIdle()
+
+            assertNull(vm.uiState.value.activePeriod)
+        }
+
+    @Test
+    fun `clearPeriodFilter met activePeriod a null et declenche un refresh`() =
+        runTest {
+            val vm = buildViewModel(periodValue = "month")
+            advanceUntilIdle()
+            fakeOrdersRepo.refreshCalls.clear()
+
+            vm.clearPeriodFilter()
+            advanceUntilIdle()
+
+            assertNull("activePeriod doit être null après clearPeriodFilter", vm.uiState.value.activePeriod)
+            assertTrue("Un refresh doit être déclenché après clearPeriodFilter", fakeOrdersRepo.refreshCalls.isNotEmpty())
+        }
+
+    @Test
+    fun `clearPeriodFilter ne reinitialise pas les filtres de statut`() =
+        runTest {
+            val vm = buildViewModel(periodValue = "today")
+            advanceUntilIdle()
+            vm.onStatusFilterSelected(statusId = 3)
+            advanceUntilIdle()
+
+            vm.clearPeriodFilter()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Le filtre de statut doit être conservé après clearPeriodFilter",
+                3 in vm.uiState.value.selectedStatusIds,
             )
         }
 

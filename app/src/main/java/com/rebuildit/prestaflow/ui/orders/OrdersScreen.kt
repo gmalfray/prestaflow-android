@@ -87,8 +87,10 @@ import com.rebuildit.prestaflow.core.print.InvoicePrinter
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.core.util.normalizeForMatch
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
+import com.rebuildit.prestaflow.ui.dashboard.labelRes
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
@@ -209,6 +211,7 @@ fun OrdersRoute(
             onLoadMore = viewModel::loadMore,
             onSwipeAction = viewModel::onSwipeAction,
             swipeConfig = uiState.swipeConfig,
+            onClearPeriodFilter = viewModel::clearPeriodFilter,
         )
         SnackbarHost(
             hostState = snackbarHostState,
@@ -238,6 +241,7 @@ fun OrdersScreen(
     onLoadMore: () -> Unit = {},
     onSwipeAction: (Long, String, SwipeDirection) -> Unit = { _, _, _ -> },
     swipeConfig: SwipeConfig = SwipeConfig(),
+    onClearPeriodFilter: () -> Unit = {},
 ) {
     val errorMessage = uiState.error?.asString()
 
@@ -286,6 +290,8 @@ fun OrdersScreen(
                 onLoadMore = onLoadMore,
                 onSwipeAction = onSwipeAction,
                 swipeConfig = swipeConfig,
+                activePeriod = uiState.activePeriod,
+                onClearPeriodFilter = onClearPeriodFilter,
             )
     }
 }
@@ -327,6 +333,8 @@ private fun OrdersList(
     onLoadMore: () -> Unit = {},
     onSwipeAction: (Long, String, SwipeDirection) -> Unit = { _, _, _ -> },
     swipeConfig: SwipeConfig = SwipeConfig(),
+    activePeriod: DashboardPeriod? = null,
+    onClearPeriodFilter: () -> Unit = {},
 ) {
     val dateFormatter = rememberDateFormatter()
     var showStatusPrefsSheet by rememberSaveable { mutableStateOf(false) }
@@ -419,6 +427,16 @@ private fun OrdersList(
                                 onQueryChange = onQueryChange,
                                 placeholder = stringResource(R.string.orders_search_placeholder),
                             )
+                        }
+
+                        // Chip de filtre période (visible si l'écran a été ouvert depuis le dashboard)
+                        if (activePeriod != null) {
+                            item {
+                                PeriodFilterChip(
+                                    period = activePeriod,
+                                    onClear = onClearPeriodFilter,
+                                )
+                            }
                         }
 
                         // Barre de filtres par statut + tri
@@ -901,6 +919,33 @@ private fun rememberDateFormatter(): DateTimeFormatter =
     remember {
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
     }
+
+// ─── Chip de filtre période (depuis dashboard) ────────────────────────────────
+
+/**
+ * Chip dismissible affiché quand un filtre de période dashboard est actif.
+ * Libellé = libellé de la période (ex. "7 days") ; croix = efface le filtre.
+ */
+@Composable
+private fun PeriodFilterChip(
+    period: DashboardPeriod,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    FilterChip(
+        selected = true,
+        onClick = onClear,
+        label = { Text(stringResource(R.string.orders_period_chip, stringResource(period.labelRes()))) },
+        trailingIcon = {
+            Icon(
+                imageVector = Icons.Outlined.Close,
+                contentDescription = stringResource(R.string.orders_period_chip_clear),
+                modifier = Modifier.size(Dimensions.iconSizeSmall),
+            )
+        },
+        modifier = modifier,
+    )
+}
 
 // ─── Barre de filtres par statut + tri ────────────────────────────────────────
 
