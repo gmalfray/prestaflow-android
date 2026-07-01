@@ -433,7 +433,7 @@ class OrdersViewModelTest {
         }
 
     @Test
-    fun `swipe RIGHT resout le statut Termine`() =
+    fun `swipe RIGHT resout le statut Termine quand Termine vient en premier`() =
         runTest {
             fakeOrdersRepo.orderStatuses =
                 listOf(
@@ -448,7 +448,57 @@ class OrdersViewModelTest {
             vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.RIGHT)
 
             val pending = vm.uiState.value.pendingSwipeAction
-            assertTrue("La cible doit matcher 'termin' ou 'livr'", pending?.targetStatusName != null)
+            assertEquals(
+                "La cible doit être exactement Terminé (id 5), pas Livré",
+                "Terminé",
+                pending?.targetStatusName,
+            )
+        }
+
+    @Test
+    fun `swipe RIGHT priorise Termine meme si Livre est avant dans la liste`() =
+        runTest {
+            // Cas critique du bug : Livré (id 5, ordre standard PS) précède Terminé (id 6)
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(5, "Livré", "#444444"),
+                    OrderStatusFilter(6, "Terminé", "#888888"),
+                )
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "#ORD-001", status = "Paiement accepté")))
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.RIGHT)
+
+            val pending = vm.uiState.value.pendingSwipeAction
+            assertEquals(
+                "RIGHT doit résoudre Terminé même si Livré précède dans la liste",
+                "Terminé",
+                pending?.targetStatusName,
+            )
+        }
+
+    @Test
+    fun `swipe RIGHT se replie sur Livre si Termine est absent`() =
+        runTest {
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(5, "Livré", "#444444"),
+                )
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "#ORD-001", status = "Paiement accepté")))
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.RIGHT)
+
+            val pending = vm.uiState.value.pendingSwipeAction
+            assertEquals(
+                "Sans statut Terminé, RIGHT doit se replier sur Livré",
+                "Livré",
+                pending?.targetStatusName,
+            )
         }
 
     // ─── Préférences de statuts visibles ────────────────────────────────────

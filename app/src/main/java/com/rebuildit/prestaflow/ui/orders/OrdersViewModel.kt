@@ -226,10 +226,8 @@ class OrdersViewModel
                 SwipeDirection.LEFT ->
                     statuses.firstOrNull { it.name.normalizeForMatch().contains("preparation") }
                 SwipeDirection.RIGHT ->
-                    statuses.firstOrNull { s ->
-                        val n = s.name.normalizeForMatch()
-                        n.contains("termin") || n.contains("livr")
-                    }
+                    statuses.firstOrNull { it.name.normalizeForMatch().contains("termin") }
+                        ?: statuses.firstOrNull { it.name.normalizeForMatch().contains("livr") }
             } ?: run {
                 Timber.d("Swipe ignoré : aucun statut cible trouvé pour direction=$direction")
                 return
