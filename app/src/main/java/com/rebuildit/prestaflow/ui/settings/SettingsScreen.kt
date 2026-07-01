@@ -361,10 +361,6 @@ fun SettingsScreen(
                 label = stringResource(R.string.settings_about_version),
                 value = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
             )
-            AboutRow(
-                label = stringResource(R.string.settings_about_environment),
-                value = BuildConfig.ENVIRONMENT_NAME,
-            )
         }
 
         Spacer(modifier = Modifier.height(Dimensions.spacingM))

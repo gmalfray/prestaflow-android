@@ -3,6 +3,7 @@ package com.rebuildit.prestaflow.ui.orders
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -92,6 +93,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun OrderDetailRoute(
     onBackClick: () -> Unit,
+    onProductClick: (Long) -> Unit = {},
     viewModel: OrderDetailViewModel = hiltViewModel(),
     thermalViewModel: ThermalPrinterViewModel = hiltViewModel(),
 ) {
@@ -187,6 +189,7 @@ fun OrderDetailRoute(
         actionState = actionState,
         availableStatuses = availableStatuses,
         onBackClick = onBackClick,
+        onProductClick = onProductClick,
         onUpdateStatus = viewModel::updateStatus,
         onUpdateTracking = viewModel::updateTracking,
         onConsumeFeedback = viewModel::consumeActionFeedback,
@@ -266,6 +269,7 @@ fun OrderDetailScreen(
     actionState: OrderActionState = OrderActionState(),
     availableStatuses: List<OrderStatusFilter> = emptyList(),
     onBackClick: () -> Unit,
+    onProductClick: (Long) -> Unit = {},
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
     onConsumeFeedback: () -> Unit = {},
@@ -349,6 +353,7 @@ fun OrderDetailScreen(
                         actionInProgress = actionState.inProgress,
                         isGeneratingLabel = actionState.isGeneratingLabel,
                         availableStatuses = availableStatuses,
+                        onProductClick = onProductClick,
                         onUpdateStatus = onUpdateStatus,
                         onUpdateTracking = onUpdateTracking,
                         onPrintInvoice = { onPrintInvoice(state.order) },
@@ -370,6 +375,7 @@ fun OrderDetailContent(
     actionInProgress: Boolean = false,
     isGeneratingLabel: Boolean = false,
     availableStatuses: List<OrderStatusFilter> = emptyList(),
+    onProductClick: (Long) -> Unit = {},
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
     onPrintInvoice: () -> Unit = {},
@@ -560,7 +566,11 @@ fun OrderDetailContent(
                 icon = Icons.Outlined.ShoppingBag,
             ) {
                 order.items.forEach { item ->
-                    OrderItemRow(item = item, currency = order.currency)
+                    OrderItemRow(
+                        item = item,
+                        currency = order.currency,
+                        onProductClick = onProductClick,
+                    )
                     if (item != order.items.last()) {
                         Spacer(modifier = Modifier.height(12.dp))
                     }
@@ -881,10 +891,14 @@ fun StatusBadge(status: String) {
 fun OrderItemRow(
     item: OrderItem,
     currency: String,
+    onProductClick: (Long) -> Unit = {},
 ) {
     val qtyLabel = stringResource(R.string.order_detail_qty_label, item.quantity)
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onProductClick(item.productId) },
         horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
         verticalAlignment = Alignment.CenterVertically,
     ) {

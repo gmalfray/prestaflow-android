@@ -337,7 +337,6 @@
     <string name="settings_about_label">About</string>
     <string name="settings_about_app">Application</string>
     <string name="settings_about_version">Version</string>
-    <string name="settings_about_environment">Environment</string>
     <string name="settings_notifications_label">Notifications</string>
     <string name="settings_notification_sound">Notification sound</string>
     <string name="settings_notif_categories">Notification categories</string>

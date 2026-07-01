@@ -104,6 +104,9 @@ fun PrestaFlowNavGraph(
         ) {
             OrderDetailRoute(
                 onBackClick = { navController.popBackStack() },
+                onProductClick = { productId ->
+                    navController.navigate("${AppDestination.Products.route}/$productId")
+                },
             )
         }
         composable(AppDestination.Products.route) {
