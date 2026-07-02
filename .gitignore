@@ -49,3 +49,9 @@ Thumbs.db
 
 # Kotlin compiler session artifacts
 .kotlin/
+
+# Secrets de signature — ne jamais committer
+keystore-secret.txt
+keystore.base64.txt
+*.keystore
+*.jks
