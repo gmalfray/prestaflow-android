@@ -1652,17 +1652,20 @@ private fun formatLastUpdated(isoString: String): String =
 
 /**
  * Formate une plage de dates libre pour l'affichage dans l'en-tête.
- * Ex : "12 mai – 18 juin" (locale système).
+ * Ex : "12 mai – 18 juin 2026" (année une fois si même année, sinon sur les deux). Locale système.
  */
 private fun formatCustomRangeDisplay(
     from: String,
     to: String,
 ): String =
     runCatching {
-        val fmt = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
-        val fromFmt = LocalDate.parse(from).format(fmt)
-        val toFmt = LocalDate.parse(to).format(fmt)
-        "$fromFmt – $toFmt"
+        val fromDate = LocalDate.parse(from)
+        val toDate = LocalDate.parse(to)
+        val dayMonth = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
+        val dayMonthYear = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
+        val fromFmt =
+            if (fromDate.year == toDate.year) fromDate.format(dayMonth) else fromDate.format(dayMonthYear)
+        "$fromFmt – ${toDate.format(dayMonthYear)}"
     }.getOrElse { "$from – $to" }
 
 /**
