@@ -706,17 +706,32 @@ data class OrdersUiState(
                 availableStatuses.filter { it.id in ids }
             } ?: resolveDefaultVisibleChips(availableStatuses)
 
-    /** Liste filtrée par [query] sur le nom du client et la référence (insensible à la casse). */
+    /**
+     * Liste affichée : filtrée par statut sélectionné ([selectedStatusIds]) PUIS par [query]
+     * (nom client / référence, insensible à la casse).
+     *
+     * Le filtre statut est déjà appliqué côté serveur (`statuses=`), mais on le ré-applique ici en
+     * ceinture+bretelles : garantit qu'on n'affiche QUE les statuts sélectionnés, même si le cache
+     * Room contient transitoirement d'autres statuts. S'appuie sur [Order.currentStateId] (liste
+     * connecteur v1.9+).
+     */
     val visibleOrders: List<Order>
-        get() =
-            if (query.isBlank()) {
-                orders
+        get() {
+            val byStatus =
+                if (selectedStatusIds.isEmpty()) {
+                    orders
+                } else {
+                    orders.filter { it.currentStateId in selectedStatusIds }
+                }
+            return if (query.isBlank()) {
+                byStatus
             } else {
-                orders.filter {
+                byStatus.filter {
                     it.customerName.contains(query, ignoreCase = true) ||
                         it.reference.contains(query, ignoreCase = true)
                 }
             }
+        }
 
     /** Vrai si au moins un filtre de statut est actif. */
     val hasActiveStatusFilter: Boolean get() = selectedStatusIds.isNotEmpty()

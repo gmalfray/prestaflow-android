@@ -453,8 +453,10 @@ private fun DashboardHeader(
                 TextButton(
                     onClick = {
                         val startMs = datePickerState.selectedStartDateMillis
-                        val endMs = datePickerState.selectedEndDateMillis
-                        if (startMs != null && endMs != null) {
+                        if (startMs != null) {
+                            // Fin optionnelle : sans date de fin, on valide une journée unique
+                            // (from = to = début) pour ne pas bloquer l'utilisateur.
+                            val endMs = datePickerState.selectedEndDateMillis ?: startMs
                             val from =
                                 LocalDate.ofInstant(
                                     Instant.ofEpochMilli(startMs),
@@ -469,10 +471,8 @@ private fun DashboardHeader(
                         }
                         showDatePicker = false
                     },
-                    // Désactivé tant que la plage n'est pas complète (start ET end requis)
-                    enabled =
-                        datePickerState.selectedStartDateMillis != null &&
-                            datePickerState.selectedEndDateMillis != null,
+                    // Activé dès qu'une date de début est choisie (la fin est optionnelle).
+                    enabled = datePickerState.selectedStartDateMillis != null,
                 ) {
                     Text(text = stringResource(id = R.string.action_ok))
                 }
