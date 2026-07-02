@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,6 +27,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Analytics
+import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.ArrowUpward
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Fullscreen
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Refresh
@@ -81,6 +84,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
@@ -102,6 +107,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -255,6 +261,43 @@ private fun DashboardContent(
     val avgCartText = remember(avgCart) { currencyFormatter.format(avgCart) }
     val lastUpdatedText = remember(snapshot.lastUpdatedIso) { formatLastUpdated(snapshot.lastUpdatedIso) }
 
+    // Mode plage libre = pas de "précédent" comparable → tendances masquées (mêmes conventions
+    // que le comparatif de DashboardChartCard).
+    val isCustomRange = customRange != null
+
+    // ── Sparklines par KPI (dérivées de snapshot.chart, aucun appel réseau) ────────────
+    val turnoverSparkline = remember(snapshot.chart) { snapshot.chart.map { it.turnover.toFloat() } }
+    val ordersSparkline = remember(snapshot.chart) { snapshot.chart.map { it.orders.toFloat() } }
+    val newCustomersSparkline = remember(snapshot.chart) { snapshot.chart.map { it.newCustomers.toFloat() } }
+    val avgCartSparkline =
+        remember(snapshot.chart) {
+            snapshot.chart.map { point -> if (point.orders > 0) (point.turnover / point.orders).toFloat() else 0f }
+        }
+
+    // ── Tendances par KPI (fonctions pures testables, cf. kpiTrendPercent*) ────────────
+    val turnoverTrend =
+        remember(snapshot.turnover, snapshot.previousTurnover, isCustomRange) {
+            kpiTrendPercent(current = snapshot.turnover, previous = snapshot.previousTurnover, isCustomRange = isCustomRange)
+        }
+    val ordersTrend =
+        remember(snapshot.chart, isCustomRange) {
+            kpiTrendPercentFromSeries(snapshot.chart.map { it.orders.toDouble() }, isCustomRange)
+        }
+    val newCustomersTrend =
+        remember(snapshot.chart, isCustomRange) {
+            kpiTrendPercentFromSeries(snapshot.chart.map { it.newCustomers.toDouble() }, isCustomRange)
+        }
+    val avgCartTrend =
+        remember(snapshot.chart, isCustomRange) {
+            kpiTrendPercentFromSeries(
+                snapshot.chart.map { point -> if (point.orders > 0) point.turnover / point.orders else 0.0 },
+                isCustomRange,
+            )
+        }
+
+    // ── Graphique en plein écran (volet 3) ──────────────────────────────────────────
+    var showFullscreenChart by rememberSaveable { mutableStateOf(false) }
+
     PullToRefreshBox(
         modifier = modifier.background(MaterialTheme.colorScheme.background),
         isRefreshing = isRefreshing,
@@ -304,23 +347,31 @@ private fun DashboardContent(
                                 title = stringResource(id = R.string.dashboard_kpi_turnover),
                                 value = turnoverText,
                                 icon = Icons.Outlined.Payments,
+                                trendPercent = turnoverTrend,
+                                sparklineValues = turnoverSparkline,
                             ),
                             KpiItem(
                                 title = stringResource(id = R.string.dashboard_kpi_orders),
                                 value = ordersText,
                                 icon = Icons.Outlined.ShoppingBag,
                                 onClick = onOrdersClick,
+                                trendPercent = ordersTrend,
+                                sparklineValues = ordersSparkline,
                             ),
                             KpiItem(
                                 title = stringResource(id = R.string.dashboard_kpi_avg_cart),
                                 value = avgCartText,
                                 icon = Icons.Outlined.Analytics,
+                                trendPercent = avgCartTrend,
+                                sparklineValues = avgCartSparkline,
                             ),
                             KpiItem(
                                 title = stringResource(id = R.string.dashboard_kpi_customers),
                                 value = newCustomersTotalText,
                                 icon = Icons.Outlined.Group,
                                 onClick = onClientsClick,
+                                trendPercent = newCustomersTrend,
+                                sparklineValues = newCustomersSparkline,
                             ),
                         ),
                 )
@@ -339,6 +390,7 @@ private fun DashboardContent(
                     previousTurnover = snapshot.previousTurnover,
                     // En mode plage libre, on n'affiche pas le comparatif "vs période précédente"
                     selectedPeriod = if (customRange == null) selectedPeriod else null,
+                    onExpandClick = { showFullscreenChart = true },
                 )
             }
 
@@ -355,6 +407,15 @@ private fun DashboardContent(
                 )
             }
         }
+    }
+
+    // Graphique plein écran — ouvert depuis DashboardChartCard (volet 3)
+    if (showFullscreenChart) {
+        DashboardChartFullscreenDialog(
+            points = snapshot.chart,
+            totalText = turnoverText,
+            onDismiss = { showFullscreenChart = false },
+        )
     }
 }
 
@@ -392,23 +453,26 @@ private fun DashboardHeader(
                 TextButton(
                     onClick = {
                         val startMs = datePickerState.selectedStartDateMillis
-                        val endMs = datePickerState.selectedEndDateMillis
-                        if (startMs != null && endMs != null) {
-                            val from = LocalDate.ofInstant(
-                                Instant.ofEpochMilli(startMs),
-                                ZoneOffset.UTC,
-                            ).toString()
-                            val to = LocalDate.ofInstant(
-                                Instant.ofEpochMilli(endMs),
-                                ZoneOffset.UTC,
-                            ).toString()
+                        if (startMs != null) {
+                            // Fin optionnelle : sans date de fin, on valide une journée unique
+                            // (from = to = début) pour ne pas bloquer l'utilisateur.
+                            val endMs = datePickerState.selectedEndDateMillis ?: startMs
+                            val from =
+                                LocalDate.ofInstant(
+                                    Instant.ofEpochMilli(startMs),
+                                    ZoneOffset.UTC,
+                                ).toString()
+                            val to =
+                                LocalDate.ofInstant(
+                                    Instant.ofEpochMilli(endMs),
+                                    ZoneOffset.UTC,
+                                ).toString()
                             onCustomRangeSelected(from, to)
                         }
                         showDatePicker = false
                     },
-                    // Désactivé tant que la plage n'est pas complète (start ET end requis)
-                    enabled = datePickerState.selectedStartDateMillis != null &&
-                        datePickerState.selectedEndDateMillis != null,
+                    // Activé dès qu'une date de début est choisie (la fin est optionnelle).
+                    enabled = datePickerState.selectedStartDateMillis != null,
                 ) {
                     Text(text = stringResource(id = R.string.action_ok))
                 }
@@ -458,11 +522,12 @@ private fun DashboardHeader(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     // En mode plage libre, afficher les dates sous le nom de la boutique
-                    val subtitleText = if (customRange != null) {
-                        formatCustomRangeDisplay(customRange.first, customRange.second)
-                    } else {
-                        null
-                    }
+                    val subtitleText =
+                        if (customRange != null) {
+                            formatCustomRangeDisplay(customRange.first, customRange.second)
+                        } else {
+                            null
+                        }
                     Text(
                         text = shopName,
                         style = MaterialTheme.typography.headlineMedium,
@@ -644,8 +709,11 @@ private fun DashboardKpiGrid(
 }
 
 /**
- * Carte KPI Terracotta — fond blanc, icône dans un conteneur teinté,
- * label en haut uppercase, valeur en bas (title-lg Stitch).
+ * Carte KPI Terracotta — fond blanc, icône dans un conteneur teinté en haut-gauche,
+ * badge de tendance en haut-droite (si disponible), label uppercase, grande valeur en gras,
+ * mini-sparkline discrète en bas de carte.
+ * Hauteur compacte fixe ([Dimensions.kpiCardHeight]) plutôt qu'un ratio carré : évite les
+ * pavés vides en paysage tout en gardant les cartes d'une même ligne alignées.
  * Rayon 20dp signature du design system.
  * Cliquable si [item.onClick] est non nul (navigation vers la liste filtrée).
  */
@@ -655,6 +723,8 @@ private fun KpiCard(
     modifier: Modifier = Modifier,
 ) {
     val cardDesc = stringResource(id = R.string.dashboard_content_description_kpi_card, item.title, item.value)
+    val trendDesc = item.trendPercent?.let { percent -> kpiTrendContentDescription(percent) }
+    val fullCardDesc = if (trendDesc != null) "$cardDesc, $trendDesc" else cardDesc
     val cardShape = RoundedCornerShape(Dimensions.cardCornerRadius)
     val cardColors =
         CardDefaults.cardColors(
@@ -670,29 +740,38 @@ private fun KpiCard(
                     .fillMaxSize()
                     .padding(Dimensions.cardPadding)
                     .semantics(mergeDescendants = true) {
-                        contentDescription = cardDesc
+                        contentDescription = fullCardDesc
                         if (item.onClick != null) role = Role.Button
                     },
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            // Icône dans un conteneur teinté
-            Box(
-                modifier =
-                    Modifier
-                        .size(Dimensions.iconContainerSize)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center,
+            // Icône teintée (haut-gauche) + badge de tendance (haut-droite, si disponible)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
             ) {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(Dimensions.iconSizeMedium),
-                )
+                Box(
+                    modifier =
+                        Modifier
+                            .size(Dimensions.iconContainerSize)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(Dimensions.iconSizeMedium),
+                    )
+                }
+                if (item.trendPercent != null) {
+                    KpiTrendBadge(percent = item.trendPercent)
+                }
             }
 
-            // Label + valeur
+            // Label + valeur — la valeur reste la pièce visuelle la plus imposante de la carte
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = item.title.uppercase(),
@@ -709,25 +788,114 @@ private fun KpiCard(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+
+            // Mini-sparkline — dégradation silencieuse si série vide/trop courte/plate (cf. KpiSparkline)
+            KpiSparkline(
+                values = item.sparklineValues,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(Dimensions.sparklineHeight),
+            )
         }
     }
 
     if (item.onClick != null) {
         Card(
             onClick = item.onClick,
-            modifier = modifier.aspectRatio(1f),
+            modifier = modifier.height(Dimensions.kpiCardHeight),
             shape = cardShape,
             colors = cardColors,
             elevation = cardElevation,
         ) { innerContent() }
     } else {
         Card(
-            modifier = modifier.aspectRatio(1f),
+            modifier = modifier.height(Dimensions.kpiCardHeight),
             shape = cardShape,
             colors = cardColors,
             elevation = cardElevation,
         ) { innerContent() }
     }
+}
+
+/**
+ * Badge pilule de tendance — flèche + pourcentage, vert (hausse) / rouge (baisse).
+ * [percent] est déjà signé (positif = hausse, négatif = baisse) ; l'appelant est responsable
+ * de masquer le badge (passer `null` côté [KpiItem.trendPercent]) quand la donnée n'est pas
+ * fiable (série trop courte, dénominateur nul, mode plage libre).
+ */
+@Composable
+private fun KpiTrendBadge(
+    percent: Double,
+    modifier: Modifier = Modifier,
+) {
+    val isPositive = percent >= 0.0
+    val color = if (isPositive) kpiTrendPositiveColor else kpiTrendNegativeColor
+    val icon = if (isPositive) Icons.Outlined.ArrowUpward else Icons.Outlined.ArrowDownward
+    Row(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(50))
+                .background(color.copy(alpha = 0.14f))
+                .padding(horizontal = 6.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(12.dp),
+        )
+        Spacer(modifier = Modifier.width(2.dp))
+        Text(
+            text = formatTrendPercent(percent),
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+        )
+    }
+}
+
+/**
+ * Mini-courbe de tendance, tracée à partir de [values] normalisées sur toute la zone
+ * disponible. Dégradation silencieuse : ne dessine rien si la série est vide, trop courte
+ * (< 2 points), ou plate (tous les points égaux) — jamais de crash ni de ligne trompeuse.
+ */
+@Composable
+private fun KpiSparkline(
+    values: List<Float>,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    if (values.size < 2) return
+    val minValue = values.min()
+    val maxValue = values.max()
+    if (maxValue <= minValue) return
+    Canvas(modifier = modifier) {
+        val stepX = size.width / (values.size - 1)
+        val offsets =
+            values.mapIndexed { index, value ->
+                val normalized = (value - minValue) / (maxValue - minValue)
+                Offset(stepX * index, size.height - normalized * size.height)
+            }
+        drawPath(
+            path = catmullRomPath(offsets),
+            color = color,
+            style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round),
+        )
+    }
+}
+
+private val kpiTrendPositiveColor = Color(0xFF4CBB6C)
+private val kpiTrendNegativeColor = Color(0xFFFF4C4C)
+
+/** Formate un pourcentage de tendance déjà signé, ex : `12.3%` (valeur absolue, le signe est porté par la couleur/flèche). */
+private fun formatTrendPercent(percent: Double): String = "${"%.1f".format(abs(percent))}%"
+
+@Composable
+private fun kpiTrendContentDescription(percent: Double): String {
+    val resId = if (percent >= 0.0) R.string.dashboard_kpi_trend_up else R.string.dashboard_kpi_trend_down
+    return stringResource(id = resId, formatTrendPercent(percent))
 }
 
 // ─── Carte graphique ──────────────────────────────────────────────────────────
@@ -743,12 +911,15 @@ private fun DashboardChartCard(
      * Null en mode plage libre : le comparatif "vs période précédente" n'est alors pas affiché.
      */
     selectedPeriod: DashboardPeriod?,
+    /** Ouvre le graphique en plein écran (volet 3). Ignoré si [points] est vide. */
+    onExpandClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     // Toggle 3ᵉ série "Nouveaux clients" — local à la carte
     var showNewCustomers by remember { mutableStateOf(false) }
 
     Card(
+        onClick = { if (points.isNotEmpty()) onExpandClick() },
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimensions.cardCornerRadius),
         colors =
@@ -818,12 +989,27 @@ private fun DashboardChartCard(
                 }
             }
 
-            // Toggle 3ᵉ série : chip compact "Nouveaux clients"
+            // Icône agrandir + toggle 3ᵉ série : chip compact "Nouveaux clients"
             if (points.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    IconButton(
+                        onClick = onExpandClick,
+                        modifier = Modifier.size(Dimensions.minTouchTarget),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Fullscreen,
+                            contentDescription =
+                                stringResource(
+                                    id = R.string.dashboard_chart_expand_content_description,
+                                ),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(Dimensions.iconSizeSmall),
+                        )
+                    }
                     FilterChip(
                         selected = showNewCustomers,
                         onClick = { showNewCustomers = !showNewCustomers },
@@ -833,10 +1019,11 @@ private fun DashboardChartCard(
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = colorNewCustomers.copy(alpha = 0.15f),
-                            selectedLabelColor = colorNewCustomers,
-                        ),
+                        colors =
+                            FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = colorNewCustomers.copy(alpha = 0.15f),
+                                selectedLabelColor = colorNewCustomers,
+                            ),
                     )
                 }
             }
@@ -859,6 +1046,92 @@ private fun DashboardChartCard(
     }
 }
 
+// ─── Graphique plein écran (volet 3) ───────────────────────────────────────────
+
+/**
+ * Graphique en plein écran, ouvert depuis [DashboardChartCard] (icône agrandir ou tap sur la
+ * carte). Force l'orientation paysage à l'ouverture et restaure l'orientation d'origine de
+ * l'activité à la fermeture — l'app est verrouillée en portrait au niveau du manifeste
+ * ([android:screenOrientation="sensorPortrait"]), donc ce forçage est local à cet écran.
+ */
+@Composable
+private fun DashboardChartFullscreenDialog(
+    points: List<DashboardChartPoint>,
+    totalText: String,
+    onDismiss: () -> Unit,
+) {
+    // NB : on NE force PAS l'orientation paysage. `MainActivity` se recrée au changement
+    // d'orientation → forcer requestedOrientation ici provoquait une boucle de rotation infinie.
+    // Le dialog remplit déjà l'écran ; l'auto-rotation du système gère le paysage si l'utilisateur
+    // tourne le téléphone.
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background,
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(Dimensions.spacingM),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        Text(
+                            text = stringResource(id = R.string.dashboard_chart_title_turnover),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = totalText,
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = stringResource(id = R.string.dashboard_chart_fullscreen_close),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(Dimensions.spacingM))
+                if (points.isEmpty()) {
+                    Text(
+                        text = stringResource(id = R.string.dashboard_chart_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    BoxWithConstraints(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                    ) {
+                        // Réserve un peu de place sous le Canvas pour la légende du graphique
+                        // (DualAxisSalesChart empile Canvas + légende dans la hauteur donnée).
+                        val chartHeight = (maxHeight - 32.dp).coerceAtLeast(120.dp)
+                        DualAxisSalesChart(
+                            points = points,
+                            height = chartHeight,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 // ─── Couleur "Nouveaux clients" (vert success accessible, distinct de primary) ──
 
 private val colorNewCustomers = Color(0xFF2E7D32)
@@ -874,42 +1147,45 @@ private val chartPadBottom = 28.dp
 /** Arrondit rawMax à la prochaine valeur "ronde" supérieure (5, 10, 25, 50…). */
 private fun niceMaxInt(rawMax: Int): Int {
     if (rawMax <= 0) return 5
-    val magnitude = when {
-        rawMax <= 20 -> 5
-        rawMax <= 50 -> 10
-        rawMax <= 100 -> 25
-        rawMax <= 200 -> 50
-        rawMax <= 500 -> 100
-        rawMax <= 1_000 -> 250
-        else -> 500
-    }
+    val magnitude =
+        when {
+            rawMax <= 20 -> 5
+            rawMax <= 50 -> 10
+            rawMax <= 100 -> 25
+            rawMax <= 200 -> 50
+            rawMax <= 500 -> 100
+            rawMax <= 1_000 -> 250
+            else -> 500
+        }
     return ((rawMax + magnitude - 1) / magnitude) * magnitude
 }
 
 /** Arrondit rawMax Double au prochain multiple "rond" supérieur. */
 private fun niceMaxDouble(rawMax: Double): Double {
     if (rawMax <= 0.0) return 100.0
-    val magnitude = when {
-        rawMax <= 10.0 -> 5.0
-        rawMax <= 50.0 -> 10.0
-        rawMax <= 100.0 -> 25.0
-        rawMax <= 200.0 -> 50.0
-        rawMax <= 500.0 -> 100.0
-        rawMax <= 1_000.0 -> 250.0
-        rawMax <= 2_000.0 -> 500.0
-        rawMax <= 5_000.0 -> 1_000.0
-        rawMax <= 10_000.0 -> 2_500.0
-        else -> 5_000.0
-    }
+    val magnitude =
+        when {
+            rawMax <= 10.0 -> 5.0
+            rawMax <= 50.0 -> 10.0
+            rawMax <= 100.0 -> 25.0
+            rawMax <= 200.0 -> 50.0
+            rawMax <= 500.0 -> 100.0
+            rawMax <= 1_000.0 -> 250.0
+            rawMax <= 2_000.0 -> 500.0
+            rawMax <= 5_000.0 -> 1_000.0
+            rawMax <= 10_000.0 -> 2_500.0
+            else -> 5_000.0
+        }
     return ceil(rawMax / magnitude) * magnitude
 }
 
 /** Formate une valeur de CA pour les labels d'axe (ex: 0€, 450€, 1,5k€, 2,0M€). */
-private fun formatCaLabel(value: Double): String = when {
-    value >= 1_000_000.0 -> "${"%.1f".format(value / 1_000_000.0)}M€"
-    value >= 1_000.0 -> "${"%.1f".format(value / 1_000.0)}k€"
-    else -> "${value.toInt()}€"
-}
+private fun formatCaLabel(value: Double): String =
+    when {
+        value >= 1_000_000.0 -> "${"%.1f".format(value / 1_000_000.0)}M€"
+        value >= 1_000.0 -> "${"%.1f".format(value / 1_000.0)}k€"
+        else -> "${value.toInt()}€"
+    }
 
 /** Construit un Path lissé via Catmull-Rom converti en Bézier cubique. */
 private fun catmullRomPath(offsets: List<Offset>): Path {
@@ -953,11 +1229,12 @@ internal fun DualAxisSalesChart(
     val labelStyle = MaterialTheme.typography.labelSmall
 
     // Axe gauche = max(orders, newCustomers si série active)
-    val rawMaxLeft = if (showNewCustomers) {
-        max(points.maxOf { it.orders }, points.maxOf { it.newCustomers })
-    } else {
-        points.maxOf { it.orders }
-    }
+    val rawMaxLeft =
+        if (showNewCustomers) {
+            max(points.maxOf { it.orders }, points.maxOf { it.newCustomers })
+        } else {
+            points.maxOf { it.orders }
+        }
     val maxOrders = niceMaxInt(rawMaxLeft)
     val maxTurnover = niceMaxDouble(points.maxOf { it.turnover })
 
@@ -975,35 +1252,37 @@ internal fun DualAxisSalesChart(
 
     // Indices à afficher pour les labels X (max 4, espacés uniformément — évite le chevauchement)
     val maxXLabels = 4
-    val xLabelIndices: List<Int> = if (points.size <= maxXLabels) {
-        points.indices.toList()
-    } else {
-        val step = (points.size - 1).toFloat() / (maxXLabels - 1)
-        (0 until maxXLabels)
-            .map { i -> (i * step).roundToInt().coerceIn(0, points.size - 1) }
-            .distinct()
-    }
+    val xLabelIndices: List<Int> =
+        if (points.size <= maxXLabels) {
+            points.indices.toList()
+        } else {
+            val step = (points.size - 1).toFloat() / (maxXLabels - 1)
+            (0 until maxXLabels)
+                .map { i -> (i * step).roundToInt().coerceIn(0, points.size - 1) }
+                .distinct()
+        }
 
     Column(modifier = modifier.fillMaxWidth()) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val totalWidthDp = maxWidth
 
             Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(height)
-                    .semantics(mergeDescendants = true) { contentDescription = chartDesc }
-                    .pointerInput(points) {
-                        detectTapGestures { offset ->
-                            val n = points.size
-                            if (n < 2) return@detectTapGestures
-                            val pl = chartPadLeft.toPx()
-                            val pr = chartPadRight.toPx()
-                            val step = (size.width.toFloat() - pl - pr) / (n - 1)
-                            val idx = ((offset.x - pl) / step).roundToInt().coerceIn(0, n - 1)
-                            selectedIndex = if (selectedIndex == idx) -1 else idx
-                        }
-                    },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(height)
+                        .semantics(mergeDescendants = true) { contentDescription = chartDesc }
+                        .pointerInput(points) {
+                            detectTapGestures { offset ->
+                                val n = points.size
+                                if (n < 2) return@detectTapGestures
+                                val pl = chartPadLeft.toPx()
+                                val pr = chartPadRight.toPx()
+                                val step = (size.width.toFloat() - pl - pr) / (n - 1)
+                                val idx = ((offset.x - pl) / step).roundToInt().coerceIn(0, n - 1)
+                                selectedIndex = if (selectedIndex == idx) -1 else idx
+                            }
+                        },
             ) {
                 val n = points.size
                 if (n < 2) return@Canvas
@@ -1016,19 +1295,18 @@ internal fun DualAxisSalesChart(
                 val ch = size.height - pt - pb
                 val stepX = if (n > 1) cw / (n - 1) else cw
 
-                fun ordY(v: Int): Float =
-                    pt + ch - ch * (v.toFloat() / maxOrders).coerceIn(0f, 1f) * animatedProgress
+                fun ordY(v: Int): Float = pt + ch - ch * (v.toFloat() / maxOrders).coerceIn(0f, 1f) * animatedProgress
 
-                fun caY(v: Double): Float =
-                    pt + ch - ch * (v.toFloat() / maxTurnover.toFloat()).coerceIn(0f, 1f) * animatedProgress
+                fun caY(v: Double): Float = pt + ch - ch * (v.toFloat() / maxTurnover.toFloat()).coerceIn(0f, 1f) * animatedProgress
 
                 val ordOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, ordY(p.orders)) }
                 val caOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, caY(p.turnover)) }
-                val newCustOffsets = if (showNewCustomers) {
-                    points.mapIndexed { i, p -> Offset(pl + stepX * i, ordY(p.newCustomers)) }
-                } else {
-                    emptyList()
-                }
+                val newCustOffsets =
+                    if (showNewCustomers) {
+                        points.mapIndexed { i, p -> Offset(pl + stepX * i, ordY(p.newCustomers)) }
+                    } else {
+                        emptyList()
+                    }
 
                 // ── Labels axe Y gauche (commandes / nouveaux clients) ────────────────
                 val gridCount = 4
@@ -1040,10 +1318,11 @@ internal fun DualAxisSalesChart(
                     drawText(
                         textLayoutResult = measured,
                         color = colorLabel,
-                        topLeft = Offset(
-                            x = pl - measured.size.width.toFloat() - 6.dp.toPx(),
-                            y = y - measured.size.height / 2f,
-                        ),
+                        topLeft =
+                            Offset(
+                                x = pl - measured.size.width.toFloat() - 6.dp.toPx(),
+                                y = y - measured.size.height / 2f,
+                            ),
                     )
                 }
 
@@ -1057,10 +1336,11 @@ internal fun DualAxisSalesChart(
                     drawText(
                         textLayoutResult = measured,
                         color = colorLabel,
-                        topLeft = Offset(
-                            x = pl + cw + 6.dp.toPx(),
-                            y = y - measured.size.height / 2f,
-                        ),
+                        topLeft =
+                            Offset(
+                                x = pl + cw + 6.dp.toPx(),
+                                y = y - measured.size.height / 2f,
+                            ),
                     )
                 }
 
@@ -1092,13 +1372,15 @@ internal fun DualAxisSalesChart(
                     drawPath(
                         path = catmullRomPath(newCustOffsets),
                         color = colorNewCust,
-                        style = Stroke(
-                            width = 2.5.dp.toPx(),
-                            cap = StrokeCap.Round,
-                            pathEffect = PathEffect.dashPathEffect(
-                                floatArrayOf(8.dp.toPx(), 4.dp.toPx()),
+                        style =
+                            Stroke(
+                                width = 2.5.dp.toPx(),
+                                cap = StrokeCap.Round,
+                                pathEffect =
+                                    PathEffect.dashPathEffect(
+                                        floatArrayOf(8.dp.toPx(), 4.dp.toPx()),
+                                    ),
                             ),
-                        ),
                     )
                 }
 
@@ -1147,11 +1429,13 @@ internal fun DualAxisSalesChart(
                     drawText(
                         textLayoutResult = measured,
                         color = colorLabel,
-                        topLeft = Offset(
-                            x = (xPos - measured.size.width / 2f)
-                                .coerceIn(pl, pl + cw - measured.size.width),
-                            y = pt + ch + 4.dp.toPx(),
-                        ),
+                        topLeft =
+                            Offset(
+                                x =
+                                    (xPos - measured.size.width / 2f)
+                                        .coerceIn(pl, pl + cw - measured.size.width),
+                                y = pt + ch + 4.dp.toPx(),
+                            ),
                     )
                 }
             }
@@ -1167,9 +1451,10 @@ internal fun DualAxisSalesChart(
                 val clampedX = rawX.coerceIn(0.dp, totalWidthDp - tooltipW)
 
                 ChartTooltipBubble(
-                    modifier = Modifier
-                        .offset(x = clampedX, y = chartPadTop + 8.dp)
-                        .width(tooltipW),
+                    modifier =
+                        Modifier
+                            .offset(x = clampedX, y = chartPadTop + 8.dp)
+                            .width(tooltipW),
                     label = selectedPt.label,
                     orders = selectedPt.orders,
                     turnover = selectedPt.turnover,
@@ -1185,9 +1470,10 @@ internal fun DualAxisSalesChart(
 
         // ── Légende sous le graphe ────────────────────────────────────────────────────
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -1366,14 +1652,20 @@ private fun formatLastUpdated(isoString: String): String =
 
 /**
  * Formate une plage de dates libre pour l'affichage dans l'en-tête.
- * Ex : "12 mai – 18 juin" (locale système).
+ * Ex : "12 mai – 18 juin 2026" (année une fois si même année, sinon sur les deux). Locale système.
  */
-private fun formatCustomRangeDisplay(from: String, to: String): String =
+private fun formatCustomRangeDisplay(
+    from: String,
+    to: String,
+): String =
     runCatching {
-        val fmt = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
-        val fromFmt = LocalDate.parse(from).format(fmt)
-        val toFmt = LocalDate.parse(to).format(fmt)
-        "$fromFmt – $toFmt"
+        val fromDate = LocalDate.parse(from)
+        val toDate = LocalDate.parse(to)
+        val dayMonth = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
+        val dayMonthYear = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
+        val fromFmt =
+            if (fromDate.year == toDate.year) fromDate.format(dayMonth) else fromDate.format(dayMonthYear)
+        "$fromFmt – ${toDate.format(dayMonthYear)}"
     }.getOrElse { "$from – $to" }
 
 /**
@@ -1409,6 +1701,48 @@ private fun periodComparisonLabelRes(period: DashboardPeriod): Int =
         DashboardPeriod.YEAR -> R.string.dashboard_chart_vs_prev_year
     }
 
+// ─── Calcul de tendance KPI (fonctions pures, testables) ──────────────────────
+
+/**
+ * Variation en % entre [current] et [previous] (ex : CA vs période précédente).
+ *
+ * Retourne `null` (badge masqué) si :
+ * - [isCustomRange] est vrai — pas de "précédent" comparable en plage libre ;
+ * - [previous] est absent ou nul — dénominateur à 0, division impossible.
+ */
+internal fun kpiTrendPercent(
+    current: Double,
+    previous: Double?,
+    isCustomRange: Boolean,
+): Double? {
+    if (isCustomRange) return null
+    if (previous == null || previous == 0.0) return null
+    return (current - previous) / previous * 100.0
+}
+
+/**
+ * Tendance "sur la période" dérivée d'une série de buckets [values] (ex : commandes,
+ * nouveaux clients, panier moyen par jour/semaine) : compare la somme de la 2ᵉ moitié
+ * de la série à la somme de la 1ʳᵉ moitié.
+ *
+ * Retourne `null` (badge masqué) si :
+ * - [isCustomRange] est vrai ;
+ * - la série a moins de 2 points (pas de comparaison possible) ;
+ * - la somme de la 1ʳᵉ moitié est nulle (dénominateur à 0, jamais de "+∞"/NaN).
+ */
+internal fun kpiTrendPercentFromSeries(
+    values: List<Double>,
+    isCustomRange: Boolean,
+): Double? {
+    if (isCustomRange) return null
+    if (values.size < 2) return null
+    val mid = values.size / 2
+    val firstHalfSum = values.take(mid).sum()
+    val secondHalfSum = values.drop(mid).sum()
+    if (firstHalfSum == 0.0) return null
+    return (secondHalfSum - firstHalfSum) / firstHalfSum * 100.0
+}
+
 // ─── Modèle local ─────────────────────────────────────────────────────────────
 
 private data class KpiItem(
@@ -1417,6 +1751,10 @@ private data class KpiItem(
     val icon: ImageVector,
     /** Callback de navigation. Null = carte non cliquable. */
     val onClick: (() -> Unit)? = null,
+    /** Variation en % (signée) vs période précédente / 1ʳᵉ moitié de la série. Null = badge masqué. */
+    val trendPercent: Double? = null,
+    /** Série pour la mini-sparkline. Peut être vide/trop courte/plate — géré par [KpiSparkline]. */
+    val sparklineValues: List<Float> = emptyList(),
 )
 
 // ─── Previews ─────────────────────────────────────────────────────────────────

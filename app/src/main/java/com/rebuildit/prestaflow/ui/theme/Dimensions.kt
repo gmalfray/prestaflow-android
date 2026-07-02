@@ -29,6 +29,8 @@ object Dimensions {
     val cardPadding = spacingM // padding interne des cartes = 16dp
     val cardCornerRadius = 20.dp // rayon signature (ROUND_EIGHT → 20dp Stitch)
     val chipCornerRadius = 8.dp // chips statut
+    val kpiCardHeight = 148.dp // hauteur compacte des cartes KPI (remplace l'ancien aspectRatio(1f))
+    val sparklineHeight = 24.dp // mini-courbe de tendance en bas des cartes KPI
 
     // Listes
     val listItemHeight = 72.dp // hauteur ligne produit/client
