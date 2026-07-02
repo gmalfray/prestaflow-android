@@ -194,15 +194,19 @@ class OrdersViewModel
          * Si [statusId] est null, réinitialise tous les filtres.
          */
         fun onStatusFilterSelected(statusId: Int?) {
-            if (statusId == null) {
-                _uiState.update { it.copy(selectedStatusIds = emptySet()) }
-            } else {
-                _uiState.update { current ->
-                    val ids = current.selectedStatusIds
-                    current.copy(
-                        selectedStatusIds = if (statusId in ids) ids - statusId else ids + statusId,
-                    )
-                }
+            _uiState.update { current ->
+                val newSelection =
+                    when {
+                        // "Toutes" → aucun filtre.
+                        statusId == null -> emptySet()
+                        // Re-tap sur le chip déjà seul sélectionné → désélectionne (revient à "Toutes").
+                        current.selectedStatusIds == setOf(statusId) -> emptySet()
+                        // Sinon : sélection UNIQUE — n'affiche QUE ce statut (les chips sont des
+                        // raccourcis « voir seulement ce statut »). Le multi-statuts reste possible
+                        // via le menu de filtre (onStatusFiltersReplaced).
+                        else -> setOf(statusId)
+                    }
+                current.copy(selectedStatusIds = newSelection)
             }
             refresh(forceRemote = true, notifyOnError = true)
         }
@@ -707,31 +711,23 @@ data class OrdersUiState(
             } ?: resolveDefaultVisibleChips(availableStatuses)
 
     /**
-     * Liste affichée : filtrée par statut sélectionné ([selectedStatusIds]) PUIS par [query]
-     * (nom client / référence, insensible à la casse).
+     * Liste affichée : filtrée par [query] sur le nom du client et la référence (insensible à la casse).
      *
-     * Le filtre statut est déjà appliqué côté serveur (`statuses=`), mais on le ré-applique ici en
-     * ceinture+bretelles : garantit qu'on n'affiche QUE les statuts sélectionnés, même si le cache
-     * Room contient transitoirement d'autres statuts. S'appuie sur [Order.currentStateId] (liste
-     * connecteur v1.9+).
+     * Le filtre par STATUT est appliqué **côté serveur** (param `statuses=`) : `refresh` vide Room puis
+     * insère uniquement les commandes filtrées. On ne re-filtre donc PAS par statut ici — le connecteur
+     * ne renvoie pas `current_state_id` dans la liste (toujours 0), un filtre client sur ce champ
+     * masquerait tout.
      */
     val visibleOrders: List<Order>
-        get() {
-            val byStatus =
-                if (selectedStatusIds.isEmpty()) {
-                    orders
-                } else {
-                    orders.filter { it.currentStateId in selectedStatusIds }
-                }
-            return if (query.isBlank()) {
-                byStatus
+        get() =
+            if (query.isBlank()) {
+                orders
             } else {
-                byStatus.filter {
+                orders.filter {
                     it.customerName.contains(query, ignoreCase = true) ||
                         it.reference.contains(query, ignoreCase = true)
                 }
             }
-        }
 
     /** Vrai si au moins un filtre de statut est actif. */
     val hasActiveStatusFilter: Boolean get() = selectedStatusIds.isNotEmpty()
