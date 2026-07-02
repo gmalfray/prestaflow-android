@@ -1,9 +1,5 @@
 package com.rebuildit.prestaflow.ui.dashboard
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
-import android.content.pm.ActivityInfo
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -57,7 +53,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -78,7 +73,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -1066,16 +1060,10 @@ private fun DashboardChartFullscreenDialog(
     totalText: String,
     onDismiss: () -> Unit,
 ) {
-    val activity = LocalContext.current.findActivity()
-
-    DisposableEffect(activity) {
-        val originalOrientation = activity?.requestedOrientation
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        onDispose {
-            activity?.requestedOrientation = originalOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        }
-    }
-
+    // NB : on NE force PAS l'orientation paysage. `MainActivity` se recrée au changement
+    // d'orientation → forcer requestedOrientation ici provoquait une boucle de rotation infinie.
+    // Le dialog remplit déjà l'écran ; l'auto-rotation du système gère le paysage si l'utilisateur
+    // tourne le téléphone.
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -1143,14 +1131,6 @@ private fun DashboardChartFullscreenDialog(
         }
     }
 }
-
-/** Remonte la chaîne de [ContextWrapper] jusqu'à trouver l'[Activity] hôte (nécessaire pour piloter l'orientation depuis un Dialog Compose). */
-private tailrec fun Context.findActivity(): Activity? =
-    when (this) {
-        is Activity -> this
-        is ContextWrapper -> baseContext.findActivity()
-        else -> null
-    }
 
 // ─── Couleur "Nouveaux clients" (vert success accessible, distinct de primary) ──
 
