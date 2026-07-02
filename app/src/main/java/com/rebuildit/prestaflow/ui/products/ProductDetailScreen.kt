@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -52,6 +53,7 @@ import com.rebuildit.prestaflow.ui.theme.Dimensions
 fun ProductDetailRoute(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onEditClick: (Long) -> Unit = {},
     viewModel: ProductDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,6 +66,7 @@ fun ProductDetailRoute(
         onUpdateStock = viewModel::onUpdateStock,
         onToggleStatus = viewModel::onToggleStatus,
         onClearError = viewModel::clearError,
+        onEditClick = { state.product?.let { onEditClick(it.id) } },
     )
 }
 
@@ -77,11 +80,13 @@ fun ProductDetailScreen(
     onUpdateStock: (Int) -> Unit,
     onToggleStatus: () -> Unit,
     onClearError: () -> Unit,
+    onEditClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val errorMessage = state.error?.asString()
     val backDesc = stringResource(R.string.content_description_back)
+    val editDesc = stringResource(R.string.product_detail_edit_content_description)
 
     LaunchedEffect(errorMessage) {
         if (errorMessage != null) {
@@ -101,6 +106,16 @@ fun ProductDetailScreen(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = backDesc,
                         )
+                    }
+                },
+                actions = {
+                    if (state.product != null) {
+                        IconButton(onClick = onEditClick) {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = editDesc,
+                            )
+                        }
                     }
                 },
             )

@@ -26,6 +26,9 @@ fun ProductEntity.toDomain(): Product {
         stock = stock,
         images = images,
         updatedAt = updatedAt,
+        description = description,
+        descriptionShort = descriptionShort,
+        priceTaxExcl = priceTaxExcl,
     )
 }
 
@@ -53,6 +56,9 @@ fun ProductDto.toDomain(): Product =
         images = images.map { ProductImage(id = it.id, url = it.url) },
         updatedAt = updatedAt ?: java.time.Instant.now().toString(),
         ean13 = ean13,
+        description = description,
+        descriptionShort = descriptionShort,
+        priceTaxExcl = priceTaxExcl,
     )
 
 fun ProductDto.toEntity(): ProductEntity {
@@ -68,6 +74,9 @@ fun ProductDto.toEntity(): ProductEntity {
         stockJson = stockJson,
         imagesJson = imagesJson,
         updatedAt = updatedAt ?: java.time.Instant.now().toString(),
+        description = description,
+        descriptionShort = descriptionShort,
+        priceTaxExcl = priceTaxExcl,
     )
 }
 

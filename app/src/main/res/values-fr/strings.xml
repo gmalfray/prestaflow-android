@@ -195,6 +195,19 @@
     <string name="product_stock_quantity_label">Quantité</string>
     <string name="product_update_stock">Mettre à jour le stock</string>
     <string name="product_status_section">Statut</string>
+    <string name="product_detail_edit_content_description">Modifier la fiche produit</string>
+
+    <string name="product_edit_title">Modifier le produit</string>
+    <string name="product_edit_name_label">Nom</string>
+    <string name="product_edit_name_error">Le nom est requis</string>
+    <string name="product_edit_description_label">Description</string>
+    <string name="product_edit_description_short_label">Description courte</string>
+    <string name="product_edit_reference_label">Référence</string>
+    <string name="product_edit_reference_error">La référence doit comporter au maximum 64 caractères</string>
+    <string name="product_edit_price_label">Prix (HT)</string>
+    <string name="product_edit_price_error">Saisissez un prix valide (0 ou plus)</string>
+    <string name="product_edit_active_label">Actif</string>
+    <string name="product_edit_save_button">Enregistrer</string>
     <string name="dismiss">Fermer</string>
 
     <!-- Layout deux colonnes (tablette) -->

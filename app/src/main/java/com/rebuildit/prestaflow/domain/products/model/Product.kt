@@ -17,6 +17,17 @@ data class Product(
      * Nullable : le connecteur peut ne pas encore exposer ce champ (rétrocompat versions antérieures).
      */
     val ean13: String? = null,
+    /**
+     * Champs "fiche produit" (édition champs simples). Nullable : le connecteur peut ne pas
+     * encore les exposer côté GET (défaut null tant que le contrat n'est pas aligné).
+     */
+    val description: String? = null,
+    val descriptionShort: String? = null,
+    /**
+     * Prix HT (`price_tax_excl` côté connecteur), distinct de [price] qui est le prix TTC affiché.
+     * Nullable tant que le connecteur ne l'expose pas en lecture.
+     */
+    val priceTaxExcl: Double? = null,
 )
 
 @Serializable

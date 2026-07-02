@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.fakes
 
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.model.Product
+import com.rebuildit.prestaflow.domain.products.model.ProductUpdateFields
 import com.rebuildit.prestaflow.domain.products.model.StockAvailability
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,6 +83,21 @@ class FakeProductsRepository : ProductsRepository {
         setProductEan13Calls += SetProductEan13Call(productId, ean13)
         if (shouldThrowOnSetProductEan13) throw RuntimeException("Erreur réseau simulée")
         return setProductEan13Result ?: error("setProductEan13Result non défini dans le fake")
+    }
+
+    data class UpdateProductFieldsCall(val productId: Long, val fields: ProductUpdateFields)
+
+    val updateProductFieldsCalls = mutableListOf<UpdateProductFieldsCall>()
+    var updateProductFieldsResult: Product? = null
+    var shouldThrowOnUpdateProductFields = false
+
+    override suspend fun updateProductFields(
+        productId: Long,
+        fields: ProductUpdateFields,
+    ): Product {
+        updateProductFieldsCalls += UpdateProductFieldsCall(productId, fields)
+        if (shouldThrowOnUpdateProductFields) throw RuntimeException("Erreur réseau simulée")
+        return updateProductFieldsResult ?: error("updateProductFieldsResult non défini dans le fake")
     }
 
     data class UpdateStockCall(val productId: Long, val quantity: Int, val warehouseId: Long?, val reason: String?)

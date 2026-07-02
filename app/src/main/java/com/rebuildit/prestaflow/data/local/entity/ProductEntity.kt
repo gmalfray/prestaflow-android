@@ -14,4 +14,7 @@ data class ProductEntity(
     @ColumnInfo(name = "stock_json") val stockJson: String,
     @ColumnInfo(name = "images_json") val imagesJson: String,
     @ColumnInfo(name = "updated_at") val updatedAt: String,
+    val description: String? = null,
+    @ColumnInfo(name = "description_short") val descriptionShort: String? = null,
+    @ColumnInfo(name = "price_tax_excl") val priceTaxExcl: Double? = null,
 )

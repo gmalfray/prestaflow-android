@@ -27,6 +27,12 @@ data class ProductDto(
     @SerialName("updated_at") val updatedAt: String? = null,
     // Rétrocompat : absent tant que le connecteur ne l'expose pas (défaut null).
     @SerialName("ean13") val ean13: String? = null,
+    // Champs "fiche produit" (édition champs simples, cf. ProductUpdateRequestDto) : absents tant
+    // que le connecteur ne les expose pas encore côté GET (défaut null → écran d'édition prérempli vide/
+    // approximé le temps de l'alignement du contrat).
+    @SerialName("description") val description: String? = null,
+    @SerialName("description_short") val descriptionShort: String? = null,
+    @SerialName("price_tax_excl") val priceTaxExcl: Double? = null,
 )
 
 @Serializable
@@ -53,11 +59,18 @@ data class StockUpdateRequestDto(
 
 /**
  * Corps du `PATCH /products/{id}` (action "attributes" côté connecteur, inférée par l'absence de
- * `quantity`). Pour l'instant limité à [ean13] (association d'un code-barres scanné à un produit
- * existant) — le connecteur accepte aussi `active`/`price_tax_excl` mais ils ne sont pas encore
- * pilotés depuis l'app.
+ * `quantity`). Requête PARTIELLE : tous les champs sont nullables et seuls ceux non-null sont
+ * sérialisés (cf. `Json { explicitNulls = false }` fourni par Hilt) — un champ omis n'est donc pas
+ * modifié côté serveur. Couvre l'édition des champs simples de la fiche produit + l'association
+ * d'un code-barres scanné ([ean13]).
  */
 @Serializable
 data class ProductUpdateRequestDto(
+    @SerialName("name") val name: String? = null,
+    @SerialName("description") val description: String? = null,
+    @SerialName("description_short") val descriptionShort: String? = null,
+    @SerialName("reference") val reference: String? = null,
+    @SerialName("price_tax_excl") val priceTaxExcl: Double? = null,
+    @SerialName("active") val active: Boolean? = null,
     @SerialName("ean13") val ean13: String? = null,
 )

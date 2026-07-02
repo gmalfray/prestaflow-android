@@ -21,6 +21,7 @@ import com.rebuildit.prestaflow.ui.orders.OrderDetailRoute
 import com.rebuildit.prestaflow.ui.orders.OrdersRoute
 import com.rebuildit.prestaflow.ui.orders.OrdersTwoPaneRoute
 import com.rebuildit.prestaflow.ui.products.ProductDetailRoute
+import com.rebuildit.prestaflow.ui.products.ProductEditRoute
 import com.rebuildit.prestaflow.ui.products.ProductsRoute
 import com.rebuildit.prestaflow.ui.settings.SettingsRoute
 
@@ -132,6 +133,20 @@ fun PrestaFlowNavGraph(
                 ),
         ) {
             ProductDetailRoute(
+                onBackClick = { navController.popBackStack() },
+                onEditClick = { productId ->
+                    navController.navigate("${AppDestination.Products.route}/$productId/edit")
+                },
+            )
+        }
+        composable(
+            route = "${AppDestination.Products.route}/{productId}/edit",
+            arguments =
+                listOf(
+                    navArgument("productId") { type = NavType.LongType },
+                ),
+        ) {
+            ProductEditRoute(
                 onBackClick = { navController.popBackStack() },
             )
         }

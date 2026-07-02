@@ -195,6 +195,19 @@
     <string name="product_stock_quantity_label">Quantity</string>
     <string name="product_update_stock">Update Stock</string>
     <string name="product_status_section">Status</string>
+    <string name="product_detail_edit_content_description">Edit product details</string>
+
+    <string name="product_edit_title">Edit Product</string>
+    <string name="product_edit_name_label">Name</string>
+    <string name="product_edit_name_error">Name is required</string>
+    <string name="product_edit_description_label">Description</string>
+    <string name="product_edit_description_short_label">Short description</string>
+    <string name="product_edit_reference_label">Reference</string>
+    <string name="product_edit_reference_error">Reference must be 64 characters or fewer</string>
+    <string name="product_edit_price_label">Price (excl. tax)</string>
+    <string name="product_edit_price_error">Enter a valid price (0 or more)</string>
+    <string name="product_edit_active_label">Active</string>
+    <string name="product_edit_save_button">Save</string>
     <string name="dismiss">Dismiss</string>
 
     <!-- Two-pane layout (tablet) -->

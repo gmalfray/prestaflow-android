@@ -15,6 +15,7 @@ import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
+import com.rebuildit.prestaflow.domain.products.model.ProductUpdateFields
 import com.rebuildit.prestaflow.domain.products.model.StockAvailability
 import com.rebuildit.prestaflow.domain.sync.SyncQueueRepository
 import com.rebuildit.prestaflow.domain.sync.model.ConflictStrategy
@@ -128,6 +129,27 @@ class ProductsRepositoryImpl
                 val dto = response.product
                 // Le produit vient d'une recherche texte transitoire (pas forcément en cache) :
                 // on le met en cache maintenant qu'on dispose de la version serveur à jour.
+                productDao.upsertProduct(dto.toEntity())
+                stockAvailabilityDao.upsertAll(listOf(dto.stock.toEntity(dto.id)))
+                dto.toDomain()
+            }
+
+        override suspend fun updateProductFields(
+            productId: Long,
+            fields: ProductUpdateFields,
+        ): Product =
+            withContext(ioDispatcher) {
+                val request =
+                    ProductUpdateRequestDto(
+                        name = fields.name,
+                        description = fields.description,
+                        descriptionShort = fields.descriptionShort,
+                        reference = fields.reference,
+                        priceTaxExcl = fields.priceTaxExcl,
+                        active = fields.active,
+                    )
+                val response = api.updateProduct(productId, request)
+                val dto = response.product
                 productDao.upsertProduct(dto.toEntity())
                 stockAvailabilityDao.upsertAll(listOf(dto.stock.toEntity(dto.id)))
                 dto.toDomain()

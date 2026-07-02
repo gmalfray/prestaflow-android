@@ -1,6 +1,7 @@
 package com.rebuildit.prestaflow.domain.products
 
 import com.rebuildit.prestaflow.domain.products.model.Product
+import com.rebuildit.prestaflow.domain.products.model.ProductUpdateFields
 import com.rebuildit.prestaflow.domain.products.model.StockAvailability
 import kotlinx.coroutines.flow.Flow
 
@@ -50,6 +51,17 @@ interface ProductsRepository {
     suspend fun setProductEan13(
         productId: Long,
         ean13: String,
+    ): Product
+
+    /**
+     * Met à jour les champs simples de la fiche produit (nom, description, description courte,
+     * référence, prix HT, actif) via `PATCH products/{id}` — mise à jour PARTIELLE : seuls les
+     * champs non-null de [fields] sont envoyés.
+     * @return Le produit tel que renvoyé par le serveur après mise à jour.
+     */
+    suspend fun updateProductFields(
+        productId: Long,
+        fields: ProductUpdateFields,
     ): Product
 
     suspend fun updateStock(
