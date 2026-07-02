@@ -26,6 +26,10 @@ Auth clé API→JWT + appairage QR.
   (upload depuis appareil photo/galerie + suppression)**, backorders.
 - **Création** d'un produit from scratch.
 - **Gestion des catégories** (ajout/édition) — à terme.
+- **Mise en stock par scan code-barres** : scanner l'**EAN13 / référence** d'un produit → le retrouver →
+  **ajuster le stock** (réception de marchandise). La brique scan existe déjà (ZXing QR/DataMatrix), à étendre
+  aux codes-barres produit. Connecteur : lookup produit par `reference`/`ean13` (ex. `GET /products?ean13=` ou
+  `?reference=`) ; app : écran scan → fiche stock rapide (+/− quantité).
 - Volet **connecteur** : `POST /products`, `PATCH /products/{id}` étendu, upload images (multipart),
   CRUD catégories. Volet **app** : écran formulaire, picker images, sélecteur de catégories.
 - Branche cible : `feat/product-edit`.
@@ -52,7 +56,6 @@ Auth clé API→JWT + appairage QR.
 - **Création / édition client + adresses.**
 - **Rôles / permissions multi-employés** (accès restreint ; on est mono-clé).
 - **Alertes stock bas + réappro** (push sous seuil).
-- **Scan code-barres produit** (retrouver un produit / ajuster le stock ; étendre le scan QR/DataMatrix existant au catalogue).
 - **Mouvements de stock avancés** (entrées/sorties motivées, multi-entrepôt, commandes fournisseurs).
 - **Analytics avancés** (meilleures ventes, taux de conversion, perf par catégorie sur le dashboard).
 - **Modération des avis** (revws) · **widget écran d'accueil** (KPI/nouvelles commandes) · **file d'attente hors-ligne** (écritures en cache).
