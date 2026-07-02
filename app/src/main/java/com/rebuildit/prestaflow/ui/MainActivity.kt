@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
@@ -363,7 +365,15 @@ private fun AuthenticatedShell(
         ) {
             if (useNavigationRail) {
                 Row(modifier = Modifier.fillMaxSize()) {
-                    NavigationRail(modifier = Modifier.padding(vertical = 12.dp)) {
+                    // verticalScroll : en paysage / faible hauteur, les 5 onglets ne tiennent pas dans
+                    // le rail — sans défilement le dernier (« Paniers ») est tronqué. Le scroll les rend
+                    // tous atteignables quelle que soit la hauteur écran.
+                    NavigationRail(
+                        modifier =
+                            Modifier
+                                .verticalScroll(rememberScrollState())
+                                .padding(vertical = 12.dp),
+                    ) {
                         navBarDestinations.forEach { destination ->
                             val selected = currentRoute?.substringBefore('?')?.substringBefore('/') == destination.route
                             val label = stringResource(id = destination.labelRes)

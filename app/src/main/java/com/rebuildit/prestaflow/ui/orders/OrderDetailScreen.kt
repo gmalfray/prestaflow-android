@@ -538,8 +538,10 @@ fun OrderDetailContent(
             }
         }
 
-        // Shipping Card
-        if (order.shipping != null) {
+        // Livraison — masquée pour les commandes sans livraison (virtuelles) : le connecteur renvoie
+        // un bloc shipping avec transporteur vide plutôt que null, d'où le filtre sur carrierName.
+        val shippingInfo = order.shipping?.takeIf { it.carrierName.isNotBlank() }
+        if (shippingInfo != null) {
             val editTrackingDesc = stringResource(R.string.order_detail_tracking_edit_content_description)
             SectionCard(
                 title = stringResource(R.string.order_detail_shipping_section),
@@ -558,12 +560,12 @@ fun OrderDetailContent(
                 },
             ) {
                 Text(
-                    text = order.shipping.carrierName,
+                    text = shippingInfo.carrierName,
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                if (order.shipping.trackingNumber != null) {
+                if (shippingInfo.trackingNumber != null) {
                     Text(
-                        text = stringResource(R.string.order_detail_tracking_display, order.shipping.trackingNumber),
+                        text = stringResource(R.string.order_detail_tracking_display, shippingInfo.trackingNumber),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary,
                     )
@@ -613,8 +615,9 @@ fun OrderDetailContent(
             }
         }
 
-        // Bouton génération étiquette Colissimo — visible uniquement si pas encore d'étiquette
-        if (!order.hasShippingLabel) {
+        // Bouton génération étiquette Colissimo — uniquement si la commande a une livraison
+        // (transporteur assigné) et pas encore d'étiquette. Pas de bouton sur une commande virtuelle.
+        if (shippingInfo != null && !order.hasShippingLabel) {
             val generateLabelDesc = stringResource(R.string.order_detail_generate_label_content_description)
             Button(
                 onClick = onGenerateLabel,
