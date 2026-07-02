@@ -12,6 +12,11 @@ data class Product(
     val stock: ProductStock,
     val images: List<ProductImage>,
     val updatedAt: String,
+    /**
+     * Code-barres EAN13 (ou EAN8/référence) du produit, utilisé pour la recherche par scan.
+     * Nullable : le connecteur peut ne pas encore exposer ce champ (rétrocompat versions antérieures).
+     */
+    val ean13: String? = null,
 )
 
 @Serializable

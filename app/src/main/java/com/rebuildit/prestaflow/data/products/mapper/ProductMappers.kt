@@ -37,6 +37,24 @@ fun StockAvailabilityEntity.toDomain(): StockAvailability =
         updatedAtIso = updatedAtIso,
     )
 
+/**
+ * Mappe un [ProductDto] directement en modèle domaine [Product], sans passer par Room.
+ * Utilisé pour les résultats transitoires (ex. recherche par code-barres scanné) qu'on ne
+ * souhaite pas mettre en cache local.
+ */
+fun ProductDto.toDomain(): Product =
+    Product(
+        id = id,
+        name = name,
+        reference = reference.orEmpty(),
+        price = price,
+        active = active,
+        stock = stock.toDomainStock(),
+        images = images.map { ProductImage(id = it.id, url = it.url) },
+        updatedAt = updatedAt ?: java.time.Instant.now().toString(),
+        ean13 = ean13,
+    )
+
 fun ProductDto.toEntity(): ProductEntity {
     val stockJson = json.encodeToString(stock.toDomainStock())
     val imagesJson = json.encodeToString(images)

@@ -49,12 +49,30 @@ class FakeProductsRepository : ProductsRepository {
         forceRemote: Boolean,
     ) = Unit
 
+    val barcodeSearchCalls = mutableListOf<String>()
+    var barcodeSearchResult: List<Product> = emptyList()
+    var shouldThrowOnBarcodeSearch = false
+
+    override suspend fun searchByBarcode(barcode: String): List<Product> {
+        barcodeSearchCalls += barcode
+        if (shouldThrowOnBarcodeSearch) throw RuntimeException("Erreur réseau simulée")
+        return barcodeSearchResult
+    }
+
+    data class UpdateStockCall(val productId: Long, val quantity: Int, val warehouseId: Long?, val reason: String?)
+
+    val updateStockCalls = mutableListOf<UpdateStockCall>()
+    var shouldThrowOnUpdateStock = false
+
     override suspend fun updateStock(
         productId: Long,
         quantity: Int,
         warehouseId: Long?,
         reason: String?,
-    ) = Unit
+    ) {
+        updateStockCalls += UpdateStockCall(productId, quantity, warehouseId, reason)
+        if (shouldThrowOnUpdateStock) throw RuntimeException("Erreur réseau simulée")
+    }
 
     override suspend fun updatePrice(
         productId: Long,

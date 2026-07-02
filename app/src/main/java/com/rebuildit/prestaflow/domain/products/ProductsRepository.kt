@@ -28,6 +28,13 @@ interface ProductsRepository {
         forceRemote: Boolean = false,
     )
 
+    /**
+     * Recherche des produits par code-barres exact (EAN13/EAN8 ou référence), via l'API
+     * uniquement (pas de cache local — résultat transitoire pour le flux de scan).
+     * @return La liste des produits correspondants (généralement 0 ou 1, rarement plusieurs).
+     */
+    suspend fun searchByBarcode(barcode: String): List<Product>
+
     suspend fun updateStock(
         productId: Long,
         quantity: Int,

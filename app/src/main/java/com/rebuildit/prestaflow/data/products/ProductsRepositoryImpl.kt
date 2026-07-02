@@ -106,6 +106,12 @@ class ProductsRepositoryImpl
             }
         }
 
+        override suspend fun searchByBarcode(barcode: String): List<Product> =
+            withContext(ioDispatcher) {
+                val response = api.getProducts(filters = mapOf("barcode" to barcode))
+                response.products.map { it.toDomain() }
+            }
+
         override suspend fun updatePrice(
             productId: Long,
             price: Double,

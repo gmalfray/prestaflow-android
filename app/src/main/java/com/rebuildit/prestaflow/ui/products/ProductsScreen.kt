@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.products
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -18,17 +19,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -47,12 +51,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.domain.products.model.StockFilter
+import com.rebuildit.prestaflow.ui.auth.PortraitCaptureActivity
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
@@ -70,6 +77,8 @@ import java.text.NumberFormat
  */
 private const val LOW_STOCK_THRESHOLD_FALLBACK = 5
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongParameterList") // Route Hilt : callback nav + 3 viewModels (produits, boutiques, scan)
 @Composable
 fun ProductsRoute(
     onProductClick: (Long) -> Unit = {},
@@ -77,9 +86,35 @@ fun ProductsRoute(
     modifier: Modifier = Modifier,
     viewModel: ProductsViewModel = hiltViewModel(),
     shopsViewModel: ShopsViewModel = hiltViewModel(),
+    scanViewModel: ProductScanViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
+    val scanState by scanViewModel.uiState.collectAsStateWithLifecycle()
+
+    val scanPrompt = stringResource(R.string.products_scan_prompt)
+    val scanLauncher =
+        rememberLauncherForActivityResult(ScanContract()) { result ->
+            if (result != null && !result.contents.isNullOrBlank()) {
+                scanViewModel.onBarcodeScanned(result.contents)
+            }
+        }
+    val launchScanner = {
+        scanLauncher.launch(
+            ScanOptions()
+                .setDesiredBarcodeFormats(
+                    ScanOptions.EAN_13,
+                    ScanOptions.EAN_8,
+                    ScanOptions.CODE_128,
+                )
+                .setPrompt(scanPrompt)
+                .setBeepEnabled(true)
+                .setBarcodeImageEnabled(false)
+                .setOrientationLocked(false)
+                .setCaptureActivity(PortraitCaptureActivity::class.java),
+        )
+    }
+
     ProductsScreen(
         modifier = modifier,
         state = state,
@@ -90,9 +125,30 @@ fun ProductsRoute(
         onSwitchShop = shopsViewModel::switchShop,
         onAddShop = onAddShop,
         onStockFilterSelected = viewModel::onStockFilterSelected,
+        onScanProduct = launchScanner,
     )
+
+    if (scanState.isSheetVisible) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ProductScanSheet(
+            state = scanState,
+            sheetState = sheetState,
+            onDismiss = scanViewModel::onDismiss,
+            onScanAgain = {
+                scanViewModel.onDismiss()
+                launchScanner()
+            },
+            onSelectProduct = scanViewModel::onSelectProduct,
+            onBackToResults = scanViewModel::onBackToResults,
+            onQuantityChange = scanViewModel::onQuantityChange,
+            onIncrement = scanViewModel::onIncrement,
+            onDecrement = scanViewModel::onDecrement,
+            onConfirm = scanViewModel::onConfirmAdjustment,
+        )
+    }
 }
 
+@Suppress("LongParameterList")
 @Composable
 fun ProductsScreen(
     state: ProductsUiState,
@@ -104,39 +160,56 @@ fun ProductsScreen(
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
     onStockFilterSelected: (StockFilter) -> Unit = {},
+    onScanProduct: () -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
 
-    when {
-        state.isLoading && state.products.isEmpty() -> LoadingState(modifier)
-        state.products.isEmpty() ->
-            EmptyState(
-                message = stringResource(R.string.products_list_empty),
-                modifier = modifier,
-                errorMessage = errorMessage,
-                onRefresh = onRefresh,
+    Box(modifier = modifier.fillMaxSize()) {
+        when {
+            state.isLoading && state.products.isEmpty() -> LoadingState(Modifier.fillMaxSize())
+            state.products.isEmpty() ->
+                EmptyState(
+                    message = stringResource(R.string.products_list_empty),
+                    modifier = Modifier.fillMaxSize(),
+                    errorMessage = errorMessage,
+                    onRefresh = onRefresh,
+                )
+            else ->
+                ProductList(
+                    modifier = Modifier.fillMaxSize(),
+                    products = state.visibleProducts,
+                    totalCount = state.totalCount,
+                    lowStockCount =
+                        state.products.count {
+                            it.stock.isLow || it.stock.quantity <= LOW_STOCK_THRESHOLD_FALLBACK
+                        },
+                    query = state.query,
+                    onQueryChange = onQueryChange,
+                    isRefreshing = state.isRefreshing,
+                    errorMessage = errorMessage,
+                    connections = connections,
+                    onRefresh = onRefresh,
+                    onProductClick = onProductClick,
+                    onSwitchShop = onSwitchShop,
+                    onAddShop = onAddShop,
+                    stockFilter = state.stockFilter,
+                    onStockFilterSelected = onStockFilterSelected,
+                )
+        }
+
+        val scanContentDescription = stringResource(R.string.products_scan_fab_content_description)
+        FloatingActionButton(
+            onClick = onScanProduct,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(Dimensions.screenEdgeMargin),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.QrCodeScanner,
+                contentDescription = scanContentDescription,
             )
-        else ->
-            ProductList(
-                modifier = modifier,
-                products = state.visibleProducts,
-                totalCount = state.totalCount,
-                lowStockCount =
-                    state.products.count {
-                        it.stock.isLow || it.stock.quantity <= LOW_STOCK_THRESHOLD_FALLBACK
-                    },
-                query = state.query,
-                onQueryChange = onQueryChange,
-                isRefreshing = state.isRefreshing,
-                errorMessage = errorMessage,
-                connections = connections,
-                onRefresh = onRefresh,
-                onProductClick = onProductClick,
-                onSwitchShop = onSwitchShop,
-                onAddShop = onAddShop,
-                stockFilter = state.stockFilter,
-                onStockFilterSelected = onStockFilterSelected,
-            )
+        }
     }
 }
 
@@ -178,10 +251,14 @@ private fun ProductList(
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
+                    // Padding bas augmenté pour laisser la place au FAB "Scanner un produit"
+                    // qui flotte au-dessus de la liste sans masquer la dernière ligne.
                     contentPadding =
                         PaddingValues(
-                            horizontal = Dimensions.screenEdgeMargin,
-                            vertical = Dimensions.spacingL,
+                            start = Dimensions.screenEdgeMargin,
+                            end = Dimensions.screenEdgeMargin,
+                            top = Dimensions.spacingL,
+                            bottom = Dimensions.spacingL + Dimensions.minTouchTarget + Dimensions.screenEdgeMargin,
                         ),
                     verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
                 ) {

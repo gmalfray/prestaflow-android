@@ -25,6 +25,8 @@ data class ProductDto(
     @SerialName("stock") val stock: StockDto,
     @SerialName("images") val images: List<ImageDto> = emptyList(),
     @SerialName("updated_at") val updatedAt: String? = null,
+    // Rétrocompat : absent tant que le connecteur ne l'expose pas (défaut null).
+    @SerialName("ean13") val ean13: String? = null,
 )
 
 @Serializable
