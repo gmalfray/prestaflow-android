@@ -31,6 +31,7 @@ import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,9 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -201,6 +205,22 @@ private fun LoadingScreen() {
     }
 }
 
+/**
+ * Libellé d'onglet de navigation (bottom bar + rail). Les 5 libellés sont dimensionnés pour tenir
+ * sur une ligne à l'échelle de police par défaut ; on plafonne donc le `fontScale` à 1.0 pour ces
+ * seuls libellés afin que « Commandes » ne déborde pas (coupure sur 2 lignes ou ellipsis) quand
+ * l'utilisateur agrandit la police système. L'accessibilité (grande police) reste active partout
+ * ailleurs dans l'app. Ellipsis conservé comme garde-fou ultime sur écrans exceptionnellement étroits.
+ */
+@Composable
+private fun NavBarLabel(text: String) {
+    val density = LocalDensity.current
+    val cappedDensity = Density(density.density, density.fontScale.coerceAtMost(1f))
+    CompositionLocalProvider(LocalDensity provides cappedDensity) {
+        Text(text = text, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 // Shell responsive : BottomNavigation en compact, NavigationRail en medium/expanded, two-pane commandes en expanded
 @Suppress("LongMethod")
@@ -320,7 +340,7 @@ private fun AuthenticatedShell(
                         NavigationBarItem(
                             selected = selected,
                             onClick = onItemClick,
-                            label = { Text(text = label) },
+                            label = { NavBarLabel(label) },
                             icon = {
                                 Icon(
                                     imageVector = destination.icon,
@@ -380,7 +400,7 @@ private fun AuthenticatedShell(
                                         contentDescription = label,
                                     )
                                 },
-                                label = { Text(text = label) },
+                                label = { NavBarLabel(label) },
                             )
                         }
                     }
