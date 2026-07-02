@@ -254,15 +254,23 @@
     <!-- Filtres statuts commandes -->
     <string name="orders_filter_all">Toutes</string>
     <string name="orders_filter_label">Filtrer par statut</string>
-    <string name="orders_filter_configure">Configurer les statuts visibles</string>
-    <string name="orders_filter_prefs_title">Statuts affichés dans la barre de filtres</string>
-    <string name="orders_filter_prefs_cancel">Annuler</string>
-    <string name="orders_filter_prefs_confirm">Appliquer</string>
-    <string name="orders_filter_prefs_max_hint">%1$d statuts maximum</string>
+    <string name="orders_filter_configure">Filtrer et personnaliser les statuts</string>
     <string name="orders_filter_empty">Aucune commande pour ce statut.</string>
     <string name="orders_filter_reset">Réinitialiser les filtres</string>
     <!-- Accessibilité chips : le libellé affiché est court, le contentDescription donne le nom complet -->
     <string name="orders_filter_chip_description">Filtrer par statut : %1$s</string>
+
+    <!-- Menu statuts (bottom sheet) : 2 volets — filtre (100% des statuts) + raccourcis (barre, max N) -->
+    <string name="orders_filter_prefs_title">Statuts</string>
+    <string name="orders_filter_prefs_section_filter">Filtrer par statut</string>
+    <string name="orders_filter_prefs_section_filter_hint">Sélectionnez autant de statuts que nécessaire pour filtrer la liste</string>
+    <string name="orders_filter_prefs_clear_all">Tout effacer</string>
+    <string name="orders_filter_prefs_section_shortcuts">Raccourcis (barre)</string>
+    <string name="orders_filter_prefs_max_hint">%1$d raccourcis maximum</string>
+    <string name="orders_filter_prefs_pin_description_add">Épingler %1$s comme raccourci</string>
+    <string name="orders_filter_prefs_pin_description_remove">Désépingler %1$s des raccourcis</string>
+    <string name="orders_filter_prefs_cancel">Annuler</string>
+    <string name="orders_filter_prefs_confirm">Appliquer</string>
 
     <!-- Tri commandes -->
     <string name="orders_sort_label">Trier les commandes</string>

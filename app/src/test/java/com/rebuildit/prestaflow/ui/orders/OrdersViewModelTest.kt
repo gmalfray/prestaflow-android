@@ -505,20 +505,21 @@ class OrdersViewModelTest {
     // ─── Préférences de statuts visibles ────────────────────────────────────
 
     @Test
-    fun `retrait d un statut filtre le retire de selectedStatusIds`() =
+    fun `un statut filtre retire des raccourcis reste actif dans le filtre`() =
         runTest {
+            // Régression : le filtre actif ne doit plus être écrasé par les chips raccourcis.
             val vm = buildViewModel()
             advanceUntilIdle()
 
             vm.onStatusFilterSelected(statusId = 2)
             advanceUntilIdle()
 
-            // La préférence émet un ensemble qui ne contient plus le statut 2
+            // La préférence de raccourcis émet un ensemble qui ne contient plus le statut 2
             fakePrefsRepo.emitVisibleStatusIds(setOf(1, 3))
             advanceUntilIdle()
 
-            assertFalse(
-                "Le statut 2 doit être retiré de selectedStatusIds",
+            assertTrue(
+                "Le statut 2 doit rester dans selectedStatusIds même s'il n'est plus un raccourci",
                 2 in vm.uiState.value.selectedStatusIds,
             )
         }
@@ -551,6 +552,48 @@ class OrdersViewModelTest {
             advanceUntilIdle()
 
             assertNull(vm.uiState.value.visibleStatusIds)
+        }
+
+    @Test
+    fun `onStatusFiltersReplaced pose le filtre sur un statut hors raccourcis et declenche un refresh`() =
+        runTest {
+            // Le volet "Filtrer par statut" du menu doit pouvoir cibler 100% des statuts,
+            // y compris ceux qui ne sont pas épinglés en chips raccourcis (max 3).
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(1, "Paiement accepté", "#00FF00"),
+                    OrderStatusFilter(2, "En préparation", "#0000FF"),
+                    OrderStatusFilter(3, "Expédié", "#FFA500"),
+                    OrderStatusFilter(4, "Terminé", "#008000"),
+                    OrderStatusFilter(5, "Remboursé", "#AA0000"),
+                )
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakePrefsRepo.emitVisibleStatusIds(setOf(2, 3, 4))
+            advanceUntilIdle()
+            fakeOrdersRepo.refreshCalls.clear()
+
+            vm.onStatusFiltersReplaced(setOf(5))
+            advanceUntilIdle()
+
+            assertEquals(setOf(5), vm.uiState.value.selectedStatusIds)
+            val lastCall = fakeOrdersRepo.refreshCalls.lastOrNull()
+            assertEquals(5, lastCall?.second)
+        }
+
+    @Test
+    fun `onStatusFiltersReplaced avec un ensemble vide reinitialise le filtre a Toutes`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            vm.onStatusFilterSelected(statusId = 2)
+            advanceUntilIdle()
+
+            vm.onStatusFiltersReplaced(emptySet())
+            advanceUntilIdle()
+
+            assertTrue(vm.uiState.value.selectedStatusIds.isEmpty())
+            assertFalse(vm.uiState.value.hasActiveStatusFilter)
         }
 
     // ─── Recherche locale ────────────────────────────────────────────────────

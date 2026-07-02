@@ -393,28 +393,25 @@ class OrdersViewModel
 
         // ─── Préférence de statuts visibles ──────────────────────────────────
 
-        /** Observe la préférence DataStore et met à jour l'état. */
+        /**
+         * Observe la préférence DataStore et met à jour l'état.
+         *
+         * [visibleStatusIds] ne pilote QUE les chips raccourcis affichés dans la barre : le filtre
+         * actif ([OrdersUiState.selectedStatusIds]) reste indépendant et peut porter sur n'importe
+         * quel statut disponible, y compris un statut non épinglé en raccourci.
+         */
         private fun observeVisibleStatusIds() {
             viewModelScope.launch {
                 ordersPreferencesRepository.visibleStatusIds.collect { ids ->
-                    _uiState.update { current ->
-                        val newState = current.copy(visibleStatusIds = ids)
-                        // Si un statut sélectionné n'est plus visible, le retirer du filtre
-                        val validSelectedIds =
-                            if (ids != null) {
-                                current.selectedStatusIds.intersect(ids)
-                            } else {
-                                current.selectedStatusIds
-                            }
-                        newState.copy(selectedStatusIds = validSelectedIds)
-                    }
+                    _uiState.update { current -> current.copy(visibleStatusIds = ids) }
                 }
             }
         }
 
         /**
-         * Persiste les IDs de statuts à afficher dans la barre de filtres.
-         * Si [ids] est vide, réinitialise la préférence (tous les statuts affichés).
+         * Persiste les IDs de statuts à afficher dans la barre de filtres (raccourcis, max
+         * [MAX_VISIBLE_STATUS_CHIPS]). Si [ids] est vide, réinitialise la préférence (retour au
+         * défaut curaté). N'affecte jamais le filtre actif ([selectedStatusIds]).
          */
         fun onVisibleStatusIdsChanged(ids: Set<Int>) {
             viewModelScope.launch {
@@ -424,6 +421,18 @@ class OrdersViewModel
                     ordersPreferencesRepository.setVisibleStatusIds(ids)
                 }
             }
+        }
+
+        /**
+         * Remplace intégralement le filtre de statuts actif par [ids] puis recharge la liste.
+         * Contrairement à [onStatusFilterSelected] (bascule un seul statut, utilisé par les chips
+         * de la barre), cette fonction pose l'ensemble en une fois — utilisée par le volet
+         * « Filtrer par statut » du menu, qui autorise 100 % des statuts disponibles (pas de
+         * plafond, pas d'intersection avec les raccourcis).
+         */
+        fun onStatusFiltersReplaced(ids: Set<Int>) {
+            _uiState.update { it.copy(selectedStatusIds = ids) }
+            refresh(forceRemote = true, notifyOnError = true)
         }
 
         // ─── Sélection multiple ──────────────────────────────────────────────

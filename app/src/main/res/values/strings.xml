@@ -255,15 +255,23 @@
     <!-- Filtres statuts commandes -->
     <string name="orders_filter_all">All</string>
     <string name="orders_filter_label">Filter by status</string>
-    <string name="orders_filter_configure">Configure visible statuses</string>
-    <string name="orders_filter_prefs_title">Statuses shown in filter bar</string>
-    <string name="orders_filter_prefs_cancel">Cancel</string>
-    <string name="orders_filter_prefs_confirm">Apply</string>
-    <string name="orders_filter_prefs_max_hint">%1$d statuses max</string>
+    <string name="orders_filter_configure">Filter and customize statuses</string>
     <string name="orders_filter_empty">No orders for this status.</string>
     <string name="orders_filter_reset">Reset filters</string>
     <!-- Accessibilité chips : le libellé affiché est court, le contentDescription donne le nom complet -->
     <string name="orders_filter_chip_description">Filter by status: %1$s</string>
+
+    <!-- Menu statuts (bottom sheet) : 2 volets — filtre (100% des statuts) + raccourcis (barre, max N) -->
+    <string name="orders_filter_prefs_title">Statuses</string>
+    <string name="orders_filter_prefs_section_filter">Filter by status</string>
+    <string name="orders_filter_prefs_section_filter_hint">Select any number of statuses to filter the list</string>
+    <string name="orders_filter_prefs_clear_all">Clear all</string>
+    <string name="orders_filter_prefs_section_shortcuts">Shortcuts (bar)</string>
+    <string name="orders_filter_prefs_max_hint">%1$d shortcuts max</string>
+    <string name="orders_filter_prefs_pin_description_add">Pin %1$s as a shortcut</string>
+    <string name="orders_filter_prefs_pin_description_remove">Unpin %1$s from shortcuts</string>
+    <string name="orders_filter_prefs_cancel">Cancel</string>
+    <string name="orders_filter_prefs_confirm">Apply</string>
 
     <!-- Tri commandes -->
     <string name="orders_sort_label">Sort orders</string>

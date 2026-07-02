@@ -31,9 +31,13 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.Print
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -204,6 +208,7 @@ fun OrdersRoute(
             onSwitchShop = shopsViewModel::switchShop,
             onAddShop = onAddShop,
             onStatusFilterSelected = viewModel::onStatusFilterSelected,
+            onStatusFiltersReplaced = viewModel::onStatusFiltersReplaced,
             onVisibleStatusIdsChanged = viewModel::onVisibleStatusIdsChanged,
             onPrintSelected = { showPrintModeDialog = true },
             onBulkChangeStatus = { showBulkStatusDialog = true },
@@ -236,6 +241,7 @@ fun OrdersScreen(
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
     onStatusFilterSelected: (Int?) -> Unit = {},
+    onStatusFiltersReplaced: (Set<Int>) -> Unit = {},
     onVisibleStatusIdsChanged: (Set<Int>) -> Unit = {},
     onSortChanged: (OrderSort) -> Unit = {},
     onLoadMore: () -> Unit = {},
@@ -282,6 +288,7 @@ fun OrdersScreen(
                 visibleStatusIds = uiState.visibleStatusIds,
                 selectedStatusIds = uiState.selectedStatusIds,
                 onStatusFilterSelected = onStatusFilterSelected,
+                onStatusFiltersReplaced = onStatusFiltersReplaced,
                 onVisibleStatusIdsChanged = onVisibleStatusIdsChanged,
                 selectedSort = uiState.selectedSort,
                 onSortChanged = onSortChanged,
@@ -325,6 +332,7 @@ private fun OrdersList(
     visibleStatusIds: Set<Int>? = null,
     selectedStatusIds: Set<Int> = emptySet(),
     onStatusFilterSelected: (Int?) -> Unit = {},
+    onStatusFiltersReplaced: (Set<Int>) -> Unit = {},
     onVisibleStatusIdsChanged: (Set<Int>) -> Unit = {},
     selectedSort: OrderSort = OrderSort.DATE_DESC,
     onSortChanged: (OrderSort) -> Unit = {},
@@ -344,10 +352,12 @@ private fun OrdersList(
         StatusPreferencesSheet(
             sheetState = statusPrefsSheetState,
             availableStatuses = availableStatuses,
+            selectedStatusIds = selectedStatusIds,
             visibleStatusIds = visibleStatusIds,
             onDismiss = { showStatusPrefsSheet = false },
-            onConfirm = { ids ->
-                onVisibleStatusIdsChanged(ids)
+            onConfirm = { filterIds, shortcutIds ->
+                onStatusFiltersReplaced(filterIds)
+                onVisibleStatusIdsChanged(shortcutIds)
                 showStatusPrefsSheet = false
             },
         )
@@ -448,6 +458,10 @@ private fun OrdersList(
                                     onStatusToggle = { id -> onStatusFilterSelected(id) },
                                     onClearFilter = { onStatusFilterSelected(null) },
                                     onConfigureClick = { showStatusPrefsSheet = true },
+                                    // Vrai si un filtre porte sur un statut absent des chips (filtré via le menu)
+                                    hasHiddenActiveFilter =
+                                        selectedStatusIds.isNotEmpty() &&
+                                            selectedStatusIds.any { id -> filteredStatuses.none { it.id == id } },
                                     selectedSort = selectedSort,
                                     onSortChanged = onSortChanged,
                                 )
@@ -955,7 +969,8 @@ private fun PeriodFilterChip(
  * - Chip « Toutes » : sélectionné quand [selectedStatusIds] est vide → appelle [onClearFilter]
  * - Chaque chip de statut : indépendamment toggleable → appelle [onStatusToggle] avec l'ID
  * - Bouton tri (Sort icon) : ouvre un menu déroulant avec les options de tri
- * - Bouton ⚙ : ouvre la personnalisation des statuts visibles
+ * - Bouton ⚙ : ouvre le menu « Filtrer par statut » + « Raccourcis ». Un point apparaît dessus
+ *   quand [hasHiddenActiveFilter] est vrai (filtre actif sur un statut absent des chips).
  */
 @Composable
 private fun StatusFilterBar(
@@ -967,6 +982,7 @@ private fun StatusFilterBar(
     selectedSort: OrderSort,
     onSortChanged: (OrderSort) -> Unit,
     modifier: Modifier = Modifier,
+    hasHiddenActiveFilter: Boolean = false,
 ) {
     var showSortMenu by remember { mutableStateOf(false) }
 
@@ -1048,12 +1064,20 @@ private fun StatusFilterBar(
             }
         }
 
-        IconButton(onClick = onConfigureClick) {
-            Icon(
-                imageVector = Icons.Outlined.Tune,
-                contentDescription = stringResource(R.string.orders_filter_configure),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        BadgedBox(
+            badge = {
+                if (hasHiddenActiveFilter) {
+                    Badge(containerColor = MaterialTheme.colorScheme.primary)
+                }
+            },
+        ) {
+            IconButton(onClick = onConfigureClick) {
+                Icon(
+                    imageVector = Icons.Outlined.Tune,
+                    contentDescription = stringResource(R.string.orders_filter_configure),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -1076,23 +1100,39 @@ private fun SortOption(
     )
 }
 
-// ─── Bottom sheet de personnalisation des statuts visibles ────────────────────
+// ─── Bottom sheet « Filtrer par statut » + « Raccourcis » ─────────────────────
 
+/**
+ * Bottom sheet du menu statuts, en 2 volets pilotés indépendamment :
+ * - **Filtre** ([localFilterSelection]) : multi-sélection SANS limite, sur 100 % des
+ *   [availableStatuses]. Piloté par la case à cocher de chaque ligne. Un bouton « Tout effacer »
+ *   réinitialise ce volet uniquement.
+ * - **Raccourcis** ([localShortcutSelection]) : jusqu'à [MAX_VISIBLE_STATUS_CHIPS] statuts
+ *   épinglés dans la barre de chips. Piloté par l'icône épingle de chaque ligne.
+ *
+ * Les deux sélections locales ne sont appliquées qu'au clic sur « Appliquer » ([onConfirm]),
+ * qui reçoit (filterIds, shortcutIds).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StatusPreferencesSheet(
     sheetState: androidx.compose.material3.SheetState,
     availableStatuses: List<OrderStatusFilter>,
+    selectedStatusIds: Set<Int>,
     visibleStatusIds: Set<Int>?,
     onDismiss: () -> Unit,
-    onConfirm: (Set<Int>) -> Unit,
+    onConfirm: (filterIds: Set<Int>, shortcutIds: Set<Int>) -> Unit,
 ) {
-    // Quand aucune préférence n'est définie, pré-sélectionne le défaut curaté (≤ 3 chips)
-    val initialSelection = visibleStatusIds ?: resolveDefaultVisibleChips(availableStatuses).map { it.id }.toSet()
-    var localSelection by remember(availableStatuses, visibleStatusIds) {
-        mutableStateOf(initialSelection)
+    var localFilterSelection by remember(availableStatuses, selectedStatusIds) {
+        mutableStateOf(selectedStatusIds)
     }
-    val atLimit = localSelection.size >= MAX_VISIBLE_STATUS_CHIPS
+    // Quand aucune préférence de raccourcis n'est définie, pré-sélectionne le défaut curaté (≤ 3)
+    val initialShortcutSelection =
+        visibleStatusIds ?: resolveDefaultVisibleChips(availableStatuses).map { it.id }.toSet()
+    var localShortcutSelection by remember(availableStatuses, visibleStatusIds) {
+        mutableStateOf(initialShortcutSelection)
+    }
+    val shortcutAtLimit = localShortcutSelection.size >= MAX_VISIBLE_STATUS_CHIPS
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1109,34 +1149,72 @@ private fun StatusPreferencesSheet(
                 text = stringResource(R.string.orders_filter_prefs_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = Dimensions.spacingXs),
-            )
-            Text(
-                text = stringResource(R.string.orders_filter_prefs_max_hint, MAX_VISIBLE_STATUS_CHIPS),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (atLimit) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = Dimensions.spacingS),
             )
+
+            // En-têtes de colonnes : filtre (illimité) à gauche, raccourcis (max N) à droite
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.orders_filter_prefs_section_filter),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                TextButton(
+                    onClick = { localFilterSelection = emptySet() },
+                    enabled = localFilterSelection.isNotEmpty(),
+                ) {
+                    Text(stringResource(R.string.orders_filter_prefs_clear_all))
+                }
+            }
+            Text(
+                text = stringResource(R.string.orders_filter_prefs_section_filter_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Dimensions.spacingS),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = Dimensions.spacingXs),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Text(
+                    text = stringResource(R.string.orders_filter_prefs_section_shortcuts),
+                    style = MaterialTheme.typography.labelSmall,
+                    color =
+                        if (shortcutAtLimit) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                )
+            }
+
             LazyColumn(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 320.dp),
+                        .heightIn(max = 360.dp),
                 verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
             ) {
                 items(availableStatuses, key = { it.id }) { status ->
-                    val isChecked = status.id in localSelection
-                    val isEnabled = isChecked || !atLimit
+                    val isFilterChecked = status.id in localFilterSelection
+                    val isShortcut = status.id in localShortcutSelection
+                    val isShortcutEnabled = isShortcut || !shortcutAtLimit
+                    val dotColor = remember(status.color) { parseHexColor(status.color) }
+
                     Row(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .clickable(enabled = isEnabled) {
-                                    localSelection =
-                                        if (isChecked) {
-                                            localSelection - status.id
+                                .clickable {
+                                    localFilterSelection =
+                                        if (isFilterChecked) {
+                                            localFilterSelection - status.id
                                         } else {
-                                            localSelection + status.id
+                                            localFilterSelection + status.id
                                         }
                                 }
                                 .padding(vertical = Dimensions.spacingXs),
@@ -1144,19 +1222,50 @@ private fun StatusPreferencesSheet(
                         horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
                     ) {
                         Checkbox(
-                            checked = isChecked,
+                            checked = isFilterChecked,
                             onCheckedChange = { checked ->
-                                if (checked && atLimit) return@Checkbox
-                                localSelection =
-                                    if (checked) localSelection + status.id else localSelection - status.id
+                                localFilterSelection =
+                                    if (checked) localFilterSelection + status.id else localFilterSelection - status.id
                             },
-                            enabled = isEnabled,
                         )
+                        if (dotColor != null) {
+                            Box(
+                                modifier = Modifier.size(8.dp).background(dotColor, CircleShape),
+                            )
+                        }
                         Text(
                             text = status.name,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
                         )
+                        val pinDescription =
+                            if (isShortcut) {
+                                stringResource(R.string.orders_filter_prefs_pin_description_remove, status.name)
+                            } else {
+                                stringResource(R.string.orders_filter_prefs_pin_description_add, status.name)
+                            }
+                        IconButton(
+                            onClick = {
+                                if (isShortcut) {
+                                    localShortcutSelection = localShortcutSelection - status.id
+                                } else if (!shortcutAtLimit) {
+                                    localShortcutSelection = localShortcutSelection + status.id
+                                }
+                            },
+                            enabled = isShortcutEnabled,
+                        ) {
+                            Icon(
+                                imageVector = if (isShortcut) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                                contentDescription = pinDescription,
+                                tint =
+                                    if (isShortcut) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isShortcutEnabled) 1f else 0.38f)
+                                    },
+                            )
+                        }
                     }
                 }
             }
@@ -1171,7 +1280,7 @@ private fun StatusPreferencesSheet(
                 TextButton(onClick = onDismiss) {
                     Text(stringResource(R.string.orders_filter_prefs_cancel))
                 }
-                TextButton(onClick = { onConfirm(localSelection) }) {
+                TextButton(onClick = { onConfirm(localFilterSelection, localShortcutSelection) }) {
                     Text(stringResource(R.string.orders_filter_prefs_confirm))
                 }
             }
