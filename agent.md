@@ -69,7 +69,7 @@ Base API : `https://<boutique>/module/rebuildconnector/api` (module ≥ **1.1.2*
 | GET | `/reports?resource=bestsellers` | Top ventes | Réponse `{ "products": [ { "product_id", "quantity", "total_tax_incl" … } ] }`. |
 | GET | `/reports?resource=bestcustomers` | Top clients | Réponse `{ "customers": [ { "id", "firstname", "lastname", "total_spent", "last_order_at" } ] }`. |
 | GET | `/customers/top` | Alias used par l’app pour le widget “Meilleurs clients” | Réponse identique à `resource=bestcustomers`. |
-| GET | `/baskets` | (future) liste paniers | Réponse `{ "baskets": [...] }` – endpoints disponibles côté module mais UI encore non implémentée. |
+| GET | `/baskets` | liste paniers | Réponse `{ "baskets": [...] }` – **implémenté** (onglet Paniers + détail panier). |
 
 Fallback legacy (`mobassistantconnector`) conservé comme plan B, mais désactivé par défaut. L’app détecte la compatibilité en appelant `/connector/login`; si 404 ou 410, afficher un message orientant vers la mise à jour du module.
 
