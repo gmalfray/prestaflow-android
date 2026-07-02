@@ -63,6 +63,13 @@ class ClientsViewModel
             }
 
         /**
+         * Borne `created_from` (yyyy-MM-dd) transmise par le dashboard quand on arrive depuis le KPI
+         * "Nouveaux clients" : début de la période affichée (7 j, 30 j, trimestre, plage libre…).
+         * Si présente, elle prime sur le 1er du mois civil, pour que la liste corresponde au KPI.
+         */
+        private val periodCreatedFrom: String? = savedStateHandle.get<String?>("created_from")
+
+        /**
          * Argument de navigation "filter" exposé comme [StateFlow] réactif.
          *
          * Navigation Component met à jour le [SavedStateHandle] quand il navigue vers
@@ -388,8 +395,11 @@ class ClientsViewModel
                 ClientFilter.TOP_CLIENTS -> null to null
                 ClientFilter.ALL_CLIENTS -> "date_desc" to null
                 ClientFilter.NEW_THIS_MONTH -> {
-                    val firstOfMonth = LocalDate.now().withDayOfMonth(1).format(DATE_FORMATTER)
-                    "date_desc" to firstOfMonth
+                    // Priorité à la borne de période transmise par le dashboard (drill-down KPI) ;
+                    // sinon, repli sur le 1er du mois civil (accès historique/direct).
+                    val createdFrom =
+                        periodCreatedFrom ?: LocalDate.now().withDayOfMonth(1).format(DATE_FORMATTER)
+                    "date_desc" to createdFrom
                 }
             }
     }

@@ -57,10 +57,16 @@ class ClientsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun buildViewModel(filterArg: String? = null): ClientsViewModel =
+    private fun buildViewModel(
+        filterArg: String? = null,
+        createdFromArg: String? = null,
+    ): ClientsViewModel =
         ClientsViewModel(
             savedStateHandle = SavedStateHandle(
-                if (filterArg != null) mapOf("filter" to filterArg) else emptyMap(),
+                buildMap {
+                    if (filterArg != null) put("filter", filterArg)
+                    if (createdFromArg != null) put("created_from", createdFromArg)
+                },
             ),
             clientsRepository = fakeClientsRepo,
             networkErrorMapper = NetworkErrorMapper(),
@@ -173,6 +179,20 @@ class ClientsViewModelTest {
 
             val expectedFirstOfMonth = LocalDate.now().withDayOfMonth(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             assertEquals(expectedFirstOfMonth, call?.createdFrom)
+        }
+
+    @Test
+    fun `created_from de la nav (drill-down dashboard) prime sur le 1er du mois`() =
+        runTest {
+            // Arrive depuis le KPI "Nouveaux clients" période 7 jours → created_from = début de période.
+            val vm = buildViewModel(filterArg = "new", createdFromArg = "2026-06-26")
+            advanceUntilIdle()
+
+            val call = fakeClientsRepo.lastFetchClientsCall
+            assertNotNull(call)
+            assertEquals("date_desc", call?.sort)
+            // La borne de période prime : la liste correspond au compteur du KPI (pas le 1er du mois).
+            assertEquals("2026-06-26", call?.createdFrom)
         }
 
     @Test

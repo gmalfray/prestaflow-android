@@ -116,7 +116,7 @@ import kotlin.math.roundToInt
 fun DashboardRoute(
     onAddShop: () -> Unit = {},
     onOrdersClick: (DashboardPeriod) -> Unit = {},
-    onClientsClick: () -> Unit = {},
+    onClientsClick: (createdFrom: String?) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel(),
     shopsViewModel: ShopsViewModel = hiltViewModel(),
@@ -148,7 +148,7 @@ fun DashboardScreen(
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
     onOrdersClick: () -> Unit = {},
-    onClientsClick: () -> Unit = {},
+    onClientsClick: (createdFrom: String?) -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
     val hasSnapshot = state.snapshot != null
@@ -243,7 +243,7 @@ private fun DashboardContent(
     onSwitchShop: (String) -> Unit,
     onAddShop: () -> Unit,
     onOrdersClick: () -> Unit = {},
-    onClientsClick: () -> Unit = {},
+    onClientsClick: (createdFrom: String?) -> Unit = {},
 ) {
     val currencyFormatter = rememberCurrencyFormatter()
     val numberFormatter = rememberNumberFormatter()
@@ -264,6 +264,13 @@ private fun DashboardContent(
     // Mode plage libre = pas de "précédent" comparable → tendances masquées (mêmes conventions
     // que le comparatif de DashboardChartCard).
     val isCustomRange = customRange != null
+
+    // Drill-down "Nouveaux clients" : borne created_from = début de la période affichée,
+    // pour que la liste Clients corresponde EXACTEMENT au KPI (au lieu du 1er du mois civil figé).
+    val newClientsCreatedFrom =
+        remember(snapshot.period, customRange) {
+            newCustomersCreatedFrom(snapshot.period, customRange)
+        }
 
     // ── Sparklines par KPI (dérivées de snapshot.chart, aucun appel réseau) ────────────
     val turnoverSparkline = remember(snapshot.chart) { snapshot.chart.map { it.turnover.toFloat() } }
@@ -369,7 +376,7 @@ private fun DashboardContent(
                                 title = stringResource(id = R.string.dashboard_kpi_customers),
                                 value = newCustomersTotalText,
                                 icon = Icons.Outlined.Group,
-                                onClick = onClientsClick,
+                                onClick = { onClientsClick(newClientsCreatedFrom) },
                                 trendPercent = newCustomersTrend,
                                 sparklineValues = newCustomersSparkline,
                             ),
@@ -1741,6 +1748,30 @@ internal fun kpiTrendPercentFromSeries(
     val secondHalfSum = values.drop(mid).sum()
     if (firstHalfSum == 0.0) return null
     return (secondHalfSum - firstHalfSum) / firstHalfSum * 100.0
+}
+
+/**
+ * Borne `created_from` (yyyy-MM-dd) du drill-down "Nouveaux clients", alignée sur la période
+ * affichée par le dashboard — mêmes bornes que le connecteur (`DashboardService::resolvePeriodRange`) :
+ * today / -6 j / -29 j / -3 mois / 1er janvier. En plage libre, la date de début choisie.
+ * Toutes les périodes se terminant « maintenant », `created_from` seul suffit à faire correspondre
+ * la liste Clients au compteur du KPI (pas besoin de `created_to`).
+ */
+private fun newCustomersCreatedFrom(
+    period: DashboardPeriod,
+    customRange: Pair<String, String>?,
+): String {
+    customRange?.let { return it.first }
+    val today = LocalDate.now()
+    val from =
+        when (period) {
+            DashboardPeriod.TODAY -> today
+            DashboardPeriod.WEEK -> today.minusDays(6)
+            DashboardPeriod.MONTH -> today.minusDays(29)
+            DashboardPeriod.QUARTER -> today.minusMonths(3)
+            DashboardPeriod.YEAR -> today.withDayOfYear(1)
+        }
+    return from.format(DateTimeFormatter.ISO_LOCAL_DATE)
 }
 
 // ─── Modèle local ─────────────────────────────────────────────────────────────

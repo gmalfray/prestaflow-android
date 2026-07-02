@@ -50,13 +50,15 @@ fun PrestaFlowNavGraph(
                 onOrdersClick = { period ->
                     navController.navigate("${AppDestination.Orders.route}?period=${period.queryValue}")
                 },
-                onClientsClick = {
+                onClientsClick = { createdFrom ->
                     // Le KPI "Nouveaux clients" navigue toujours vers une entrée Clients fraîche
-                    // avec filter=new (mode NEW_THIS_MONTH). On purge d'abord toute entrée Clients
-                    // présente dans le back-stack (active ou sauvegardée via saveState) pour
-                    // garantir qu'un nouveau ViewModel est créé — le filtre est ainsi toujours
-                    // appliqué même si l'utilisateur avait déjà visité l'onglet Clients.
-                    navController.navigate("${AppDestination.Clients.route}?filter=new") {
+                    // avec filter=new. On purge d'abord toute entrée Clients présente dans le
+                    // back-stack (active ou sauvegardée via saveState) pour garantir qu'un nouveau
+                    // ViewModel est créé — le filtre est ainsi toujours appliqué même si
+                    // l'utilisateur avait déjà visité l'onglet Clients.
+                    // created_from = début de la période du dashboard → la liste correspond au KPI.
+                    val createdFromArg = createdFrom?.let { "&created_from=$it" } ?: ""
+                    navController.navigate("${AppDestination.Clients.route}?filter=new$createdFromArg") {
                         popUpTo(AppDestination.Clients.route) { inclusive = true }
                     }
                 },
@@ -154,10 +156,15 @@ fun PrestaFlowNavGraph(
         // "new" est transmis depuis la carte KPI "Nouveaux clients" du dashboard.
         // Accès direct via la barre de navigation → filter=null → mode TOP_CLIENTS par défaut.
         composable(
-            route = "${AppDestination.Clients.route}?filter={filter}",
+            route = "${AppDestination.Clients.route}?filter={filter}&created_from={created_from}",
             arguments =
                 listOf(
                     navArgument("filter") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("created_from") {
                         type = NavType.StringType
                         nullable = true
                         defaultValue = null
