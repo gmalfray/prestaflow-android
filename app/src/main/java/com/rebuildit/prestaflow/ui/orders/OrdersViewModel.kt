@@ -28,8 +28,8 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
-/** Durée (ms) avant envoi effectif du changement de statut après un swipe. */
-private const val SWIPE_UNDO_DELAY_MS = 5_000L
+/** Durée (ms) de la fenêtre « Annuler » avant envoi effectif du changement de statut après un swipe. */
+private const val SWIPE_UNDO_DELAY_MS = 10_000L
 
 /**
  * Configuration du swipe telle qu'exposée dans l'UiState.
@@ -322,13 +322,16 @@ class OrdersViewModel
 
             pendingSwipeJob = viewModelScope.launch {
                 delay(SWIPE_UNDO_DELAY_MS)
-                // Délai écoulé → envoyer le changement
+                // Fenêtre d'annulation écoulée → le changement devient effectif. On ferme la snackbar
+                // « Annuler » AVANT l'appel réseau : passé ce point, plus aucun clic « Annuler »
+                // trompeur (l'ancien code la laissait affichée pendant tout l'appel réseau, où
+                // cliquer « Annuler » ne changeait plus rien — cause du « ça n'a pas annulé »).
+                _uiState.update { it.copy(pendingSwipeAction = null) }
                 runCatching {
                     ordersRepository.updateOrderStatus(orderId, targetStatus.id.toString())
                 }.onFailure { error ->
                     Timber.w(error, "Swipe status update failed orderId=$orderId")
                 }
-                _uiState.update { it.copy(pendingSwipeAction = null) }
                 refresh(forceRemote = true, notifyOnError = false)
             }
         }
