@@ -91,6 +91,21 @@ class RobustBluetoothConnection(
         )
     }
 
+    /**
+     * Écrit [bytes] directement sur le socket, par paquets, puis flush. Utilisé pour envoyer
+     * un flux brut (ex. commandes TSPL) sans passer par le tamponnage ESC/POS de [DeviceConnection].
+     */
+    fun writeRaw(bytes: ByteArray) {
+        val os = outputStream ?: throw EscPosConnectionException("Flux de sortie Bluetooth indisponible")
+        var offset = 0
+        while (offset < bytes.size) {
+            val end = minOf(offset + CHUNK_SIZE, bytes.size)
+            os.write(bytes, offset, end - offset)
+            os.flush()
+            offset = end
+        }
+    }
+
     override fun disconnect(): DeviceConnection {
         outputStream = null
         runCatching { socket?.close() }
@@ -99,7 +114,10 @@ class RobustBluetoothConnection(
     }
 
     private companion object {
-        /** UUID du profil Serial Port (SPP) — standard pour les imprimantes ESC/POS. */
+        /** UUID du profil Serial Port (SPP) — standard pour les imprimantes ESC/POS et TSPL. */
         val SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+
+        /** Taille des paquets d'écriture brute (octets). */
+        const val CHUNK_SIZE = 2048
     }
 }

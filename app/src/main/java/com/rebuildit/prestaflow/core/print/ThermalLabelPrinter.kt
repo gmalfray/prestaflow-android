@@ -4,70 +4,72 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.Paint
+import android.graphics.Matrix
+import android.graphics.Rect
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import com.dantsu.escposprinter.EscPosPrinter
-import com.dantsu.escposprinter.textparser.PrinterTextParserImg
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.zip.Deflater
+import kotlin.math.roundToInt
 
 /**
- * Impression d'une étiquette d'expédition (PDF 10×15 cm) sur une imprimante thermique
- * Bluetooth ESC/POS via la bibliothèque DantSu ESCPOS-ThermalPrinter-Android.
+ * Impression d'une étiquette d'expédition (PDF) sur imprimante thermique Bluetooth **MUNBYN
+ * ITPP941B** (et compatibles) en **langage TSPL** (TSC Printer Language).
  *
- * ─── Paramètres matériel MUNBYN ITPP941B ───────────────────────────────────────────
- * - Résolution : 203 dpi
- * - Largeur papier : 4 pouces = 101,6 mm → zone d'impression effective ~104 mm
- *   (les drivers MUNBYN exposent 104 mm comme largeur maximale utilisable)
- * - Vitesse : 150 mm/s (non configurable ici, réglé dans l'imprimante)
+ * ─── Pourquoi TSPL et pas ESC/POS ──────────────────────────────────────────────────
+ * La capture du trafic Bluetooth de l'app constructeur (btsnoop HCI) a montré que l'ITPP941B
+ * n'est PAS une imprimante ESC/POS : elle parle **TSPL** sur un canal RFCOMM/SPP classique.
+ * Le job réel observé :
+ *   SIZE 102 mm,76 mm / DIRECTION 0,0 / SET GAP ON / SPEED 4.0 / DENSITY 5 / REFERENCE 0,0 / CLS
+ *   BITMAP 0,0,<octets/ligne>,<hauteur dots>,3,<taille compressée>,<données 1bpp compressées zlib>
+ *   PRINT 1,1
+ * Le mode 3 de BITMAP = bitmap monochrome **compressé zlib** (en-tête 0x78 0x9c), reproductible
+ * à l'identique via [Deflater]. Résolution : **8 dots/mm** (203 dpi).
  *
- * ─── Dimensions bitmap ──────────────────────────────────────────────────────────────
- * - Largeur : [BITMAP_WIDTH_PX]  = 4 " × 203 dpi = 812 px
- * - Hauteur : [BITMAP_HEIGHT_PX] = 6 " × 203 dpi = 1218 px  (étiquette 10×15 cm)
- *
- * ─── Ajustement pour le test réel ──────────────────────────────────────────────────
- * Si l'étiquette est tronquée en largeur → réduire [PRINTER_WIDTH_MM] (ex. 102f).
- * Si l'image est étirée/compressée → ajuster [PRINTER_CHARS_PER_LINE] ou [BITMAP_WIDTH_PX].
- * Si le rendu est flou → vérifier que [PdfRenderer.Page.RENDER_MODE_FOR_PRINT] est bien utilisé.
+ * ─── Géométrie ──────────────────────────────────────────────────────────────────────
+ * Le PDF est rendu à la largeur d'impression cible ([PRINT_WIDTH_DOTS] = 816 dots = 102 mm),
+ * hauteur calculée pour conserver le ratio. Ajuster [PRINT_WIDTH_DOTS] si l'étiquette déborde.
  */
+// Calculs pixel/luminance : coefficients (77/150/29), masques de bits et conversions d'unités
+// (25.4 mm/pouce, 72 pt/pouce) sont des constantes standard, explicites dans leur contexte.
+@Suppress("MagicNumber")
 object ThermalLabelPrinter {
-    /** Résolution de l'imprimante thermique en points par pouce. */
-    const val PRINTER_DPI = 203
+    /** Résolution de l'imprimante : 8 dots par millimètre (≈ 203 dpi). */
+    const val DOTS_PER_MM = 8
+
+    /** Largeur d'impression cible en dots (816 = 102 octets/ligne = 102 mm pour une 4"). */
+    const val PRINT_WIDTH_DOTS = 816
+
+    /** Seuil de binarisation (0..255) : sous ce niveau de luminance → point noir (détection bbox). */
+    private const val LUMINANCE_THRESHOLD = 128
 
     /**
-     * Largeur effective de la zone d'impression en millimètres.
-     * Pour MUNBYN ITPP941B 4" : 4 × 25,4 = 101,6 mm — on utilise 104 mm pour inclure
-     * la marge interne déclarée par le driver de la lib ESC/POS.
-     * Ajuster à 101f si les bords sont coupés lors du test réel.
+     * Plafond de luminance pour le blanc (0..255) avant tramage. Le firmware ITPP941B strie/pâlit
+     * les grands aplats (0x00 comme 0xFF) et n'imprime proprement que des points isolés (cf.
+     * docs/thermal-tspl.md). En plafonnant le blanc, les zones claires reçoivent une trame légère
+     * (jamais d'octet 0xFF plein). ⚠️ Contraste NON encore calibré — chantier en cours.
      */
-    const val PRINTER_WIDTH_MM = 104f
+    private const val WHITE_MAX = 176
+
+    /** Matrice de Bayer 8×8 (tramage ordonné, seuils 0..63) — reproduit l'approche « dither » du vendeur. */
+    private val BAYER8 = intArrayOf(
+        0, 48, 12, 60, 3, 51, 15, 63,
+        32, 16, 44, 28, 35, 19, 47, 31,
+        8, 56, 4, 52, 11, 59, 7, 55,
+        40, 24, 36, 20, 43, 27, 39, 23,
+        2, 50, 14, 62, 1, 49, 13, 61,
+        34, 18, 46, 30, 33, 17, 45, 29,
+        10, 58, 6, 54, 9, 57, 5, 53,
+        42, 26, 38, 22, 41, 25, 37, 21,
+    )
 
     /**
-     * Nombre de caractères par ligne à 8×16 pt (utilisé par la lib pour calculer
-     * le facteur d'échelle de l'image). Valeur standard pour 104 mm / 203 dpi.
-     * Ajuster si l'image est mal proportionnée (généralement 33 ou 42).
-     */
-    const val PRINTER_CHARS_PER_LINE = 33
-
-    /** Largeur cible du bitmap généré (4 " × 203 dpi). */
-    const val BITMAP_WIDTH_PX = 812
-
-    /** Hauteur cible du bitmap généré (6 " × 203 dpi — étiquette 10×15 cm / 4×6"). */
-    const val BITMAP_HEIGHT_PX = 1218
-
-    /**
-     * Rend la **page 1** du PDF [pdfBytes] en [Bitmap] puis l'envoie à l'imprimante
-     * thermique identifiée par son adresse MAC [macAddress].
-     *
-     * Toutes les opérations I/O (PDF rendering, socket Bluetooth) s'exécutent sur
-     * [Dispatchers.IO]. En cas d'échec, une exception est propagée à l'appelant.
-     *
-     * @param context    Contexte Android (pour écriture fichier temporaire + BluetoothManager).
-     * @param pdfBytes   Contenu binaire du PDF de l'étiquette.
-     * @param macAddress Adresse MAC de l'imprimante cible (ex. "AA:BB:CC:DD:EE:FF").
+     * Rend la 1ʳᵉ page de [pdfBytes] et l'imprime sur l'imprimante TSPL [macAddress].
+     * Toutes les I/O (rendu PDF, socket Bluetooth) sur [Dispatchers.IO].
      */
     suspend fun print(
         context: Context,
@@ -75,18 +77,39 @@ object ThermalLabelPrinter {
         macAddress: String,
     ) {
         withContext(Dispatchers.IO) {
+            // DEBUG : si un job brut est déposé (test_job.bin), on le rejoue tel quel — sert à
+            // isoler génération vs transmission en renvoyant un job connu-bon. À retirer ensuite.
+            val replay = context.getExternalFilesDir(null)?.let { File(it, "test_job.bin") }?.takeIf { it.exists() }
+            if (replay != null) {
+                Timber.w("DEBUG : rejeu du job brut %s (%d octets)", replay.name, replay.length())
+                sendToPrinter(context, replay.readBytes(), macAddress)
+                return@withContext
+            }
             val bitmap = renderFirstPage(context, pdfBytes)
             try {
-                printBitmap(context, bitmap, macAddress)
+                val tspl = buildTsplJob(bitmap)
+                sendToPrinter(context, tspl, macAddress)
             } finally {
                 bitmap.recycle()
             }
         }
     }
 
+    /** Largeur du rendu d'analyse (px) servant à détecter la zone de contenu (bbox). */
+    private const val ANALYZE_WIDTH = 720
+
+    /** Marge (en px du rendu d'analyse) conservée autour du contenu détecté. */
+    private const val CROP_MARGIN = 10
+
     /**
-     * Rend la première page du PDF en [Bitmap] aux dimensions [BITMAP_WIDTH_PX] × [BITMAP_HEIGHT_PX].
-     * Fond blanc, rendu qualité impression ([PdfRenderer.Page.RENDER_MODE_FOR_PRINT]).
+     * Rend la première page du PDF **directement à la résolution d'impression** sur la zone de
+     * contenu détectée, sans redimensionnement bilinéaire intermédiaire (qui produisait un moiré
+     * de rayures verticales sur les codes-barres). Deux passes sur la même page :
+     *  1. rendu d'analyse basse résolution → détection de la bbox du contenu ;
+     *  2. rendu net de cette bbox, mis à l'échelle à [PRINT_WIDTH_DOTS] via une matrice.
+     *
+     * Le recadrage gère les bordereaux fournis en A4 (ex. Mondial Relay) où l'étiquette n'occupe
+     * qu'une partie de la page.
      */
     internal fun renderFirstPage(
         context: Context,
@@ -98,12 +121,46 @@ object ThermalLabelPrinter {
         val renderer = PdfRenderer(pfd)
         try {
             val page = renderer.openPage(0)
-            val bitmap = Bitmap.createBitmap(BITMAP_WIDTH_PX, BITMAP_HEIGHT_PX, Bitmap.Config.ARGB_8888)
-            bitmap.eraseColor(Color.WHITE)
-            // Matrice null → rendu pleine page (page mise à l'échelle dans les dimensions bitmap)
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
+
+            // Passe 1 : rendu d'analyse pour trouver la zone de contenu
+            val analyzeHeight = (ANALYZE_WIDTH.toFloat() * page.height / page.width).roundToInt().coerceAtLeast(1)
+            val analyze = Bitmap.createBitmap(ANALYZE_WIDTH, analyzeHeight, Bitmap.Config.ARGB_8888)
+            analyze.eraseColor(Color.WHITE)
+            page.render(analyze, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
+            val bounds = contentBounds(analyze)
+            analyze.recycle()
+
+            // bbox (px analyse) → coordonnées page (points), avec marge
+            val pxPerPointX = ANALYZE_WIDTH.toFloat() / page.width
+            val pxPerPointY = analyzeHeight.toFloat() / page.height
+            val cropXpt = bounds.left / pxPerPointX
+            val cropYpt = bounds.top / pxPerPointY
+            val cropWpt = (bounds.width()).coerceAtLeast(1) / pxPerPointX
+            val cropHpt = (bounds.height()).coerceAtLeast(1) / pxPerPointY
+
+            // Passe 2 : rendu net de la zone recadrée à la largeur d'impression
+            val finalWidth = PRINT_WIDTH_DOTS
+            val finalHeight = (finalWidth.toFloat() * cropHpt / cropWpt).roundToInt().coerceAtLeast(1)
+            val sx = finalWidth / cropWpt
+            val sy = finalHeight / cropHpt
+            val matrix =
+                Matrix().apply {
+                    setScale(sx, sy)
+                    postTranslate(-cropXpt * sx, -cropYpt * sy)
+                }
+            val out = Bitmap.createBitmap(finalWidth, finalHeight, Bitmap.Config.ARGB_8888)
+            out.eraseColor(Color.WHITE)
+            page.render(out, null, matrix, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
             page.close()
-            return bitmap
+            // DEBUG : dump du rendu pour inspection (à retirer après mise au point)
+            runCatching {
+                context.getExternalFilesDir(null)?.let { dir ->
+                    File(dir, "last_label_render.png").outputStream().use {
+                        out.compress(Bitmap.CompressFormat.PNG, 100, it)
+                    }
+                }
+            }
+            return out
         } finally {
             renderer.close()
             runCatching { tmp.delete() }
@@ -111,66 +168,169 @@ object ThermalLabelPrinter {
     }
 
     /**
-     * Envoie [bitmap] à l'imprimante Bluetooth identifiée par [macAddress] via ESC/POS raster.
-     *
-     * La lib DantSu convertit le bitmap en séquences ESC/POS `GS v 0` (raster bitimage)
-     * via [PrinterTextParserImg.bitmapToHexadecimalString], puis les envoie sur le socket BT.
-     *
-     * @throws android.bluetooth.BluetoothAdapter.LeScanCallback Si l'imprimante est introuvable.
-     * @throws com.dantsu.escposprinter.exceptions.EscPosConnectionException Si la connexion échoue.
+     * Retourne la zone (bbox, en px) contenant des pixels sombres dans [src], élargie de
+     * [CROP_MARGIN], ou la page entière si elle est vide. Élimine les grandes marges (cas A4).
      */
-    @Suppress("TooGenericExceptionCaught") // Bibliothèque tierce — exceptions non typées rethrown
-    private fun printBitmap(
-        context: Context,
+    @Suppress("NestedBlockDepth")
+    private fun contentBounds(src: Bitmap): Rect {
+        val w = src.width
+        val h = src.height
+        val pixels = IntArray(w * h)
+        src.getPixels(pixels, 0, w, 0, 0, w, h)
+        var minX = w
+        var minY = h
+        var maxX = -1
+        var maxY = -1
+        for (y in 0 until h) {
+            val row = y * w
+            for (x in 0 until w) {
+                val p = pixels[row + x]
+                val luma = (((p shr 16) and 0xFF) * 77 + ((p shr 8) and 0xFF) * 150 + (p and 0xFF) * 29) shr 8
+                if (luma < LUMINANCE_THRESHOLD) {
+                    if (x < minX) minX = x
+                    if (x > maxX) maxX = x
+                    if (y < minY) minY = y
+                    if (y > maxY) maxY = y
+                }
+            }
+        }
+        if (maxX < minX || maxY < minY) return Rect(0, 0, w, h) // page vide → pas de recadrage
+        return Rect(
+            (minX - CROP_MARGIN).coerceAtLeast(0),
+            (minY - CROP_MARGIN).coerceAtLeast(0),
+            (maxX + CROP_MARGIN).coerceAtMost(w - 1) + 1,
+            (maxY + CROP_MARGIN).coerceAtMost(h - 1) + 1,
+        )
+    }
+
+    /**
+     * Construit le job TSPL complet (en-tête + BITMAP mode 3 zlib + PRINT) pour [bitmap].
+     */
+    internal fun buildTsplJob(bitmap: Bitmap): ByteArray {
+        val widthBytes = (bitmap.width + 7) / 8
+        val heightDots = bitmap.height
+        val mono = toMonochrome1Bpp(bitmap, widthBytes)
+
+        val widthMm = (bitmap.width.toFloat() / DOTS_PER_MM).roundToInt()
+        val heightMm = (heightDots.toFloat() / DOTS_PER_MM).roundToInt()
+
+        // BITMAP mode 3 = données 1bpp compressées zlib (en-tête 0x78 0x9c) — le format qu'utilise
+        // l'app constructeur. Le mode 0 brut (~110 Ko) saturait le tampon de l'imprimante et n'imprimait
+        // rien ; le flux compressé y tient. zlib est un standard reproductible (Deflater), pas un
+        // encodage réellement propriétaire.
+        val compressed = deflateZlib(mono)
+
+        val out = ByteArrayOutputStream()
+        // En-tête TSPL (calqué sur la capture de l'app constructeur)
+        out.write(
+            (
+                "SIZE $widthMm mm,$heightMm mm\r\n" +
+                    "DIRECTION 0,0\r\n" +
+                    "SET GAP ON\r\n" +
+                    "SPEED 4.0\r\n" +
+                    "DENSITY 8\r\n" +
+                    "REFERENCE 0,0\r\n" +
+                    "CLS\r\n"
+            ).toByteArray(Charsets.US_ASCII),
+        )
+
+        // BITMAP x,y,width_bytes,height,mode=3,compressed_size,<données zlib>
+        out.write(
+            "BITMAP 0,0,$widthBytes,$heightDots,3,${compressed.size},".toByteArray(Charsets.US_ASCII),
+        )
+        out.write(compressed)
+        out.write("\r\n".toByteArray(Charsets.US_ASCII))
+        out.write("PRINT 1,1\r\n".toByteArray(Charsets.US_ASCII))
+        return out.toByteArray()
+    }
+
+    /**
+     * Convertit [bitmap] en données monochrome 1 bit/pixel, paddées à [widthBytes] octets/ligne,
+     * par **tramage ordonné de Bayer 8×8** — reproduit l'approche du firmware ITPP941B, qui n'imprime
+     * proprement que des points isolés (les aplats 0x00/0xFF sortent striés). Le blanc est plafonné à
+     * [WHITE_MAX] puis tramé (jamais d'octet 0xFF), et on force au moins un point par octet.
+     *
+     * Convention TSPL : bit **1 = blanc** (pas de point), bit **0 = noir** (point imprimé), MSB d'abord.
+     *
+     * ⚠️ ÉTAT : le rendu sort trop clair / non calibré — le contraste (WHITE_MAX, DENSITY, courbe de
+     * trame) reste à régler. Voir docs/thermal-tspl.md § « Reste à faire ».
+     */
+    private fun toMonochrome1Bpp(
         bitmap: Bitmap,
+        widthBytes: Int,
+    ): ByteArray {
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        val out = ByteArray(widthBytes * height)
+        for (y in 0 until height) {
+            val rowOffset = y * widthBytes
+            val base = y * width
+            val bayerRow = (y and 7) shl 3
+            for (x in 0 until width) {
+                val p = pixels[base + x]
+                val luma = (((p shr 16) and 0xFF) * 77 + ((p shr 8) and 0xFF) * 150 + (p and 0xFF) * 29) shr 8
+                // Plafonne le blanc (255 → WHITE_MAX) pour qu'une zone claire reçoive une trame légère
+                // au lieu d'un aplat 0xFF que l'imprimante strie.
+                val scaled = luma * WHITE_MAX / 255
+                val threshold = BAYER8[bayerRow or (x and 7)] * 255 / 64
+                if (scaled >= threshold) { // au-dessus du seuil de trame → blanc (bit 1, pas de point)
+                    out[rowOffset + (x ushr 3)] =
+                        (out[rowOffset + (x ushr 3)].toInt() or (0x80 ushr (x and 7))).toByte()
+                }
+            }
+        }
+        // Garantit qu'aucun octet n'est un aplat blanc 0xFF (que l'imprimante strie) : force ≥1 point.
+        for (i in out.indices) {
+            if (out[i] == 0xFF.toByte()) out[i] = 0xFE.toByte()
+        }
+        return out
+    }
+
+    /** Compresse [data] en flux zlib/deflate (en-tête 0x78 0x9c), identique au format attendu. */
+    internal fun deflateZlib(data: ByteArray): ByteArray {
+        val deflater = Deflater(Deflater.DEFAULT_COMPRESSION)
+        deflater.setInput(data)
+        deflater.finish()
+        val out = ByteArrayOutputStream(data.size / 4)
+        val buffer = ByteArray(8192)
+        while (!deflater.finished()) {
+            val n = deflater.deflate(buffer)
+            out.write(buffer, 0, n)
+        }
+        deflater.end()
+        return out.toByteArray()
+    }
+
+    /** Ouvre la connexion RFCOMM robuste et envoie le job [tspl] brut à l'imprimante. */
+    private fun sendToPrinter(
+        context: Context,
+        tspl: ByteArray,
         macAddress: String,
     ) {
         val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
-            ?: throw IllegalStateException("BluetoothManager indisponible")
-        val adapter = bluetoothManager.adapter
-            ?: throw IllegalStateException("Bluetooth non supporté sur cet appareil")
-
-        // getRemoteDevice fonctionne pour n'importe quelle MAC valide, appairée ou non :
-        // pour une imprimante découverte (non appairée), Android déclenche l'appairage à la
-        // connexion RFCOMM — pas besoin d'appairer manuellement au préalable.
+            ?: error("BluetoothManager indisponible")
+        val adapter = bluetoothManager.adapter ?: error("Bluetooth non supporté sur cet appareil")
         val device =
             runCatching { adapter.getRemoteDevice(macAddress) }
                 .getOrElse { throw IllegalArgumentException("Adresse d'imprimante invalide : $macAddress", it) }
 
-        @Suppress("MissingPermission")
-        Timber.d("Connexion à l'imprimante thermique : ${device.name} ($macAddress)")
+        @Suppress("MissingPermission") // Permissions BLUETOOTH_CONNECT/SCAN vérifiées en amont (UI)
+        Timber.d("Impression TSPL vers %s (%d octets)", macAddress, tspl.size)
 
-        // Connexion robuste (fallback de sockets) — la BluetoothConnection de la lib échoue
-        // sur de nombreuses imprimantes bas coût avec « Unable to connect to bluetooth device ».
         val connection = RobustBluetoothConnection(device, adapter)
-        val printer = EscPosPrinter(connection, PRINTER_DPI, PRINTER_WIDTH_MM, PRINTER_CHARS_PER_LINE)
         try {
-            val imageHex = PrinterTextParserImg.bitmapToHexadecimalString(printer, bitmap)
-            printer.printFormattedTextAndCut("[C]<img>$imageHex</img>\n")
-        } catch (e: Exception) {
-            Timber.e(e, "Erreur lors de l'impression thermique")
-            throw e
+            connection.connect()
+            connection.writeRaw(tspl)
+            // Laisse le temps au tampon d'impression de partir avant la fermeture du socket
+            Thread.sleep(WRITE_DRAIN_MS)
         } finally {
-            runCatching { printer.disconnectPrinter() }
-                .onFailure { Timber.w(it, "Erreur fermeture connexion imprimante") }
+            connection.disconnect()
         }
     }
 
-    /**
-     * Convertit un [Bitmap] ARGB en bitmap noir & blanc (1bpp simulé en ARGB_8888)
-     * pour réduire la taille des données ESC/POS envoyées.
-     * Actuellement non utilisé — [PrinterTextParserImg] gère lui-même la binarisation.
-     * Conservé comme utilitaire si l'optimisation devient nécessaire.
-     */
-    internal fun toBinaryBitmap(src: Bitmap): Bitmap {
-        val dst = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
-        val canvas = android.graphics.Canvas(dst)
-        val paint = Paint().apply {
-            colorFilter = android.graphics.ColorMatrixColorFilter(
-                android.graphics.ColorMatrix().also { it.setSaturation(0f) },
-            )
-        }
-        canvas.drawBitmap(src, 0f, 0f, paint)
-        return dst
-    }
+    /** Délai après écriture avant fermeture du socket (évite de tronquer l'envoi). */
+    private const val WRITE_DRAIN_MS = 1200L
 }
