@@ -110,7 +110,7 @@ class OrdersViewModelTest {
         }
 
     @Test
-    fun `plusieurs statuts peuvent etre selectionnes simultanement`() =
+    fun `taper un 2e chip remplace la selection - selection unique`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
@@ -120,8 +120,9 @@ class OrdersViewModelTest {
             vm.onStatusFilterSelected(statusId = 4)
             advanceUntilIdle()
 
-            assertTrue(2 in vm.uiState.value.selectedStatusIds)
-            assertTrue(4 in vm.uiState.value.selectedStatusIds)
+            // Les chips sont en sélection UNIQUE : le 2e tap REMPLACE (il ne s'ajoute pas).
+            // Le multi-statuts reste possible via le menu de filtre (onStatusFiltersReplaced).
+            assertEquals(setOf(4), vm.uiState.value.selectedStatusIds)
         }
 
     // ─── Filtre par défaut (résolution par nom) ──────────────────────────────
