@@ -153,6 +153,7 @@ fun SettingsRoute(
         onSwipeSourceStatusSelected = swipePrefsViewModel::setSwipeSourceStatusId,
         onSwipeLeftStatusSelected = swipePrefsViewModel::setSwipeLeftTargetStatusId,
         onSwipeRightStatusSelected = swipePrefsViewModel::setSwipeRightTargetStatusId,
+        onRetryStatuses = swipePrefsViewModel::loadStatuses,
     )
 }
 
@@ -185,6 +186,7 @@ fun SettingsScreen(
     onSwipeSourceStatusSelected: (Int?) -> Unit = {},
     onSwipeLeftStatusSelected: (Int?) -> Unit = {},
     onSwipeRightStatusSelected: (Int?) -> Unit = {},
+    onRetryStatuses: () -> Unit = {},
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
     /** ID de la boutique dont la suppression est en attente de confirmation. */
@@ -340,6 +342,7 @@ fun SettingsScreen(
                 onSwipeSourceStatusSelected = onSwipeSourceStatusSelected,
                 onSwipeLeftStatusSelected = onSwipeLeftStatusSelected,
                 onSwipeRightStatusSelected = onSwipeRightStatusSelected,
+                onRetryStatuses = onRetryStatuses,
             )
         }
 
@@ -1030,6 +1033,7 @@ private fun SwipeCommandsSection(
     onSwipeSourceStatusSelected: (Int?) -> Unit,
     onSwipeLeftStatusSelected: (Int?) -> Unit,
     onSwipeRightStatusSelected: (Int?) -> Unit,
+    onRetryStatuses: () -> Unit,
 ) {
     // Ligne Switch
     Row(
@@ -1051,12 +1055,20 @@ private fun SwipeCommandsSection(
     // Les 3 dropdowns ne sont actifs que si le swipe est activé
     val enabled = state.swipeEnabled
     val statuses = state.availableStatuses
+    // Texte affiché quand la liste est vide : distingue chargement vs erreur (au lieu d'un
+    // « Chargement… » figé même quand le chargement a échoué).
+    val emptyPlaceholder = if (state.statusesError) {
+        stringResource(R.string.settings_swipe_statuses_error)
+    } else {
+        stringResource(R.string.settings_swipe_no_statuses)
+    }
 
     SwipeStatusDropdown(
         label = stringResource(R.string.settings_swipe_source_status),
         selectedId = state.swipeSourceStatusId,
         statuses = statuses,
         enabled = enabled,
+        emptyPlaceholder = emptyPlaceholder,
         onSelected = onSwipeSourceStatusSelected,
     )
     SwipeStatusDropdown(
@@ -1064,6 +1076,7 @@ private fun SwipeCommandsSection(
         selectedId = state.swipeLeftTargetStatusId,
         statuses = statuses,
         enabled = enabled,
+        emptyPlaceholder = emptyPlaceholder,
         onSelected = onSwipeLeftStatusSelected,
     )
     SwipeStatusDropdown(
@@ -1071,8 +1084,30 @@ private fun SwipeCommandsSection(
         selectedId = state.swipeRightTargetStatusId,
         statuses = statuses,
         enabled = enabled,
+        emptyPlaceholder = emptyPlaceholder,
         onSelected = onSwipeRightStatusSelected,
     )
+
+    // Bannière d'erreur + Réessayer quand le chargement des statuts a échoué.
+    if (state.statusesError && !state.isLoadingStatuses) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = stringResource(R.string.settings_swipe_statuses_error),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onRetryStatuses) {
+                Text(stringResource(R.string.settings_swipe_statuses_retry))
+            }
+        }
+    }
 }
 
 /**
@@ -1088,6 +1123,7 @@ private fun SwipeStatusDropdown(
     selectedId: Int?,
     statuses: List<com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter>,
     enabled: Boolean,
+    emptyPlaceholder: String,
     onSelected: (Int?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -1103,7 +1139,7 @@ private fun SwipeStatusDropdown(
         onExpandedChange = { if (enabled && statuses.isNotEmpty()) expanded = it },
     ) {
         OutlinedTextField(
-            value = if (statuses.isEmpty() && enabled) stringResource(R.string.settings_swipe_no_statuses) else selectedName,
+            value = if (statuses.isEmpty() && enabled) emptyPlaceholder else selectedName,
             onValueChange = {},
             readOnly = true,
             singleLine = true,

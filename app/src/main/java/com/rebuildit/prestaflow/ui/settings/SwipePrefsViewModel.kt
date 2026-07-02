@@ -9,9 +9,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -21,9 +21,18 @@ data class SwipePrefsUiState(
     val swipeSourceStatusId: Int? = null,
     val swipeLeftTargetStatusId: Int? = null,
     val swipeRightTargetStatusId: Int? = null,
-    /** Statuts disponibles dans la boutique active (chargés une seule fois). */
+    /** Statuts disponibles dans la boutique active. */
     val availableStatuses: List<OrderStatusFilter> = emptyList(),
     val isLoadingStatuses: Boolean = false,
+    /** true si le dernier chargement des statuts a échoué (permet d'afficher une erreur + Réessayer). */
+    val statusesError: Boolean = false,
+)
+
+/** État interne du chargement des statuts, regroupé pour une émission atomique dans le combine. */
+private data class StatusesLoadState(
+    val statuses: List<OrderStatusFilter> = emptyList(),
+    val isLoading: Boolean = false,
+    val isError: Boolean = false,
 )
 
 @HiltViewModel
@@ -33,8 +42,9 @@ class SwipePrefsViewModel
         private val ordersPreferencesRepository: OrdersPreferencesRepository,
         private val ordersRepository: OrdersRepository,
     ) : ViewModel() {
-        private val _availableStatuses = MutableStateFlow<List<OrderStatusFilter>>(emptyList())
-        private val _isLoadingStatuses = MutableStateFlow(false)
+        // État de chargement des statuts regroupé (liste + loading + erreur) dans UN seul flow,
+        // pour que le combine ré-émette bien à chaque changement (loading/erreur inclus).
+        private val _statusesLoad = MutableStateFlow(StatusesLoadState())
 
         val uiState: StateFlow<SwipePrefsUiState> =
             combine(
@@ -42,15 +52,16 @@ class SwipePrefsViewModel
                 ordersPreferencesRepository.swipeSourceStatusId,
                 ordersPreferencesRepository.swipeLeftTargetStatusId,
                 ordersPreferencesRepository.swipeRightTargetStatusId,
-                _availableStatuses,
-            ) { enabled, sourceId, leftId, rightId, statuses ->
+                _statusesLoad,
+            ) { enabled, sourceId, leftId, rightId, load ->
                 SwipePrefsUiState(
                     swipeEnabled = enabled,
                     swipeSourceStatusId = sourceId,
                     swipeLeftTargetStatusId = leftId,
                     swipeRightTargetStatusId = rightId,
-                    availableStatuses = statuses,
-                    isLoadingStatuses = _isLoadingStatuses.value,
+                    availableStatuses = load.statuses,
+                    isLoadingStatuses = load.isLoading,
+                    statusesError = load.isError,
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -62,17 +73,18 @@ class SwipePrefsViewModel
             loadStatuses()
         }
 
-        private fun loadStatuses() {
+        /** Charge (ou recharge, pour le bouton Réessayer) la liste des statuts. */
+        fun loadStatuses() {
             viewModelScope.launch {
-                _isLoadingStatuses.value = true
+                _statusesLoad.update { it.copy(isLoading = true, isError = false) }
                 runCatching { ordersRepository.getOrderStatuses() }
                     .onSuccess { statuses ->
-                        _availableStatuses.value = statuses
+                        _statusesLoad.value = StatusesLoadState(statuses = statuses, isLoading = false, isError = false)
                     }
                     .onFailure { error ->
                         Timber.w(error, "Impossible de charger les statuts pour les préférences swipe")
+                        _statusesLoad.update { it.copy(isLoading = false, isError = true) }
                     }
-                _isLoadingStatuses.value = false
             }
         }
 

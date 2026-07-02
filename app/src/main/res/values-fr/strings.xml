@@ -361,6 +361,8 @@
     <string name="settings_swipe_right_status">Swipe → (droite)</string>
     <string name="settings_swipe_status_default">Défaut (par nom)</string>
     <string name="settings_swipe_no_statuses">Chargement des statuts…</string>
+    <string name="settings_swipe_statuses_error">Impossible de charger les statuts</string>
+    <string name="settings_swipe_statuses_retry">Réessayer</string>
 
     <!-- Filtres stock produits -->
     <string name="products_filter_all">Tous</string>

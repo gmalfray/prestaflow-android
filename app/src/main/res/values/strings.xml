@@ -362,6 +362,8 @@
     <string name="settings_swipe_right_status">Swipe → (right)</string>
     <string name="settings_swipe_status_default">Default (by name)</string>
     <string name="settings_swipe_no_statuses">Loading statuses…</string>
+    <string name="settings_swipe_statuses_error">Couldn\'t load statuses</string>
+    <string name="settings_swipe_statuses_retry">Retry</string>
 
     <!-- Filtres stock produits -->
     <string name="products_filter_all">All</string>
