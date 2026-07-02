@@ -16,9 +16,11 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.File
 
 /**
  * Tests unitaires JVM du [ProductEditViewModel] : préremplissage depuis le produit courant,
@@ -67,6 +69,9 @@ class ProductEditViewModelTest {
         descriptionShort = "Description courte.",
         priceTaxExcl = priceTaxExcl,
     )
+
+    /** Fichier temporaire réel (supprimé par le ViewModel après upload, succès ou échec). */
+    private fun buildTempImageFile(): File = File.createTempFile("product_image_test", ".jpg")
 
     // ─── Préremplissage ──────────────────────────────────────────────────────
 
@@ -272,5 +277,192 @@ class ProductEditViewModelTest {
 
             vm.clearError()
             assertEquals(null, vm.uiState.value.error)
+        }
+
+    // ─── Images : ajout ──────────────────────────────────────────────────────
+
+    @Test
+    fun `ajout d image reussi met a jour la liste et nettoie le fichier temporaire`() =
+        runTest {
+            val product = buildProduct()
+            fakeRepo.setProducts(listOf(product))
+            val vm = buildViewModel(product.id)
+            advanceUntilIdle()
+
+            val newImage = ProductImage(id = 10L, url = "https://shop.example/img/10.jpg")
+            fakeRepo.uploadProductImageResult = product.copy(images = listOf(newImage))
+            val file = buildTempImageFile()
+
+            vm.onImageSelected(file)
+            advanceUntilIdle()
+
+            val call = fakeRepo.uploadProductImageCalls.single()
+            assertEquals(product.id, call.productId)
+            assertEquals(file, call.image)
+
+            val state = vm.uiState.value
+            assertEquals(listOf(newImage), state.images)
+            assertFalse(state.isUploadingImage)
+            assertNull(state.error)
+            assertFalse("Le fichier temporaire doit être supprimé après l'upload", file.exists())
+        }
+
+    @Test
+    fun `isUploadingImage passe a true pendant l upload`() =
+        runTest {
+            val product = buildProduct()
+            fakeRepo.setProducts(listOf(product))
+            val vm = buildViewModel(product.id)
+            advanceUntilIdle()
+
+            fakeRepo.uploadProductImageResult = product
+            vm.onImageSelected(buildTempImageFile())
+            // Le fake suspend réellement (délai virtuel) avant de répondre : runCurrent() exécute
+            // le début de la coroutine (passage à isUploadingImage=true) sans la laisser terminer.
+            testDispatcher.scheduler.runCurrent()
+
+            assertTrue(vm.uiState.value.isUploadingImage)
+            advanceUntilIdle()
+            assertFalse(vm.uiState.value.isUploadingImage)
+        }
+
+    @Test
+    fun `un echec d upload expose une erreur et n ajoute pas d image`() =
+        runTest {
+            val product = buildProduct()
+            fakeRepo.setProducts(listOf(product))
+            val vm = buildViewModel(product.id)
+            advanceUntilIdle()
+
+            fakeRepo.shouldThrowOnUploadProductImage = true
+            val file = buildTempImageFile()
+
+            vm.onImageSelected(file)
+            advanceUntilIdle()
+
+            val state = vm.uiState.value
+            assertFalse(state.isUploadingImage)
+            assertTrue(state.images.isEmpty())
+            assertTrue(state.error != null)
+            assertFalse("Le fichier temporaire doit être supprimé même en cas d'échec", file.exists())
+        }
+
+    @Test
+    fun `ajouter une image ne touche pas une edition de champ texte en cours`() =
+        runTest {
+            val product = buildProduct()
+            fakeRepo.setProducts(listOf(product))
+            val vm = buildViewModel(product.id)
+            advanceUntilIdle()
+
+            vm.onNameChange("Nom en cours d'edition")
+            assertTrue(vm.uiState.value.isDirty)
+
+            val newImage = ProductImage(id = 20L, url = "https://shop.example/img/20.jpg")
+            fakeRepo.uploadProductImageResult = product.copy(images = listOf(newImage))
+            vm.onImageSelected(buildTempImageFile())
+            advanceUntilIdle()
+
+            val state = vm.uiState.value
+            assertEquals("Nom en cours d'edition", state.name)
+            assertTrue("L'édition texte en cours ne doit pas être écrasée", state.isDirty)
+            assertEquals(listOf(newImage), state.images)
+        }
+
+    // ─── Images : suppression ────────────────────────────────────────────────
+
+    @Test
+    fun `demander la suppression expose pendingDeleteImageId sans appeler le repository`() =
+        runTest {
+            val image = ProductImage(id = 5L, url = "https://shop.example/img/5.jpg")
+            val product = buildProduct().copy(images = listOf(image))
+            fakeRepo.setProducts(listOf(product))
+            val vm = buildViewModel(product.id)
+            advanceUntilIdle()
+
+            vm.onDeleteImageRequested(image.id)
+
+            assertEquals(image.id, vm.uiState.value.pendingDeleteImageId)
+            assertTrue(fakeRepo.deleteProductImageCalls.isEmpty())
+        }
+
+    @Test
+    fun `annuler la suppression ne supprime rien`() =
+        runTest {
+            val image = ProductImage(id = 5L, url = "https://shop.example/img/5.jpg")
+            val product = buildProduct().copy(images = listOf(image))
+            fakeRepo.setProducts(listOf(product))
+            val vm = buildViewModel(product.id)
+            advanceUntilIdle()
+
+            vm.onDeleteImageRequested(image.id)
+            vm.onDeleteImageCancelled()
+
+            assertNull(vm.uiState.value.pendingDeleteImageId)
+            assertTrue(fakeRepo.deleteProductImageCalls.isEmpty())
+            assertEquals(listOf(image), vm.uiState.value.images)
+        }
+
+    @Test
+    fun `confirmer la suppression retire l image de la liste`() =
+        runTest {
+            val image = ProductImage(id = 5L, url = "https://shop.example/img/5.jpg")
+            val product = buildProduct().copy(images = listOf(image))
+            fakeRepo.setProducts(listOf(product))
+            val vm = buildViewModel(product.id)
+            advanceUntilIdle()
+
+            fakeRepo.deleteProductImageResult = product.copy(images = emptyList())
+            vm.onDeleteImageRequested(image.id)
+            vm.onDeleteImageConfirmed()
+            advanceUntilIdle()
+
+            val call = fakeRepo.deleteProductImageCalls.single()
+            assertEquals(product.id, call.productId)
+            assertEquals(image.id, call.imageId)
+
+            val state = vm.uiState.value
+            assertTrue(state.images.isEmpty())
+            assertNull(state.deletingImageId)
+            assertNull(state.pendingDeleteImageId)
+        }
+
+    @Test
+    fun `deletingImageId reflete l image en cours de suppression`() =
+        runTest {
+            val image = ProductImage(id = 5L, url = "https://shop.example/img/5.jpg")
+            val product = buildProduct().copy(images = listOf(image))
+            fakeRepo.setProducts(listOf(product))
+            val vm = buildViewModel(product.id)
+            advanceUntilIdle()
+
+            fakeRepo.deleteProductImageResult = product.copy(images = emptyList())
+            vm.onDeleteImageRequested(image.id)
+            vm.onDeleteImageConfirmed()
+            testDispatcher.scheduler.runCurrent()
+
+            assertEquals(image.id, vm.uiState.value.deletingImageId)
+            advanceUntilIdle()
+            assertNull(vm.uiState.value.deletingImageId)
+        }
+
+    @Test
+    fun `un echec de suppression expose une erreur et garde l image`() =
+        runTest {
+            val image = ProductImage(id = 5L, url = "https://shop.example/img/5.jpg")
+            val product = buildProduct().copy(images = listOf(image))
+            fakeRepo.setProducts(listOf(product))
+            val vm = buildViewModel(product.id)
+            advanceUntilIdle()
+
+            fakeRepo.shouldThrowOnDeleteProductImage = true
+            vm.onDeleteImageRequested(image.id)
+            vm.onDeleteImageConfirmed()
+            advanceUntilIdle()
+
+            val state = vm.uiState.value
+            assertEquals(listOf(image), state.images)
+            assertNull(state.deletingImageId)
+            assertTrue(state.error != null)
         }
 }

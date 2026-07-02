@@ -19,13 +19,16 @@ import com.rebuildit.prestaflow.data.remote.dto.ProductDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
+import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.QueryMap
@@ -123,6 +126,27 @@ interface PrestaFlowApi {
     suspend fun updateProduct(
         @Path("id") productId: Long,
         @Body body: ProductUpdateRequestDto,
+    ): ProductDetailResponseDto
+
+    /**
+     * Ajoute une image à la fiche produit. Le part fichier DOIT être nommé `image` (contrat
+     * connecteur). Réponse : fiche produit à jour, avec la nouvelle image dans `images`.
+     */
+    @Multipart
+    @POST("products/{id}/images")
+    suspend fun uploadProductImage(
+        @Path("id") productId: Long,
+        @Part image: MultipartBody.Part,
+    ): ProductDetailResponseDto
+
+    /**
+     * Supprime une image de la fiche produit. Réponse : fiche produit à jour, sans l'image
+     * supprimée.
+     */
+    @DELETE("products/{id}/images/{imageId}")
+    suspend fun deleteProductImage(
+        @Path("id") productId: Long,
+        @Path("imageId") imageId: Long,
     ): ProductDetailResponseDto
 
     @GET("dashboard/metrics")

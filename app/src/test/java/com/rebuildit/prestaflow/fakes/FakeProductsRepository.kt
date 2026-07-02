@@ -4,9 +4,11 @@ import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductUpdateFields
 import com.rebuildit.prestaflow.domain.products.model.StockAvailability
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.io.File
 
 /**
  * Fake en mémoire de [ProductsRepository].
@@ -113,6 +115,42 @@ class FakeProductsRepository : ProductsRepository {
     ) {
         updateStockCalls += UpdateStockCall(productId, quantity, warehouseId, reason)
         if (shouldThrowOnUpdateStock) throw RuntimeException("Erreur réseau simulée")
+    }
+
+    data class UploadProductImageCall(val productId: Long, val image: File)
+
+    val uploadProductImageCalls = mutableListOf<UploadProductImageCall>()
+    var uploadProductImageResult: Product? = null
+    var shouldThrowOnUploadProductImage = false
+
+    override suspend fun uploadProductImage(
+        productId: Long,
+        image: File,
+    ): Product {
+        // Délai virtuel : introduit un vrai point de suspension, observable via runCurrent()
+        // dans les tests qui vérifient l'état "en cours d'upload".
+        delay(1)
+        uploadProductImageCalls += UploadProductImageCall(productId, image)
+        if (shouldThrowOnUploadProductImage) throw RuntimeException("Erreur réseau simulée")
+        return uploadProductImageResult ?: error("uploadProductImageResult non défini dans le fake")
+    }
+
+    data class DeleteProductImageCall(val productId: Long, val imageId: Long)
+
+    val deleteProductImageCalls = mutableListOf<DeleteProductImageCall>()
+    var deleteProductImageResult: Product? = null
+    var shouldThrowOnDeleteProductImage = false
+
+    override suspend fun deleteProductImage(
+        productId: Long,
+        imageId: Long,
+    ): Product {
+        // Délai virtuel : introduit un vrai point de suspension, observable via runCurrent()
+        // dans les tests qui vérifient l'état "en cours de suppression".
+        delay(1)
+        deleteProductImageCalls += DeleteProductImageCall(productId, imageId)
+        if (shouldThrowOnDeleteProductImage) throw RuntimeException("Erreur réseau simulée")
+        return deleteProductImageResult ?: error("deleteProductImageResult non défini dans le fake")
     }
 
     override suspend fun updatePrice(

@@ -20,6 +20,7 @@ import com.rebuildit.prestaflow.data.remote.dto.ProductDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
+import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 
@@ -83,6 +84,16 @@ class FakePrestaFlowApi : PrestaFlowApi {
     override suspend fun updateProduct(
         productId: Long,
         body: ProductUpdateRequestDto,
+    ): ProductDetailResponseDto = throw UnsupportedOperationException("Non utilisé dans ce test")
+
+    override suspend fun uploadProductImage(
+        productId: Long,
+        image: MultipartBody.Part,
+    ): ProductDetailResponseDto = throw UnsupportedOperationException("Non utilisé dans ce test")
+
+    override suspend fun deleteProductImage(
+        productId: Long,
+        imageId: Long,
     ): ProductDetailResponseDto = throw UnsupportedOperationException("Non utilisé dans ce test")
 
     override suspend fun getDashboardMetrics(

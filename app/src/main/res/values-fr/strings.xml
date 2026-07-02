@@ -208,6 +208,18 @@
     <string name="product_edit_price_error">Saisissez un prix valide (0 ou plus)</string>
     <string name="product_edit_active_label">Actif</string>
     <string name="product_edit_save_button">Enregistrer</string>
+    <string name="product_edit_images_title">Images</string>
+    <string name="product_edit_images_add_content_description">Ajouter une image</string>
+    <string name="product_edit_images_source_camera">Appareil photo</string>
+    <string name="product_edit_images_source_gallery">Galerie</string>
+    <string name="product_edit_images_remove_content_description">Supprimer l\'image</string>
+    <string name="product_edit_images_thumbnail_content_description">Image du produit</string>
+    <string name="product_edit_images_delete_dialog_title">Supprimer cette image ?</string>
+    <string name="product_edit_images_delete_dialog_message">Cette image sera définitivement retirée de la fiche produit.</string>
+    <string name="product_edit_images_delete_dialog_confirm">Supprimer</string>
+    <string name="product_edit_images_delete_dialog_cancel">Annuler</string>
+    <string name="product_edit_images_camera_permission_denied">Autorisez l\'accès à l\'appareil photo pour prendre une photo.</string>
+    <string name="product_edit_images_prepare_error">Impossible de préparer cette image. Réessayez.</string>
     <string name="dismiss">Fermer</string>
 
     <!-- Layout deux colonnes (tablette) -->

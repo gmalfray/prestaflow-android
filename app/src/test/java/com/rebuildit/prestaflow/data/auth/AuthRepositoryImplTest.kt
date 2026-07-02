@@ -627,6 +627,16 @@ class AuthRepositoryImplTest {
             body: com.rebuildit.prestaflow.data.remote.dto.ProductUpdateRequestDto,
         ) = throw UnsupportedOperationException()
 
+        override suspend fun uploadProductImage(
+            productId: Long,
+            image: okhttp3.MultipartBody.Part,
+        ) = throw UnsupportedOperationException()
+
+        override suspend fun deleteProductImage(
+            productId: Long,
+            imageId: Long,
+        ) = throw UnsupportedOperationException()
+
         override suspend fun getDashboardMetrics(
             period: String?,
             from: String?,

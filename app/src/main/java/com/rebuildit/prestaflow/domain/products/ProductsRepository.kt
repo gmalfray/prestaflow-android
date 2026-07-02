@@ -4,6 +4,7 @@ import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductUpdateFields
 import com.rebuildit.prestaflow.domain.products.model.StockAvailability
 import kotlinx.coroutines.flow.Flow
+import java.io.File
 
 interface ProductsRepository {
     fun observeProducts(): Flow<List<Product>>
@@ -70,6 +71,26 @@ interface ProductsRepository {
         warehouseId: Long? = null,
         reason: String? = null,
     )
+
+    /**
+     * Ajoute [image] (fichier JPEG déjà préparé/compressé) à la fiche produit [productId] via
+     * `POST products/{id}/images` (multipart, part `image`).
+     * @return Le produit tel que renvoyé par le serveur, avec sa liste d'images à jour.
+     */
+    suspend fun uploadProductImage(
+        productId: Long,
+        image: File,
+    ): Product
+
+    /**
+     * Supprime l'image [imageId] de la fiche produit [productId] via
+     * `DELETE products/{id}/images/{imageId}`.
+     * @return Le produit tel que renvoyé par le serveur, avec sa liste d'images à jour.
+     */
+    suspend fun deleteProductImage(
+        productId: Long,
+        imageId: Long,
+    ): Product
 
     suspend fun updatePrice(
         productId: Long,

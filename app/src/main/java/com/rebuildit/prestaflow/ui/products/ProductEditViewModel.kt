@@ -7,6 +7,7 @@ import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.model.Product
+import com.rebuildit.prestaflow.domain.products.model.ProductImage
 import com.rebuildit.prestaflow.domain.products.model.ProductUpdateFields
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.File
 import javax.inject.Inject
 
 /** Longueur maximale de la référence produit, alignée sur la validation côté connecteur. */
@@ -68,9 +70,21 @@ class ProductEditViewModel
                     reference = product.reference,
                     priceText = referencePrice(product).toString(),
                     active = product.active,
+                    images = product.images,
                     isDirty = false,
                 )
             }
+        }
+
+        /**
+         * Met à jour uniquement la liste d'images depuis le produit renvoyé par le serveur, sans
+         * toucher aux autres champs — évite d'écraser une édition texte en cours (dirty/non
+         * sauvegardée) suite à un ajout/suppression d'image, qui est appliqué immédiatement côté
+         * serveur (pas soumis au bouton Enregistrer).
+         */
+        private fun applyImages(product: Product) {
+            original = original?.copy(images = product.images) ?: product
+            _uiState.update { it.copy(images = product.images) }
         }
 
         fun onNameChange(value: String) = updateField { it.copy(name = value) }
@@ -132,6 +146,51 @@ class ProductEditViewModel
             }
         }
 
+        /**
+         * Envoie l'image [file] (déjà préparée/compressée par [com.rebuildit.prestaflow.core.media.ProductImagePreparer])
+         * au serveur. Le fichier temporaire est toujours nettoyé après l'appel, succès ou échec.
+         */
+        fun onImageSelected(file: File) {
+            viewModelScope.launch {
+                _uiState.update { it.copy(isUploadingImage = true, error = null) }
+                runCatching { productsRepository.uploadProductImage(productId, file) }
+                    .onSuccess { updated ->
+                        applyImages(updated)
+                        _uiState.update { it.copy(isUploadingImage = false) }
+                    }
+                    .onFailure { error ->
+                        Timber.w(error, "Failed to upload image for product $productId")
+                        _uiState.update { state -> state.copy(isUploadingImage = false, error = networkErrorMapper.map(error)) }
+                    }
+                file.delete()
+            }
+        }
+
+        /** Demande confirmation avant de supprimer l'image [imageId] (affichage d'un dialogue). */
+        fun onDeleteImageRequested(imageId: Long) {
+            _uiState.update { it.copy(pendingDeleteImageId = imageId) }
+        }
+
+        fun onDeleteImageCancelled() {
+            _uiState.update { it.copy(pendingDeleteImageId = null) }
+        }
+
+        fun onDeleteImageConfirmed() {
+            val imageId = _uiState.value.pendingDeleteImageId ?: return
+            viewModelScope.launch {
+                _uiState.update { it.copy(pendingDeleteImageId = null, deletingImageId = imageId, error = null) }
+                runCatching { productsRepository.deleteProductImage(productId, imageId) }
+                    .onSuccess { updated ->
+                        applyImages(updated)
+                        _uiState.update { it.copy(deletingImageId = null) }
+                    }
+                    .onFailure { error ->
+                        Timber.w(error, "Failed to delete image $imageId for product $productId")
+                        _uiState.update { state -> state.copy(deletingImageId = null, error = networkErrorMapper.map(error)) }
+                    }
+            }
+        }
+
         fun clearError() {
             _uiState.update { it.copy(error = null) }
         }
@@ -155,6 +214,10 @@ data class ProductEditUiState(
     val priceText: String = "",
     val active: Boolean = true,
     val isDirty: Boolean = false,
+    val images: List<ProductImage> = emptyList(),
+    val isUploadingImage: Boolean = false,
+    val deletingImageId: Long? = null,
+    val pendingDeleteImageId: Long? = null,
     val error: UiText? = null,
     val saveSuccess: Boolean = false,
 ) {

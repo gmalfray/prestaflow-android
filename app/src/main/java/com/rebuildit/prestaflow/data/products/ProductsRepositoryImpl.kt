@@ -25,7 +25,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import timber.log.Timber
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -149,6 +153,32 @@ class ProductsRepositoryImpl
                         active = fields.active,
                     )
                 val response = api.updateProduct(productId, request)
+                val dto = response.product
+                productDao.upsertProduct(dto.toEntity())
+                stockAvailabilityDao.upsertAll(listOf(dto.stock.toEntity(dto.id)))
+                dto.toDomain()
+            }
+
+        override suspend fun uploadProductImage(
+            productId: Long,
+            image: File,
+        ): Product =
+            withContext(ioDispatcher) {
+                val requestBody = image.asRequestBody("image/jpeg".toMediaType())
+                val part = MultipartBody.Part.createFormData("image", image.name, requestBody)
+                val response = api.uploadProductImage(productId, part)
+                val dto = response.product
+                productDao.upsertProduct(dto.toEntity())
+                stockAvailabilityDao.upsertAll(listOf(dto.stock.toEntity(dto.id)))
+                dto.toDomain()
+            }
+
+        override suspend fun deleteProductImage(
+            productId: Long,
+            imageId: Long,
+        ): Product =
+            withContext(ioDispatcher) {
+                val response = api.deleteProductImage(productId, imageId)
                 val dto = response.product
                 productDao.upsertProduct(dto.toEntity())
                 stockAvailabilityDao.upsertAll(listOf(dto.stock.toEntity(dto.id)))
