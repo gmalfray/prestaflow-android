@@ -87,6 +87,12 @@
     <string name="dashboard_see_all">Voir tout</string>
     <string name="dashboard_content_description_refresh">Actualiser le tableau de bord</string>
     <string name="dashboard_content_description_kpi_card">%1$s : %2$s</string>
+    <!-- Dashboard — badge de tendance KPI. Arg : 1=pourcentage formaté (ex : "12,3 %") -->
+    <string name="dashboard_kpi_trend_up">en hausse de %1$s</string>
+    <string name="dashboard_kpi_trend_down">en baisse de %1$s</string>
+    <!-- Dashboard — graphique plein écran -->
+    <string name="dashboard_chart_expand_content_description">Voir le graphique en plein écran</string>
+    <string name="dashboard_chart_fullscreen_close">Fermer</string>
 
     <string name="skin_terracotta">Terracotta</string>
     <string name="skin_royal">Violet Royal</string>
