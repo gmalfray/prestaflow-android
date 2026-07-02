@@ -35,6 +35,23 @@ interface ProductsRepository {
      */
     suspend fun searchByBarcode(barcode: String): List<Product>
 
+    /**
+     * Recherche textuelle de produits (nom/référence), via l'API uniquement (résultat
+     * transitoire, pas de cache local) — utilisée pour choisir le produit auquel associer un
+     * code-barres scanné qui n'a matché aucun produit.
+     */
+    suspend fun searchProducts(query: String): List<Product>
+
+    /**
+     * Associe le code-barres [ean13] au produit [productId] (cas d'un scan sans correspondance :
+     * le produit existe mais son EAN13 n'est pas encore renseigné côté boutique).
+     * @return Le produit tel que renvoyé par le serveur après mise à jour.
+     */
+    suspend fun setProductEan13(
+        productId: Long,
+        ean13: String,
+    ): Product
+
     suspend fun updateStock(
         productId: Long,
         quantity: Int,

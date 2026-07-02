@@ -186,6 +186,127 @@ class ProductScanViewModelTest {
             assertFalse(state.isSubmitting)
         }
 
+    // ─── Association code-barres → produit existant ─────────────────────────
+
+    @Test
+    fun `onStartAssociation ouvre la recherche depuis l etat notFound`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = emptyList()
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("0000000000000")
+            advanceUntilIdle()
+
+            vm.onStartAssociation()
+
+            val state = vm.uiState.value
+            assertTrue(state.isAssociating)
+            assertEquals("", state.associationQuery)
+            assertTrue(state.associationResults.isEmpty())
+        }
+
+    @Test
+    fun `la recherche d association appelle searchProducts apres debounce`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = emptyList()
+            val match = buildProduct(9L, quantity = 4)
+            fakeRepo.searchProductsResult = listOf(match)
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("0000000000000")
+            advanceUntilIdle()
+            vm.onStartAssociation()
+
+            vm.onAssociationQueryChange("laine rico")
+            // Avancer le temps pour dépasser le debounce de 300ms
+            testDispatcher.scheduler.advanceTimeBy(400L)
+            advanceUntilIdle()
+
+            assertEquals(listOf("laine rico"), fakeRepo.searchProductsCalls)
+            assertEquals(listOf(match), vm.uiState.value.associationResults)
+            assertFalse(vm.uiState.value.isAssociationSearching)
+        }
+
+    @Test
+    fun `selectionner un produit associe l ean13 et bascule sur la fiche stock`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = emptyList()
+            val candidate = buildProduct(9L, quantity = 4)
+            val updated = candidate.copy(ean13 = "0000000000000", stock = candidate.stock.copy(quantity = 4))
+            fakeRepo.searchProductsResult = listOf(candidate)
+            fakeRepo.setProductEan13Result = updated
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("0000000000000")
+            advanceUntilIdle()
+            vm.onStartAssociation()
+            vm.onAssociationQueryChange("laine rico")
+            // Avancer le temps pour dépasser le debounce de 300ms
+            testDispatcher.scheduler.advanceTimeBy(400L)
+            advanceUntilIdle()
+
+            vm.onAssociationProductSelected(candidate)
+            advanceUntilIdle()
+
+            val call = fakeRepo.setProductEan13Calls.single()
+            assertEquals(9L, call.productId)
+            assertEquals("0000000000000", call.ean13)
+
+            val state = vm.uiState.value
+            assertFalse(state.isAssociating)
+            assertFalse(state.notFound)
+            assertEquals(updated, state.selectedProduct)
+            assertEquals("4", state.quantityInput)
+        }
+
+    @Test
+    fun `un echec d association expose une erreur et reste en recherche`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = emptyList()
+            val candidate = buildProduct(9L, quantity = 4)
+            fakeRepo.searchProductsResult = listOf(candidate)
+            fakeRepo.shouldThrowOnSetProductEan13 = true
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("0000000000000")
+            advanceUntilIdle()
+            vm.onStartAssociation()
+            vm.onAssociationQueryChange("laine rico")
+            // Avancer le temps pour dépasser le debounce de 300ms
+            testDispatcher.scheduler.advanceTimeBy(400L)
+            advanceUntilIdle()
+
+            vm.onAssociationProductSelected(candidate)
+            advanceUntilIdle()
+
+            val state = vm.uiState.value
+            assertTrue(state.isAssociating)
+            assertNull(state.selectedProduct)
+            assertTrue(state.associationError != null)
+            assertFalse(state.isAssociationSubmitting)
+        }
+
+    @Test
+    fun `onCancelAssociation revient a l etat notFound`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = emptyList()
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("0000000000000")
+            advanceUntilIdle()
+            vm.onStartAssociation()
+            vm.onAssociationQueryChange("laine")
+            advanceUntilIdle()
+
+            vm.onCancelAssociation()
+
+            val state = vm.uiState.value
+            assertFalse(state.isAssociating)
+            assertTrue(state.notFound)
+            assertEquals("", state.associationQuery)
+            assertTrue(state.associationResults.isEmpty())
+        }
+
     // ─── Réinitialisation ────────────────────────────────────────────────────
 
     @Test

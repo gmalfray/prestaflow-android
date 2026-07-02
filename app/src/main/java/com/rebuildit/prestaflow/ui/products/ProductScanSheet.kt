@@ -45,6 +45,7 @@ import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
+import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 
@@ -67,6 +68,10 @@ fun ProductScanSheet(
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
     onConfirm: () -> Unit,
+    onStartAssociation: () -> Unit,
+    onCancelAssociation: () -> Unit,
+    onAssociationQueryChange: (String) -> Unit,
+    onSelectAssociationProduct: (Product) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ModalBottomSheet(
@@ -84,7 +89,23 @@ fun ProductScanSheet(
             when {
                 state.submitSuccess -> ScanSuccessContent(onScanAgain = onScanAgain, onClose = onDismiss)
                 state.isLoading -> ScanLoadingContent()
-                state.notFound -> ScanNotFoundContent(code = state.scannedCode, onScanAgain = onScanAgain)
+                state.isAssociating ->
+                    AssociationSearchContent(
+                        query = state.associationQuery,
+                        results = state.associationResults,
+                        isSearching = state.isAssociationSearching,
+                        isSubmitting = state.isAssociationSubmitting,
+                        errorMessage = state.associationError?.asString(),
+                        onQueryChange = onAssociationQueryChange,
+                        onSelectProduct = onSelectAssociationProduct,
+                        onCancel = onCancelAssociation,
+                    )
+                state.notFound ->
+                    ScanNotFoundContent(
+                        code = state.scannedCode,
+                        onScanAgain = onScanAgain,
+                        onStartAssociation = onStartAssociation,
+                    )
                 state.selectedProduct != null ->
                     StockAdjustContent(
                         product = state.selectedProduct,
@@ -129,6 +150,7 @@ private fun ScanLoadingContent() {
 private fun ScanNotFoundContent(
     code: String?,
     onScanAgain: () -> Unit,
+    onStartAssociation: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = Dimensions.spacingL),
@@ -147,9 +169,112 @@ private fun ScanNotFoundContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Button(onClick = onScanAgain) {
-            Text(stringResource(R.string.products_scan_scan_again))
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS)) {
+            OutlinedButton(onClick = onStartAssociation) {
+                Text(stringResource(R.string.products_scan_associate_action))
+            }
+            Button(onClick = onScanAgain) {
+                Text(stringResource(R.string.products_scan_scan_again))
+            }
         }
+    }
+}
+
+/**
+ * Recherche produit affichée quand un scan n'a matché aucun résultat : l'utilisateur cherche
+ * puis sélectionne le produit auquel associer le code scanné (PATCH ean13 + enchaînement fiche
+ * stock, piloté par le ViewModel).
+ */
+@Suppress("LongParameterList") // Contenu de recherche : chaque paramètre pilote une action distincte
+@Composable
+private fun AssociationSearchContent(
+    query: String,
+    results: List<Product>,
+    isSearching: Boolean,
+    isSubmitting: Boolean,
+    errorMessage: String?,
+    onQueryChange: (String) -> Unit,
+    onSelectProduct: (Product) -> Unit,
+    onCancel: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = Dimensions.spacingM),
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+    ) {
+        Text(
+            text = stringResource(R.string.products_scan_associate_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+
+        SearchField(
+            query = query,
+            onQueryChange = onQueryChange,
+            placeholder = stringResource(R.string.products_search_placeholder),
+        )
+
+        AssociationResultsContent(
+            query = query,
+            results = results,
+            isSearching = isSearching,
+            isSubmitting = isSubmitting,
+            onSelectProduct = onSelectProduct,
+        )
+
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            if (isSubmitting) {
+                CircularProgressIndicator(modifier = Modifier.size(Dimensions.iconSizeMedium))
+            } else {
+                TextButton(onClick = onCancel) {
+                    Text(stringResource(R.string.products_scan_cancel))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AssociationResultsContent(
+    query: String,
+    results: List<Product>,
+    isSearching: Boolean,
+    isSubmitting: Boolean,
+    onSelectProduct: (Product) -> Unit,
+) {
+    when {
+        isSearching ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = Dimensions.spacingM),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(Dimensions.iconSizeMedium))
+            }
+        results.isEmpty() && query.isNotBlank() ->
+            Text(
+                text = stringResource(R.string.products_scan_associate_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        else ->
+            Column {
+                results.forEachIndexed { index, product ->
+                    ScanResultRow(
+                        product = product,
+                        onClick = { if (!isSubmitting) onSelectProduct(product) },
+                    )
+                    if (index < results.lastIndex) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainer)
+                    }
+                }
+            }
     }
 }
 
@@ -446,7 +571,7 @@ private fun PreviewStockAdjustContent() {
 private fun PreviewNotFound() {
     PrestaFlowTheme {
         Surface {
-            ScanNotFoundContent(code = "3401234567890", onScanAgain = {})
+            ScanNotFoundContent(code = "3401234567890", onScanAgain = {}, onStartAssociation = {})
         }
     }
 }

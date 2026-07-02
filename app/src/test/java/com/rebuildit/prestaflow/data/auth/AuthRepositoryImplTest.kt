@@ -622,6 +622,11 @@ class AuthRepositoryImplTest {
             body: com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto,
         ) = throw UnsupportedOperationException()
 
+        override suspend fun updateProduct(
+            productId: Long,
+            body: com.rebuildit.prestaflow.data.remote.dto.ProductUpdateRequestDto,
+        ) = throw UnsupportedOperationException()
+
         override suspend fun getDashboardMetrics(
             period: String?,
             from: String?,

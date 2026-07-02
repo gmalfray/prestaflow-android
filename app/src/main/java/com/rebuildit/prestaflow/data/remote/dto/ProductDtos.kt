@@ -50,3 +50,14 @@ data class StockUpdateRequestDto(
     @SerialName("warehouse_id") val warehouseId: Long? = null,
     @SerialName("reason") val reason: String? = null,
 )
+
+/**
+ * Corps du `PATCH /products/{id}` (action "attributes" côté connecteur, inférée par l'absence de
+ * `quantity`). Pour l'instant limité à [ean13] (association d'un code-barres scanné à un produit
+ * existant) — le connecteur accepte aussi `active`/`price_tax_excl` mais ils ne sont pas encore
+ * pilotés depuis l'app.
+ */
+@Serializable
+data class ProductUpdateRequestDto(
+    @SerialName("ean13") val ean13: String? = null,
+)

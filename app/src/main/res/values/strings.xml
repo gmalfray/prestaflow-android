@@ -162,6 +162,9 @@
     <string name="products_scan_success">Stock updated</string>
     <string name="products_scan_another">Scan another product</string>
     <string name="products_scan_close">Close</string>
+    <string name="products_scan_associate_action">Link to a product</string>
+    <string name="products_scan_associate_title">Search for the product to link this barcode to</string>
+    <string name="products_scan_associate_empty">No product matches this search.</string>
     <string name="clients_list_empty">No customers yet.</string>
     <string name="clients_total_spent">Spent %1$s</string>
     <string name="clients_last_order">Last order %1$s</string>

@@ -128,24 +128,42 @@ fun ProductsRoute(
         onScanProduct = launchScanner,
     )
 
-    if (scanState.isSheetVisible) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ProductScanSheet(
-            state = scanState,
-            sheetState = sheetState,
-            onDismiss = scanViewModel::onDismiss,
-            onScanAgain = {
-                scanViewModel.onDismiss()
-                launchScanner()
-            },
-            onSelectProduct = scanViewModel::onSelectProduct,
-            onBackToResults = scanViewModel::onBackToResults,
-            onQuantityChange = scanViewModel::onQuantityChange,
-            onIncrement = scanViewModel::onIncrement,
-            onDecrement = scanViewModel::onDecrement,
-            onConfirm = scanViewModel::onConfirmAdjustment,
-        )
-    }
+    ProductScanBottomSheet(
+        scanState = scanState,
+        scanViewModel = scanViewModel,
+        onScanAgain = {
+            scanViewModel.onDismiss()
+            launchScanner()
+        },
+    )
+}
+
+/** Bottom sheet du flux de scan, extrait de [ProductsRoute] pour rester sous le seuil de longueur. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProductScanBottomSheet(
+    scanState: ProductScanUiState,
+    scanViewModel: ProductScanViewModel,
+    onScanAgain: () -> Unit,
+) {
+    if (!scanState.isSheetVisible) return
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ProductScanSheet(
+        state = scanState,
+        sheetState = sheetState,
+        onDismiss = scanViewModel::onDismiss,
+        onScanAgain = onScanAgain,
+        onSelectProduct = scanViewModel::onSelectProduct,
+        onBackToResults = scanViewModel::onBackToResults,
+        onQuantityChange = scanViewModel::onQuantityChange,
+        onIncrement = scanViewModel::onIncrement,
+        onDecrement = scanViewModel::onDecrement,
+        onConfirm = scanViewModel::onConfirmAdjustment,
+        onStartAssociation = scanViewModel::onStartAssociation,
+        onCancelAssociation = scanViewModel::onCancelAssociation,
+        onAssociationQueryChange = scanViewModel::onAssociationQueryChange,
+        onSelectAssociationProduct = scanViewModel::onAssociationProductSelected,
+    )
 }
 
 @Suppress("LongParameterList")

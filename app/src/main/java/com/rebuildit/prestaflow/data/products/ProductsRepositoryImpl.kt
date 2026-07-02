@@ -10,6 +10,7 @@ import com.rebuildit.prestaflow.data.products.mapper.toDomain
 import com.rebuildit.prestaflow.data.products.mapper.toEntity
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.dto.ProductDto
+import com.rebuildit.prestaflow.data.remote.dto.ProductUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.model.Product
@@ -110,6 +111,26 @@ class ProductsRepositoryImpl
             withContext(ioDispatcher) {
                 val response = api.getProducts(filters = mapOf("barcode" to barcode))
                 response.products.map { it.toDomain() }
+            }
+
+        override suspend fun searchProducts(query: String): List<Product> =
+            withContext(ioDispatcher) {
+                val response = api.getProducts(search = query.takeIf { it.isNotBlank() })
+                response.products.map { it.toDomain() }
+            }
+
+        override suspend fun setProductEan13(
+            productId: Long,
+            ean13: String,
+        ): Product =
+            withContext(ioDispatcher) {
+                val response = api.updateProduct(productId, ProductUpdateRequestDto(ean13 = ean13))
+                val dto = response.product
+                // Le produit vient d'une recherche texte transitoire (pas forcément en cache) :
+                // on le met en cache maintenant qu'on dispose de la version serveur à jour.
+                productDao.upsertProduct(dto.toEntity())
+                stockAvailabilityDao.upsertAll(listOf(dto.stock.toEntity(dto.id)))
+                dto.toDomain()
             }
 
         override suspend fun updatePrice(

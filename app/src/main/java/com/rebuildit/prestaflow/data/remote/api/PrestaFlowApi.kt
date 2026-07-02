@@ -17,6 +17,7 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderStatusUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderStatusesResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.ProductUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -112,6 +113,17 @@ interface PrestaFlowApi {
         @Path("id") productId: Long,
         @Body body: StockUpdateRequestDto,
     )
+
+    /**
+     * PATCH générique des attributs produit (action "attributes" côté connecteur, inférée par
+     * l'absence de `quantity` dans le corps — voir `ProductsController::handlePatch`).
+     * Utilisé pour l'instant pour associer un EAN13 scanné à un produit existant.
+     */
+    @PATCH("products/{id}")
+    suspend fun updateProduct(
+        @Path("id") productId: Long,
+        @Body body: ProductUpdateRequestDto,
+    ): ProductDetailResponseDto
 
     @GET("dashboard/metrics")
     suspend fun getDashboardMetrics(

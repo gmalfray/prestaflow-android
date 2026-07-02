@@ -162,6 +162,9 @@
     <string name="products_scan_success">Stock mis à jour</string>
     <string name="products_scan_another">Scanner un autre produit</string>
     <string name="products_scan_close">Fermer</string>
+    <string name="products_scan_associate_action">Associer à un produit</string>
+    <string name="products_scan_associate_title">Recherchez le produit auquel associer ce code-barres</string>
+    <string name="products_scan_associate_empty">Aucun produit ne correspond à cette recherche.</string>
     <string name="clients_list_empty">Aucun client pour l\’instant.</string>
     <string name="clients_total_spent">Montant dépensé %1$s</string>
     <string name="clients_last_order">Dernière commande %1$s</string>

@@ -59,6 +59,31 @@ class FakeProductsRepository : ProductsRepository {
         return barcodeSearchResult
     }
 
+    val searchProductsCalls = mutableListOf<String>()
+    var searchProductsResult: List<Product> = emptyList()
+    var shouldThrowOnSearchProducts = false
+
+    override suspend fun searchProducts(query: String): List<Product> {
+        searchProductsCalls += query
+        if (shouldThrowOnSearchProducts) throw RuntimeException("Erreur réseau simulée")
+        return searchProductsResult
+    }
+
+    data class SetProductEan13Call(val productId: Long, val ean13: String)
+
+    val setProductEan13Calls = mutableListOf<SetProductEan13Call>()
+    var setProductEan13Result: Product? = null
+    var shouldThrowOnSetProductEan13 = false
+
+    override suspend fun setProductEan13(
+        productId: Long,
+        ean13: String,
+    ): Product {
+        setProductEan13Calls += SetProductEan13Call(productId, ean13)
+        if (shouldThrowOnSetProductEan13) throw RuntimeException("Erreur réseau simulée")
+        return setProductEan13Result ?: error("setProductEan13Result non défini dans le fake")
+    }
+
     data class UpdateStockCall(val productId: Long, val quantity: Int, val warehouseId: Long?, val reason: String?)
 
     val updateStockCalls = mutableListOf<UpdateStockCall>()
