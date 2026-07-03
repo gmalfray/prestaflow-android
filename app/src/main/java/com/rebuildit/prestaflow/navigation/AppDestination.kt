@@ -27,5 +27,12 @@ enum class AppDestination(
     companion object {
         /** Route vers l'écran préférences de catégories de notifications (destination secondaire). */
         const val NOTIF_CATEGORIES_ROUTE = "notif-categories"
+
+        /**
+         * Route vers l'écran « Ajout / réappro stock » (scan en série, destination secondaire
+         * accessible depuis le FAB de [Products] — remplace l'ancien flux scan→fiche stock pour un
+         * produit connu, cf. [com.rebuildit.prestaflow.ui.products.StockReplenishScreen]).
+         */
+        const val STOCK_REPLENISH_ROUTE = "products/replenish"
     }
 }

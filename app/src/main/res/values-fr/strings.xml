@@ -160,6 +160,22 @@
     <string name="products_scan_back_to_combinations">Retour aux déclinaisons</string>
     <string name="products_scan_association_combination_title">À quelle déclinaison associer ce code-barres ?</string>
     <string name="products_scan_combination_back">Retour</string>
+
+    <!-- Écran de réappro stock (scan en série) -->
+    <string name="stock_replenish_title">Réappro stock</string>
+    <string name="stock_replenish_camera_permission_rationale">L\'appareil photo est nécessaire pour scanner les codes-barres</string>
+    <string name="stock_replenish_camera_permission_action">Autoriser l\'appareil photo</string>
+    <string name="stock_replenish_not_found">Code introuvable, ouverture de l\'association…</string>
+    <string name="stock_replenish_idle_hint">Scannez un article pour commencer</string>
+    <string name="stock_replenish_delta_label">Ajustement : %1$s</string>
+    <string name="stock_replenish_new_quantity">Nouveau stock : %1$d</string>
+    <string name="stock_replenish_reset_action">Réinitialiser</string>
+    <string name="stock_replenish_skip_action">Passer</string>
+    <string name="stock_replenish_validate_action">Valider</string>
+    <string name="stock_replenish_add_content_description">Ajouter la quantité</string>
+    <string name="stock_replenish_quantity_placeholder">Quantité</string>
+    <string name="stock_replenish_pending_label">%1$s : %2$s en attente</string>
+
     <string name="clients_list_empty">Aucun client pour l\’instant.</string>
     <string name="clients_orders_count">%1$d commandes</string>
     <string name="clients_list_section_title">Clients fidèles</string>

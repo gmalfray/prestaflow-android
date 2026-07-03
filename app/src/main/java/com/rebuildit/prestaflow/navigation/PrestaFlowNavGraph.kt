@@ -23,6 +23,7 @@ import com.rebuildit.prestaflow.ui.orders.OrdersTwoPaneRoute
 import com.rebuildit.prestaflow.ui.products.ProductDetailRoute
 import com.rebuildit.prestaflow.ui.products.ProductEditRoute
 import com.rebuildit.prestaflow.ui.products.ProductsRoute
+import com.rebuildit.prestaflow.ui.products.StockReplenishRoute
 import com.rebuildit.prestaflow.ui.settings.SettingsRoute
 
 @Suppress("LongMethod") // NavGraph centralise toutes les routes de l'app, longueur inhérente
@@ -125,6 +126,14 @@ fun PrestaFlowNavGraph(
                         launchSingleTop = true
                     }
                 },
+                onScanProduct = {
+                    navController.navigate(AppDestination.STOCK_REPLENISH_ROUTE)
+                },
+            )
+        }
+        composable(AppDestination.STOCK_REPLENISH_ROUTE) {
+            StockReplenishRoute(
+                onBackClick = { navController.popBackStack() },
             )
         }
         composable(
