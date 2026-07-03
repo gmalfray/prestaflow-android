@@ -355,10 +355,23 @@ class ProductScanViewModel
                                 associationPendingProduct = null,
                                 associationError = null,
                                 notFound = false,
-                                results = listOf(updated),
-                                selectedProduct = updated,
-                                quantityInput = updated.scannedQuantity.toString(),
                             )
+                        }
+                        // Re-scanne le code désormais associé : le produit revient combinaison-aware
+                        // (matched_combination + quantité de la déclinaison), pour que la fiche stock
+                        // cible la bonne déclinaison dès le 1er ajustement (sinon le 1er update partait
+                        // au niveau produit, d'où « pas mis à jour au 1er essai »).
+                        val refreshed = runCatching { productsRepository.searchByBarcode(code) }.getOrNull()
+                        if (!refreshed.isNullOrEmpty()) {
+                            applyResults(code, refreshed)
+                        } else {
+                            _uiState.update {
+                                it.copy(
+                                    results = listOf(updated),
+                                    selectedProduct = updated,
+                                    quantityInput = updated.scannedQuantity.toString(),
+                                )
+                            }
                         }
                     }
                     .onFailure { error ->
