@@ -41,7 +41,17 @@ class ClientDetailViewModel
         private fun observeClient() {
             viewModelScope.launch {
                 clientsRepository.observeClient(clientId).collect { client ->
-                    _uiState.update { it.copy(client = client, isLoading = false) }
+                    _uiState.update {
+                        it.copy(
+                            client = client,
+                            // Ne quitte l'état de chargement que si le client est arrivé, OU si le
+                            // refresh réseau initial a déjà tranché (cf. refreshClient().onFailure).
+                            // Sinon, la 1ère émission Room (cache vide — client jamais ouvert dans
+                            // cette session) ferait flasher "introuvable" avant la vraie réponse
+                            // réseau, alors que le client existe bel et bien.
+                            isLoading = it.isLoading && client == null,
+                        )
+                    }
                 }
             }
         }
@@ -51,7 +61,12 @@ class ClientDetailViewModel
                 runCatching { clientsRepository.refreshClient(clientId, forceRemote = true) }
                     .onFailure { error ->
                         Timber.w(error, "Failed to refresh client $clientId")
-                        _uiState.update { it.copy(error = networkErrorMapper.map(error)) }
+                        _uiState.update {
+                            // Le refresh a tranché (échec) : si aucune donnée cache n'est arrivée
+                            // entretemps, on sort de l'état de chargement pour révéler "introuvable"
+                            // plutôt qu'un spinner infini.
+                            it.copy(error = networkErrorMapper.map(error), isLoading = false)
+                        }
                     }
             }
         }

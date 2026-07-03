@@ -99,7 +99,11 @@ class ProductsViewModel
                     _uiState.update { current ->
                         current.copy(
                             products = products,
-                            isLoading = false,
+                            // Ne quitte l'état de chargement que si des produits sont arrivés, OU
+                            // si le refresh réseau initial a déjà tranché. Sinon, la 1ère émission
+                            // Room (cache vide au 1er lancement ou après changement de boutique)
+                            // ferait flasher l'état "vide" avant la vraie réponse réseau.
+                            isLoading = current.isLoading && products.isEmpty(),
                             isRefreshing = false,
                             error = if (products.isNotEmpty()) null else current.error,
                         )

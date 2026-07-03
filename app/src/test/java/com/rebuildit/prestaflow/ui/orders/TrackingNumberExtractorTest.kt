@@ -7,7 +7,6 @@ import org.junit.Test
  * Tests unitaires de [extractTrackingNumber] et [colissimoCheckDigit].
  */
 class TrackingNumberExtractorTest {
-
     // ──────────────────────────────────────────────────────────────────────
     // Colissimo / Lettre Max — code-barres 1D (clé de contrôle recalculée)
     // ──────────────────────────────────────────────────────────────────────

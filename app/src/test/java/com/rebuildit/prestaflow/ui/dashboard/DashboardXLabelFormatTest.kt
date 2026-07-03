@@ -12,7 +12,6 @@ import org.junit.Test
  * - les labels non-ISO (presets, semaines) sont retournés tels quels
  */
 class DashboardXLabelFormatTest {
-
     // ─── Labels horaires (période Aujourd'hui) ───────────────────────────────
 
     @Test

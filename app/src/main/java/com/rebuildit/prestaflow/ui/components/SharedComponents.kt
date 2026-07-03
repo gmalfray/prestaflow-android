@@ -322,30 +322,31 @@ fun OrderStatusBadge(
     val surfaceContainerColor = MaterialTheme.colorScheme.surfaceContainer
     val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
 
-    val (bgColor, textColor) = remember(status, statusColor) {
-        val parsed = parseHexColor(statusColor)
-        if (parsed != null) {
-            parsed to contrastTextColor(parsed)
-        } else {
-            // Fallback heuristique sur le nom du statut
-            val normalized = status.lowercase()
-            when {
-                normalized.contains("pay") || normalized.contains("paid") ->
-                    Color(0xFFDCFCE7) to Color(0xFF166534)
-                normalized.contains("expédi") || normalized.contains("shipped") ||
-                    normalized.contains("livr") || normalized.contains("deliver") ->
-                    primaryColor to onPrimaryColor
-                normalized.contains("attente") || normalized.contains("pending") ||
-                    normalized.contains("en cours") ->
-                    Color(0xFFFEF9C3) to Color(0xFF854D0E)
-                normalized.contains("annul") || normalized.contains("cancel") ||
-                    normalized.contains("refus") ->
-                    errorContainerColor to onErrorContainerColor
-                else ->
-                    surfaceContainerColor to onSurfaceVariantColor
+    val (bgColor, textColor) =
+        remember(status, statusColor) {
+            val parsed = parseHexColor(statusColor)
+            if (parsed != null) {
+                parsed to contrastTextColor(parsed)
+            } else {
+                // Fallback heuristique sur le nom du statut
+                val normalized = status.lowercase()
+                when {
+                    normalized.contains("pay") || normalized.contains("paid") ->
+                        Color(0xFFDCFCE7) to Color(0xFF166534)
+                    normalized.contains("expédi") || normalized.contains("shipped") ||
+                        normalized.contains("livr") || normalized.contains("deliver") ->
+                        primaryColor to onPrimaryColor
+                    normalized.contains("attente") || normalized.contains("pending") ||
+                        normalized.contains("en cours") ->
+                        Color(0xFFFEF9C3) to Color(0xFF854D0E)
+                    normalized.contains("annul") || normalized.contains("cancel") ||
+                        normalized.contains("refus") ->
+                        errorContainerColor to onErrorContainerColor
+                    else ->
+                        surfaceContainerColor to onSurfaceVariantColor
+                }
             }
         }
-    }
 
     Box(
         modifier =
@@ -382,9 +383,14 @@ fun parseHexColor(hex: String?): Color? {
  */
 fun contrastTextColor(background: Color): Color {
     // Luminance relative (canal linéarisé)
-    fun linearize(c: Float): Float = if (c <= 0.04045f) c / 12.92f else ((c + 0.055f) / 1.055f).let {
-        it * it * it // approximation rapide (erreur < 1 %)
-    }
+    fun linearize(c: Float): Float =
+        if (c <= 0.04045f) {
+            c / 12.92f
+        } else {
+            ((c + 0.055f) / 1.055f).let {
+                it * it * it // approximation rapide (erreur < 1 %)
+            }
+        }
     val r = linearize(background.red)
     val g = linearize(background.green)
     val b = linearize(background.blue)

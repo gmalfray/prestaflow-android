@@ -15,7 +15,9 @@ import javax.inject.Inject
 
 data class CartDetailUiState(
     val cart: CartDetail? = null,
-    val isLoading: Boolean = false,
+    // Vrai par défaut (comme les autres UiState d'écran) : le 1er rendu doit afficher le loader
+    // tant que load() n'a pas mis à jour l'état, jamais un flash "vide" avant le 1er chargement.
+    val isLoading: Boolean = true,
     val error: UiText? = null,
 )
 

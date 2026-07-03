@@ -243,7 +243,11 @@ class OrderDetailViewModel
                     ordersRepository.generateShippingLabel(orderId)
                 }.onSuccess {
                     _actionState.update {
-                        it.copy(inProgress = false, isGeneratingLabel = false, message = UiText.FromResources(R.string.order_detail_label_generated))
+                        it.copy(
+                            inProgress = false,
+                            isGeneratingLabel = false,
+                            message = UiText.FromResources(R.string.order_detail_label_generated),
+                        )
                     }
                 }.onFailure { error ->
                     _actionState.update {

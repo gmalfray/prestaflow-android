@@ -171,7 +171,6 @@ class AuthViewModel
                 )
             }
         }
-
     }
 
 data class AuthUiState(

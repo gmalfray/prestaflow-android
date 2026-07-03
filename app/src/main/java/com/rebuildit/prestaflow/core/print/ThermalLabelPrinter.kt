@@ -125,10 +125,12 @@ object ThermalLabelPrinter {
         bitmap: Bitmap,
         macAddress: String,
     ) {
-        val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
-            ?: throw IllegalStateException("BluetoothManager indisponible")
-        val adapter = bluetoothManager.adapter
-            ?: throw IllegalStateException("Bluetooth non supporté sur cet appareil")
+        val bluetoothManager =
+            context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+                ?: throw IllegalStateException("BluetoothManager indisponible")
+        val adapter =
+            bluetoothManager.adapter
+                ?: throw IllegalStateException("Bluetooth non supporté sur cet appareil")
 
         // getRemoteDevice fonctionne pour n'importe quelle MAC valide, appairée ou non :
         // pour une imprimante découverte (non appairée), Android déclenche l'appairage à la
@@ -165,11 +167,13 @@ object ThermalLabelPrinter {
     internal fun toBinaryBitmap(src: Bitmap): Bitmap {
         val dst = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(dst)
-        val paint = Paint().apply {
-            colorFilter = android.graphics.ColorMatrixColorFilter(
-                android.graphics.ColorMatrix().also { it.setSaturation(0f) },
-            )
-        }
+        val paint =
+            Paint().apply {
+                colorFilter =
+                    android.graphics.ColorMatrixColorFilter(
+                        android.graphics.ColorMatrix().also { it.setSaturation(0f) },
+                    )
+            }
         canvas.drawBitmap(src, 0f, 0f, paint)
         return dst
     }

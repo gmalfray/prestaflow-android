@@ -79,7 +79,10 @@ class DashboardViewModel
          * @param from date de début `YYYY-MM-DD`
          * @param to   date de fin `YYYY-MM-DD`
          */
-        fun onCustomRangeSelected(from: String, to: String) {
+        fun onCustomRangeSelected(
+            from: String,
+            to: String,
+        ) {
             _uiState.update {
                 it.copy(
                     customRange = Pair(from, to),

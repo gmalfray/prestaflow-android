@@ -128,11 +128,12 @@ class MainActivity : ComponentActivity() {
         //    Le NavHost ne retraite pas Activity.intent après le démarrage à chaud ;
         //    on extrait l'orderId manuellement pour déclencher la navigation Compose.
         //  • Extras FCM → notification background gérée par le système (ordre_id en extra String).
-        pendingOrderId.value = if (intent.data?.scheme == "prestaflow") {
-            intent.data?.lastPathSegment?.toLongOrNull()
-        } else {
-            intent.extras?.getString("order_id")?.toLongOrNull()
-        }
+        pendingOrderId.value =
+            if (intent.data?.scheme == "prestaflow") {
+                intent.data?.lastPathSegment?.toLongOrNull()
+            } else {
+                intent.extras?.getString("order_id")?.toLongOrNull()
+            }
     }
 }
 

@@ -100,15 +100,17 @@ class OrderDetailPaneViewModel
                 runCatching {
                     ordersRepository.updateOrderStatus(id, trimmed)
                 }.onSuccess {
-                    _actionState.value = _actionState.value.copy(
-                        inProgress = false,
-                        message = UiText.FromResources(R.string.order_detail_status_updated),
-                    )
+                    _actionState.value =
+                        _actionState.value.copy(
+                            inProgress = false,
+                            message = UiText.FromResources(R.string.order_detail_status_updated),
+                        )
                 }.onFailure { error ->
-                    _actionState.value = _actionState.value.copy(
-                        inProgress = false,
-                        error = UiText.Dynamic(error.message ?: "Update failed"),
-                    )
+                    _actionState.value =
+                        _actionState.value.copy(
+                            inProgress = false,
+                            error = UiText.Dynamic(error.message ?: "Update failed"),
+                        )
                 }
             }
         }
@@ -122,15 +124,17 @@ class OrderDetailPaneViewModel
                 runCatching {
                     ordersRepository.updateOrderShipping(id, trimmed)
                 }.onSuccess {
-                    _actionState.value = _actionState.value.copy(
-                        inProgress = false,
-                        message = UiText.FromResources(R.string.order_detail_tracking_updated),
-                    )
+                    _actionState.value =
+                        _actionState.value.copy(
+                            inProgress = false,
+                            message = UiText.FromResources(R.string.order_detail_tracking_updated),
+                        )
                 }.onFailure { error ->
-                    _actionState.value = _actionState.value.copy(
-                        inProgress = false,
-                        error = UiText.Dynamic(error.message ?: "Update failed"),
-                    )
+                    _actionState.value =
+                        _actionState.value.copy(
+                            inProgress = false,
+                            error = UiText.Dynamic(error.message ?: "Update failed"),
+                        )
                 }
             }
         }

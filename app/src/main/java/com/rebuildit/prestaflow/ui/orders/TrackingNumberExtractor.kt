@@ -68,9 +68,10 @@ fun extractTrackingNumber(raw: String): String {
     }
 
     // Cas 3 — token générique (numéro simple, numéro complet imprimé, S10 international, etc.).
-    val compact = trimmed
-        .replace(Regex("""^SD\s*:\s*""", RegexOption.IGNORE_CASE), "")
-        .replace(" ", "")
+    val compact =
+        trimmed
+            .replace(Regex("""^SD\s*:\s*""", RegexOption.IGNORE_CASE), "")
+            .replace(" ", "")
     GENERIC_TRACKING_REGEX.find(compact)?.let { return it.value.uppercase() }
 
     // Repli — contenu nettoyé, éditable par l'utilisateur.

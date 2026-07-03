@@ -24,17 +24,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.Print
 import androidx.compose.material.icons.outlined.PushPin
-import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -52,10 +52,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -68,6 +66,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -94,7 +93,6 @@ import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
-import com.rebuildit.prestaflow.ui.dashboard.labelRes
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
@@ -106,10 +104,12 @@ import com.rebuildit.prestaflow.ui.components.contrastTextColor
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.components.parseHexColor
+import com.rebuildit.prestaflow.ui.dashboard.labelRes
 import com.rebuildit.prestaflow.ui.orders.components.StatusPickerDialog
 import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
+import kotlinx.coroutines.delay
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -140,23 +140,6 @@ fun OrdersRoute(
         if (msg != null) {
             snackbarHostState.showSnackbar(msg)
             viewModel.consumeBulkSnackbar()
-        }
-    }
-
-    // Snackbar « Annuler » pour le swipe — durée indéfinie jusqu'à l'exécution ou l'annulation
-    LaunchedEffect(uiState.pendingSwipeAction) {
-        val action = uiState.pendingSwipeAction ?: return@LaunchedEffect
-        val result = snackbarHostState.showSnackbar(
-            message = context.getString(
-                R.string.orders_swipe_pending,
-                action.orderReference,
-                action.targetStatusName,
-            ),
-            actionLabel = context.getString(R.string.orders_swipe_undo),
-            duration = SnackbarDuration.Indefinite,
-        )
-        if (result == SnackbarResult.ActionPerformed) {
-            viewModel.cancelSwipeAction()
         }
     }
 
@@ -218,10 +201,92 @@ fun OrdersRoute(
             swipeConfig = uiState.swipeConfig,
             onClearPeriodFilter = viewModel::clearPeriodFilter,
         )
-        SnackbarHost(
-            hostState = snackbarHostState,
+        // Barre d'annulation swipe (avec décompte vivant) + snackbars classiques, empilées en bas
+        // pour ne jamais se chevaucher. La barre swipe n'utilise PAS le SnackbarHostState : ce
+        // dernier ne permet pas de mettre à jour le texte d'un snackbar déjà affiché, incompatible
+        // avec un décompte de secondes qui doit se rafraîchir chaque seconde.
+        Column(
             modifier = Modifier.align(Alignment.BottomCenter),
-        )
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+        ) {
+            uiState.pendingSwipeAction?.let { action ->
+                SwipeUndoBar(
+                    action = action,
+                    onCancel = viewModel::cancelSwipeAction,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Dimensions.screenEdgeMargin),
+                )
+            }
+            SnackbarHost(hostState = snackbarHostState)
+        }
+    }
+}
+
+/**
+ * Barre d'annulation du swipe de changement de statut — remplace l'ancien Snackbar à durée
+ * indéfinie par un composant dédié entièrement piloté par l'état Compose, seule façon d'afficher
+ * un décompte vivant des secondes restantes avant l'envoi effectif (l'API Snackbar ne permet pas
+ * de mettre à jour le texte d'un snackbar déjà affiché).
+ *
+ * Le décompte redémarre à [SWIPE_UNDO_DELAY_MS] / 1000 secondes à chaque nouvelle [action] (chaque
+ * swipe annule et remplace le précédent côté ViewModel) et disparaît dès que [action] devient null
+ * (annulation via le bouton, ou envoi effectif une fois le délai écoulé).
+ */
+@Composable
+private fun SwipeUndoBar(
+    action: PendingSwipeAction,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val totalSeconds = (SWIPE_UNDO_DELAY_MS / 1_000L).toInt()
+    var remainingSeconds by remember(action) { mutableIntStateOf(totalSeconds) }
+
+    // Décompte affiché : purement visuel, resynchronisé à chaque nouvelle action. L'envoi effectif
+    // reste piloté côté ViewModel par son propre delay(SWIPE_UNDO_DELAY_MS), indépendant de ce timer UI.
+    LaunchedEffect(action) {
+        for (secondsLeft in totalSeconds - 1 downTo 0) {
+            delay(1_000L)
+            remainingSeconds = secondsLeft
+        }
+    }
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+        color = MaterialTheme.colorScheme.inverseSurface,
+        contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+        tonalElevation = 6.dp,
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimensions.spacingM, vertical = Dimensions.spacingS),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text =
+                    stringResource(
+                        R.string.orders_swipe_pending,
+                        action.orderReference,
+                        action.targetStatusName,
+                    ),
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onCancel) {
+                Text(
+                    text = stringResource(R.string.orders_swipe_undo_countdown, remainingSeconds),
+                    color = MaterialTheme.colorScheme.inversePrimary,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
     }
 }
 
@@ -545,9 +610,10 @@ private fun OrdersList(
                         if (hasMore || isLoadingMore) {
                             item {
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = Dimensions.spacingS),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = Dimensions.spacingS),
                                     horizontalArrangement = Arrangement.Center,
                                 ) {
                                     if (isLoadingMore) {
@@ -594,18 +660,19 @@ private fun SwipeableOrderRow(
 ) {
     // Le swipe est actif uniquement si le statut de la commande correspond à la source configurée.
     // Par défaut (aucun ID configuré) : matcher "paiement accepte" (comportement historique).
-    val isSwipeSource = remember(order.status, order.currentStateId, swipeConfig, availableStatuses) {
-        if (!swipeConfig.enabled) {
-            false
-        } else {
-            val configuredId = swipeConfig.sourceStatusId
-            if (configuredId != null) {
-                order.currentStateId == configuredId
+    val isSwipeSource =
+        remember(order.status, order.currentStateId, swipeConfig, availableStatuses) {
+            if (!swipeConfig.enabled) {
+                false
             } else {
-                order.status.normalizeForMatch().contains("paiement accepte")
+                val configuredId = swipeConfig.sourceStatusId
+                if (configuredId != null) {
+                    order.currentStateId == configuredId
+                } else {
+                    order.status.normalizeForMatch().contains("paiement accepte")
+                }
             }
         }
-    }
 
     if (!isSwipeSource || selectionMode) {
         // Hors contexte swipe : simple ligne
@@ -624,47 +691,51 @@ private fun SwipeableOrderRow(
     val leftActionColor = MaterialTheme.colorScheme.tertiary
     val rightActionColor = Color(0xFF2E7D32)
 
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            when (value) {
-                SwipeToDismissBoxValue.EndToStart -> {
-                    onSwipeAction(SwipeDirection.LEFT)
-                    false // snap back
+    val dismissState =
+        rememberSwipeToDismissBoxState(
+            confirmValueChange = { value ->
+                when (value) {
+                    SwipeToDismissBoxValue.EndToStart -> {
+                        onSwipeAction(SwipeDirection.LEFT)
+                        false // snap back
+                    }
+                    SwipeToDismissBoxValue.StartToEnd -> {
+                        onSwipeAction(SwipeDirection.RIGHT)
+                        false // snap back
+                    }
+                    SwipeToDismissBoxValue.Settled -> false
                 }
-                SwipeToDismissBoxValue.StartToEnd -> {
-                    onSwipeAction(SwipeDirection.RIGHT)
-                    false // snap back
-                }
-                SwipeToDismissBoxValue.Settled -> false
-            }
-        },
-        positionalThreshold = { totalDistance -> totalDistance * 0.35f },
-    )
+            },
+            positionalThreshold = { totalDistance -> totalDistance * 0.35f },
+        )
 
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = {
             val targetValue = dismissState.targetValue
-            val bgColor = when (targetValue) {
-                SwipeToDismissBoxValue.EndToStart -> leftActionColor
-                SwipeToDismissBoxValue.StartToEnd -> rightActionColor
-                SwipeToDismissBoxValue.Settled -> Color.Transparent
-            }
+            val bgColor =
+                when (targetValue) {
+                    SwipeToDismissBoxValue.EndToStart -> leftActionColor
+                    SwipeToDismissBoxValue.StartToEnd -> rightActionColor
+                    SwipeToDismissBoxValue.Settled -> Color.Transparent
+                }
             val isLeftSwipe = targetValue == SwipeToDismissBoxValue.EndToStart
             val isRightSwipe = targetValue == SwipeToDismissBoxValue.StartToEnd
             val swipeIcon = if (isLeftSwipe) Icons.Outlined.ArrowUpward else Icons.Outlined.Done
-            val swipeLabel = when {
-                isLeftSwipe -> stringResource(R.string.orders_swipe_left_label)
-                isRightSwipe -> stringResource(R.string.orders_swipe_right_label)
-                else -> ""
-            }
+            val swipeLabel =
+                when {
+                    isLeftSwipe -> stringResource(R.string.orders_swipe_left_label)
+                    isRightSwipe -> stringResource(R.string.orders_swipe_right_label)
+                    else -> ""
+                }
             val swipeAlign = if (isRightSwipe) Alignment.CenterStart else Alignment.CenterEnd
             val onBgColor = contrastTextColor(bgColor)
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(bgColor)
-                    .padding(horizontal = Dimensions.spacingL),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(bgColor)
+                        .padding(horizontal = Dimensions.spacingL),
                 contentAlignment = swipeAlign,
             ) {
                 if (isLeftSwipe || isRightSwipe) {
@@ -823,10 +894,11 @@ private fun OrderRow(
     val status = order.status.ifBlank { stringResource(id = R.string.orders_status_unknown) }
 
     // Couleur du badge : depuis l'ordre (connecteur v1.9+) ou fallback dans availableStatuses
-    val resolvedStatusColor = remember(order.statusColor, order.currentStateId, availableStatuses) {
-        order.statusColor?.takeIf { it.isNotBlank() }
-            ?: availableStatuses.firstOrNull { it.id == order.currentStateId }?.color
-    }
+    val resolvedStatusColor =
+        remember(order.statusColor, order.currentStateId, availableStatuses) {
+            order.statusColor?.takeIf { it.isNotBlank() }
+                ?: availableStatuses.firstOrNull { it.id == order.currentStateId }?.color
+        }
 
     val isSelectable = !selectionMode || order.hasInvoice
     val rowAlpha = if (selectionMode && !order.hasInvoice) 0.4f else 1f
@@ -994,11 +1066,12 @@ private fun StatusFilterBar(
         Box {
             IconButton(onClick = { showSortMenu = true }) {
                 Icon(
-                    imageVector = when (selectedSort) {
-                        OrderSort.DATE_ASC, OrderSort.AMOUNT_ASC -> Icons.Outlined.ArrowUpward
-                        OrderSort.DATE_DESC, OrderSort.AMOUNT_DESC -> Icons.Outlined.ArrowDownward
-                        else -> Icons.AutoMirrored.Outlined.Sort
-                    },
+                    imageVector =
+                        when (selectedSort) {
+                            OrderSort.DATE_ASC, OrderSort.AMOUNT_ASC -> Icons.Outlined.ArrowUpward
+                            OrderSort.DATE_DESC, OrderSort.AMOUNT_DESC -> Icons.Outlined.ArrowDownward
+                            else -> Icons.AutoMirrored.Outlined.Sort
+                        },
                     contentDescription = stringResource(R.string.orders_sort_label),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1008,22 +1081,28 @@ private fun StatusFilterBar(
                 onDismissRequest = { showSortMenu = false },
             ) {
                 SortOption(OrderSort.DATE_DESC, selectedSort, stringResource(R.string.orders_sort_date_desc)) {
-                    onSortChanged(it); showSortMenu = false
+                    onSortChanged(it)
+                    showSortMenu = false
                 }
                 SortOption(OrderSort.DATE_ASC, selectedSort, stringResource(R.string.orders_sort_date_asc)) {
-                    onSortChanged(it); showSortMenu = false
+                    onSortChanged(it)
+                    showSortMenu = false
                 }
                 SortOption(OrderSort.AMOUNT_DESC, selectedSort, stringResource(R.string.orders_sort_amount_desc)) {
-                    onSortChanged(it); showSortMenu = false
+                    onSortChanged(it)
+                    showSortMenu = false
                 }
                 SortOption(OrderSort.AMOUNT_ASC, selectedSort, stringResource(R.string.orders_sort_amount_asc)) {
-                    onSortChanged(it); showSortMenu = false
+                    onSortChanged(it)
+                    showSortMenu = false
                 }
                 SortOption(OrderSort.STATUS, selectedSort, stringResource(R.string.orders_sort_status)) {
-                    onSortChanged(it); showSortMenu = false
+                    onSortChanged(it)
+                    showSortMenu = false
                 }
                 SortOption(OrderSort.REFERENCE, selectedSort, stringResource(R.string.orders_sort_reference)) {
-                    onSortChanged(it); showSortMenu = false
+                    onSortChanged(it)
+                    showSortMenu = false
                 }
             }
         }
@@ -1053,9 +1132,10 @@ private fun StatusFilterBar(
                     leadingIcon = {
                         if (dotColor != null) {
                             Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .background(dotColor, CircleShape),
+                                modifier =
+                                    Modifier
+                                        .size(8.dp)
+                                        .background(dotColor, CircleShape),
                             )
                         }
                     },
@@ -1092,11 +1172,12 @@ private fun SortOption(
     DropdownMenuItem(
         text = { Text(label) },
         onClick = { onSelect(sort) },
-        leadingIcon = if (sort == currentSort) {
-            { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null) }
-        } else {
-            null
-        },
+        leadingIcon =
+            if (sort == currentSort) {
+                { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null) }
+            } else {
+                null
+            },
     )
 }
 

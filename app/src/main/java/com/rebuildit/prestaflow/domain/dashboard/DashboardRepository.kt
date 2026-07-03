@@ -8,7 +8,10 @@ interface DashboardRepository {
     fun observeDashboard(period: DashboardPeriod): Flow<DashboardSnapshot?>
 
     /** Observe le cache d'une plage libre (clé `custom:<from>:<to>`). */
-    fun observeCustomDashboard(from: String, to: String): Flow<DashboardSnapshot?>
+    fun observeCustomDashboard(
+        from: String,
+        to: String,
+    ): Flow<DashboardSnapshot?>
 
     suspend fun refresh(
         period: DashboardPeriod,

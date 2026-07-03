@@ -62,12 +62,13 @@ class ClientsViewModelTest {
         createdFromArg: String? = null,
     ): ClientsViewModel =
         ClientsViewModel(
-            savedStateHandle = SavedStateHandle(
-                buildMap {
-                    if (filterArg != null) put("filter", filterArg)
-                    if (createdFromArg != null) put("created_from", createdFromArg)
-                },
-            ),
+            savedStateHandle =
+                SavedStateHandle(
+                    buildMap {
+                        if (filterArg != null) put("filter", filterArg)
+                        if (createdFromArg != null) put("created_from", createdFromArg)
+                    },
+                ),
             clientsRepository = fakeClientsRepo,
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = fakeAuthRepo,

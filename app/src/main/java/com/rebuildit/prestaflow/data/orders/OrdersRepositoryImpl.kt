@@ -215,10 +215,11 @@ class OrdersRepositoryImpl
 
         override suspend fun generateShippingLabel(orderId: Long) {
             withContext(ioDispatcher) {
-                val response = runCatching { api.generateShippingLabel(orderId) }.getOrElse { error ->
-                    Timber.w(networkErrorMapper.map(error).toString())
-                    throw error
-                }
+                val response =
+                    runCatching { api.generateShippingLabel(orderId) }.getOrElse { error ->
+                        Timber.w(networkErrorMapper.map(error).toString())
+                        throw error
+                    }
                 when {
                     response.isSuccessful -> {
                         // Recharge la commande pour mettre à jour le n° de suivi et hasShippingLabel dans Room

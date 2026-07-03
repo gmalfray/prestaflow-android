@@ -21,7 +21,9 @@ data class CartsUiState(
     val allCarts: List<CartSummary> = emptyList(),
     val query: String = "",
     val displayedCount: Int = PAGE_SIZE,
-    val isLoading: Boolean = false,
+    // Vrai par défaut (comme les autres UiState d'écran) : le 1er rendu doit afficher le loader
+    // tant que load() n'a pas mis à jour l'état, jamais un flash "vide" avant le 1er chargement.
+    val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val error: UiText? = null,
 ) {

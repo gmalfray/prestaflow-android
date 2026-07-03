@@ -17,21 +17,22 @@ import com.rebuildit.prestaflow.core.util.normalizeForMatch
  * Ordonnée du plus spécifique au plus générique pour éviter les faux positifs.
  * La recherche utilise [String.contains] sur la chaîne normalisée (sans accents, minuscules).
  */
-private val STATUS_LABEL_MAP: List<Pair<String, String>> = listOf(
-    "paiement accepte" to "Payé",
-    "paiement erreur" to "Erreur",
-    "paiement refuse" to "Erreur",
-    "cheque" to "Chèque",
-    "virement" to "Virement",
-    "preparation" to "Prépa",
-    "expedi" to "Expédié",
-    "livre" to "Livré",
-    "termin" to "Terminé",
-    "annul" to "Annulé",
-    "rembours" to "Remboursé",
-    "erreur" to "Erreur",
-    "refus" to "Erreur",
-)
+private val STATUS_LABEL_MAP: List<Pair<String, String>> =
+    listOf(
+        "paiement accepte" to "Payé",
+        "paiement erreur" to "Erreur",
+        "paiement refuse" to "Erreur",
+        "cheque" to "Chèque",
+        "virement" to "Virement",
+        "preparation" to "Prépa",
+        "expedi" to "Expédié",
+        "livre" to "Livré",
+        "termin" to "Terminé",
+        "annul" to "Annulé",
+        "rembours" to "Remboursé",
+        "erreur" to "Erreur",
+        "refus" to "Erreur",
+    )
 
 /** Longueur maximale du libellé court (premier mot, fallback). */
 private const val SHORT_LABEL_MAX_LEN = 12

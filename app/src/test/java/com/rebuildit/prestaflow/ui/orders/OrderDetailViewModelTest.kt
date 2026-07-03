@@ -246,10 +246,11 @@ class OrderDetailViewModelTest {
     @Test
     fun `onGenerateLabel sur succes met a jour hasShippingLabel et le tracking via le Flow`() =
         runTest {
-            val orderSansLabel = buildOrder(1L).copy(
-                hasShippingLabel = false,
-                shipping = OrderShipping(carrierId = 1L, carrierName = "Colissimo", trackingNumber = null),
-            )
+            val orderSansLabel =
+                buildOrder(1L).copy(
+                    hasShippingLabel = false,
+                    shipping = OrderShipping(carrierId = 1L, carrierName = "Colissimo", trackingNumber = null),
+                )
             fakeOrdersRepo.setOrders(listOf(orderSansLabel))
             fakeOrdersRepo.generateLabelTrackingNumber = "8R01234567890"
             val vm = buildViewModel(orderId = 1L)

@@ -84,9 +84,9 @@ import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.orders.components.StatusPickerDialog
 import com.rebuildit.prestaflow.ui.settings.ThermalPrinterViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
+import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import kotlinx.coroutines.launch
 
 // Route : câblage des callbacks d'impression (facture/bordereau/thermique) + gestion des permissions
 @Suppress("LongMethod")
@@ -111,7 +111,9 @@ fun OrderDetailRoute(
     // Lance l'impression thermique du bordereau (permissions déjà vérifiées en amont)
     val startThermalPrint: (Order, String) -> Unit = { order, macAddress ->
         viewModel.fetchShippingLabelPdf { pdfBytes ->
-            viewModel.reportFeedback(message = com.rebuildit.prestaflow.core.ui.UiText.Dynamic(context.getString(R.string.order_detail_thermal_connecting)))
+            viewModel.reportFeedback(
+                message = com.rebuildit.prestaflow.core.ui.UiText.Dynamic(context.getString(R.string.order_detail_thermal_connecting)),
+            )
             scope.launch {
                 viewModel.printOnThermalPrinter(
                     context = context,
@@ -137,7 +139,9 @@ fun OrderDetailRoute(
             if (allGranted && order != null && device != null) {
                 startThermalPrint(order, device.address)
             } else if (!allGranted) {
-                viewModel.reportFeedback(error = com.rebuildit.prestaflow.core.ui.UiText.FromResources(R.string.order_detail_thermal_bt_permission_denied))
+                viewModel.reportFeedback(
+                    error = com.rebuildit.prestaflow.core.ui.UiText.FromResources(R.string.order_detail_thermal_bt_permission_denied),
+                )
             }
         }
 
@@ -157,7 +161,12 @@ fun OrderDetailRoute(
         } else {
             when {
                 !isBluetooth(context) ->
-                    viewModel.reportFeedback(error = com.rebuildit.prestaflow.core.ui.UiText.Dynamic(context.getString(R.string.order_detail_thermal_bt_disabled)))
+                    viewModel.reportFeedback(
+                        error =
+                            com.rebuildit.prestaflow.core.ui.UiText.Dynamic(
+                                context.getString(R.string.order_detail_thermal_bt_disabled),
+                            ),
+                    )
                 !hasBtPermissions(context) -> {
                     pendingThermalOrder = order
                     btPermissionLauncher.launch(BT_RUNTIME_PERMISSIONS)
@@ -492,10 +501,11 @@ fun OrderDetailContent(
                             status = order.status,
                             // La couleur PS n'est pas renvoyée par l'endpoint détail : on la résout
                             // par nom depuis availableStatuses (cohérent avec la liste des commandes).
-                            statusColor = order.statusColor?.takeIf { it.isNotBlank() }
-                                ?: availableStatuses.firstOrNull {
-                                    it.name.equals(order.status, ignoreCase = true)
-                                }?.color,
+                            statusColor =
+                                order.statusColor?.takeIf { it.isNotBlank() }
+                                    ?: availableStatuses.firstOrNull {
+                                        it.name.equals(order.status, ignoreCase = true)
+                                    }?.color,
                         )
                         IconButton(
                             onClick = { showStatusDialog = true },

@@ -20,7 +20,6 @@ import kotlin.text.Charsets
  * testable directement en JUnit JVM sans Robolectric.
  */
 object QrCodeParser {
-
     private val json = Json { ignoreUnknownKeys = true }
 
     /**

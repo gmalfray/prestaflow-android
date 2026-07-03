@@ -8,9 +8,6 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanOptions
-import com.rebuildit.prestaflow.ui.auth.PortraitCaptureActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -74,6 +71,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import com.rebuildit.prestaflow.BuildConfig
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.notifications.SaleNotifications
@@ -84,6 +83,7 @@ import com.rebuildit.prestaflow.domain.printer.model.SavedPrinterDevice
 import com.rebuildit.prestaflow.domain.theme.DarkThemeConfig
 import com.rebuildit.prestaflow.domain.theme.PrestaFlowSkin
 import com.rebuildit.prestaflow.domain.theme.ThemeSettings
+import com.rebuildit.prestaflow.ui.auth.PortraitCaptureActivity
 import com.rebuildit.prestaflow.ui.dashboard.labelRes
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
@@ -189,6 +189,7 @@ fun SettingsScreen(
     onRetryStatuses: () -> Unit = {},
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
+
     /** ID de la boutique dont la suppression est en attente de confirmation. */
     var shopToRemoveId by remember { mutableStateOf<String?>(null) }
     val shopToRemove = shopToRemoveId?.let { id -> connections.firstOrNull { it.id == id } }
@@ -1057,11 +1058,12 @@ private fun SwipeCommandsSection(
     val statuses = state.availableStatuses
     // Texte affiché quand la liste est vide : distingue chargement vs erreur (au lieu d'un
     // « Chargement… » figé même quand le chargement a échoué).
-    val emptyPlaceholder = if (state.statusesError) {
-        stringResource(R.string.settings_swipe_statuses_error)
-    } else {
-        stringResource(R.string.settings_swipe_no_statuses)
-    }
+    val emptyPlaceholder =
+        if (state.statusesError) {
+            stringResource(R.string.settings_swipe_statuses_error)
+        } else {
+            stringResource(R.string.settings_swipe_no_statuses)
+        }
 
     SwipeStatusDropdown(
         label = stringResource(R.string.settings_swipe_source_status),
@@ -1091,9 +1093,10 @@ private fun SwipeCommandsSection(
     // Bannière d'erreur + Réessayer quand le chargement des statuts a échoué.
     if (state.statusesError && !state.isLoadingStatuses) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -1127,12 +1130,13 @@ private fun SwipeStatusDropdown(
     onSelected: (Int?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedName = if (selectedId == null || statuses.isEmpty()) {
-        stringResource(R.string.settings_swipe_status_default)
-    } else {
-        statuses.firstOrNull { it.id == selectedId }?.name
-            ?: stringResource(R.string.settings_swipe_status_default)
-    }
+    val selectedName =
+        if (selectedId == null || statuses.isEmpty()) {
+            stringResource(R.string.settings_swipe_status_default)
+        } else {
+            statuses.firstOrNull { it.id == selectedId }?.name
+                ?: stringResource(R.string.settings_swipe_status_default)
+        }
 
     ExposedDropdownMenuBox(
         expanded = expanded && enabled && statuses.isNotEmpty(),
@@ -1151,9 +1155,10 @@ private fun SwipeStatusDropdown(
                 }
             },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth(),
+            modifier =
+                Modifier
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
         )
         if (statuses.isNotEmpty()) {
             ExposedDropdownMenu(

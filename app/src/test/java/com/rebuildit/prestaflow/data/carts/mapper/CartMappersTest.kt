@@ -27,15 +27,17 @@ class CartMappersTest {
 
     @Test
     fun `toDomain transmet les produits avec les bonnes quantites`() {
-        val dto = CartDetailDto(
-            id = 42,
-            customer = CartCustomerDto(firstname = "Alice", lastname = "Dupont"),
-            itemsCount = 0, // ← valeur backend potentiellement erronée
-            products = listOf(
-                makeProductDto(quantity = 2),
-                makeProductDto(quantity = 3),
-            ),
-        )
+        val dto =
+            CartDetailDto(
+                id = 42,
+                customer = CartCustomerDto(firstname = "Alice", lastname = "Dupont"),
+                itemsCount = 0, // ← valeur backend potentiellement erronée
+                products =
+                    listOf(
+                        makeProductDto(quantity = 2),
+                        makeProductDto(quantity = 3),
+                    ),
+            )
 
         val domain = dto.toDomain()
 
@@ -49,11 +51,12 @@ class CartMappersTest {
 
     @Test
     fun `itemsCount dans le domaine reflète la valeur backend meme si incorrect`() {
-        val dto = CartDetailDto(
-            id = 1,
-            itemsCount = 0, // backend ne remplit pas ce champ dans le détail
-            products = listOf(makeProductDto(quantity = 3)),
-        )
+        val dto =
+            CartDetailDto(
+                id = 1,
+                itemsCount = 0, // backend ne remplit pas ce champ dans le détail
+                products = listOf(makeProductDto(quantity = 3)),
+            )
 
         val domain = dto.toDomain()
 
@@ -79,20 +82,22 @@ class CartMappersTest {
 
     @Test
     fun `toDomain construit le nom client depuis firstname et lastname`() {
-        val dto = CartDetailDto(
-            id = 1,
-            customer = CartCustomerDto(firstname = "Jean", lastname = "Martin"),
-        )
+        val dto =
+            CartDetailDto(
+                id = 1,
+                customer = CartCustomerDto(firstname = "Jean", lastname = "Martin"),
+            )
         val domain = dto.toDomain()
         assertEquals("Jean Martin", domain.customerName)
     }
 
     @Test
     fun `toDomain utilise email si nom est vide`() {
-        val dto = CartDetailDto(
-            id = 1,
-            customer = CartCustomerDto(firstname = "", lastname = "", email = "guest@test.fr"),
-        )
+        val dto =
+            CartDetailDto(
+                id = 1,
+                customer = CartCustomerDto(firstname = "", lastname = "", email = "guest@test.fr"),
+            )
         val domain = dto.toDomain()
         assertEquals("guest@test.fr", domain.customerName)
     }

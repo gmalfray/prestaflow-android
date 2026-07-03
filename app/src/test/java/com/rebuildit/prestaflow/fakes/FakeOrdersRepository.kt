@@ -133,11 +133,13 @@ class FakeOrdersRepository : OrdersRepository {
             val idx = currentOrders.indexOfFirst { it.id == orderId }
             if (idx >= 0) {
                 val order = currentOrders[idx]
-                currentOrders[idx] = order.copy(
-                    hasShippingLabel = true,
-                    shipping = order.shipping?.copy(trackingNumber = generateLabelTrackingNumber)
-                        ?: OrderShipping(carrierName = "", trackingNumber = generateLabelTrackingNumber),
-                )
+                currentOrders[idx] =
+                    order.copy(
+                        hasShippingLabel = true,
+                        shipping =
+                            order.shipping?.copy(trackingNumber = generateLabelTrackingNumber)
+                                ?: OrderShipping(carrierName = "", trackingNumber = generateLabelTrackingNumber),
+                    )
                 _ordersFlow.value = currentOrders
             }
         }

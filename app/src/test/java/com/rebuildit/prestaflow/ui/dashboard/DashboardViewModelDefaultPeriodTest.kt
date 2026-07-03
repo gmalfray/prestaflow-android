@@ -35,9 +35,7 @@ class DashboardViewModelDefaultPeriodTest {
         Dispatchers.resetMain()
     }
 
-    private fun buildViewModel(
-        prefs: FakeDashboardPreferencesRepository,
-    ): DashboardViewModel =
+    private fun buildViewModel(prefs: FakeDashboardPreferencesRepository): DashboardViewModel =
         DashboardViewModel(
             dashboardRepository = FakeDashboardRepository(),
             dashboardPrefsRepository = prefs,
@@ -46,53 +44,59 @@ class DashboardViewModelDefaultPeriodTest {
         )
 
     @Test
-    fun `période initiale MONTH — selectedPeriod est MONTH`() = runTest {
-        val vm = buildViewModel(FakeDashboardPreferencesRepository(DashboardPeriod.MONTH))
-        advanceUntilIdle()
-        assertEquals(DashboardPeriod.MONTH, vm.uiState.value.selectedPeriod)
-    }
+    fun `période initiale MONTH — selectedPeriod est MONTH`() =
+        runTest {
+            val vm = buildViewModel(FakeDashboardPreferencesRepository(DashboardPeriod.MONTH))
+            advanceUntilIdle()
+            assertEquals(DashboardPeriod.MONTH, vm.uiState.value.selectedPeriod)
+        }
 
     @Test
-    fun `période initiale TODAY — selectedPeriod est TODAY`() = runTest {
-        val vm = buildViewModel(FakeDashboardPreferencesRepository(DashboardPeriod.TODAY))
-        advanceUntilIdle()
-        assertEquals(DashboardPeriod.TODAY, vm.uiState.value.selectedPeriod)
-    }
+    fun `période initiale TODAY — selectedPeriod est TODAY`() =
+        runTest {
+            val vm = buildViewModel(FakeDashboardPreferencesRepository(DashboardPeriod.TODAY))
+            advanceUntilIdle()
+            assertEquals(DashboardPeriod.TODAY, vm.uiState.value.selectedPeriod)
+        }
 
     @Test
-    fun `période initiale YEAR — selectedPeriod est YEAR`() = runTest {
-        val vm = buildViewModel(FakeDashboardPreferencesRepository(DashboardPeriod.YEAR))
-        advanceUntilIdle()
-        assertEquals(DashboardPeriod.YEAR, vm.uiState.value.selectedPeriod)
-    }
+    fun `période initiale YEAR — selectedPeriod est YEAR`() =
+        runTest {
+            val vm = buildViewModel(FakeDashboardPreferencesRepository(DashboardPeriod.YEAR))
+            advanceUntilIdle()
+            assertEquals(DashboardPeriod.YEAR, vm.uiState.value.selectedPeriod)
+        }
 
     @Test
-    fun `période initiale QUARTER — selectedPeriod est QUARTER`() = runTest {
-        val vm = buildViewModel(FakeDashboardPreferencesRepository(DashboardPeriod.QUARTER))
-        advanceUntilIdle()
-        assertEquals(DashboardPeriod.QUARTER, vm.uiState.value.selectedPeriod)
-    }
+    fun `période initiale QUARTER — selectedPeriod est QUARTER`() =
+        runTest {
+            val vm = buildViewModel(FakeDashboardPreferencesRepository(DashboardPeriod.QUARTER))
+            advanceUntilIdle()
+            assertEquals(DashboardPeriod.QUARTER, vm.uiState.value.selectedPeriod)
+        }
 
     @Test
-    fun `période initiale WEEK — selectedPeriod est WEEK (défaut)`() = runTest {
-        val vm = buildViewModel(FakeDashboardPreferencesRepository(DashboardPeriod.WEEK))
-        advanceUntilIdle()
-        assertEquals(DashboardPeriod.WEEK, vm.uiState.value.selectedPeriod)
-    }
+    fun `période initiale WEEK — selectedPeriod est WEEK (défaut)`() =
+        runTest {
+            val vm = buildViewModel(FakeDashboardPreferencesRepository(DashboardPeriod.WEEK))
+            advanceUntilIdle()
+            assertEquals(DashboardPeriod.WEEK, vm.uiState.value.selectedPeriod)
+        }
 
     @Test
-    fun `chip de session ne modifie pas la préférence persistée`() = runTest {
-        val prefs = FakeDashboardPreferencesRepository(DashboardPeriod.MONTH)
-        val vm = buildViewModel(prefs)
-        advanceUntilIdle()
+    fun `chip de session ne modifie pas la préférence persistée`() =
+        runTest {
+            val prefs = FakeDashboardPreferencesRepository(DashboardPeriod.MONTH)
+            val vm = buildViewModel(prefs)
+            advanceUntilIdle()
 
-        // L'utilisateur tape un chip (choix de session uniquement)
-        vm.onPeriodSelected(DashboardPeriod.WEEK)
-        advanceUntilIdle()
+            // L'utilisateur tape un chip (choix de session uniquement)
+            vm.onPeriodSelected(DashboardPeriod.WEEK)
+            advanceUntilIdle()
 
-        // La période de session change…
-        assertEquals(DashboardPeriod.WEEK, vm.uiState.value.selectedPeriod)
-        // …mais la préférence persistée reste inchangée
-        assertEquals(DashboardPeriod.MONTH, prefs.defaultPeriod.first())
-    }
+            // La période de session change…
+            assertEquals(DashboardPeriod.WEEK, vm.uiState.value.selectedPeriod)
+            // …mais la préférence persistée reste inchangée
+            assertEquals(DashboardPeriod.MONTH, prefs.defaultPeriod.first())
+        }
 }

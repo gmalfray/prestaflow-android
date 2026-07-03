@@ -135,9 +135,10 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
      */
     private fun buildOrderDeepLinkIntent(orderId: Long): PendingIntent {
         val uri = Uri.parse("prestaflow://orders/$orderId")
-        val intent = Intent(Intent.ACTION_VIEW, uri, applicationContext, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
+        val intent =
+            Intent(Intent.ACTION_VIEW, uri, applicationContext, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
         return PendingIntent.getActivity(
             applicationContext,
             orderId.toInt(),

@@ -15,7 +15,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -62,10 +61,11 @@ class ClientDetailViewModelTest {
     @Test
     fun `availableStatuses est peuple dans uiState apres init`() =
         runTest {
-            val statuses = listOf(
-                OrderStatusFilter(1, "Paiement accepté", "#32CD32"),
-                OrderStatusFilter(4, "Expédié", "#3498DB"),
-            )
+            val statuses =
+                listOf(
+                    OrderStatusFilter(1, "Paiement accepté", "#32CD32"),
+                    OrderStatusFilter(4, "Expédié", "#3498DB"),
+                )
             fakeOrdersRepo.orderStatuses = statuses
 
             val vm = buildViewModel()
@@ -167,10 +167,11 @@ class ClientDetailViewModelTest {
 
     @Test
     fun `nom inconnu retourne null - fallback heuristique`() {
-        val statuses = listOf(
-            OrderStatusFilter(1, "Paiement accepté", "#32CD32"),
-            OrderStatusFilter(4, "Expédié", "#3498DB"),
-        )
+        val statuses =
+            listOf(
+                OrderStatusFilter(1, "Paiement accepté", "#32CD32"),
+                OrderStatusFilter(4, "Expédié", "#3498DB"),
+            )
         assertNull(
             "Un statut inconnu doit retourner null → le composant garde son fallback heuristique",
             statuses.resolveColor("Statut inconnu xyz"),

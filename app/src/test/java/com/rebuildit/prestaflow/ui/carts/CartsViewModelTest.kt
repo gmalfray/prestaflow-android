@@ -97,12 +97,13 @@ class CartsViewModelTest {
     @Test
     fun `paniers a 0 euro sont exclus de allCarts`() =
         runTest {
-            fakeCartsRepo.cartsResult = listOf(
-                makeCart(1, total = 0.0),
-                makeCart(2, total = 25.0),
-                makeCart(3, total = -1.0),
-                makeCart(4, total = 99.99),
-            )
+            fakeCartsRepo.cartsResult =
+                listOf(
+                    makeCart(1, total = 0.0),
+                    makeCart(2, total = 25.0),
+                    makeCart(3, total = -1.0),
+                    makeCart(4, total = 99.99),
+                )
 
             val vm = buildViewModel()
             advanceUntilIdle()
@@ -134,11 +135,12 @@ class CartsViewModelTest {
     @Test
     fun `recherche filtre par nom client insensible a la casse`() =
         runTest {
-            fakeCartsRepo.cartsResult = listOf(
-                makeCart(1, customerName = "Alice Dupont"),
-                makeCart(2, customerName = "Bob Martin"),
-                makeCart(3, customerName = "ALICE Smith"),
-            )
+            fakeCartsRepo.cartsResult =
+                listOf(
+                    makeCart(1, customerName = "Alice Dupont"),
+                    makeCart(2, customerName = "Bob Martin"),
+                    makeCart(3, customerName = "ALICE Smith"),
+                )
 
             val vm = buildViewModel()
             advanceUntilIdle()

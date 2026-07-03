@@ -37,7 +37,17 @@ class ProductDetailViewModel
         private fun observeProduct() {
             viewModelScope.launch {
                 productsRepository.observeProduct(productId).collect { product ->
-                    _uiState.update { it.copy(product = product, isLoading = false) }
+                    _uiState.update {
+                        it.copy(
+                            product = product,
+                            // Ne quitte l'état de chargement que si le produit est arrivé, OU si le
+                            // refresh réseau initial a déjà tranché (cf. refreshProduct().onFailure).
+                            // Sinon, la 1ère émission Room (cache vide — produit jamais ouvert dans
+                            // cette session) ferait flasher "introuvable" avant la vraie réponse
+                            // réseau, alors que le produit existe bel et bien.
+                            isLoading = it.isLoading && product == null,
+                        )
+                    }
                 }
             }
         }
@@ -47,7 +57,12 @@ class ProductDetailViewModel
                 runCatching { productsRepository.refreshProduct(productId, forceRemote = true) }
                     .onFailure { error ->
                         Timber.w(error, "Failed to refresh product $productId")
-                        _uiState.update { it.copy(error = networkErrorMapper.map(error)) }
+                        _uiState.update {
+                            // Le refresh a tranché (échec) : si aucune donnée cache n'est arrivée
+                            // entretemps, on sort de l'état de chargement pour révéler "introuvable"
+                            // plutôt qu'un spinner infini.
+                            it.copy(error = networkErrorMapper.map(error), isLoading = false)
+                        }
                     }
             }
         }

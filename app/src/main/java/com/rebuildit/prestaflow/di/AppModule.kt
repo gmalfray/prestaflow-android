@@ -242,7 +242,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideThermalPrinterPreferencesRepository(impl: ThermalPrinterPreferencesRepositoryImpl): ThermalPrinterPreferencesRepository = impl
+    fun provideThermalPrinterPreferencesRepository(impl: ThermalPrinterPreferencesRepositoryImpl): ThermalPrinterPreferencesRepository =
+        impl
 
     @Provides
     @Singleton

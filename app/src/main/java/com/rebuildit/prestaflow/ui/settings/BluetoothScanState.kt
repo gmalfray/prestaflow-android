@@ -65,7 +65,10 @@ fun rememberBluetoothDeviceScan(context: Context): BluetoothScanState {
     val receiver =
         remember {
             object : BroadcastReceiver() {
-                override fun onReceive(ctx: Context, intent: Intent) {
+                override fun onReceive(
+                    ctx: Context,
+                    intent: Intent,
+                ) {
                     when (intent.action) {
                         BluetoothDevice.ACTION_FOUND -> {
                             val device =

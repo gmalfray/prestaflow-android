@@ -28,8 +28,12 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
-/** Durée (ms) de la fenêtre « Annuler » avant envoi effectif du changement de statut après un swipe. */
-private const val SWIPE_UNDO_DELAY_MS = 10_000L
+/**
+ * Durée (ms) de la fenêtre « Annuler » avant envoi effectif du changement de statut après un swipe.
+ * Non-private : réutilisée par [OrdersScreen][com.rebuildit.prestaflow.ui.orders.OrdersScreen]
+ * (côté UI) pour faire tourner le décompte visible en secondes, en cohérence avec ce délai réel.
+ */
+internal const val SWIPE_UNDO_DELAY_MS = 10_000L
 
 /**
  * Configuration du swipe telle qu'exposée dans l'UiState.
@@ -53,12 +57,13 @@ private const val PAGE_SIZE = OrdersRepository.DEFAULT_PAGE_SIZE
  * Chaque entrée est comparée après normalisation (minuscules, sans accents, sans espaces superflus)
  * au nom des statuts disponibles (correspondance par sous-chaîne).
  */
-private val DEFAULT_STATUS_MATCHERS = listOf(
-    "paiement accepte",
-    "preparation",
-    "expedi",
-    "termin",
-)
+private val DEFAULT_STATUS_MATCHERS =
+    listOf(
+        "paiement accepte",
+        "preparation",
+        "expedi",
+        "termin",
+    )
 
 /**
  * Noms de statuts à afficher par défaut dans la barre de chips (quand aucune préférence n'est
@@ -93,9 +98,10 @@ internal fun resolveDefaultStatusIds(availableStatuses: List<OrderStatusFilter>)
  * - Retourne au plus [MAX_VISIBLE_STATUS_CHIPS] entrées.
  */
 internal fun resolveDefaultVisibleChips(availableStatuses: List<OrderStatusFilter>): List<OrderStatusFilter> {
-    val matched = DEFAULT_VISIBLE_CHIP_MATCHERS.mapNotNull { matcher ->
-        availableStatuses.firstOrNull { it.name.normalizeForMatch().contains(matcher) }
-    }.distinctBy { it.id }
+    val matched =
+        DEFAULT_VISIBLE_CHIP_MATCHERS.mapNotNull { matcher ->
+            availableStatuses.firstOrNull { it.name.normalizeForMatch().contains(matcher) }
+        }.distinctBy { it.id }
     return if (matched.isEmpty()) availableStatuses.take(MAX_VISIBLE_STATUS_CHIPS) else matched
 }
 
@@ -132,12 +138,14 @@ class OrdersViewModel
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
     ) : ViewModel() {
-        private val _uiState = MutableStateFlow(
-            OrdersUiState(
-                activePeriod = savedStateHandle.get<String?>("period")
-                    ?.let { periodValue -> DashboardPeriod.entries.find { it.queryValue == periodValue } },
-            ),
-        )
+        private val _uiState =
+            MutableStateFlow(
+                OrdersUiState(
+                    activePeriod =
+                        savedStateHandle.get<String?>("period")
+                            ?.let { periodValue -> DashboardPeriod.entries.find { it.queryValue == periodValue } },
+                ),
+            )
         val uiState: StateFlow<OrdersUiState> = _uiState.asStateFlow()
 
         /** Job en cours pour le swipe avec délai d'annulation. */
@@ -157,11 +165,12 @@ class OrdersViewModel
          */
         private fun initializeData() {
             viewModelScope.launch {
-                val statuses = runCatching { ordersRepository.getOrderStatuses() }
-                    .getOrElse { error ->
-                        Timber.w(error, "Impossible de charger les statuts de commande")
-                        emptyList()
-                    }
+                val statuses =
+                    runCatching { ordersRepository.getOrderStatuses() }
+                        .getOrElse { error ->
+                            Timber.w(error, "Impossible de charger les statuts de commande")
+                            emptyList()
+                        }
 
                 val defaultIds = if (statuses.isNotEmpty()) resolveDefaultStatusIds(statuses) else emptySet()
                 _uiState.update { it.copy(availableStatuses = statuses, selectedStatusIds = defaultIds) }
@@ -232,24 +241,27 @@ class OrdersViewModel
             _uiState.update { it.copy(isLoadingMore = true) }
             viewModelScope.launch {
                 val (dateFrom, dateTo) = current.activePeriod?.toDateRange() ?: Pair(null, null)
-                val hasMore = runCatching {
-                    ordersRepository.refresh(
-                        forceRemote = true,
-                        statusIds = current.selectedStatusIds,
-                        sort = current.selectedSort.queryValue,
-                        dateFrom = dateFrom,
-                        dateTo = dateTo,
-                        offset = nextOffset,
-                        limit = PAGE_SIZE,
-                    )
-                }.getOrElse { error ->
-                    Timber.w(error, "Échec loadMore commandes offset=$nextOffset")
-                    _uiState.update { it.copy(
-                        isLoadingMore = false,
-                        error = networkErrorMapper.map(error),
-                    )}
-                    return@launch
-                }
+                val hasMore =
+                    runCatching {
+                        ordersRepository.refresh(
+                            forceRemote = true,
+                            statusIds = current.selectedStatusIds,
+                            sort = current.selectedSort.queryValue,
+                            dateFrom = dateFrom,
+                            dateTo = dateTo,
+                            offset = nextOffset,
+                            limit = PAGE_SIZE,
+                        )
+                    }.getOrElse { error ->
+                        Timber.w(error, "Échec loadMore commandes offset=$nextOffset")
+                        _uiState.update {
+                            it.copy(
+                                isLoadingMore = false,
+                                error = networkErrorMapper.map(error),
+                            )
+                        }
+                        return@launch
+                    }
                 _uiState.update { it.copy(isLoadingMore = false, hasMore = hasMore) }
             }
         }
@@ -301,48 +313,51 @@ class OrdersViewModel
             if (!config.enabled) return
 
             val statuses = _uiState.value.availableStatuses
-            val targetStatus = resolveTargetStatus(config, statuses, direction) ?: run {
-                Timber.d("Swipe ignoré : aucun statut cible trouvé pour direction=$direction")
-                return
-            }
+            val targetStatus =
+                resolveTargetStatus(config, statuses, direction) ?: run {
+                    Timber.d("Swipe ignoré : aucun statut cible trouvé pour direction=$direction")
+                    return
+                }
 
             // Annule l'action précédente (sans appel API)
             pendingSwipeJob?.cancel()
 
             _uiState.update {
                 it.copy(
-                    pendingSwipeAction = PendingSwipeAction(
-                        orderId = orderId,
-                        orderReference = orderReference,
-                        targetStatusId = targetStatus.id,
-                        targetStatusName = targetStatus.name,
-                    ),
+                    pendingSwipeAction =
+                        PendingSwipeAction(
+                            orderId = orderId,
+                            orderReference = orderReference,
+                            targetStatusId = targetStatus.id,
+                            targetStatusName = targetStatus.name,
+                        ),
                 )
             }
 
-            pendingSwipeJob = viewModelScope.launch {
-                delay(SWIPE_UNDO_DELAY_MS)
-                // Fenêtre d'annulation écoulée → le changement devient effectif. On ferme la snackbar
-                // « Annuler » AVANT l'appel réseau : passé ce point, plus aucun clic « Annuler »
-                // trompeur (l'ancien code la laissait affichée pendant tout l'appel réseau, où
-                // cliquer « Annuler » ne changeait plus rien — cause du « ça n'a pas annulé »).
-                _uiState.update { it.copy(pendingSwipeAction = null) }
-                runCatching {
-                    ordersRepository.updateOrderStatus(orderId, targetStatus.id.toString())
-                }.onFailure { error ->
-                    Timber.w(error, "Swipe status update failed orderId=$orderId")
-                    // La fenêtre d'annulation est passée : l'utilisateur croit la commande
-                    // traitée. Un simple log serait silencieux — on DOIT le prévenir (canal
-                    // snackbar existant, déjà utilisé par bulkUpdateStatus) qu'aucun changement
-                    // n'est parti côté serveur pour cette commande.
-                    _uiState.update {
-                        it.copy(
-                            bulkSnackbar = "Échec de la mise à jour de $orderReference : la commande n'a pas été modifiée",
-                        )
+            pendingSwipeJob =
+                viewModelScope.launch {
+                    delay(SWIPE_UNDO_DELAY_MS)
+                    // Fenêtre d'annulation écoulée → le changement devient effectif. On ferme la snackbar
+                    // « Annuler » AVANT l'appel réseau : passé ce point, plus aucun clic « Annuler »
+                    // trompeur (l'ancien code la laissait affichée pendant tout l'appel réseau, où
+                    // cliquer « Annuler » ne changeait plus rien — cause du « ça n'a pas annulé »).
+                    _uiState.update { it.copy(pendingSwipeAction = null) }
+                    runCatching {
+                        ordersRepository.updateOrderStatus(orderId, targetStatus.id.toString())
+                    }.onFailure { error ->
+                        Timber.w(error, "Swipe status update failed orderId=$orderId")
+                        // La fenêtre d'annulation est passée : l'utilisateur croit la commande
+                        // traitée. Un simple log serait silencieux — on DOIT le prévenir (canal
+                        // snackbar existant, déjà utilisé par bulkUpdateStatus) qu'aucun changement
+                        // n'est parti côté serveur pour cette commande.
+                        _uiState.update {
+                            it.copy(
+                                bulkSnackbar = "Échec de la mise à jour de $orderReference : la commande n'a pas été modifiée",
+                            )
+                        }
                     }
+                    refresh(forceRemote = true, notifyOnError = false)
                 }
-                refresh(forceRemote = true, notifyOnError = false)
-            }
         }
 
         /**
@@ -369,8 +384,10 @@ class OrdersViewModel
                 val configuredId = config.rightTargetStatusId
                 if (configuredId != null) {
                     statuses.firstOrNull { it.id == configuredId }
-                        ?: (statuses.firstOrNull { it.name.normalizeForMatch().contains("termin") }
-                            ?: statuses.firstOrNull { it.name.normalizeForMatch().contains("livr") })
+                        ?: (
+                            statuses.firstOrNull { it.name.normalizeForMatch().contains("termin") }
+                                ?: statuses.firstOrNull { it.name.normalizeForMatch().contains("livr") }
+                        )
                 } else {
                     statuses.firstOrNull { it.name.normalizeForMatch().contains("termin") }
                         ?: statuses.firstOrNull { it.name.normalizeForMatch().contains("livr") }
@@ -590,7 +607,13 @@ class OrdersViewModel
                     _uiState.update { current ->
                         current.copy(
                             orders = orders,
-                            isLoading = false,
+                            // Ne quitte l'état de chargement que si des commandes sont arrivées, OU
+                            // si le refresh réseau initial a déjà tranché (current.isLoading déjà à
+                            // false via refresh()). Sinon, la 1ère émission Room (cache vide au 1er
+                            // lancement ou après changement de boutique) ferait flasher l'état
+                            // "vide" avant que la réponse réseau n'arrive — cause du flash de page
+                            // blanche/vide signalé en navigation.
+                            isLoading = current.isLoading && orders.isEmpty(),
                             isRefreshing = false,
                             error = if (orders.isNotEmpty()) null else current.error,
                         )

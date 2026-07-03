@@ -127,8 +127,11 @@ class OrdersPreferencesRepositoryImpl
         override suspend fun setSwipeSourceStatusId(id: Int?) {
             withContext(ioDispatcher) {
                 dataStore.edit { prefs ->
-                    if (id != null) prefs[KEY_SWIPE_SOURCE_STATUS_ID] = id
-                    else prefs.remove(KEY_SWIPE_SOURCE_STATUS_ID)
+                    if (id != null) {
+                        prefs[KEY_SWIPE_SOURCE_STATUS_ID] = id
+                    } else {
+                        prefs.remove(KEY_SWIPE_SOURCE_STATUS_ID)
+                    }
                 }
             }
         }
@@ -136,8 +139,11 @@ class OrdersPreferencesRepositoryImpl
         override suspend fun setSwipeLeftTargetStatusId(id: Int?) {
             withContext(ioDispatcher) {
                 dataStore.edit { prefs ->
-                    if (id != null) prefs[KEY_SWIPE_LEFT_TARGET_STATUS_ID] = id
-                    else prefs.remove(KEY_SWIPE_LEFT_TARGET_STATUS_ID)
+                    if (id != null) {
+                        prefs[KEY_SWIPE_LEFT_TARGET_STATUS_ID] = id
+                    } else {
+                        prefs.remove(KEY_SWIPE_LEFT_TARGET_STATUS_ID)
+                    }
                 }
             }
         }
@@ -145,8 +151,11 @@ class OrdersPreferencesRepositoryImpl
         override suspend fun setSwipeRightTargetStatusId(id: Int?) {
             withContext(ioDispatcher) {
                 dataStore.edit { prefs ->
-                    if (id != null) prefs[KEY_SWIPE_RIGHT_TARGET_STATUS_ID] = id
-                    else prefs.remove(KEY_SWIPE_RIGHT_TARGET_STATUS_ID)
+                    if (id != null) {
+                        prefs[KEY_SWIPE_RIGHT_TARGET_STATUS_ID] = id
+                    } else {
+                        prefs.remove(KEY_SWIPE_RIGHT_TARGET_STATUS_ID)
+                    }
                 }
             }
         }

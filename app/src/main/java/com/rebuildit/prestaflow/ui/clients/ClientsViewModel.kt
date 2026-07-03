@@ -264,7 +264,11 @@ class ClientsViewModel
                         _uiState.update { current ->
                             current.copy(
                                 clients = clients,
-                                isLoading = false,
+                                // Ne quitte l'état de chargement que si des clients sont arrivés, OU
+                                // si le refresh réseau initial a déjà tranché. Sinon, la 1ère
+                                // émission Room (cache vide) ferait flasher l'état "vide" avant la
+                                // vraie réponse réseau.
+                                isLoading = current.isLoading && clients.isEmpty(),
                                 isRefreshing = false,
                                 error = if (clients.isNotEmpty()) null else current.error,
                             )

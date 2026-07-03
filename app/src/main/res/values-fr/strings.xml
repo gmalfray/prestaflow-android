@@ -351,6 +351,8 @@
     <!-- Swipe statut commande -->
     <string name="orders_swipe_pending">Commande %1$s → %2$s</string>
     <string name="orders_swipe_undo">Annuler</string>
+    <!-- Bouton d'annulation avec décompte des secondes restantes avant envoi effectif (ex. "Annuler (8 s)"). -->
+    <string name="orders_swipe_undo_countdown">Annuler (%1$d s)</string>
     <string name="orders_swipe_left_label">En préparation</string>
     <string name="orders_swipe_right_label">Terminé</string>
 

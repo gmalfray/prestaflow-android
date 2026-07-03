@@ -10,7 +10,6 @@ import org.junit.Test
  * fallback premier-mot avec et sans troncature, et entrées limites (vide, un seul mot long).
  */
 class StatusChipUtilsTest {
-
     // ─── Mapping standard PrestaShop FR ─────────────────────────────────────
 
     @Test

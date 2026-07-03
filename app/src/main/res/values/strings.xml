@@ -352,6 +352,8 @@
     <!-- Swipe statut commande -->
     <string name="orders_swipe_pending">Order %1$s → %2$s</string>
     <string name="orders_swipe_undo">Cancel</string>
+    <!-- Cancel button with a live seconds countdown before the change is actually sent (e.g. "Cancel (8s)"). -->
+    <string name="orders_swipe_undo_countdown">Cancel (%1$ds)</string>
     <string name="orders_swipe_left_label">In preparation</string>
     <string name="orders_swipe_right_label">Done</string>
 

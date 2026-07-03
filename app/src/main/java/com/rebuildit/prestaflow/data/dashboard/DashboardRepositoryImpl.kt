@@ -36,7 +36,10 @@ class DashboardRepositoryImpl
         override fun observeDashboard(period: DashboardPeriod): Flow<DashboardSnapshot?> =
             dashboardDao.observeByPeriod(period.name).map { entity -> entity?.toDomain(period) }
 
-        override fun observeCustomDashboard(from: String, to: String): Flow<DashboardSnapshot?> =
+        override fun observeCustomDashboard(
+            from: String,
+            to: String,
+        ): Flow<DashboardSnapshot?> =
             dashboardDao.observeByPeriod(customCacheKey(from, to)).map { entity ->
                 entity?.toDomainCustom()
             }
@@ -153,5 +156,8 @@ class DashboardRepositoryImpl
 
         // ── Helpers ───────────────────────────────────────────────────────────────
 
-        private fun customCacheKey(from: String, to: String) = "custom:$from:$to"
+        private fun customCacheKey(
+            from: String,
+            to: String,
+        ) = "custom:$from:$to"
     }

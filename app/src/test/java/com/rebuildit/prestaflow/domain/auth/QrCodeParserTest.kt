@@ -16,7 +16,6 @@ import java.util.Base64
  * Et les cas d'erreur : contenu vide, JSON invalide, champs manquants, base64 corrompu.
  */
 class QrCodeParserTest {
-
     // ─── Format JSON brut ─────────────────────────────────────────────────────
 
     @Test

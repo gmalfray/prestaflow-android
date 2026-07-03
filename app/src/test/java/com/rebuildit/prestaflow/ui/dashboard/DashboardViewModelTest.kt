@@ -43,12 +43,13 @@ class DashboardViewModelTest {
         fakeRepo = FakeDashboardRepository()
         fakeAuth = FakeAuthRepository()
         fakePrefs = FakeDashboardPreferencesRepository(initialPeriod = DashboardPeriod.WEEK)
-        viewModel = DashboardViewModel(
-            dashboardRepository = fakeRepo,
-            dashboardPrefsRepository = fakePrefs,
-            networkErrorMapper = NetworkErrorMapper(),
-            authRepository = fakeAuth,
-        )
+        viewModel =
+            DashboardViewModel(
+                dashboardRepository = fakeRepo,
+                dashboardPrefsRepository = fakePrefs,
+                networkErrorMapper = NetworkErrorMapper(),
+                authRepository = fakeAuth,
+            )
     }
 
     @After
@@ -57,99 +58,107 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `état initial — selectedPeriod WEEK, customRange null`() = runTest {
-        advanceUntilIdle()
-        val state = viewModel.uiState.value
-        assertEquals(DashboardPeriod.WEEK, state.selectedPeriod)
-        assertNull(state.customRange)
-    }
-
-    @Test
-    fun `onCustomRangeSelected — customRange reflété dans UiState`() = runTest {
-        viewModel.onCustomRangeSelected("2026-05-01", "2026-05-31")
-        advanceUntilIdle()
-
-        val state = viewModel.uiState.value
-        assertEquals(Pair("2026-05-01", "2026-05-31"), state.customRange)
-    }
-
-    @Test
-    fun `onCustomRangeSelected — refreshCustom appelé avec les bons paramètres`() = runTest {
-        viewModel.onCustomRangeSelected("2026-05-01", "2026-05-31")
-        advanceUntilIdle()
-
-        assertEquals(
-            Pair("2026-05-01", "2026-05-31"),
-            fakeRepo.lastRefreshCustomCall,
-        )
-    }
-
-    @Test
-    fun `onPeriodSelected après customRange — customRange remis à null`() = runTest {
-        viewModel.onCustomRangeSelected("2026-05-01", "2026-05-31")
-        advanceUntilIdle()
-
-        viewModel.onPeriodSelected(DashboardPeriod.MONTH)
-        advanceUntilIdle()
-
-        val state = viewModel.uiState.value
-        assertEquals(DashboardPeriod.MONTH, state.selectedPeriod)
-        assertNull(state.customRange)
-    }
-
-    @Test
-    fun `snapshot custom reçu — reflété dans UiState`() = runTest {
-        viewModel.onCustomRangeSelected("2026-05-01", "2026-05-31")
-        advanceUntilIdle()
-
-        val expected = FakeDashboardRepository.fakeSnapshot()
-        fakeRepo.emitCustomSnapshot("2026-05-01", "2026-05-31", expected)
-        advanceUntilIdle()
-
-        viewModel.uiState.test {
-            val state = awaitItem()
-            assertEquals(expected.turnover, state.snapshot?.turnover)
-            cancelAndIgnoreRemainingEvents()
+    fun `état initial — selectedPeriod WEEK, customRange null`() =
+        runTest {
+            advanceUntilIdle()
+            val state = viewModel.uiState.value
+            assertEquals(DashboardPeriod.WEEK, state.selectedPeriod)
+            assertNull(state.customRange)
         }
-    }
 
     @Test
-    fun `onRefresh en mode custom — appelle refreshCustom`() = runTest {
-        viewModel.onCustomRangeSelected("2026-01-01", "2026-01-31")
-        advanceUntilIdle()
-        fakeRepo.lastRefreshCustomCall = null // reset après l'appel initial
+    fun `onCustomRangeSelected — customRange reflété dans UiState`() =
+        runTest {
+            viewModel.onCustomRangeSelected("2026-05-01", "2026-05-31")
+            advanceUntilIdle()
 
-        viewModel.onRefresh()
-        advanceUntilIdle()
-
-        assertNotNull(fakeRepo.lastRefreshCustomCall)
-        assertEquals(Pair("2026-01-01", "2026-01-31"), fakeRepo.lastRefreshCustomCall)
-    }
+            val state = viewModel.uiState.value
+            assertEquals(Pair("2026-05-01", "2026-05-31"), state.customRange)
+        }
 
     @Test
-    fun `onRefresh en mode preset — appelle refresh preset`() = runTest {
-        advanceUntilIdle()
-        fakeRepo.lastRefreshCall = null // reset après l'appel initial dans init
+    fun `onCustomRangeSelected — refreshCustom appelé avec les bons paramètres`() =
+        runTest {
+            viewModel.onCustomRangeSelected("2026-05-01", "2026-05-31")
+            advanceUntilIdle()
 
-        viewModel.onRefresh()
-        advanceUntilIdle()
-
-        assertNotNull(fakeRepo.lastRefreshCall)
-        assertEquals(DashboardPeriod.WEEK, fakeRepo.lastRefreshCall?.first)
-    }
+            assertEquals(
+                Pair("2026-05-01", "2026-05-31"),
+                fakeRepo.lastRefreshCustomCall,
+            )
+        }
 
     @Test
-    fun `newCustomers présent dans les points du snapshot`() = runTest {
-        viewModel.onCustomRangeSelected("2026-05-01", "2026-05-31")
-        advanceUntilIdle()
+    fun `onPeriodSelected après customRange — customRange remis à null`() =
+        runTest {
+            viewModel.onCustomRangeSelected("2026-05-01", "2026-05-31")
+            advanceUntilIdle()
 
-        val snapshot = FakeDashboardRepository.fakeSnapshot()
-        fakeRepo.emitCustomSnapshot("2026-05-01", "2026-05-31", snapshot)
-        advanceUntilIdle()
+            viewModel.onPeriodSelected(DashboardPeriod.MONTH)
+            advanceUntilIdle()
 
-        val state = viewModel.uiState.value
-        val point = state.snapshot?.chart?.firstOrNull()
-        assertNotNull(point)
-        assertEquals(1, point?.newCustomers)
-    }
+            val state = viewModel.uiState.value
+            assertEquals(DashboardPeriod.MONTH, state.selectedPeriod)
+            assertNull(state.customRange)
+        }
+
+    @Test
+    fun `snapshot custom reçu — reflété dans UiState`() =
+        runTest {
+            viewModel.onCustomRangeSelected("2026-05-01", "2026-05-31")
+            advanceUntilIdle()
+
+            val expected = FakeDashboardRepository.fakeSnapshot()
+            fakeRepo.emitCustomSnapshot("2026-05-01", "2026-05-31", expected)
+            advanceUntilIdle()
+
+            viewModel.uiState.test {
+                val state = awaitItem()
+                assertEquals(expected.turnover, state.snapshot?.turnover)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `onRefresh en mode custom — appelle refreshCustom`() =
+        runTest {
+            viewModel.onCustomRangeSelected("2026-01-01", "2026-01-31")
+            advanceUntilIdle()
+            fakeRepo.lastRefreshCustomCall = null // reset après l'appel initial
+
+            viewModel.onRefresh()
+            advanceUntilIdle()
+
+            assertNotNull(fakeRepo.lastRefreshCustomCall)
+            assertEquals(Pair("2026-01-01", "2026-01-31"), fakeRepo.lastRefreshCustomCall)
+        }
+
+    @Test
+    fun `onRefresh en mode preset — appelle refresh preset`() =
+        runTest {
+            advanceUntilIdle()
+            fakeRepo.lastRefreshCall = null // reset après l'appel initial dans init
+
+            viewModel.onRefresh()
+            advanceUntilIdle()
+
+            assertNotNull(fakeRepo.lastRefreshCall)
+            assertEquals(DashboardPeriod.WEEK, fakeRepo.lastRefreshCall?.first)
+        }
+
+    @Test
+    fun `newCustomers présent dans les points du snapshot`() =
+        runTest {
+            viewModel.onCustomRangeSelected("2026-05-01", "2026-05-31")
+            advanceUntilIdle()
+
+            val snapshot = FakeDashboardRepository.fakeSnapshot()
+            fakeRepo.emitCustomSnapshot("2026-05-01", "2026-05-31", snapshot)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            val point = state.snapshot?.chart?.firstOrNull()
+            assertNotNull(point)
+            assertEquals(1, point?.newCustomers)
+        }
 }

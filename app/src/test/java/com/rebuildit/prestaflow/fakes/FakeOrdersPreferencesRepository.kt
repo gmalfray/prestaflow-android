@@ -65,8 +65,19 @@ class FakeOrdersPreferencesRepository : OrdersPreferencesRepository {
 
     // ── Helpers de test ───────────────────────────────────────────────────────
 
-    fun emitSwipeEnabled(enabled: Boolean) { _swipeEnabled.value = enabled }
-    fun emitSwipeSourceStatusId(id: Int?) { _swipeSourceStatusId.value = id }
-    fun emitSwipeLeftTargetStatusId(id: Int?) { _swipeLeftTargetStatusId.value = id }
-    fun emitSwipeRightTargetStatusId(id: Int?) { _swipeRightTargetStatusId.value = id }
+    fun emitSwipeEnabled(enabled: Boolean) {
+        _swipeEnabled.value = enabled
+    }
+
+    fun emitSwipeSourceStatusId(id: Int?) {
+        _swipeSourceStatusId.value = id
+    }
+
+    fun emitSwipeLeftTargetStatusId(id: Int?) {
+        _swipeLeftTargetStatusId.value = id
+    }
+
+    fun emitSwipeRightTargetStatusId(id: Int?) {
+        _swipeRightTargetStatusId.value = id
+    }
 }
