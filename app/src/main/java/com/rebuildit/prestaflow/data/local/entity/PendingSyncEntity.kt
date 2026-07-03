@@ -16,4 +16,8 @@ data class PendingSyncEntity(
     @ColumnInfo(name = "attempt_count") val attemptCount: Int = 0,
     @ColumnInfo(name = "last_attempt_iso") val lastAttemptIso: String? = null,
     @ColumnInfo(name = "created_at_iso") val createdAtIso: String,
+    // Boutique cible de la tâche, figée au moment de l'enfilement (cf. Migration 14->15).
+    // Permet à SyncWorker de rejouer la tâche contre CETTE boutique, pas la boutique active
+    // au moment de l'exécution (qui peut avoir changé entre-temps).
+    @ColumnInfo(name = "shop_url", defaultValue = "''") val shopUrl: String = "",
 )

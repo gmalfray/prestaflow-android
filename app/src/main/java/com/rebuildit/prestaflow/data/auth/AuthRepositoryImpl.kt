@@ -4,7 +4,7 @@ import com.rebuildit.prestaflow.core.network.ApiEndpointManager
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.security.ShopConnectionStore
 import com.rebuildit.prestaflow.core.security.TokenManager
-import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
+import com.rebuildit.prestaflow.data.local.db.LocalCacheStore
 import com.rebuildit.prestaflow.data.remote.dto.AuthRequestDto
 import com.rebuildit.prestaflow.domain.auth.AuthFailure
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
@@ -30,13 +30,14 @@ import javax.inject.Singleton
 class AuthRepositoryImpl
     @Inject
     constructor(
-        private val api: PrestaFlowApi,
+        private val loginApiClient: LoginApiClientContract,
         private val shopUrlValidator: ShopUrlValidator,
         private val endpointManager: ApiEndpointManager,
         private val tokenManager: TokenManager,
         private val connectionStore: ShopConnectionStore,
         private val networkErrorMapper: NetworkErrorMapper,
         private val ioDispatcher: CoroutineDispatcher,
+        private val localCacheStore: LocalCacheStore,
     ) : AuthRepository {
         private val _authState = MutableStateFlow<AuthState>(AuthState.Unauthenticated)
         override val authState: StateFlow<AuthState> = _authState
@@ -111,6 +112,11 @@ class AuthRepositoryImpl
         override suspend fun switchActiveConnection(id: String) {
             withContext(ioDispatcher) {
                 val connection = connectionStore.read().firstOrNull { it.id == id } ?: return@withContext
+                // Aucune entité Room n'est cloisonnée par boutique : purge D'ABORD (sinon l'UI
+                // afficherait un instant les données de l'ancienne boutique sous l'identité de
+                // la nouvelle), PUIS active la nouvelle boutique — le flux normal se charge de
+                // rafraîchir ses données.
+                localCacheStore.clearAll()
                 activate(connection)
             }
         }
@@ -120,6 +126,7 @@ class AuthRepositoryImpl
                 val wasActive = connectionStore.getActiveId() == id
                 val remaining = connectionStore.read().filterNot { it.id == id }
                 connectionStore.write(remaining)
+                localCacheStore.clearAll()
                 if (wasActive) {
                     activate(remaining.firstOrNull())
                 } else {
@@ -133,6 +140,9 @@ class AuthRepositoryImpl
                 connectionStore.clear()
                 tokenManager.update(null)
                 endpointManager.clearOverride()
+                // Évite que des PII (noms, emails, historiques clients) restent en clair dans
+                // prestaflow.db après déconnexion.
+                localCacheStore.clearAll()
             }
             _connections.value = emptyList()
             _authState.value = AuthState.Unauthenticated
@@ -193,13 +203,17 @@ class AuthRepositoryImpl
                         AuthFailure.InvalidShopUrl(ShopUrlValidator.Result.Invalid.Malformed),
                     )
 
-            // Route l'appel de login vers cette boutique (sans persister tant que ça n'a pas réussi).
-            endpointManager.setActiveBaseUrl(apiBaseUrl, normalizedUrl, persist = false)
-
+            // Le login s'exécute via un client HTTP DÉDIÉ (LoginApiClient), jamais via le
+            // client OkHttp partagé : celui-ci porte DynamicBaseUrlInterceptor/AuthInterceptor
+            // qui routeraient TOUTE requête (y compris une requête concurrente en cours pendant
+            // cette fenêtre de login) vers la boutique ACTIVE avec son Bearer. Le routage global
+            // (endpointManager.setActiveBaseUrl) n'est basculé qu'APRÈS un login réussi, dans
+            // activate() — jamais avant, pour ne jamais faire fuiter le JWT de la boutique déjà
+            // active vers cet hôte candidat non encore authentifié.
             val response =
                 runCatching {
                     withContext(ioDispatcher) {
-                        api.login(AuthRequestDto(apiKey = apiKey.trim(), shopUrl = normalizedUrl))
+                        loginApiClient.login(apiBaseUrl, AuthRequestDto(apiKey = apiKey.trim(), shopUrl = normalizedUrl))
                     }
                 }
 

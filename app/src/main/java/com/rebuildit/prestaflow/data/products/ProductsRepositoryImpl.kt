@@ -1,6 +1,7 @@
 package com.rebuildit.prestaflow.data.products
 
 import androidx.room.withTransaction
+import com.rebuildit.prestaflow.core.network.ApiEndpointManager
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.data.local.dao.ProductDao
 import com.rebuildit.prestaflow.data.local.dao.StockAvailabilityDao
@@ -46,6 +47,7 @@ class ProductsRepositoryImpl
         private val networkErrorMapper: NetworkErrorMapper,
         private val ioDispatcher: CoroutineDispatcher,
         private val json: Json,
+        private val endpointManager: ApiEndpointManager,
     ) : ProductsRepository {
         private companion object {
             private const val FETCH_LIMIT = 200
@@ -282,6 +284,9 @@ class ProductsRepositoryImpl
                             endpoint = endpoint,
                             method = "PATCH",
                             payloadJson = payloadJson,
+                            // Boutique active au moment de l'échec, figée sur la tâche (cf. FIX
+                            // "file offline rejouée contre la mauvaise boutique").
+                            shopUrl = endpointManager.getStoredShopUrl().orEmpty(),
                             resourceType = "product",
                             resourceId = productId,
                             conflictStrategy = ConflictStrategy.MERGE,

@@ -12,12 +12,15 @@ import com.rebuildit.prestaflow.domain.auth.AuthState
 import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
 import com.rebuildit.prestaflow.domain.auth.model.AuthToken
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
+import com.rebuildit.prestaflow.fakes.FakeLocalCacheStore
+import com.rebuildit.prestaflow.fakes.FakeLoginApiClient
 import com.rebuildit.prestaflow.fakes.FakeSharedPreferences
 import com.rebuildit.prestaflow.fakes.FakeTokenStorage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import okhttp3.HttpUrl
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -34,7 +37,10 @@ import java.io.IOException
  *
  * Stratégie : les classes concrètes (TokenManager, ApiEndpointManager, ShopConnectionStore)
  * sont instanciées avec des fakes en mémoire ([FakeSharedPreferences], [FakeTokenStorage]).
- * L'API réseau est simulée via une lambda configurable.
+ * Le login réseau est simulé via [FakeLoginApiClient] (lambda [loginResult] configurable),
+ * qui reproduit le contrat de [LoginApiClientContract] : reçoit l'URL de la boutique CANDIDATE
+ * (pas l'URL active), ce qui permet de vérifier que le routage global n'est jamais muté avant
+ * un login réussi (cf. FIX JWT).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthRepositoryImplTest {
@@ -46,9 +52,11 @@ class AuthRepositoryImplTest {
     private lateinit var connectionStore: ShopConnectionStore
     private lateinit var tokenManager: TokenManager
     private lateinit var endpointManager: ApiEndpointManager
+    private lateinit var fakeLoginApiClient: FakeLoginApiClient
+    private lateinit var fakeLocalCacheStore: FakeLocalCacheStore
 
-    /** Comportement configurable du login réseau. */
-    private var loginResult: (AuthRequestDto) -> AuthResponseDto = { _ ->
+    /** Comportement configurable du login réseau. Reçoit l'URL de base de la boutique CANDIDATE. */
+    private var loginResult: (HttpUrl, AuthRequestDto) -> AuthResponseDto = { _, _ ->
         AuthResponseDto(
             token = "jwt-valide",
             expiresIn = 3600L,
@@ -72,15 +80,17 @@ class AuthRepositoryImplTest {
     }
 
     private fun buildRepository(): AuthRepositoryImpl {
-        val fakeApi = CapturingFakeApi { req -> loginResult(req) }
+        fakeLoginApiClient = FakeLoginApiClient { apiBaseUrl, request -> loginResult(apiBaseUrl, request) }
+        fakeLocalCacheStore = FakeLocalCacheStore()
         return AuthRepositoryImpl(
-            api = fakeApi,
+            loginApiClient = fakeLoginApiClient,
             shopUrlValidator = ShopUrlValidator(),
             endpointManager = endpointManager,
             tokenManager = tokenManager,
             connectionStore = connectionStore,
             networkErrorMapper = NetworkErrorMapper(),
             ioDispatcher = testDispatcher,
+            localCacheStore = fakeLocalCacheStore,
         )
     }
 
@@ -187,7 +197,7 @@ class AuthRepositoryImplTest {
             repository.addConnection("https://shop.test", "cle-v1", "Boutique")
             advanceUntilIdle()
 
-            loginResult = { _ -> AuthResponseDto(token = "nouveau-jwt", expiresIn = 3600L, scopes = listOf("orders")) }
+            loginResult = { _, _ -> AuthResponseDto(token = "nouveau-jwt", expiresIn = 3600L, scopes = listOf("orders")) }
             repository.addConnection("https://shop.test", "cle-v2", "Boutique")
             advanceUntilIdle()
 
@@ -235,7 +245,7 @@ class AuthRepositoryImplTest {
     @Test
     fun `addConnection avec erreur IOException retourne Failure HostUnreachable`() =
         runTest(testDispatcher) {
-            loginResult = { _ -> throw IOException("Timeout") }
+            loginResult = { _, _ -> throw IOException("Timeout") }
 
             val result = repository.addConnection("https://shop.test", "cle-api", "Boutique")
             advanceUntilIdle()
@@ -246,7 +256,7 @@ class AuthRepositoryImplTest {
     @Test
     fun `addConnection avec HTTP 404 retourne Failure ModuleNotInstalled`() =
         runTest(testDispatcher) {
-            loginResult = { _ ->
+            loginResult = { _, _ ->
                 val rawResponse =
                     okhttp3.Response.Builder()
                         .request(okhttp3.Request.Builder().url("https://shop.test/module/rebuildconnector/api/connector/login").build())
@@ -318,7 +328,7 @@ class AuthRepositoryImplTest {
     fun `switchActiveConnection met a jour authState avec le token de la nouvelle boutique`() =
         runTest(testDispatcher) {
             var callCount = 0
-            loginResult = { _ ->
+            loginResult = { _, _ ->
                 callCount++
                 AuthResponseDto(token = "token-shop-$callCount", expiresIn = 3600L, scopes = listOf("orders"))
             }
@@ -479,7 +489,7 @@ class AuthRepositoryImplTest {
             repository.addConnection("https://shop.test", "cle-api", "Boutique")
             advanceUntilIdle()
 
-            loginResult = { _ -> AuthResponseDto(token = "nouveau-jwt", expiresIn = 3600L, scopes = listOf("orders")) }
+            loginResult = { _, _ -> AuthResponseDto(token = "nouveau-jwt", expiresIn = 3600L, scopes = listOf("orders")) }
             val result = repository.refreshActiveToken()
             advanceUntilIdle()
 
@@ -493,7 +503,7 @@ class AuthRepositoryImplTest {
             repository.addConnection("https://shop.test", "cle-api", "Boutique")
             advanceUntilIdle()
 
-            loginResult = { _ -> throw IOException("Réseau indisponible") }
+            loginResult = { _, _ -> throw IOException("Réseau indisponible") }
             val result = repository.refreshActiveToken()
             advanceUntilIdle()
 
@@ -579,94 +589,108 @@ class AuthRepositoryImplTest {
             assertEquals("L'URL avec et sans slash doit produire le même id", 1, connectionStore.read().size)
         }
 
-    // ─── Fake interne ─────────────────────────────────────────────────────────
+    // ─── FIX JWT : le login ne mute jamais le routage global avant succès ─────
 
-    /**
-     * Implémentation minimale de [com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi]
-     * qui délègue uniquement `login` à un lambda configurable.
-     */
-    private inner class CapturingFakeApi(
-        private val loginBlock: (AuthRequestDto) -> AuthResponseDto,
-    ) : com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi {
-        override suspend fun login(request: AuthRequestDto): AuthResponseDto = loginBlock(request)
+    @Test
+    fun `addConnection n active le routage global qu apres un login reussi`() =
+        runTest(testDispatcher) {
+            repository.addConnection("https://shop1.test", "cle1", "Boutique 1")
+            advanceUntilIdle()
+            val baseUrlAvantTentative = endpointManager.getActiveBaseUrl()
 
-        override suspend fun getOrders(filters: Map<String, String>) = throw UnsupportedOperationException()
+            var baseUrlPendantLogin: HttpUrl? = null
+            loginResult = { _, _ ->
+                // Capturé PENDANT l'exécution du login shop2 : le routage global ne doit pas
+                // encore avoir bougé vers la boutique candidate à cet instant.
+                baseUrlPendantLogin = endpointManager.getActiveBaseUrl()
+                AuthResponseDto(token = "jwt-shop2", expiresIn = 3600L, scopes = listOf("orders"))
+            }
 
-        override suspend fun getOrderStatuses() = throw UnsupportedOperationException()
+            repository.addConnection("https://shop2.test", "cle2", "Boutique 2")
+            advanceUntilIdle()
 
-        override suspend fun getOrder(orderId: Long) = throw UnsupportedOperationException()
+            assertEquals(
+                "Pendant le login, le routage global ne doit PAS avoir basculé vers la boutique candidate",
+                baseUrlAvantTentative,
+                baseUrlPendantLogin,
+            )
+            // Après succès, le routage a bien basculé vers la nouvelle boutique.
+            assertEquals("https://shop2.test", connectionStore.getActiveId())
+        }
 
-        override suspend fun updateOrderStatus(
-            orderId: Long,
-            body: com.rebuildit.prestaflow.data.remote.dto.OrderStatusUpdateRequestDto,
-        ) = throw UnsupportedOperationException()
+    @Test
+    fun `un login qui echoue ne fait jamais pointer le routage global vers l hote candidat`() =
+        runTest(testDispatcher) {
+            repository.addConnection("https://shop1.test", "cle1", "Boutique 1")
+            advanceUntilIdle()
+            val baseUrlActive = endpointManager.getActiveBaseUrl()
 
-        override suspend fun updateOrderShipping(
-            orderId: Long,
-            body: com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto,
-        ) = throw UnsupportedOperationException()
+            loginResult = { _, _ -> throw IOException("Timeout") }
+            // Scénario audit : scan QR d'une URL non maîtrisée pendant que shop1 est active.
+            repository.addConnection("https://hote-suspect.test", "cle-inconnue", "Suspect")
+            advanceUntilIdle()
 
-        override suspend fun getInvoicePdf(orderId: Long) = throw UnsupportedOperationException()
+            assertEquals(
+                "Le routage global doit rester sur la boutique active, jamais sur l'hôte suspect",
+                baseUrlActive,
+                endpointManager.getActiveBaseUrl(),
+            )
+        }
 
-        override suspend fun getShippingLabelPdf(orderId: Long) = throw UnsupportedOperationException()
+    // ─── FIX cache Room : purge au switch / logout / retrait ─────────────────
 
-        override suspend fun getProducts(
-            filters: Map<String, String>,
-            search: String?,
-        ) = throw UnsupportedOperationException()
+    @Test
+    fun `switchActiveConnection purge le cache local avant d activer la nouvelle boutique`() =
+        runTest(testDispatcher) {
+            repository.addConnection("https://shop1.test", "cle1", "Boutique 1")
+            advanceUntilIdle()
+            repository.addConnection("https://shop2.test", "cle2", "Boutique 2")
+            advanceUntilIdle()
+            val callsAvant = fakeLocalCacheStore.clearAllCallCount
 
-        override suspend fun getProduct(productId: Long) = throw UnsupportedOperationException()
+            repository.switchActiveConnection("https://shop1.test")
+            advanceUntilIdle()
 
-        override suspend fun updateProductStock(
-            productId: Long,
-            body: com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto,
-        ) = throw UnsupportedOperationException()
+            assertEquals(callsAvant + 1, fakeLocalCacheStore.clearAllCallCount)
+        }
 
-        override suspend fun updateProduct(
-            productId: Long,
-            body: com.rebuildit.prestaflow.data.remote.dto.ProductUpdateRequestDto,
-        ) = throw UnsupportedOperationException()
+    @Test
+    fun `switchActiveConnection avec id inconnu ne purge pas le cache`() =
+        runTest(testDispatcher) {
+            repository.addConnection("https://shop1.test", "cle1", "Boutique 1")
+            advanceUntilIdle()
+            val callsAvant = fakeLocalCacheStore.clearAllCallCount
 
-        override suspend fun uploadProductImage(
-            productId: Long,
-            image: okhttp3.MultipartBody.Part,
-        ) = throw UnsupportedOperationException()
+            repository.switchActiveConnection("https://boutique-inexistante.test")
+            advanceUntilIdle()
 
-        override suspend fun deleteProductImage(
-            productId: Long,
-            imageId: Long,
-        ) = throw UnsupportedOperationException()
+            assertEquals("no-op : la purge ne doit pas être déclenchée", callsAvant, fakeLocalCacheStore.clearAllCallCount)
+        }
 
-        override suspend fun getDashboardMetrics(
-            period: String?,
-            from: String?,
-            to: String?,
-        ) = throw UnsupportedOperationException()
+    @Test
+    fun `logout purge le cache local`() =
+        runTest(testDispatcher) {
+            repository.addConnection("https://shop.test", "cle", "Boutique")
+            advanceUntilIdle()
 
-        override suspend fun getCustomerStats() = throw UnsupportedOperationException()
+            repository.logout()
+            advanceUntilIdle()
 
-        override suspend fun getTopCustomers(limit: Int) = throw UnsupportedOperationException()
+            assertEquals(1, fakeLocalCacheStore.clearAllCallCount)
+        }
 
-        override suspend fun getCustomers(
-            limit: Int?,
-            offset: Int?,
-            search: String?,
-            sort: String?,
-            createdFrom: String?,
-            createdTo: String?,
-        ) = throw UnsupportedOperationException()
+    @Test
+    fun `removeConnection purge le cache local`() =
+        runTest(testDispatcher) {
+            repository.addConnection("https://shop1.test", "cle1", "Boutique 1")
+            advanceUntilIdle()
+            repository.addConnection("https://shop2.test", "cle2", "Boutique 2")
+            advanceUntilIdle()
+            val callsAvant = fakeLocalCacheStore.clearAllCallCount
 
-        override suspend fun getCustomer(customerId: Long) = throw UnsupportedOperationException()
+            repository.removeConnection("https://shop1.test")
+            advanceUntilIdle()
 
-        override suspend fun registerDevice(body: com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto) =
-            throw UnsupportedOperationException()
-
-        override suspend fun unregisterDevice(token: String) = throw UnsupportedOperationException()
-
-        override suspend fun getBaskets(abandonedSinceDays: Int?) = throw UnsupportedOperationException()
-
-        override suspend fun getBasketById(cartId: Int) = throw UnsupportedOperationException()
-
-        override suspend fun generateShippingLabel(orderId: Long) = throw UnsupportedOperationException()
-    }
+            assertEquals(callsAvant + 1, fakeLocalCacheStore.clearAllCallCount)
+        }
 }

@@ -23,6 +23,7 @@ class SyncQueueRepositoryImpl
             endpoint: String,
             method: String,
             payloadJson: String,
+            shopUrl: String,
             resourceType: String?,
             resourceId: Long?,
             conflictStrategy: ConflictStrategy,
@@ -36,6 +37,7 @@ class SyncQueueRepositoryImpl
                     resourceId = resourceId,
                     conflictStrategy = conflictStrategy.name,
                     createdAtIso = java.time.Instant.now().toString(),
+                    shopUrl = shopUrl,
                 )
             return pendingSyncDao.enqueue(entity)
         }
@@ -68,6 +70,7 @@ class SyncQueueRepositoryImpl
                 attemptCount = attemptCount,
                 lastAttemptIso = lastAttemptIso,
                 createdAtIso = createdAtIso,
+                shopUrl = shopUrl,
                 conflictStrategy =
                     runCatching {
                         ConflictStrategy.valueOf(conflictStrategy)

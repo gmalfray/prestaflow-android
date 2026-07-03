@@ -32,6 +32,7 @@ googleServices = "4.4.2"
 coroutinesPlayServices = "1.9.0"
 jacoco = "0.8.12"
 escposPrinter = "3.3.0"
+robolectric = "4.14.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -93,6 +94,9 @@ androidx-test-ext = { module = "androidx.test.ext:junit", version.ref = "android
 espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 compose-ui-test = { module = "androidx.compose.ui:ui-test-junit4" }
 compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

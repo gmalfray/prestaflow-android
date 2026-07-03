@@ -146,6 +146,18 @@ android {
         }
     }
 
+    sourceSets {
+        // Expose les schémas Room exportés (room.schemaLocation) en assets pour que
+        // MigrationTestHelper (Robolectric) puisse scaffolder une base à une version
+        // historique donnée. Sur le sourceSet "debug" uniquement (~200 Ko, jamais dans le
+        // build "release" livré au Play Store) : Robolectric charge les assets via le merge
+        // de la variante MAIN, pas un merge dédié aux tests unitaires — cf. `android_merged_assets`
+        // dans test_config.properties, qui pointe vers `mergeProdDebugAssets`/`mergePreprodDebugAssets`.
+        getByName("debug") {
+            assets.srcDirs("$projectDir/schemas")
+        }
+    }
+
     kotlinOptions {
         jvmTarget = "17"
         freeCompilerArgs = freeCompilerArgs +
@@ -427,6 +439,12 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.turbine)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Robolectric : réservé aux quelques tests nécessitant un vrai moteur Android (ex. migration
+    // Room, qui a besoin d'une implémentation SQLite réelle) — le reste des tests reste en JVM pur.
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.androidx.test.ext)
+    testImplementation(libs.okhttp.mockwebserver)
 
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation(libs.espresso.core)

@@ -20,6 +20,8 @@ import com.rebuildit.prestaflow.core.security.EncryptedTokenStorage
 import com.rebuildit.prestaflow.core.security.InMemoryTokenProvider
 import com.rebuildit.prestaflow.core.security.TokenStorage
 import com.rebuildit.prestaflow.data.auth.AuthRepositoryImpl
+import com.rebuildit.prestaflow.data.auth.LoginApiClient
+import com.rebuildit.prestaflow.data.auth.LoginApiClientContract
 import com.rebuildit.prestaflow.data.carts.CartsRepositoryImpl
 import com.rebuildit.prestaflow.data.clients.ClientsRepositoryImpl
 import com.rebuildit.prestaflow.data.dashboard.DashboardPreferencesRepositoryImpl
@@ -30,7 +32,10 @@ import com.rebuildit.prestaflow.data.local.dao.OrderDao
 import com.rebuildit.prestaflow.data.local.dao.PendingSyncDao
 import com.rebuildit.prestaflow.data.local.dao.ProductDao
 import com.rebuildit.prestaflow.data.local.dao.StockAvailabilityDao
+import com.rebuildit.prestaflow.data.local.db.LocalCacheStore
 import com.rebuildit.prestaflow.data.local.db.PrestaFlowDatabase
+import com.rebuildit.prestaflow.data.local.db.RoomLocalCacheStore
+import com.rebuildit.prestaflow.data.local.db.migration14To15
 import com.rebuildit.prestaflow.data.notifications.NotificationCategoriesRepositoryImpl
 import com.rebuildit.prestaflow.data.notifications.NotificationsRepositoryImpl
 import com.rebuildit.prestaflow.data.orders.OrdersPreferencesRepositoryImpl
@@ -185,6 +190,14 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideLoginApiClient(impl: LoginApiClient): LoginApiClientContract = impl
+
+    @Provides
+    @Singleton
+    fun provideLocalCacheStore(impl: RoomLocalCacheStore): LocalCacheStore = impl
+
+    @Provides
+    @Singleton
     fun provideOrdersRepository(impl: OrdersRepositoryImpl): OrdersRepository = impl
 
     @Provides
@@ -239,12 +252,30 @@ object AppModule {
     @Singleton
     fun provideDatabase(
         @ApplicationContext context: Context,
+        endpointManager: ApiEndpointManager,
     ): PrestaFlowDatabase =
         Room.databaseBuilder(
             context,
             PrestaFlowDatabase::class.java,
             "prestaflow.db",
-        ).fallbackToDestructiveMigration().build()
+        )
+            // v14->v15 : ajoute pending_sync.shop_url (cf. Migrations.kt). Le fallback destructif
+            // reste un garde-fou pour d'éventuelles versions futures sans migration écrite, mais
+            // NE COUVRE PAS ce saut precis : la vraie migration est prioritaire dès qu'elle
+            // s'applique, donc pending_sync n'est jamais détruite pour ce passage.
+            .addMigrations(migration14To15(endpointManager.getStoredShopUrl().orEmpty()))
+            .fallbackToDestructiveMigration()
+            .build()
+
+    @Provides
+    @Singleton
+    @SyncHttpClient
+    fun provideSyncHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(Duration.ofSeconds(30))
+            .readTimeout(Duration.ofSeconds(30))
+            .writeTimeout(Duration.ofSeconds(30))
+            .build()
 
     @Provides
     fun provideOrderDao(database: PrestaFlowDatabase): OrderDao = database.orderDao()
