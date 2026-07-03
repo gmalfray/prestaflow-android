@@ -33,6 +33,23 @@ data class ProductDto(
     @SerialName("description") val description: String? = null,
     @SerialName("description_short") val descriptionShort: String? = null,
     @SerialName("price_tax_excl") val priceTaxExcl: Double? = null,
+    // Présent uniquement quand le code scanné (`GET products?barcode=`) a matché une COMBINAISON
+    // (déclinaison) plutôt que le produit lui-même — ex. pelotes de laine, 1 coloris = 1 EAN13 +
+    // 1 stock propres. Absent/null pour un produit sans déclinaison (comportement inchangé).
+    @SerialName("matched_combination") val matchedCombination: MatchedCombinationDto? = null,
+)
+
+/**
+ * Combinaison (déclinaison) ayant matché le code-barres scanné — contrat `matched_combination`
+ * de `GET /products?barcode=`. Porte son propre stock, distinct de celui du produit parent.
+ */
+@Serializable
+data class MatchedCombinationDto(
+    @SerialName("id") val id: Long,
+    @SerialName("name") val name: String,
+    @SerialName("ean13") val ean13: String? = null,
+    @SerialName("reference") val reference: String? = null,
+    @SerialName("quantity") val quantity: Int,
 )
 
 @Serializable
@@ -55,6 +72,9 @@ data class StockUpdateRequestDto(
     @SerialName("quantity") val quantity: Int,
     @SerialName("warehouse_id") val warehouseId: Long? = null,
     @SerialName("reason") val reason: String? = null,
+    // Renseigné quand l'ajustement concerne une COMBINAISON (déclinaison) plutôt que le produit
+    // lui-même — cf. [MatchedCombinationDto]. Omis si null (`explicitNulls = false`).
+    @SerialName("combination_id") val combinationId: Long? = null,
 )
 
 /**

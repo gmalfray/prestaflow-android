@@ -413,6 +413,7 @@ private fun StockAdjustContent(
 
 @Composable
 private fun ScanProductHeader(product: Product) {
+    val matchedCombination = product.matchedCombination
     Row(
         horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
         verticalAlignment = Alignment.CenterVertically,
@@ -427,8 +428,18 @@ private fun ScanProductHeader(product: Product) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            if (matchedCombination != null) {
+                // Produit à déclinaisons (ex. pelotes de laine) : le scan a matché une COMBINAISON
+                // précise, dont le stock est distinct de celui du produit parent — on l'affiche
+                // explicitement pour éviter toute confusion sur ce qui va être mis à jour.
+                Text(
+                    text = stringResource(R.string.products_scan_combination_label, matchedCombination.name),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             Text(
-                text = stringResource(R.string.products_scan_current_stock, product.stock.quantity),
+                text = stringResource(R.string.products_scan_current_stock, product.scannedQuantity),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

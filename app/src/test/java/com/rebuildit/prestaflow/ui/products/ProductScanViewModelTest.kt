@@ -1,6 +1,7 @@
 package com.rebuildit.prestaflow.ui.products
 
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.domain.products.model.MatchedCombination
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductImage
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
@@ -184,6 +185,64 @@ class ProductScanViewModelTest {
             assertFalse(state.submitSuccess)
             assertTrue(state.error != null)
             assertFalse(state.isSubmitting)
+        }
+
+    // ─── Combinaison (déclinaison) matchée par le scan ──────────────────────
+
+    @Test
+    fun `un scan matchant une combinaison affiche la quantite de la combinaison`() =
+        runTest {
+            val combination = MatchedCombination(id = 99L, name = "Coloris - Bleu", quantity = 7)
+            val product = buildProduct(1L, quantity = 120).copy(matchedCombination = combination)
+            fakeRepo.barcodeSearchResult = listOf(product)
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567899")
+            advanceUntilIdle()
+
+            val state = vm.uiState.value
+            // La quantité éditée est celle de la COMBINAISON (7), pas celle du produit parent (120).
+            assertEquals("7", state.quantityInput)
+            assertEquals(combination, state.selectedProduct?.matchedCombination)
+        }
+
+    @Test
+    fun `confirmer un ajustement sur une combinaison envoie son combinationId`() =
+        runTest {
+            val combination = MatchedCombination(id = 99L, name = "Coloris - Bleu", quantity = 7)
+            val product = buildProduct(1L, quantity = 120).copy(matchedCombination = combination)
+            fakeRepo.barcodeSearchResult = listOf(product)
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567899")
+            advanceUntilIdle()
+
+            vm.onQuantityChange("10")
+            vm.onConfirmAdjustment()
+            advanceUntilIdle()
+
+            val call = fakeRepo.updateStockCalls.single()
+            assertEquals(1L, call.productId)
+            assertEquals(10, call.quantity)
+            assertEquals(99L, call.combinationId)
+            assertTrue(vm.uiState.value.submitSuccess)
+        }
+
+    @Test
+    fun `confirmer un ajustement sur un produit simple n envoie pas de combinationId`() =
+        runTest {
+            val product = buildProduct(1L, quantity = 3)
+            fakeRepo.barcodeSearchResult = listOf(product)
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567891")
+            advanceUntilIdle()
+
+            vm.onConfirmAdjustment()
+            advanceUntilIdle()
+
+            val call = fakeRepo.updateStockCalls.single()
+            assertNull(call.combinationId)
         }
 
     // ─── Association code-barres → produit existant ─────────────────────────

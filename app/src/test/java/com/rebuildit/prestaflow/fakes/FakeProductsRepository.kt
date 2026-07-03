@@ -102,7 +102,13 @@ class FakeProductsRepository : ProductsRepository {
         return updateProductFieldsResult ?: error("updateProductFieldsResult non défini dans le fake")
     }
 
-    data class UpdateStockCall(val productId: Long, val quantity: Int, val warehouseId: Long?, val reason: String?)
+    data class UpdateStockCall(
+        val productId: Long,
+        val quantity: Int,
+        val warehouseId: Long?,
+        val reason: String?,
+        val combinationId: Long? = null,
+    )
 
     val updateStockCalls = mutableListOf<UpdateStockCall>()
     var shouldThrowOnUpdateStock = false
@@ -112,8 +118,9 @@ class FakeProductsRepository : ProductsRepository {
         quantity: Int,
         warehouseId: Long?,
         reason: String?,
+        combinationId: Long?,
     ) {
-        updateStockCalls += UpdateStockCall(productId, quantity, warehouseId, reason)
+        updateStockCalls += UpdateStockCall(productId, quantity, warehouseId, reason, combinationId)
         if (shouldThrowOnUpdateStock) throw RuntimeException("Erreur réseau simulée")
     }
 

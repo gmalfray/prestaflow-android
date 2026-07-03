@@ -153,6 +153,7 @@
     <string name="products_scan_multiple_title">Plusieurs produits correspondent</string>
     <string name="products_scan_barcode_label">Code : %1$s</string>
     <string name="products_scan_current_stock">Stock actuel : %1$d</string>
+    <string name="products_scan_combination_label">Déclinaison : %1$s</string>
     <string name="products_scan_quantity_label">Nouvelle quantité</string>
     <string name="products_scan_decrement_content_description">Diminuer la quantité</string>
     <string name="products_scan_increment_content_description">Augmenter la quantité</string>

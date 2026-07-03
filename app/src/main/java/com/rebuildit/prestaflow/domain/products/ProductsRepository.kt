@@ -65,11 +65,18 @@ interface ProductsRepository {
         fields: ProductUpdateFields,
     ): Product
 
+    /**
+     * Met à jour le stock du produit [productId], ou celui d'une de ses combinaisons (déclinaisons)
+     * si [combinationId] est renseigné (cas d'un scan ayant matché une combinaison — cf.
+     * [com.rebuildit.prestaflow.domain.products.model.MatchedCombination]). Le connecteur applique
+     * l'ajustement à la combinaison plutôt qu'au produit parent dans ce cas.
+     */
     suspend fun updateStock(
         productId: Long,
         quantity: Int,
         warehouseId: Long? = null,
         reason: String? = null,
+        combinationId: Long? = null,
     )
 
     /**

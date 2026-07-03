@@ -222,37 +222,43 @@ class ProductsRepositoryImpl
             quantity: Int,
             warehouseId: Long?,
             reason: String?,
+            combinationId: Long?,
         ) {
             withContext(ioDispatcher) {
                 val now = java.time.Instant.now().toString()
                 val normalizedWarehouseId = warehouseId ?: StockAvailabilityEntity.NO_WAREHOUSE_ID
 
-                // Mise à jour optimiste LOCALE uniquement si le produit est déjà en cache Room.
-                // Cas scan code-barres : le produit vient d'un lookup transitoire (pas en cache) →
-                // l'écriture stock_availability échouerait sur la FK vers `products`. On saute alors
-                // l'écriture locale et on laisse l'API faire foi (la liste Produits se rafraîchira).
-                productDao.getById(productId)?.let { existing ->
-                    val updatedStock =
-                        json.decodeFromString<ProductStock>(existing.stockJson).copy(
-                            quantity = quantity,
-                            updatedAt = now,
-                        )
-                    productDao.upsertProduct(
-                        existing.copy(
-                            stockJson = json.encodeToString(updatedStock),
-                            updatedAt = now,
-                        ),
-                    )
-                    stockAvailabilityDao.upsertAll(
-                        listOf(
-                            StockAvailabilityEntity(
-                                productId = productId,
-                                warehouseId = normalizedWarehouseId,
+                // Mise à jour optimiste LOCALE uniquement si le produit est déjà en cache Room ET
+                // que l'ajustement concerne le produit lui-même (pas une combinaison : Room ne
+                // modélise pas le stock par combinaison, écrire `quantity` sur le produit parent
+                // corromprait son stock affiché). Cas scan code-barres : le produit vient souvent
+                // d'un lookup transitoire (pas en cache) → l'écriture stock_availability échouerait
+                // sur la FK vers `products`. On saute alors l'écriture locale et on laisse l'API
+                // faire foi (la liste Produits se rafraîchira).
+                if (combinationId == null) {
+                    productDao.getById(productId)?.let { existing ->
+                        val updatedStock =
+                            json.decodeFromString<ProductStock>(existing.stockJson).copy(
                                 quantity = quantity,
-                                updatedAtIso = now,
+                                updatedAt = now,
+                            )
+                        productDao.upsertProduct(
+                            existing.copy(
+                                stockJson = json.encodeToString(updatedStock),
+                                updatedAt = now,
                             ),
-                        ),
-                    )
+                        )
+                        stockAvailabilityDao.upsertAll(
+                            listOf(
+                                StockAvailabilityEntity(
+                                    productId = productId,
+                                    warehouseId = normalizedWarehouseId,
+                                    quantity = quantity,
+                                    updatedAtIso = now,
+                                ),
+                            ),
+                        )
+                    }
                 }
 
                 val request =
@@ -260,6 +266,7 @@ class ProductsRepositoryImpl
                         quantity = quantity,
                         warehouseId = warehouseId,
                         reason = reason,
+                        combinationId = combinationId,
                     )
                 val payloadJson = json.encodeToString(request)
                 val endpoint = "products/$productId/stock"

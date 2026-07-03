@@ -98,7 +98,7 @@ class ProductScanViewModel
                             isLoading = false,
                             results = results,
                             selectedProduct = results.first(),
-                            quantityInput = results.first().stock.quantity.toString(),
+                            quantityInput = results.first().scannedQuantity.toString(),
                         )
                     else -> current.copy(isLoading = false, results = results)
                 }
@@ -108,7 +108,7 @@ class ProductScanViewModel
 
         fun onSelectProduct(product: Product) {
             _uiState.update {
-                it.copy(selectedProduct = product, quantityInput = product.stock.quantity.toString())
+                it.copy(selectedProduct = product, quantityInput = product.scannedQuantity.toString())
             }
         }
 
@@ -147,6 +147,7 @@ class ProductScanViewModel
                         productId = product.id,
                         quantity = quantity,
                         warehouseId = product.stock.warehouseId,
+                        combinationId = product.matchedCombination?.id,
                     )
                 }
                     .onSuccess {
