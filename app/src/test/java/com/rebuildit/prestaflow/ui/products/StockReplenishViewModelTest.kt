@@ -8,6 +8,7 @@ import com.rebuildit.prestaflow.domain.products.model.MatchedCombination
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductImage
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
+import com.rebuildit.prestaflow.fakes.FakeLabelTextRecognizer
 import com.rebuildit.prestaflow.fakes.FakeProductsRepository
 import com.rebuildit.prestaflow.fakes.FakeStockReplenishPreferencesRepository
 import kotlinx.coroutines.Dispatchers
@@ -55,6 +56,11 @@ class StockReplenishViewModelTest {
         StockReplenishViewModel(
             productsRepository = fakeRepo,
             networkErrorMapper = NetworkErrorMapper(),
+            // Aucun test de ce fichier ne fournit de frame caméra (`onBarcodeScanned(code)` sans
+            // 2ᵉ paramètre) : le secours OCR est donc toujours sauté (cf.
+            // `attemptLabelFallback`), ce fake n'est jamais sollicité. Cf.
+            // StockReplenishLabelFallbackTest pour l'orchestration OCR elle-même.
+            labelTextRecognizer = FakeLabelTextRecognizer(),
             stockReplenishPreferencesRepository = fakePrefsRepo,
         )
 

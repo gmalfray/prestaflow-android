@@ -166,6 +166,7 @@
     <string name="stock_replenish_camera_permission_rationale">Camera access is needed to scan barcodes</string>
     <string name="stock_replenish_camera_permission_action">Allow camera</string>
     <string name="stock_replenish_not_found">Barcode not found, opening the linking flow…</string>
+    <string name="stock_replenish_label_search_loading">Searching by label…</string>
     <string name="stock_replenish_idle_hint">Scan an item to start</string>
     <string name="stock_replenish_delta_label">Adjustment: %1$s</string>
     <string name="stock_replenish_new_quantity">New stock: %1$d</string>

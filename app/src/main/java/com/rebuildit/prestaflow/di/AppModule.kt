@@ -18,6 +18,8 @@ import com.rebuildit.prestaflow.core.notifications.ShopDeviceRegistrar
 import com.rebuildit.prestaflow.core.notifications.ShopDeviceRegistrarContract
 import com.rebuildit.prestaflow.core.notifications.SyncFailureNotifier
 import com.rebuildit.prestaflow.core.notifications.SyncFailureNotifierContract
+import com.rebuildit.prestaflow.core.ocr.LabelTextRecognizer
+import com.rebuildit.prestaflow.core.ocr.MlKitLabelTextRecognizer
 import com.rebuildit.prestaflow.core.security.EncryptedTokenStorage
 import com.rebuildit.prestaflow.core.security.InMemoryTokenProvider
 import com.rebuildit.prestaflow.core.security.TokenStorage
@@ -216,6 +218,10 @@ object AppModule {
     @Singleton
     fun provideStockReplenishPreferencesRepository(impl: StockReplenishPreferencesRepositoryImpl): StockReplenishPreferencesRepository =
         impl
+
+    @Provides
+    @Singleton
+    fun provideLabelTextRecognizer(impl: MlKitLabelTextRecognizer): LabelTextRecognizer = impl
 
     @Provides
     @Singleton

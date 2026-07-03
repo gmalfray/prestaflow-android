@@ -1,8 +1,11 @@
 package com.rebuildit.prestaflow.ui.products
 
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.core.ocr.LabelReferenceParser
+import com.rebuildit.prestaflow.core.ocr.LabelTextRecognizer
 import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.StockReplenishPreferencesRepository
@@ -12,6 +15,9 @@ import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.toMatchedCombination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -44,6 +51,21 @@ private const val COMBINATION_CHOICE_THRESHOLD = 2
  * gêner un enchaînement légitime (re-scanner le même article après Valider/Passer).
  */
 private const val DUPLICATE_SCAN_WINDOW_MS = 1_200L
+
+/**
+ * Délai maximum accordé à la tentative de secours OCR (lecture d'étiquette, cf. KDoc classe,
+ * section OCR) — OCR + recherche produit sur les jetons candidats. Volontairement COURT et DUR :
+ * l'objectif de la fonctionnalité est de faire gagner du temps, elle ne doit donc JAMAIS ajouter de
+ * latence perçue. Au delà, retombe silencieusement sur l'association manuelle (comportement
+ * historique), sans attendre davantage.
+ */
+private const val LABEL_FALLBACK_TIMEOUT_MS = 1_300L
+
+/** Nombre max de jetons candidats ([LabelReferenceParser]) recherchés en parallèle (cf. contrainte vitesse). */
+private const val MAX_LABEL_SEARCH_TOKENS = 4
+
+/** Nombre max de produits suggérés au final (union dédupliquée des recherches par jeton). */
+private const val MAX_LABEL_SUGGESTIONS = 8
 
 /**
  * Pilote l'écran « Ajout / réappro stock » (Lot 1) : scanner permanent → produit résolu → delta
@@ -89,6 +111,29 @@ private const val DUPLICATE_SCAN_WINDOW_MS = 1_200L
  *   consommé côté écran pour déclencher une confirmation visuelle discrète (coche qui apparaît
  *   brièvement) sans dépendre d'un `Boolean` qui ne changerait pas d'une validation à l'autre si
  *   l'utilisateur enchaîne trop vite pour qu'un `LaunchedEffect` recompose entre deux.
+ *
+ * **Secours OCR (v0.38.0)** : quand un scan ne matche AUCUN produit, [onBarcodeScanned] tente en
+ * plus (best-effort, jamais bloquant) de lire le texte de l'étiquette AVANT de retomber sur
+ * l'association manuelle à vide :
+ *  1. [frameProvider][onBarcodeScanned] réutilise la frame caméra qui a servi au décodage du
+ *     code-barres (exposée par zxing via `BarcodeResult.getBitmap()`, cf. [StockReplenishScreen])
+ *     — pas de capture séparée. Passée en `() -> Bitmap?` (PAS un `Bitmap` déjà calculé) : zxing
+ *     documente cette conversion YUV→Bitmap comme potentiellement coûteuse, autant ne la payer QUE
+ *     sur ce chemin rare (EAN introuvable), jamais sur le chemin chaud (code trouvé du 1er coup).
+ *  2. [attemptLabelFallback] : si aucune frame n'est fournie (capture indisponible), retombe
+ *     immédiatement sur `notFound` — sinon lance [findCandidatesFromLabel] sous un timeout DUR
+ *     [LABEL_FALLBACK_TIMEOUT_MS] ([StockReplenishUiState.isLabelSearchLoading] pendant la
+ *     tentative, scanner en pause). Passé le délai (ou en cas d'échec/OCR illisible/aucun match),
+ *     retombe SILENCIEUSEMENT sur `notFound` sans suggestion — comportement historique inchangé.
+ *  3. [findCandidatesFromLabel] : OCR via [labelTextRecognizer] → jetons candidats via
+ *     [LabelReferenceParser] (pure, testée isolément) → recherche produit existante
+ *     ([ProductsRepository.searchProducts]) lancée EN PARALLÈLE sur chaque jeton (plafonné à
+ *     [MAX_LABEL_SEARCH_TOKENS]) → union dédupliquée des résultats
+ *     ([StockReplenishUiState.labelSuggestions], plafonnée à [MAX_LABEL_SUGGESTIONS]).
+ *  4. Si des suggestions sont trouvées, [StockReplenishScreen] les transmet à
+ *     [ProductScanViewModel.onKnownNotFoundWithSuggestions] : réutilise TEL QUEL le flux
+ *     d'association existant (recherche pré-remplie plutôt que vide) — associer l'EAN à un
+ *     candidat suit exactement le chemin manuel habituel (PATCH ean13 + enchaînement fiche stock).
  */
 @HiltViewModel
 class StockReplenishViewModel
@@ -96,6 +141,7 @@ class StockReplenishViewModel
     constructor(
         private val productsRepository: ProductsRepository,
         private val networkErrorMapper: NetworkErrorMapper,
+        private val labelTextRecognizer: LabelTextRecognizer,
         stockReplenishPreferencesRepository: StockReplenishPreferencesRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(StockReplenishUiState())
@@ -143,8 +189,17 @@ class StockReplenishViewModel
          * actif (produit déjà affiché, choix en attente…) — filet de sécurité en plus de la pause
          * caméra pilotée côté UI par [StockReplenishUiState.isScannerActive]. Ignoré également si
          * c'est un doublon immédiat du même code (cf. [DUPLICATE_SCAN_WINDOW_MS]).
+         *
+         * @param frameProvider Fournit paresseusement la frame caméra ayant servi au décodage (cf.
+         * KDoc classe, section OCR) — un `() -> Bitmap?` plutôt qu'un `Bitmap` déjà calculé : la
+         * conversion n'est déclenchée que si le code s'avère introuvable (chemin rare), jamais sur
+         * le chemin chaud d'un code trouvé du premier coup. `{ null }` par défaut (aucune capture
+         * disponible) : le secours OCR est alors sauté, retombe directement sur `notFound`.
          */
-        fun onBarcodeScanned(code: String) {
+        fun onBarcodeScanned(
+            code: String,
+            frameProvider: () -> Bitmap? = { null },
+        ) {
             val now = System.currentTimeMillis()
             val isDuplicateScan = code == lastScanCode && now - lastScanAtMs < DUPLICATE_SCAN_WINDOW_MS
             if (code.isBlank() || !_uiState.value.isScannerActive || isDuplicateScan) return
@@ -152,10 +207,16 @@ class StockReplenishViewModel
             lastScanAtMs = now
             viewModelScope.launch {
                 _uiState.update {
-                    it.copy(isLookupLoading = true, scannedCode = code, notFound = false, error = null)
+                    it.copy(
+                        isLookupLoading = true,
+                        scannedCode = code,
+                        notFound = false,
+                        labelSuggestions = emptyList(),
+                        error = null,
+                    )
                 }
                 runCatching { productsRepository.searchByBarcode(code) }
-                    .onSuccess { results -> applyResults(results) }
+                    .onSuccess { results -> applyResults(code, results, frameProvider) }
                     .onFailure { error ->
                         Timber.w(error, "Barcode lookup failed for code=%s", code)
                         _uiState.update {
@@ -165,9 +226,13 @@ class StockReplenishViewModel
             }
         }
 
-        private fun applyResults(results: List<Product>) {
+        private fun applyResults(
+            code: String,
+            results: List<Product>,
+            frameProvider: () -> Bitmap?,
+        ) {
             if (results.isEmpty()) {
-                _uiState.update { it.copy(isLookupLoading = false, notFound = true) }
+                attemptLabelFallback(code, frameProvider)
                 return
             }
             // Détecté avec succès (produit direct, choix de déclinaisons ou choix multiple) :
@@ -179,6 +244,54 @@ class StockReplenishViewModel
                 } else {
                     current.copy(isLookupLoading = false, multipleResults = results)
                 }
+            }
+        }
+
+        /**
+         * EAN introuvable : tente le secours OCR (cf. KDoc classe) avant de retomber sur
+         * l'association manuelle. Best-effort STRICT : timeout dur [LABEL_FALLBACK_TIMEOUT_MS] —
+         * au delà, ou si [frameProvider] ne fournit aucune frame, ou si rien n'est trouvé, retombe
+         * SILENCIEUSEMENT sur `notFound` sans suggestion (comportement historique), sans jamais
+         * retarder l'utilisateur au delà de ce délai.
+         */
+        private fun attemptLabelFallback(
+            code: String,
+            frameProvider: () -> Bitmap?,
+        ) {
+            val frame = runCatching { frameProvider() }.getOrNull()
+            if (frame == null) {
+                _uiState.update { it.copy(isLookupLoading = false, notFound = true) }
+                return
+            }
+            _uiState.update { it.copy(isLookupLoading = false, isLabelSearchLoading = true) }
+            viewModelScope.launch {
+                val suggestions =
+                    withTimeoutOrNull(LABEL_FALLBACK_TIMEOUT_MS) { findCandidatesFromLabel(frame) }.orEmpty()
+                // L'utilisateur a pu enchaîner sur un autre scan / quitter l'état d'attente entre
+                // temps (ex. onSkip) — n'applique le résultat que si on attend toujours CE code.
+                if (_uiState.value.scannedCode != code || !_uiState.value.isLabelSearchLoading) return@launch
+                _uiState.update { it.copy(isLabelSearchLoading = false, notFound = true, labelSuggestions = suggestions) }
+            }
+        }
+
+        /**
+         * OCR de [frame] ([labelTextRecognizer]) → jetons candidats ([LabelReferenceParser]) →
+         * recherche produit EN PARALLÈLE sur chacun (plafonné à [MAX_LABEL_SEARCH_TOKENS], cf.
+         * contrainte vitesse — pas de recherches en série inutiles) → union dédupliquée des
+         * résultats, plafonnée à [MAX_LABEL_SUGGESTIONS]. Ni l'OCR ni la recherche ne remontent
+         * d'exception (best-effort) : une étape en échec retourne simplement une liste vide.
+         */
+        private suspend fun findCandidatesFromLabel(frame: Bitmap): List<Product> {
+            val text = runCatching { labelTextRecognizer.recognize(frame) }.getOrDefault("")
+            val tokens = LabelReferenceParser.extractReferenceCandidates(text).take(MAX_LABEL_SEARCH_TOKENS)
+            if (tokens.isEmpty()) return emptyList()
+            return coroutineScope {
+                tokens
+                    .map { token -> async { runCatching { productsRepository.searchProducts(token) }.getOrDefault(emptyList()) } }
+                    .awaitAll()
+                    .flatten()
+                    .distinctBy { it.id }
+                    .take(MAX_LABEL_SUGGESTIONS)
             }
         }
 
@@ -386,6 +499,18 @@ data class StockReplenishUiState(
     val scannedProductForChoice: Product? = null,
     /** Aucun produit ne correspond au code scanné — délégué au flux d'association ([ProductScanViewModel]). */
     val notFound: Boolean = false,
+    /**
+     * Secours OCR en cours (cf. KDoc [StockReplenishViewModel], section OCR) : tentative brève,
+     * best-effort, entre l'échec du scan et la bascule sur `notFound`. Jamais vrai en même temps
+     * que [notFound] (l'un succède strictement à l'autre).
+     */
+    val isLabelSearchLoading: Boolean = false,
+    /**
+     * Produits suggérés par le secours OCR (cf. KDoc [StockReplenishViewModel]) — vide si l'OCR
+     * n'a rien trouvé (fallback silencieux sur l'association manuelle à vide) ou n'a pas été tenté.
+     * Consommé côté écran pour pré-remplir [ProductScanViewModel.onKnownNotFoundWithSuggestions].
+     */
+    val labelSuggestions: List<Product> = emptyList(),
     /** Delta accumulé (boutons rapides + saisie libre), pas encore écrit. */
     val delta: Int = 0,
     val quantityInput: String = "",
@@ -402,7 +527,7 @@ data class StockReplenishUiState(
     /** Le scanner permanent doit être actif (caméra allumée) seulement dans cet état. */
     val isScannerActive: Boolean
         get() =
-            !isLookupLoading && product == null && combinationChoices.isEmpty() &&
+            !isLookupLoading && !isLabelSearchLoading && product == null && combinationChoices.isEmpty() &&
                 multipleResults.isEmpty() && !notFound
 
     /** Stock résultant si le delta accumulé était validé maintenant. */

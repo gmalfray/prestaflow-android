@@ -3,6 +3,7 @@ package com.rebuildit.prestaflow.ui.products
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.provider.Settings
@@ -119,6 +120,13 @@ private val REPLENISH_BARCODE_FORMATS =
  * Lot 3 : consomme [StockReplenishViewModel.scanFeedbackEvents] pour déclencher le retour
  * haptique ([LocalHapticFeedback], toujours actif) et le bip sonore ([rememberScanConfirmationTone],
  * seulement si [StockReplenishViewModel.soundOnScan] est activé).
+ *
+ * Secours OCR (v0.38.0, cf. KDoc [StockReplenishViewModel]) : [PermanentBarcodeScanner] transmet à
+ * chaque décodage un `() -> Bitmap?` paresseux ([BarcodeResult.getBitmap]) plutôt qu'un bitmap déjà
+ * calculé — la conversion coûteuse n'est déclenchée que si le code s'avère introuvable. Si le
+ * secours trouve des suggestions ([StockReplenishUiState.labelSuggestions]), elles sont transmises
+ * à [ProductScanViewModel.onKnownNotFoundWithSuggestions] (au lieu de [onKnownNotFound]) pour
+ * pré-remplir l'écran d'association existant plutôt qu'une recherche manuelle vide.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod") // Orchestration scan + sous-flux d'association (2 ViewModels observés) + feedback Lot 3
@@ -134,15 +142,21 @@ fun StockReplenishRoute(
     val soundOnScan by viewModel.soundOnScan.collectAsStateWithLifecycle()
     val associationState by associationViewModel.uiState.collectAsStateWithLifecycle()
 
-    // Code introuvable → délègue au flux d'association existant (inchangé), sur le MÊME code.
-    // `onKnownNotFound` (pas `onBarcodeScanned`) : le code vient déjà d'être cherché ci-dessus par
+    // Code introuvable → délègue au flux d'association existant, sur le MÊME code. `onKnownNotFound`
+    // (pas `onBarcodeScanned`) : le code vient déjà d'être cherché ci-dessus par
     // [StockReplenishViewModel] et déclaré introuvable — relancer `onBarcodeScanned` referait un 2ᵉ
     // `GET /products?barcode=` du même code déjà su vide, retardant inutilement l'ouverture du sheet
-    // d'association.
-    LaunchedEffect(state.notFound, state.scannedCode) {
+    // d'association. Si le secours OCR (cf. KDoc classe) a trouvé des suggestions entre-temps,
+    // `onKnownNotFoundWithSuggestions` ouvre directement la recherche pré-remplie ; sinon,
+    // comportement historique inchangé (recherche manuelle vide).
+    LaunchedEffect(state.notFound, state.scannedCode, state.labelSuggestions) {
         val code = state.scannedCode
         if (state.notFound && code != null) {
-            associationViewModel.onKnownNotFound(code)
+            if (state.labelSuggestions.isNotEmpty()) {
+                associationViewModel.onKnownNotFoundWithSuggestions(code, state.labelSuggestions)
+            } else {
+                associationViewModel.onKnownNotFound(code)
+            }
         }
     }
     // Association terminée (succès → produit résolu) ou abandonnée (sheet refermée sans résultat) :
@@ -228,7 +242,7 @@ fun StockReplenishScreen(
     modifier: Modifier = Modifier,
     /** Montants des boutons rapides — configurables en préférences (Lot 2), défaut +5/+10/+20. */
     quickAddAmounts: List<Int> = DEFAULT_QUICK_ADD_AMOUNTS,
-    onBarcodeScanned: (String) -> Unit = {},
+    onBarcodeScanned: (String, () -> Bitmap?) -> Unit = { _, _ -> },
     onSelectFromMultipleResults: (Product) -> Unit = {},
     onSelectCombination: (Combination) -> Unit = {},
     onQuantityInputChange: (String) -> Unit = {},
@@ -386,7 +400,7 @@ private fun ReplenishScrollableSection(
     state: StockReplenishUiState,
     showAddedFlash: Boolean,
     reduceMotion: Boolean,
-    onBarcodeScanned: (String) -> Unit,
+    onBarcodeScanned: (String, () -> Bitmap?) -> Unit,
     onSelectFromMultipleResults: (Product) -> Unit,
     onSelectCombination: (Combination) -> Unit,
     onResetDelta: () -> Unit,
@@ -591,11 +605,17 @@ private class ScanConfirmationTone(private val context: Context) {
  * [isActive] pilote la pause/reprise de la caméra : le flux se met en pause pendant l'affichage
  * d'un produit scanné (évite les re-scans en boucle, cf. KDoc [StockReplenishViewModel]) et reprend
  * une fois l'écran revenu à l'état "prêt à scanner".
+ *
+ * [onBarcodeScanned] reçoit un second paramètre `() -> Bitmap?` (secours OCR, cf. KDoc
+ * [StockReplenishRoute]) : capture PARESSEUSEMENT `result.getBitmap()` (zxing la documente comme
+ * potentiellement coûteuse — conversion YUV→Bitmap de la frame source) — n'est invoquée que si
+ * [StockReplenishViewModel] en a réellement besoin (code introuvable), jamais sur le chemin chaud
+ * d'un scan qui matche du premier coup.
  */
 @Composable
 private fun PermanentBarcodeScanner(
     isActive: Boolean,
-    onBarcodeScanned: (String) -> Unit,
+    onBarcodeScanned: (String, () -> Bitmap?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -634,7 +654,7 @@ private fun PermanentBarcodeScanner(
                 decodeContinuous(
                     object : BarcodeCallback {
                         override fun barcodeResult(result: BarcodeResult) {
-                            result.text?.let(onBarcodeScanned)
+                            result.text?.let { text -> onBarcodeScanned(text) { result.bitmap } }
                         }
                     },
                 )
@@ -711,6 +731,22 @@ private fun ReplenishBody(
                 horizontalArrangement = Arrangement.Center,
             ) {
                 CircularProgressIndicator()
+            }
+        // Secours OCR (cf. KDoc StockReplenishViewModel) : tentative brève avant `notFound` — les
+        // deux ne sont jamais vrais en même temps (cf. invariant du ViewModel).
+        state.isLabelSearchLoading ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = Dimensions.spacingL),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(Dimensions.iconSizeMedium))
+                Spacer(modifier = Modifier.size(Dimensions.spacingS))
+                Text(
+                    text = stringResource(R.string.stock_replenish_label_search_loading),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         state.notFound ->
             Text(

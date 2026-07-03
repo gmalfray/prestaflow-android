@@ -115,6 +115,32 @@ class ProductScanViewModel
             _uiState.value = ProductScanUiState(isSheetVisible = true, scannedCode = code, notFound = true)
         }
 
+        /**
+         * Variante de [onKnownNotFound] quand un secours OCR (lecture d'étiquette, cf.
+         * [com.rebuildit.prestaflow.ui.products.StockReplenishViewModel]) a déjà trouvé des
+         * [suggestions] de produits pour le code introuvable : ouvre DIRECTEMENT l'écran de
+         * recherche d'association ([ProductScanUiState.isAssociating]) avec ces suggestions
+         * pré-remplies, plutôt que l'état "aucun résultat" + une recherche vide à taper à la main.
+         * Réutilise tel quel le reste du flux d'association ([onAssociationProductSelected],
+         * [onSelectAssociationCombination]…) — l'utilisateur peut aussi ignorer les suggestions et
+         * taper une recherche manuelle (même champ, [onAssociationQueryChange]) si aucune ne
+         * convient.
+         */
+        fun onKnownNotFoundWithSuggestions(
+            code: String,
+            suggestions: List<Product>,
+        ) {
+            if (code.isBlank()) return
+            _uiState.value =
+                ProductScanUiState(
+                    isSheetVisible = true,
+                    scannedCode = code,
+                    notFound = true,
+                    isAssociating = true,
+                    associationResults = suggestions,
+                )
+        }
+
         private fun applyResults(
             code: String,
             results: List<Product>,

@@ -4,6 +4,19 @@ Les versions suivent [Semantic Versioning](https://semver.org/) : `MAJEUR.MINEUR
 
 ---
 
+## [0.38.0] — 2026-07-04
+
+### Ajouts
+- **Lecture d'étiquette (OCR) en secours du réappro stock** : quand un code-barres scanné est
+  introuvable, l'app tente désormais de lire le texte de l'étiquette (réutilise la frame caméra
+  ayant servi au décodage, ML Kit Text Recognition on-device, modèle bundled — hors-ligne, aucun
+  appel cloud) pour en extraire une référence probable, cherche un produit correspondant, et
+  propose les candidats trouvés en pré-remplissant l'écran d'association existant. Tentative
+  best-effort avec timeout dur (~1,3 s) : au delà, ou si rien n'est lisible/trouvé, retombe
+  silencieusement sur l'association manuelle habituelle — jamais de latence ajoutée perçue.
+
+---
+
 ## [0.3.1] — 2026-06-26
 
 ### Corrections

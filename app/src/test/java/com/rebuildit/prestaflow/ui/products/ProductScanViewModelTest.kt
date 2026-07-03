@@ -120,6 +120,55 @@ class ProductScanViewModelTest {
             assertEquals(listOf(match), vm.uiState.value.associationResults)
         }
 
+    // ─── Secours OCR (suggestions pré-remplies, cf. StockReplenishViewModel) ─
+
+    @Test
+    fun `onKnownNotFoundWithSuggestions ouvre directement l ecran d association pre-rempli`() =
+        runTest {
+            val suggestion = buildProduct(9L, quantity = 4)
+            val vm = buildViewModel()
+
+            vm.onKnownNotFoundWithSuggestions("0000000000000", listOf(suggestion))
+
+            val state = vm.uiState.value
+            assertTrue(state.isSheetVisible)
+            assertTrue(state.notFound)
+            assertTrue("Doit ouvrir directement la recherche, pas l'écran vide", state.isAssociating)
+            assertEquals(listOf(suggestion), state.associationResults)
+            assertTrue(
+                "Aucun appel réseau : les suggestions viennent déjà de l'appelant",
+                fakeRepo.searchProductsCalls.isEmpty(),
+            )
+        }
+
+    @Test
+    fun `selectionner une suggestion OCR associe l ean comme une association normale`() =
+        runTest {
+            val suggestion = buildProduct(9L, quantity = 4)
+            fakeRepo.setProductEan13Result = suggestion
+            fakeRepo.barcodeSearchResult = listOf(suggestion)
+            val vm = buildViewModel()
+            vm.onKnownNotFoundWithSuggestions("0000000000000", listOf(suggestion))
+
+            vm.onAssociationProductSelected(suggestion)
+            advanceUntilIdle()
+
+            val call = fakeRepo.setProductEan13Calls.single()
+            assertEquals(9L, call.productId)
+            assertEquals("0000000000000", call.ean13)
+            assertEquals(suggestion, vm.uiState.value.selectedProduct)
+        }
+
+    @Test
+    fun `un code vide est ignore par onKnownNotFoundWithSuggestions`() =
+        runTest {
+            val vm = buildViewModel()
+
+            vm.onKnownNotFoundWithSuggestions("", listOf(buildProduct(1L, quantity = 1)))
+
+            assertFalse(vm.uiState.value.isSheetVisible)
+        }
+
     // ─── Plusieurs résultats ─────────────────────────────────────────────────
 
     @Test

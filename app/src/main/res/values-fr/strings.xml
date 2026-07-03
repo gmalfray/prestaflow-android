@@ -166,6 +166,7 @@
     <string name="stock_replenish_camera_permission_rationale">L\'appareil photo est nécessaire pour scanner les codes-barres</string>
     <string name="stock_replenish_camera_permission_action">Autoriser l\'appareil photo</string>
     <string name="stock_replenish_not_found">Code introuvable, ouverture de l\'association…</string>
+    <string name="stock_replenish_label_search_loading">Recherche par étiquette…</string>
     <string name="stock_replenish_idle_hint">Scannez un article pour commencer</string>
     <string name="stock_replenish_delta_label">Ajustement : %1$s</string>
     <string name="stock_replenish_new_quantity">Nouveau stock : %1$d</string>
