@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.products
 
+import app.cash.turbine.test
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.domain.products.model.Combination
 import com.rebuildit.prestaflow.domain.products.model.DEFAULT_QUICK_ADD_AMOUNTS
@@ -453,6 +454,223 @@ class StockReplenishViewModelTest {
             vm.onQuickAdd(25)
 
             assertEquals(25, vm.uiState.value.delta)
+        }
+
+    // ─── Compteur de session (Lot 3) ─────────────────────────────────────────
+
+    @Test
+    fun `valider incremente le recap de session de facon optimiste`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(1L, quantity = 10))
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+            vm.onQuickAdd(15)
+
+            vm.onValidate()
+
+            val recap = vm.uiState.value.sessionRecap
+            assertEquals("Un article validé", 1, recap.articleCount)
+            assertEquals("15 unités validées", 15, recap.unitsCount)
+        }
+
+    @Test
+    fun `deux validations successives cumulent le recap de session`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(1L, quantity = 10))
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+            vm.onQuickAdd(5)
+            vm.onValidate()
+
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(2L, quantity = 4))
+            vm.onBarcodeScanned("1112223334445")
+            testDispatcher.scheduler.runCurrent()
+            vm.onQuickAdd(10)
+            vm.onValidate()
+
+            val recap = vm.uiState.value.sessionRecap
+            assertEquals(2, recap.articleCount)
+            assertEquals(15, recap.unitsCount)
+        }
+
+    @Test
+    fun `annuler une ecriture en attente decremente le recap de session`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(1L, quantity = 10))
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+            vm.onQuickAdd(15)
+            vm.onValidate()
+            val id = vm.uiState.value.pendingWrites.single().id
+
+            vm.onCancelPendingWrite(id)
+
+            val recap = vm.uiState.value.sessionRecap
+            assertEquals("L'annulation retire l'article du récap", 0, recap.articleCount)
+            assertEquals(0, recap.unitsCount)
+        }
+
+    @Test
+    fun `annuler un seul des deux en attente ne decremente que celui-la`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(1L, quantity = 10))
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+            vm.onQuickAdd(5)
+            vm.onValidate()
+            val firstId = vm.uiState.value.pendingWrites.single().id
+
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(2L, quantity = 4))
+            vm.onBarcodeScanned("1112223334445")
+            testDispatcher.scheduler.runCurrent()
+            vm.onQuickAdd(10)
+            vm.onValidate()
+
+            vm.onCancelPendingWrite(firstId)
+
+            val recap = vm.uiState.value.sessionRecap
+            assertEquals(1, recap.articleCount)
+            assertEquals(10, recap.unitsCount)
+        }
+
+    @Test
+    fun `un echec d ecriture en tache de fond decremente le recap de session`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(1L, quantity = 10))
+            fakeRepo.shouldThrowOnUpdateStock = true
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+            vm.onQuickAdd(5)
+            vm.onValidate()
+            assertEquals("Compté de façon optimiste avant l'échec", 1, vm.uiState.value.sessionRecap.articleCount)
+
+            advanceTimeBy(REPLENISH_UNDO_DELAY_MS + 1)
+            advanceUntilIdle()
+
+            val recap = vm.uiState.value.sessionRecap
+            assertEquals("Le stock n'a pas réellement changé : retiré du récap", 0, recap.articleCount)
+            assertEquals(0, recap.unitsCount)
+        }
+
+    @Test
+    fun `une ecriture reussie apres la fenetre ne modifie plus le recap deja compte`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(1L, quantity = 10))
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+            vm.onQuickAdd(5)
+            vm.onValidate()
+
+            advanceTimeBy(REPLENISH_UNDO_DELAY_MS + 1)
+            advanceUntilIdle()
+
+            val recap = vm.uiState.value.sessionRecap
+            assertEquals(1, recap.articleCount)
+            assertEquals(5, recap.unitsCount)
+        }
+
+    @Test
+    fun `onSkip conserve le recap de session accumule`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(1L, quantity = 10))
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+            vm.onQuickAdd(5)
+            vm.onValidate()
+
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(2L, quantity = 1))
+            vm.onBarcodeScanned("1112223334445")
+            testDispatcher.scheduler.runCurrent()
+            vm.onSkip()
+
+            assertEquals(1, vm.uiState.value.sessionRecap.articleCount)
+            assertEquals(5, vm.uiState.value.sessionRecap.unitsCount)
+        }
+
+    @Test
+    fun `une nouvelle session demarre le recap a zero`() =
+        runTest {
+            val vm = buildViewModel()
+            assertEquals(0, vm.uiState.value.sessionRecap.articleCount)
+            assertEquals(0, vm.uiState.value.sessionRecap.unitsCount)
+        }
+
+    @Test
+    fun `queueAddedTick s incremente a chaque validation reussie`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(1L, quantity = 10))
+            val vm = buildViewModel()
+            assertEquals(0, vm.uiState.value.queueAddedTick)
+
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+            vm.onQuickAdd(5)
+            vm.onValidate()
+
+            assertEquals(1, vm.uiState.value.queueAddedTick)
+
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(2L, quantity = 1))
+            vm.onBarcodeScanned("1112223334445")
+            testDispatcher.scheduler.runCurrent()
+            vm.onQuickAdd(3)
+            vm.onValidate()
+
+            assertEquals(2, vm.uiState.value.queueAddedTick)
+        }
+
+    // ─── Retour scan : feedback + doublon immédiat (Lot 3) ───────────────────
+
+    @Test
+    fun `un scan resolu emet un evenement de feedback`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(1L, quantity = 10))
+            val vm = buildViewModel()
+
+            vm.scanFeedbackEvents.test {
+                vm.onBarcodeScanned("3401234567890")
+                awaitItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `un code introuvable n emet aucun evenement de feedback`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = emptyList()
+            val vm = buildViewModel()
+
+            vm.scanFeedbackEvents.test {
+                vm.onBarcodeScanned("0000000000000")
+                advanceUntilIdle()
+                expectNoEvents()
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `un doublon immediat du meme code est ignore sans nouveau lookup`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(1L, quantity = 10))
+            val vm = buildViewModel()
+
+            vm.onBarcodeScanned("3401234567890")
+            // Deuxième décodage du MÊME code avant que l'état ne bascule (scanner continu) :
+            // volontairement PAS d'avanceUntilIdle() entre les deux, pour simuler la course.
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+
+            assertEquals(
+                "Le doublon immédiat ne doit déclencher qu'un seul lookup",
+                1,
+                fakeRepo.barcodeSearchCalls.size,
+            )
         }
 
     // ─── Builders ────────────────────────────────────────────────────────────

@@ -175,6 +175,11 @@
     <string name="stock_replenish_add_content_description">Ajouter la quantité</string>
     <string name="stock_replenish_quantity_placeholder">Quantité</string>
     <string name="stock_replenish_pending_label">%1$s : %2$s en attente</string>
+    <string name="stock_replenish_queue_added_content_description">Ajouté à la file d\'attente</string>
+    <string name="stock_replenish_session_recap">%1$d article(s) · +%2$d en stock</string>
+    <string name="stock_replenish_session_recap_exit_title">Récap de la session</string>
+    <string name="stock_replenish_session_recap_exit_message">%1$d article(s) réapprovisionné(s), +%2$d unités.</string>
+    <string name="stock_replenish_session_recap_exit_action">OK</string>
 
     <string name="clients_list_empty">Aucun client pour l\’instant.</string>
     <string name="clients_orders_count">%1$d commandes</string>
@@ -378,6 +383,8 @@
     <string name="settings_stock_replenish_amount_label">Bouton %1$d</string>
     <string name="settings_stock_replenish_add_button">Ajouter un bouton</string>
     <string name="settings_stock_replenish_remove_content_description">Retirer ce bouton</string>
+    <string name="settings_stock_replenish_sound_label">Son au scan</string>
+    <string name="settings_stock_replenish_sound_hint">Joue un bref bip de confirmation quand un code-barres est reconnu.</string>
 
     <!-- Filtres stock produits -->
     <string name="products_filter_all">Tous</string>

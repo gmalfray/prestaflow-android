@@ -13,13 +13,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
  */
 class FakeStockReplenishPreferencesRepository(
     initial: List<Int> = DEFAULT_QUICK_ADD_AMOUNTS,
+    initialSoundOnScan: Boolean = true,
 ) : StockReplenishPreferencesRepository {
     private val _quickAddAmounts = MutableStateFlow(initial)
+    private val _soundOnScan = MutableStateFlow(initialSoundOnScan)
 
     override val quickAddAmounts: Flow<List<Int>> = _quickAddAmounts
+    override val soundOnScan: Flow<Boolean> = _soundOnScan
 
     /** Dernière valeur normalisée persistée par [setQuickAddAmounts]. */
     var stored: List<Int> = initial
+        private set
+
+    /** Dernière valeur persistée par [setSoundOnScan]. */
+    var storedSoundOnScan: Boolean = initialSoundOnScan
         private set
 
     override suspend fun setQuickAddAmounts(amounts: List<Int>) {
@@ -28,8 +35,18 @@ class FakeStockReplenishPreferencesRepository(
         _quickAddAmounts.value = normalized
     }
 
+    override suspend fun setSoundOnScan(enabled: Boolean) {
+        storedSoundOnScan = enabled
+        _soundOnScan.value = enabled
+    }
+
     /** Émet une nouvelle valeur directement (sans passer par [setQuickAddAmounts]), pour les tests. */
     fun emit(amounts: List<Int>) {
         _quickAddAmounts.value = amounts
+    }
+
+    /** Émet une nouvelle valeur directement (sans passer par [setSoundOnScan]), pour les tests. */
+    fun emitSoundOnScan(enabled: Boolean) {
+        _soundOnScan.value = enabled
     }
 }

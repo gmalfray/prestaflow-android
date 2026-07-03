@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.data.products
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -61,7 +62,32 @@ class StockReplenishPreferencesRepositoryImpl
             }
         }
 
+        /**
+         * Défaut = **activé**. Choix assumé (Lot 3) : dans un flux de scan en série, le bip est un
+         * repère utile pour confirmer une lecture sans regarder l'écran (comme les douchettes de
+         * caisse) ; désactivable en un geste depuis les Réglages pour qui le trouve intrusif.
+         */
+        override val soundOnScan: Flow<Boolean> =
+            dataStore.data
+                .catch { error ->
+                    if (error is IOException) {
+                        Timber.w(error, "Erreur lecture préférence bip au scan réappro")
+                        emit(emptyPreferences())
+                    } else {
+                        throw error
+                    }
+                }
+                .map { prefs -> prefs[KEY_SOUND_ON_SCAN] ?: true }
+                .distinctUntilChanged()
+
+        override suspend fun setSoundOnScan(enabled: Boolean) {
+            withContext(ioDispatcher) {
+                dataStore.edit { prefs -> prefs[KEY_SOUND_ON_SCAN] = enabled }
+            }
+        }
+
         companion object {
             private val KEY_QUICK_ADD_AMOUNTS = stringPreferencesKey("stock_replenish_quick_add_amounts")
+            private val KEY_SOUND_ON_SCAN = booleanPreferencesKey("stock_replenish_sound_on_scan")
         }
     }

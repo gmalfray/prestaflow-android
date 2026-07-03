@@ -85,4 +85,30 @@ class StockReplenishPrefsViewModelTest {
 
             assertEquals(listOf(2, 4), viewModel.quickAddAmounts.value)
         }
+
+    // ─── Son au scan (Lot 3) ──────────────────────────────────────────────────
+
+    @Test
+    fun `sans preference enregistree le son au scan est active par defaut`() =
+        runTest {
+            val viewModel = StockReplenishPrefsViewModel(fakeRepo)
+            backgroundScope.launch { viewModel.soundOnScan.collect {} }
+            advanceUntilIdle()
+
+            assertEquals(true, viewModel.soundOnScan.value)
+        }
+
+    @Test
+    fun `setSoundOnScan persiste et republie la nouvelle valeur`() =
+        runTest {
+            val viewModel = StockReplenishPrefsViewModel(fakeRepo)
+            backgroundScope.launch { viewModel.soundOnScan.collect {} }
+            advanceUntilIdle()
+
+            viewModel.setSoundOnScan(false)
+            advanceUntilIdle()
+
+            assertEquals(false, viewModel.soundOnScan.value)
+            assertEquals(false, fakeRepo.storedSoundOnScan)
+        }
 }

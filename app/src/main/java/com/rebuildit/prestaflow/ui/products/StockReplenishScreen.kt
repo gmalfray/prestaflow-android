@@ -1,9 +1,20 @@
 package com.rebuildit.prestaflow.ui.products
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioManager
+import android.media.ToneGenerator
+import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +35,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -54,7 +67,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -98,9 +113,13 @@ private val REPLENISH_BARCODE_FORMATS =
  * INCONNU reste porté tel quel par [ProductScanViewModel]/[ProductScanSheet] : cet écran délègue le
  * sous-cas [StockReplenishUiState.notFound] à un second ViewModel Hilt dédié à ce seul sous-flux,
  * et récupère la main dès que l'association aboutit.
+ *
+ * Lot 3 : consomme [StockReplenishViewModel.scanFeedbackEvents] pour déclencher le retour
+ * haptique ([LocalHapticFeedback], toujours actif) et le bip sonore ([rememberScanConfirmationTone],
+ * seulement si [StockReplenishViewModel.soundOnScan] est activé).
  */
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongMethod") // Orchestration scan + sous-flux d'association (2 ViewModels observés)
+@Suppress("LongMethod") // Orchestration scan + sous-flux d'association (2 ViewModels observés) + feedback Lot 3
 @Composable
 fun StockReplenishRoute(
     onBackClick: () -> Unit,
@@ -110,6 +129,7 @@ fun StockReplenishRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val quickAddAmounts by viewModel.quickAddAmounts.collectAsStateWithLifecycle()
+    val soundOnScan by viewModel.soundOnScan.collectAsStateWithLifecycle()
     val associationState by associationViewModel.uiState.collectAsStateWithLifecycle()
 
     // Code introuvable → délègue au flux d'association existant (inchangé), sur le MÊME code.
@@ -128,6 +148,17 @@ fun StockReplenishRoute(
             associationViewModel.onDismiss()
         } else if (!associationState.isSheetVisible && state.notFound) {
             viewModel.onSkip()
+        }
+    }
+
+    // Lot 3 — retour haptique + bip sonore sur scan résolu (jamais sur échec/doublon, filtré en
+    // amont côté ViewModel). Le haptique respecte déjà le réglage système ; le son suit [soundOnScan].
+    val hapticFeedback = LocalHapticFeedback.current
+    val scanTone = rememberScanConfirmationTone()
+    LaunchedEffect(viewModel, scanTone) {
+        viewModel.scanFeedbackEvents.collect {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            if (soundOnScan) scanTone.play()
         }
     }
 
@@ -176,6 +207,12 @@ fun StockReplenishRoute(
     }
 }
 
+/**
+ * Lot 3 : bandeau récap de session ([SessionRecapBanner]) visible dès qu'un article a été validé,
+ * confirmation visuelle discrète à chaque ajout à la file ([queueAddedTick]), et récap de sortie
+ * ([showExitRecap]) intercepté sur le retour (bouton ET geste système via [BackHandler]) tant que la
+ * session contient au moins un article validé — cf. KDoc [StockReplenishViewModel].
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList", "LongMethod") // Écran orchestrant scan + accumulation + validation : callbacks distincts
 @Composable
@@ -201,6 +238,8 @@ fun StockReplenishScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val errorMessage = state.error?.asString()
     val backDesc = stringResource(R.string.content_description_back)
+    val context = LocalContext.current
+    val reduceMotion = remember { isReduceMotionEnabled(context) }
 
     LaunchedEffect(errorMessage) {
         if (errorMessage != null) {
@@ -215,13 +254,44 @@ fun StockReplenishScreen(
         }
     }
 
+    // Confirmation visuelle discrète (Lot 3) : brève apparition à chaque écriture ajoutée à la
+    // file — un compteur (plutôt qu'un simple Boolean) car deux validations rapprochées doivent
+    // chacune redéclencher l'effet, même si le booléen resterait "true" entre les deux.
+    var showAddedFlash by remember { mutableStateOf(false) }
+    LaunchedEffect(state.queueAddedTick) {
+        if (state.queueAddedTick > 0) {
+            showAddedFlash = true
+            delay(QUEUE_ADDED_FLASH_DURATION_MS)
+            showAddedFlash = false
+        }
+    }
+
+    // Récap de sortie (Lot 3) : intercepte le retour (bouton + geste système) tant qu'au moins un
+    // article a été réellement validé dans la session, pour l'afficher avant de quitter l'écran.
+    var showExitRecap by remember { mutableStateOf(false) }
+    val hasSessionRecap = state.sessionRecap.articleCount > 0
+    val attemptExit = {
+        if (hasSessionRecap) showExitRecap = true else onBackClick()
+    }
+    BackHandler(enabled = hasSessionRecap, onBack = attemptExit)
+
+    if (showExitRecap) {
+        SessionRecapExitDialog(
+            recap = state.sessionRecap,
+            onDismiss = {
+                showExitRecap = false
+                onBackClick()
+            },
+        )
+    }
+
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.stock_replenish_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = attemptExit) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = backDesc)
                     }
                 },
@@ -231,6 +301,7 @@ fun StockReplenishScreen(
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
+                SessionRecapBanner(recap = state.sessionRecap)
                 PermanentBarcodeScanner(
                     isActive = state.isScannerActive,
                     onBarcodeScanned = onBarcodeScanned,
@@ -265,6 +336,18 @@ fun StockReplenishScreen(
                 }
             }
 
+            AnimatedVisibility(
+                visible = showAddedFlash,
+                enter = if (reduceMotion) EnterTransition.None else fadeIn() + scaleIn(initialScale = 0.85f),
+                exit = if (reduceMotion) ExitTransition.None else fadeOut(),
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = Dimensions.spacingM),
+            ) {
+                QueueAddedFlash()
+            }
+
             if (state.pendingWrites.isNotEmpty()) {
                 Column(
                     modifier =
@@ -283,6 +366,133 @@ fun StockReplenishScreen(
                 }
             }
         }
+    }
+}
+
+/** Durée d'affichage de [QueueAddedFlash] après chaque validation. */
+private const val QUEUE_ADDED_FLASH_DURATION_MS = 1_200L
+
+/** Vrai si l'utilisateur a désactivé les animations système ("Échelle de durée des animations" = 0). */
+private fun isReduceMotionEnabled(context: Context): Boolean =
+    runCatching {
+        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    }.getOrDefault(false)
+
+// ─── Récap de session (Lot 3) ──────────────────────────────────────────────────
+
+/** Bandeau persistant « N articles · +Q en stock » — masqué tant qu'aucun article n'a été validé. */
+@Composable
+private fun SessionRecapBanner(recap: ReplenishSessionRecap) {
+    if (recap.articleCount <= 0) return
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingXs),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.stock_replenish_session_recap, recap.articleCount, recap.unitsCount),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+        }
+    }
+}
+
+/** Coche brièvement affichée quand un ajustement est ajouté à la file (confirmation visuelle discrète). */
+@Composable
+private fun QueueAddedFlash() {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        tonalElevation = 4.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = Dimensions.spacingM, vertical = Dimensions.spacingXs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = null,
+                modifier = Modifier.size(Dimensions.iconSizeSmall),
+            )
+            Text(
+                text = stringResource(R.string.stock_replenish_queue_added_content_description),
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
+    }
+}
+
+/** Dialogue de récap affiché à la sortie de l'écran si au moins un article a été validé. */
+@Composable
+private fun SessionRecapExitDialog(
+    recap: ReplenishSessionRecap,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+        title = { Text(stringResource(R.string.stock_replenish_session_recap_exit_title)) },
+        text = {
+            Text(
+                stringResource(
+                    R.string.stock_replenish_session_recap_exit_message,
+                    recap.articleCount,
+                    recap.unitsCount,
+                ),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.stock_replenish_session_recap_exit_action))
+            }
+        },
+    )
+}
+
+// ─── Bip de confirmation au scan (Lot 3) ────────────────────────────────────────
+
+/**
+ * Bip court de confirmation au scan, joué via [ToneGenerator] (pas d'asset embarqué). Respecte le
+ * mode silencieux système ([AudioManager.RINGER_MODE_SILENT]) — l'activation/désactivation
+ * explicite reste pilotée par la préférence [StockReplenishViewModel.soundOnScan] (cf. appelant).
+ */
+@Composable
+private fun rememberScanConfirmationTone(): ScanConfirmationTone {
+    val context = LocalContext.current
+    val tone = remember { ScanConfirmationTone(context) }
+    DisposableEffect(tone) {
+        onDispose { tone.release() }
+    }
+    return tone
+}
+
+private class ScanConfirmationTone(private val context: Context) {
+    private val toneGenerator: ToneGenerator? =
+        runCatching { ToneGenerator(AudioManager.STREAM_NOTIFICATION, TONE_VOLUME_PERCENT) }.getOrNull()
+
+    fun play() {
+        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+        if (audioManager?.ringerMode == AudioManager.RINGER_MODE_SILENT) return
+        runCatching { toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, TONE_DURATION_MS) }
+    }
+
+    fun release() {
+        runCatching { toneGenerator?.release() }
+    }
+
+    companion object {
+        /** Volume modéré (0-100 % du flux notification) — repère discret, pas une alarme. */
+        private const val TONE_VOLUME_PERCENT = 60
+        private const val TONE_DURATION_MS = 90
     }
 }
 

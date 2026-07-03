@@ -44,6 +44,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +52,7 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -95,7 +97,8 @@ import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import com.rebuildit.prestaflow.ui.theme.ThemeViewModel
 import com.rebuildit.prestaflow.ui.theme.displayNameRes
 
-@Suppress("LongParameterList") // Écran Réglages : un ViewModel Hilt par section (thème, boutiques, dashboard, imprimante, swipe, réappro)
+// Écran Réglages : un ViewModel Hilt par section (thème, boutiques, dashboard, imprimante, swipe, réappro)
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 fun SettingsRoute(
     onLogoutClick: () -> Unit,
@@ -114,6 +117,7 @@ fun SettingsRoute(
     val savedPrinterDevice by thermalPrinterViewModel.savedDevice.collectAsStateWithLifecycle()
     val swipePrefsState by swipePrefsViewModel.uiState.collectAsStateWithLifecycle()
     val stockReplenishQuickAddAmounts by stockReplenishPrefsViewModel.quickAddAmounts.collectAsStateWithLifecycle()
+    val stockReplenishSoundOnScan by stockReplenishPrefsViewModel.soundOnScan.collectAsStateWithLifecycle()
 
     val qrScanPrompt = stringResource(id = R.string.auth_scan_prompt)
     val qrScanLauncher =
@@ -164,6 +168,8 @@ fun SettingsRoute(
         onRetryStatuses = swipePrefsViewModel::loadStatuses,
         stockReplenishQuickAddAmounts = stockReplenishQuickAddAmounts,
         onStockReplenishQuickAddAmountsChanged = stockReplenishPrefsViewModel::setQuickAddAmounts,
+        stockReplenishSoundOnScan = stockReplenishSoundOnScan,
+        onStockReplenishSoundOnScanChanged = stockReplenishPrefsViewModel::setSoundOnScan,
     )
 }
 
@@ -199,6 +205,8 @@ fun SettingsScreen(
     onRetryStatuses: () -> Unit = {},
     stockReplenishQuickAddAmounts: List<Int> = DEFAULT_QUICK_ADD_AMOUNTS,
     onStockReplenishQuickAddAmountsChanged: (List<Int>) -> Unit = {},
+    stockReplenishSoundOnScan: Boolean = true,
+    onStockReplenishSoundOnScanChanged: (Boolean) -> Unit = {},
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -359,11 +367,16 @@ fun SettingsScreen(
             )
         }
 
-        // Section RÉAPPRO STOCK — boutons rapides configurables (Lot 2)
+        // Section RÉAPPRO STOCK — boutons rapides configurables (Lot 2) + son au scan (Lot 3)
         SettingsSection(label = stringResource(R.string.settings_stock_replenish_label)) {
             StockReplenishQuickAddSection(
                 amounts = stockReplenishQuickAddAmounts,
                 onAmountsChanged = onStockReplenishQuickAddAmountsChanged,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainer)
+            StockReplenishSoundToggleRow(
+                enabled = stockReplenishSoundOnScan,
+                onEnabledChanged = onStockReplenishSoundOnScanChanged,
             )
         }
 
@@ -1307,6 +1320,37 @@ private fun StockReplenishQuickAddSection(
                 style = MaterialTheme.typography.titleSmall,
             )
         }
+    }
+}
+
+/**
+ * Toggle « Son au scan » (Lot 3) — bip de confirmation joué par [com.rebuildit.prestaflow.ui.products.StockReplenishScreen]
+ * quand un code-barres est résolu. Le retour haptique n'est pas exposé ici : il suit toujours le
+ * réglage système (vibration au toucher), cf. KDoc [com.rebuildit.prestaflow.ui.products.StockReplenishViewModel].
+ */
+@Composable
+private fun StockReplenishSoundToggleRow(
+    enabled: Boolean,
+    onEnabledChanged: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.settings_stock_replenish_sound_label),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.settings_stock_replenish_sound_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = enabled, onCheckedChange = onEnabledChanged)
     }
 }
 

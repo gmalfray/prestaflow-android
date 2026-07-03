@@ -4,7 +4,8 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * Préférences utilisateur liées à l'écran « Ajout / réappro stock » (Lot 2 — boutons rapides
- * configurables, cf. [com.rebuildit.prestaflow.ui.products.StockReplenishViewModel]).
+ * configurables ; Lot 3 — bip sonore de confirmation, cf.
+ * [com.rebuildit.prestaflow.ui.products.StockReplenishViewModel]).
  */
 interface StockReplenishPreferencesRepository {
     /**
@@ -20,4 +21,15 @@ interface StockReplenishPreferencesRepository {
      * boutons, entiers strictement positifs uniquement.
      */
     suspend fun setQuickAddAmounts(amounts: List<Int>)
+
+    /**
+     * Flux de l'activation du bip sonore de confirmation au scan (Lot 3). Défaut (aucune
+     * préférence enregistrée) : **activé** — cf. [com.rebuildit.prestaflow.data.products.StockReplenishPreferencesRepositoryImpl]
+     * pour la justification du choix. Le retour haptique, lui, n'est pas désactivable ici (respecte
+     * déjà le réglage système via `LocalHapticFeedback`, cf. KDoc [com.rebuildit.prestaflow.ui.products.StockReplenishViewModel]).
+     */
+    val soundOnScan: Flow<Boolean>
+
+    /** Persiste l'activation du bip sonore de confirmation au scan. */
+    suspend fun setSoundOnScan(enabled: Boolean)
 }
