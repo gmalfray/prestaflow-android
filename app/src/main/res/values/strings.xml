@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PrestaFlow</string>
-    <string name="app_tagline">Mobile management for PrestaShop</string>
     <string name="notif_channel_sales_name">Sales</string>
     <string name="notif_channel_sales_desc">New order notifications (cash register sound)</string>
     <string name="notif_channel_order_status_name">Order status changes</string>
@@ -11,10 +10,11 @@
     <string name="notif_channel_default_name">Alerts</string>
     <string name="notif_channel_default_desc">General app notifications</string>
     <string name="notif_sale_default_title">New order</string>
+    <!-- Sync worker — tâche offline abandonnée après une réponse HTTP non réessayable (400/422…) -->
+    <string name="sync_failure_notif_title">Sync failed</string>
+    <string name="sync_failure_notif_body">A change (%1$s) could not be saved (HTTP %2$d). Open the app to check.</string>
     <string name="action_retry">Retry</string>
-    <string name="label_environment">Environment</string>
     <string name="label_last_sync">Last sync: %1$s</string>
-    <string name="content_description_app_logo">PrestaFlow logo</string>
     <string name="destination_dashboard">Dashboard</string>
     <string name="destination_orders">Orders</string>
     <string name="destination_products">Products</string>
@@ -46,7 +46,6 @@
     <string name="dashboard_kpi_turnover">Turnover</string>
     <string name="dashboard_kpi_orders">Orders</string>
     <string name="dashboard_kpi_customers">Customers</string>
-    <string name="dashboard_kpi_products">Products</string>
     <string name="dashboard_kpi_avg_cart">Avg. basket</string>
     <string name="dashboard_chart_title_turnover">Turnover trend</string>
     <string name="dashboard_chart_empty">No chart data for the selected period.</string>
@@ -56,8 +55,6 @@
     <string name="dashboard_chart_vs_prev_month">vs prev. 30 days</string>
     <string name="dashboard_chart_vs_prev_quarter">vs prev. quarter</string>
     <string name="dashboard_chart_vs_prev_year">vs prev. year</string>
-    <string name="dashboard_kpi_orders_navigate">See orders for this period</string>
-    <string name="dashboard_kpi_clients_navigate">See customers</string>
     <string name="dashboard_period_today">Today</string>
     <string name="dashboard_period_week">7 days</string>
     <string name="dashboard_period_month">30 days</string>
@@ -65,10 +62,8 @@
     <string name="dashboard_period_year">Year</string>
     <string name="dashboard_period_custom">Custom</string>
     <!-- Args: 1=date début, 2=date fin -->
-    <string name="dashboard_custom_range_label">%1$s – %2$s</string>
     <string name="dashboard_date_picker_title">Select date range</string>
     <string name="dashboard_chart_new_customers">New customers</string>
-    <string name="dashboard_action_refresh">Refresh</string>
     <string name="action_ok">OK</string>
     <string name="action_cancel">Cancel</string>
     <!-- Accessibility: chart content description. Args: 1=formatted value, 2=trend (rising/falling) -->
@@ -83,8 +78,6 @@
     <string name="dashboard_tooltip_turnover">Sales: %1$s</string>
     <string name="dashboard_tooltip_new_customers">New cust.: %1$d</string>
     <string name="dashboard_greeting">Hello</string>
-    <string name="dashboard_recent_orders">Recent orders</string>
-    <string name="dashboard_see_all">See all</string>
     <string name="dashboard_content_description_refresh">Refresh dashboard</string>
     <string name="dashboard_content_description_kpi_card">%1$s: %2$s</string>
     <!-- Dashboard — KPI trend badge. Arg: 1=formatted percentage (e.g. "12.3%") -->
@@ -101,12 +94,9 @@
     <string name="skin_forest">Forest</string>
     <string name="skin_slate">Slate</string>
     <string name="skin_soft">Soft &amp; Friendly</string>
-    <string name="skin_dynamic_color">Dynamic color</string>
     <string name="skin_dark_follow_system">System default</string>
     <string name="skin_dark_light">Always light</string>
     <string name="skin_dark_dark">Always dark</string>
-    <string name="skin_selector_title">App appearance</string>
-    <string name="skin_selector_subtitle">Choose a color skin and dark mode preference</string>
     <string name="auth_loading">Checking your credentials…</string>
     <string name="auth_error_module_not_installed">The Rebuild Connector module is not installed on this shop.</string>
     <string name="auth_action_see_install_guide">See the installation guide</string>
@@ -132,7 +122,6 @@
     <string name="module_guide_share_chooser">Share via…</string>
     <string name="orders_list_empty">No orders yet.</string>
     <string name="orders_status_unknown">Status unavailable</string>
-    <string name="orders_last_updated">Updated %1$s</string>
     <string name="orders_list_section_title">Recent orders</string>
     <string name="orders_list_count">%1$d loaded</string>
     <string name="orders_action_open">Open order</string>
@@ -172,8 +161,6 @@
     <string name="products_scan_association_combination_title">Which variant should this barcode be linked to?</string>
     <string name="products_scan_combination_back">Back</string>
     <string name="clients_list_empty">No customers yet.</string>
-    <string name="clients_total_spent">Spent %1$s</string>
-    <string name="clients_last_order">Last order %1$s</string>
     <string name="clients_orders_count">%1$d orders</string>
     <string name="clients_list_section_title">Top customers</string>
     <string name="clients_list_section_all">All customers</string>
@@ -183,7 +170,6 @@
     <string name="clients_stats_new_month">New (month)</string>
     <string name="clients_action_open">Open customer</string>
     <string name="clients_load_more">Load more</string>
-    <string name="clients_load_more_loading">Loading…</string>
 
     <string name="client_detail_title">Customer Details</string>
     <string name="client_stats_section">Statistics</string>
@@ -235,10 +221,6 @@
     <string name="order_detail_title">Order Details</string>
     <string name="order_detail_reference_label">Reference</string>
     <string name="order_detail_error">Error loading order</string>
-    <string name="order_detail_retry">Retry</string>
-    <string name="order_detail_change_status">Change status</string>
-    <string name="order_detail_status_label">Status</string>
-    <string name="order_detail_status_update">Update</string>
     <string name="order_detail_tracking_title">Tracking number</string>
     <string name="order_detail_tracking_label">Tracking number</string>
     <string name="order_detail_tracking_save">Save</string>
@@ -246,7 +228,6 @@
     <string name="order_detail_shipping_section">Shipping</string>
     <string name="order_detail_items_section">Items (%1$d)</string>
     <string name="order_detail_total_paid">Total Paid</string>
-    <string name="order_detail_tracking_button">Tracking</string>
     <string name="order_detail_cancel">Cancel</string>
     <string name="order_detail_scan_tracking_prompt">Point the camera at the shipment barcode</string>
     <string name="order_detail_scan_tracking_content_description">Scan barcode</string>
@@ -262,14 +243,9 @@
     <string name="order_detail_generate_label">Generate label</string>
     <string name="order_detail_generate_label_content_description">Generate Colissimo shipping label</string>
     <!-- Imprimante thermique Bluetooth -->
-    <string name="order_detail_print_thermal">Print on thermal printer</string>
-    <string name="order_detail_print_thermal_content_description">Print shipping label on Bluetooth thermal printer</string>
-    <string name="order_detail_thermal_no_printer">No thermal printer configured. Please select one in Settings.</string>
     <string name="order_detail_thermal_bt_disabled">Bluetooth is disabled. Please enable it to print.</string>
     <string name="order_detail_thermal_bt_permission_denied">Bluetooth permission required to connect to the printer.</string>
     <string name="order_detail_thermal_connecting">Connecting to printer…</string>
-    <string name="order_detail_thermal_success">Label printed successfully.</string>
-    <string name="order_detail_thermal_error">Thermal print failed: %1$s</string>
     <!-- Settings — section imprimante thermique -->
     <string name="settings_thermal_printer_label">Thermal Printer</string>
     <string name="settings_thermal_printer_none">No printer selected</string>
@@ -311,7 +287,6 @@
 
     <!-- Filtres statuts commandes -->
     <string name="orders_filter_all">All</string>
-    <string name="orders_filter_label">Filter by status</string>
     <string name="orders_filter_configure">Filter and customize statuses</string>
     <string name="orders_filter_empty">No orders for this status.</string>
     <string name="orders_filter_reset">Reset filters</string>
@@ -324,7 +299,6 @@
     <string name="orders_filter_prefs_section_filter_hint">Select any number of statuses to filter the list</string>
     <string name="orders_filter_prefs_clear_all">Clear all</string>
     <string name="orders_filter_prefs_section_shortcuts">Shortcuts (bar)</string>
-    <string name="orders_filter_prefs_max_hint">%1$d shortcuts max</string>
     <string name="orders_filter_prefs_pin_description_add">Pin %1$s as a shortcut</string>
     <string name="orders_filter_prefs_pin_description_remove">Unpin %1$s from shortcuts</string>
     <string name="orders_filter_prefs_cancel">Cancel</string>
@@ -351,7 +325,6 @@
 
     <!-- Swipe statut commande -->
     <string name="orders_swipe_pending">Order %1$s → %2$s</string>
-    <string name="orders_swipe_undo">Cancel</string>
     <!-- Cancel button with a live seconds countdown before the change is actually sent (e.g. "Cancel (8s)"). -->
     <string name="orders_swipe_undo_countdown">Cancel (%1$ds)</string>
     <string name="orders_swipe_left_label">In preparation</string>
@@ -359,7 +332,6 @@
 
     <!-- OrderDetail — messages d'action (externalisés pour i18n) -->
     <string name="order_detail_status_updated">Status updated</string>
-    <string name="order_detail_update_failed">Update failed</string>
     <string name="order_detail_tracking_updated">Tracking updated</string>
     <string name="order_detail_invoice_unavailable">This order has no invoice available.</string>
     <string name="order_detail_shipping_label_unavailable">No shipping label available for this order.</string>
@@ -390,7 +362,6 @@
     <string name="products_filter_in_stock">In stock</string>
     <string name="products_filter_out_of_stock">Out of stock</string>
     <string name="products_filter_low_stock">Low stock</string>
-    <string name="products_filter_label">Filter by stock</string>
 
     <string name="products_search_placeholder">Search by name or reference</string>
     <string name="clients_search_placeholder">Search by name or email</string>
@@ -410,7 +381,6 @@
 
     <!-- Settings screen -->
     <string name="destination_settings">Settings</string>
-    <string name="settings_appearance_title">Appearance</string>
     <string name="settings_theme_label">Theme</string>
     <string name="settings_dark_mode_title">Dark mode</string>
     <string name="settings_shops_label">Shops</string>
@@ -448,7 +418,6 @@
     <string name="carts_abandoned">Abandoned cart</string>
     <string name="carts_customer_guest">Guest</string>
     <string name="carts_products_section">Products</string>
-    <string name="carts_detail_error">Error loading cart</string>
     <string name="carts_detail_not_found">Cart not found.</string>
     <string name="carts_search_placeholder">Search by customer name</string>
     <string name="carts_load_more">Load more</string>

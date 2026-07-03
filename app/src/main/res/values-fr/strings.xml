@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PrestaFlow</string>
-    <string name="app_tagline">Gestion mobile pour PrestaShop</string>
     <string name="notif_channel_sales_name">Ventes</string>
     <string name="notif_channel_sales_desc">Notifications de nouvelle commande (son de caisse)</string>
     <string name="notif_channel_order_status_name">Changements de statut commande</string>
@@ -11,10 +10,11 @@
     <string name="notif_channel_default_name">Alertes</string>
     <string name="notif_channel_default_desc">Notifications générales de l\'application</string>
     <string name="notif_sale_default_title">Nouvelle commande</string>
+    <!-- Sync worker — tâche offline abandonnée après une réponse HTTP non réessayable (400/422…) -->
+    <string name="sync_failure_notif_title">Échec de synchronisation</string>
+    <string name="sync_failure_notif_body">Une modification (%1$s) n\'a pas pu être enregistrée (HTTP %2$d). Ouvrez l\'app pour vérifier.</string>
     <string name="action_retry">Réessayer</string>
-    <string name="label_environment">Environnement</string>
     <string name="label_last_sync">Dernière synchronisation : %1$s</string>
-    <string name="content_description_app_logo">Logo PrestaFlow</string>
     <string name="destination_dashboard">Accueil</string>
     <string name="destination_orders">Commandes</string>
     <string name="destination_products">Produits</string>
@@ -46,7 +46,6 @@
     <string name="dashboard_kpi_turnover">Chiffre d\’affaires</string>
     <string name="dashboard_kpi_orders">Commandes</string>
     <string name="dashboard_kpi_customers">Nouveaux clients</string>
-    <string name="dashboard_kpi_products">Produits</string>
     <string name="dashboard_kpi_avg_cart">Panier moyen</string>
     <string name="dashboard_chart_title_turnover">Chiffre d\’affaires</string>
     <string name="dashboard_chart_empty">Aucune donnée graphique pour la période sélectionnée.</string>
@@ -56,8 +55,6 @@
     <string name="dashboard_chart_vs_prev_month">vs 30 j précédents</string>
     <string name="dashboard_chart_vs_prev_quarter">vs trimestre précédent</string>
     <string name="dashboard_chart_vs_prev_year">vs année précédente</string>
-    <string name="dashboard_kpi_orders_navigate">Voir les commandes de la période</string>
-    <string name="dashboard_kpi_clients_navigate">Voir les clients</string>
     <string name="dashboard_period_today">Aujourd\’hui</string>
     <string name="dashboard_period_week">7 jours</string>
     <string name="dashboard_period_month">30 jours</string>
@@ -65,10 +62,8 @@
     <string name="dashboard_period_year">Année</string>
     <string name="dashboard_period_custom">Personnalisé</string>
     <!-- Args : 1=date début, 2=date fin -->
-    <string name="dashboard_custom_range_label">%1$s – %2$s</string>
     <string name="dashboard_date_picker_title">Sélectionner une plage</string>
     <string name="dashboard_chart_new_customers">Nouveaux clients</string>
-    <string name="dashboard_action_refresh">Actualiser</string>
     <string name="action_ok">OK</string>
     <string name="action_cancel">Annuler</string>
     <!-- Accessibilité : description du graphique. Args : 1=valeur formatée, 2=tendance -->
@@ -83,8 +78,6 @@
     <string name="dashboard_tooltip_turnover">CA : %1$s</string>
     <string name="dashboard_tooltip_new_customers">Nv. clients : %1$d</string>
     <string name="dashboard_greeting">Bonjour</string>
-    <string name="dashboard_recent_orders">Commandes récentes</string>
-    <string name="dashboard_see_all">Voir tout</string>
     <string name="dashboard_content_description_refresh">Actualiser le tableau de bord</string>
     <string name="dashboard_content_description_kpi_card">%1$s : %2$s</string>
     <!-- Dashboard — badge de tendance KPI. Arg : 1=pourcentage formaté (ex : "12,3 %") -->
@@ -101,12 +94,9 @@
     <string name="skin_forest">Canopée</string>
     <string name="skin_slate">Horizons Ardoise</string>
     <string name="skin_soft">Doux &amp; Amical</string>
-    <string name="skin_dynamic_color">Couleur dynamique</string>
     <string name="skin_dark_follow_system">Suivre le système</string>
     <string name="skin_dark_light">Toujours clair</string>
     <string name="skin_dark_dark">Toujours sombre</string>
-    <string name="skin_selector_title">Apparence de l’application</string>
-    <string name="skin_selector_subtitle">Choisissez un jeu de couleurs et la préférence de mode sombre</string>
     <string name="auth_loading">Vérification de vos identifiants…</string>
     <string name="auth_error_module_not_installed">Le module Rebuild Connector n\'est pas installé sur cette boutique.</string>
     <string name="auth_action_see_install_guide">Voir le guide d\'installation</string>
@@ -132,7 +122,6 @@
     <string name="module_guide_share_chooser">Partager via…</string>
     <string name="orders_list_empty">Aucune commande pour le moment.</string>
     <string name="orders_status_unknown">Statut indisponible</string>
-    <string name="orders_last_updated">Mise à jour le %1$s</string>
     <string name="orders_list_section_title">Commandes récentes</string>
     <string name="orders_list_count">%1$d chargées</string>
     <string name="orders_action_open">Ouvrir la commande</string>
@@ -172,8 +161,6 @@
     <string name="products_scan_association_combination_title">À quelle déclinaison associer ce code-barres ?</string>
     <string name="products_scan_combination_back">Retour</string>
     <string name="clients_list_empty">Aucun client pour l\’instant.</string>
-    <string name="clients_total_spent">Montant dépensé %1$s</string>
-    <string name="clients_last_order">Dernière commande %1$s</string>
     <string name="clients_orders_count">%1$d commandes</string>
     <string name="clients_list_section_title">Clients fidèles</string>
     <string name="clients_list_section_all">Tous les clients</string>
@@ -183,7 +170,6 @@
     <string name="clients_stats_new_month">Nouveaux (mois)</string>
     <string name="clients_action_open">Ouvrir le client</string>
     <string name="clients_load_more">Charger plus</string>
-    <string name="clients_load_more_loading">Chargement…</string>
 
     <string name="client_detail_title">Détails du client</string>
     <string name="client_stats_section">Statistiques</string>
@@ -235,10 +221,6 @@
     <string name="order_detail_title">Détail commande</string>
     <string name="order_detail_reference_label">Référence</string>
     <string name="order_detail_error">Erreur lors du chargement de la commande</string>
-    <string name="order_detail_retry">Réessayer</string>
-    <string name="order_detail_change_status">Changer le statut</string>
-    <string name="order_detail_status_label">Statut</string>
-    <string name="order_detail_status_update">Mettre à jour</string>
     <string name="order_detail_tracking_title">Numéro de suivi</string>
     <string name="order_detail_tracking_label">Numéro de suivi</string>
     <string name="order_detail_tracking_save">Enregistrer</string>
@@ -246,7 +228,6 @@
     <string name="order_detail_shipping_section">Livraison</string>
     <string name="order_detail_items_section">Articles (%1$d)</string>
     <string name="order_detail_total_paid">Total payé</string>
-    <string name="order_detail_tracking_button">Suivi</string>
     <string name="order_detail_cancel">Annuler</string>
     <string name="order_detail_scan_tracking_prompt">Pointez l\'appareil photo vers le code-barres du suivi</string>
     <string name="order_detail_scan_tracking_content_description">Scanner le code-barres</string>
@@ -262,14 +243,9 @@
     <string name="order_detail_generate_label">Générer l\'étiquette</string>
     <string name="order_detail_generate_label_content_description">Générer l\'étiquette de transport Colissimo</string>
     <!-- Imprimante thermique Bluetooth -->
-    <string name="order_detail_print_thermal">Imprimer sur l\'imprimante thermique</string>
-    <string name="order_detail_print_thermal_content_description">Imprimer le bordereau sur l\'imprimante thermique Bluetooth</string>
-    <string name="order_detail_thermal_no_printer">Aucune imprimante thermique configurée. Veuillez en choisir une dans les Réglages.</string>
     <string name="order_detail_thermal_bt_disabled">Le Bluetooth est désactivé. Veuillez l\'activer pour imprimer.</string>
     <string name="order_detail_thermal_bt_permission_denied">Permission Bluetooth requise pour se connecter à l\'imprimante.</string>
     <string name="order_detail_thermal_connecting">Connexion à l\'imprimante…</string>
-    <string name="order_detail_thermal_success">Bordereau imprimé avec succès.</string>
-    <string name="order_detail_thermal_error">Impression thermique échouée : %1$s</string>
     <!-- Réglages — section imprimante thermique -->
     <string name="settings_thermal_printer_label">Imprimante thermique</string>
     <string name="settings_thermal_printer_none">Aucune imprimante sélectionnée</string>
@@ -310,7 +286,6 @@
     <string name="status_picker_cancel">Annuler</string>
     <!-- Filtres statuts commandes -->
     <string name="orders_filter_all">Toutes</string>
-    <string name="orders_filter_label">Filtrer par statut</string>
     <string name="orders_filter_configure">Filtrer et personnaliser les statuts</string>
     <string name="orders_filter_empty">Aucune commande pour ce statut.</string>
     <string name="orders_filter_reset">Réinitialiser les filtres</string>
@@ -323,7 +298,6 @@
     <string name="orders_filter_prefs_section_filter_hint">Sélectionnez autant de statuts que nécessaire pour filtrer la liste</string>
     <string name="orders_filter_prefs_clear_all">Tout effacer</string>
     <string name="orders_filter_prefs_section_shortcuts">Raccourcis (barre)</string>
-    <string name="orders_filter_prefs_max_hint">%1$d raccourcis maximum</string>
     <string name="orders_filter_prefs_pin_description_add">Épingler %1$s comme raccourci</string>
     <string name="orders_filter_prefs_pin_description_remove">Désépingler %1$s des raccourcis</string>
     <string name="orders_filter_prefs_cancel">Annuler</string>
@@ -350,7 +324,6 @@
 
     <!-- Swipe statut commande -->
     <string name="orders_swipe_pending">Commande %1$s → %2$s</string>
-    <string name="orders_swipe_undo">Annuler</string>
     <!-- Bouton d'annulation avec décompte des secondes restantes avant envoi effectif (ex. "Annuler (8 s)"). -->
     <string name="orders_swipe_undo_countdown">Annuler (%1$d s)</string>
     <string name="orders_swipe_left_label">En préparation</string>
@@ -358,7 +331,6 @@
 
     <!-- Détail commande — messages d'action (externalisés pour i18n) -->
     <string name="order_detail_status_updated">Statut mis à jour</string>
-    <string name="order_detail_update_failed">Échec de la mise à jour</string>
     <string name="order_detail_tracking_updated">Suivi mis à jour</string>
     <string name="order_detail_invoice_unavailable">Cette commande n\'a pas de facture disponible.</string>
     <string name="order_detail_shipping_label_unavailable">Aucun bordereau disponible pour cette commande.</string>
@@ -389,7 +361,6 @@
     <string name="products_filter_in_stock">En stock</string>
     <string name="products_filter_out_of_stock">Rupture</string>
     <string name="products_filter_low_stock">Stock faible</string>
-    <string name="products_filter_label">Filtrer par stock</string>
 
     <string name="products_search_placeholder">Rechercher par nom ou référence</string>
     <string name="clients_search_placeholder">Rechercher par nom ou e-mail</string>
@@ -412,7 +383,6 @@
 
     <!-- Écran Réglages -->
     <string name="destination_settings">Réglages</string>
-    <string name="settings_appearance_title">Apparence</string>
     <string name="settings_theme_label">Thème</string>
     <string name="settings_dark_mode_title">Mode sombre</string>
     <string name="settings_shops_label">Boutiques</string>
@@ -449,7 +419,6 @@
     <string name="carts_abandoned">Panier abandonné</string>
     <string name="carts_customer_guest">Invité</string>
     <string name="carts_products_section">Produits</string>
-    <string name="carts_detail_error">Erreur lors du chargement du panier</string>
     <string name="carts_detail_not_found">Panier introuvable.</string>
     <string name="carts_search_placeholder">Rechercher par nom client</string>
     <string name="carts_load_more">Charger plus</string>

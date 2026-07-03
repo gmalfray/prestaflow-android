@@ -16,6 +16,8 @@ import com.rebuildit.prestaflow.core.network.ApiEndpointManager
 import com.rebuildit.prestaflow.core.network.TokenAuthenticator
 import com.rebuildit.prestaflow.core.notifications.ShopDeviceRegistrar
 import com.rebuildit.prestaflow.core.notifications.ShopDeviceRegistrarContract
+import com.rebuildit.prestaflow.core.notifications.SyncFailureNotifier
+import com.rebuildit.prestaflow.core.notifications.SyncFailureNotifierContract
 import com.rebuildit.prestaflow.core.security.EncryptedTokenStorage
 import com.rebuildit.prestaflow.core.security.InMemoryTokenProvider
 import com.rebuildit.prestaflow.core.security.TokenStorage
@@ -227,6 +229,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideShopDeviceRegistrar(impl: ShopDeviceRegistrar): ShopDeviceRegistrarContract = impl
+
+    @Provides
+    @Singleton
+    fun provideSyncFailureNotifier(impl: SyncFailureNotifier): SyncFailureNotifierContract = impl
 
     @Provides
     @Singleton

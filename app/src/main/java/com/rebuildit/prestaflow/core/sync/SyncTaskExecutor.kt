@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.core.sync
 
 import androidx.work.ListenableWorker.Result
 import com.rebuildit.prestaflow.core.network.ApiEndpointManager
+import com.rebuildit.prestaflow.core.notifications.SyncFailureNotifierContract
 import com.rebuildit.prestaflow.core.security.ShopConnectionStore
 import com.rebuildit.prestaflow.core.sync.ConflictResolution.Drop
 import com.rebuildit.prestaflow.core.sync.ConflictResolution.Hold
@@ -47,6 +48,7 @@ class SyncTaskExecutor
         @SyncHttpClient private val httpClient: OkHttpClient,
         private val syncQueueRepository: SyncQueueRepository,
         private val conflictResolver: SyncConflictResolver,
+        private val syncFailureNotifier: SyncFailureNotifierContract,
     ) {
         @Suppress("ReturnCount") // Sorties anticipées : boutique inconnue / URL invalide / réponse traitée
         suspend fun execute(task: PendingSyncTask): Result {
@@ -94,15 +96,27 @@ class SyncTaskExecutor
                         }
                         Retry -> Result.retry()
                         is Hold -> {
+                            // La tâche est CONSERVÉE dans la file (pas de remove) mais WorkManager
+                            // ne la rejouera jamais tout seul si on répond Result.success() ici :
+                            // SyncOrchestrator ne replanifie que sur une TRANSITION file
+                            // vide→non-vide, or la file reste non-vide. Result.retry() s'appuie
+                            // sur le backoff exponentiel déjà configuré par SyncOrchestrator pour
+                            // revenir périodiquement réévaluer la tâche (ex. conflit résolu entre
+                            // temps, merge devenu possible).
                             Timber.w("Holding task ${task.id}: ${resolution.reason}")
-                            Result.success()
+                            Result.retry()
                         }
                     }
                 } else if (resp.code in HTTP_SERVER_ERROR_MIN..HTTP_SERVER_ERROR_MAX) {
                     Timber.w("Server error ${resp.code} for ${task.endpoint}")
                     Result.retry()
                 } else {
+                    // Réponse 4xx non réessayable (400/422…) : la requête ne deviendra jamais
+                    // valide en rejouant à l'identique. On abandonne la tâche mais on le rend
+                    // VISIBLE (notification locale) plutôt que de la faire disparaître en silence
+                    // (cf. Timber.w seul = invisible pour l'utilisateur).
                     Timber.w("Dropping task ${task.id} after response ${resp.code}")
+                    syncFailureNotifier.notifyTaskDropped(task, resp.code)
                     syncQueueRepository.remove(task.id)
                     Result.success()
                 }
