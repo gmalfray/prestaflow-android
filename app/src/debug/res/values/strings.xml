@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Surcharge DEBUG : nom distinct sous l'icône pour différencier des deux apps installées. -->
+<resources>
+    <string name="app_name">PrestaFlow DEBUG</string>
+</resources>
