@@ -226,7 +226,8 @@ private fun NavBarLabel(text: String) {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 // Shell responsive : BottomNavigation en compact, NavigationRail en medium/expanded, two-pane commandes en expanded
-@Suppress("LongMethod")
+// + masquage du chrome parent (topBar/bottomBar/rail) sur les destinations plein écran (réappro stock)
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
 private fun AuthenticatedShell(
     windowSizeClass: WindowSizeClass,
@@ -263,46 +264,53 @@ private fun AuthenticatedShell(
     val useNavigationRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
     val currentRoute = navBackStackEntry?.destination?.route
     val isSettings = currentRoute == AppDestination.Settings.route
+    // Destination plein écran (flux focalisé façon scanner) : pas de chrome parent (TopAppBar
+    // "Produits" + engrenage, bottom nav / rail) — l'écran gère lui-même son propre header et son
+    // retour. Sans ce garde-fou, deux headers s'empilent (celui de l'onglet Produits + celui de
+    // l'écran) et la nav du bas grignote la hauteur utile, poussant Valider/le récap hors écran.
+    val isFullScreenRoute = currentRoute == AppDestination.STOCK_REPLENISH_ROUTE
     val settingsLabel = stringResource(R.string.destination_settings)
     val backLabel = stringResource(R.string.content_description_back)
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(text = stringResource(id = currentTitle)) },
-                navigationIcon = {
-                    // Réglages est ouvert via l'engrenage (hors barre du bas) : sans flèche
-                    // retour, l'utilisateur s'y retrouve coincé. On en ajoute une qui dépile.
-                    if (isSettings) {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = backLabel,
-                            )
+            if (!isFullScreenRoute) {
+                CenterAlignedTopAppBar(
+                    title = { Text(text = stringResource(id = currentTitle)) },
+                    navigationIcon = {
+                        // Réglages est ouvert via l'engrenage (hors barre du bas) : sans flèche
+                        // retour, l'utilisateur s'y retrouve coincé. On en ajoute une qui dépile.
+                        if (isSettings) {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = backLabel,
+                                )
+                            }
                         }
-                    }
-                },
-                actions = {
-                    // Pas d'engrenage quand on est déjà sur Réglages (re-naviguer = no-op).
-                    if (!isSettings) {
-                        IconButton(
-                            onClick = {
-                                navController.navigate(AppDestination.Settings.route) {
-                                    launchSingleTop = true
-                                }
-                            },
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Settings,
-                                contentDescription = settingsLabel,
-                            )
+                    },
+                    actions = {
+                        // Pas d'engrenage quand on est déjà sur Réglages (re-naviguer = no-op).
+                        if (!isSettings) {
+                            IconButton(
+                                onClick = {
+                                    navController.navigate(AppDestination.Settings.route) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Settings,
+                                    contentDescription = settingsLabel,
+                                )
+                            }
                         }
-                    }
-                },
-            )
+                    },
+                )
+            }
         },
         bottomBar = {
-            if (!useNavigationRail) {
+            if (!useNavigationRail && !isFullScreenRoute) {
                 val navigationBarContainerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                 val navigationBarItemColors =
                     NavigationBarItemDefaults.colors(
@@ -364,7 +372,7 @@ private fun AuthenticatedShell(
                     .padding(innerPadding),
             color = MaterialTheme.colorScheme.background,
         ) {
-            if (useNavigationRail) {
+            if (useNavigationRail && !isFullScreenRoute) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     // verticalScroll : en paysage / faible hauteur, les 5 onglets ne tiennent pas dans
                     // le rail — sans défilement le dernier (« Paniers ») est tronqué. Le scroll les rend

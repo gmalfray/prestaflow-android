@@ -285,6 +285,8 @@ fun StockReplenishScreen(
         )
     }
 
+    // Destination plein écran (cf. MainActivity.isFullScreenRoute) : ce header EST l'unique barre du
+    // haut affichée — aucun chrome parent (TopAppBar "Produits", bottom nav/rail) ne se superpose.
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -299,62 +301,32 @@ fun StockReplenishScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                SessionRecapBanner(recap = state.sessionRecap)
-                PermanentBarcodeScanner(
-                    isActive = state.isScannerActive,
-                    onBarcodeScanned = onBarcodeScanned,
-                    modifier = Modifier.fillMaxWidth().height(240.dp),
-                )
-                Column(
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .padding(Dimensions.screenEdgeMargin),
-                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
-                ) {
-                    ReplenishBody(
-                        state = state,
-                        quickAddAmounts = quickAddAmounts,
-                        onSelectFromMultipleResults = onSelectFromMultipleResults,
-                        onSelectCombination = onSelectCombination,
-                        onQuantityInputChange = onQuantityInputChange,
-                        onAddTypedQuantity = onAddTypedQuantity,
-                        onQuickAdd = onQuickAdd,
-                        onResetDelta = onResetDelta,
-                        onSkip = onSkip,
-                        onValidate = onValidate,
-                    )
-                    // Espace réservé en bas pour ne pas masquer le dernier contenu sous les barres
-                    // d'annulation flottantes (cf. Box ci-dessous).
-                    if (state.pendingWrites.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(Dimensions.spacingXl * state.pendingWrites.size))
-                    }
-                }
-            }
+        // Mise en page compacte à 3 zones, dans l'ordre :
+        //  1. Bandeau récap de session (fixe, tout en haut — jamais scrollé hors champ).
+        //  2. Zone scrollable (caméra compacte + fiche produit) : seule partie qui rétrécit/scrolle
+        //     sur petit écran, jamais la zone d'action.
+        //  3. Zone d'action épinglée (écritures en attente + boutons rapides/quantité/Valider) :
+        //     toujours visible en bas, jamais coupée par la hauteur d'écran.
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            SessionRecapBanner(recap = state.sessionRecap)
 
-            AnimatedVisibility(
-                visible = showAddedFlash,
-                enter = if (reduceMotion) EnterTransition.None else fadeIn() + scaleIn(initialScale = 0.85f),
-                exit = if (reduceMotion) ExitTransition.None else fadeOut(),
-                modifier =
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = Dimensions.spacingM),
-            ) {
-                QueueAddedFlash()
-            }
+            ReplenishScrollableSection(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                state = state,
+                showAddedFlash = showAddedFlash,
+                reduceMotion = reduceMotion,
+                onBarcodeScanned = onBarcodeScanned,
+                onSelectFromMultipleResults = onSelectFromMultipleResults,
+                onSelectCombination = onSelectCombination,
+                onResetDelta = onResetDelta,
+            )
 
             if (state.pendingWrites.isNotEmpty()) {
                 Column(
                     modifier =
                         Modifier
-                            .align(Alignment.BottomCenter)
                             .fillMaxWidth()
-                            .padding(Dimensions.screenEdgeMargin),
+                            .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingXs),
                     verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
                 ) {
                     state.pendingWrites.forEach { pending ->
@@ -365,9 +337,85 @@ fun StockReplenishScreen(
                     }
                 }
             }
+
+            if (state.product != null) {
+                ReplenishActionBar(
+                    state = state,
+                    quickAddAmounts = quickAddAmounts,
+                    onQuantityInputChange = onQuantityInputChange,
+                    onAddTypedQuantity = onAddTypedQuantity,
+                    onQuickAdd = onQuickAdd,
+                    onSkip = onSkip,
+                    onValidate = onValidate,
+                )
+            }
         }
     }
 }
+
+/**
+ * Zone scrollable : caméra compacte + corps de l'écran ([ReplenishBody]), avec la confirmation
+ * visuelle discrète ([QueueAddedFlash]) superposée en haut.
+ *
+ * Isolée dans sa propre fonction (plutôt qu'inlinée dans le `Column` appelant) : un `AnimatedVisibility`
+ * scopé `BoxScope` (avec `Modifier.align`) imbriqué directement dans un `Column { Box { … } }` crée une
+ * ambiguïté de résolution entre les overloads `ColumnScope.AnimatedVisibility` et `BoxScope`/générique
+ * (récepteurs implicites empilés) → échec de compilation. Une fonction dédiée démarre une pile de
+ * récepteurs implicites propre : seul `BoxScope` est en jeu ici.
+ */
+@Suppress("LongParameterList")
+@Composable
+private fun ReplenishScrollableSection(
+    state: StockReplenishUiState,
+    showAddedFlash: Boolean,
+    reduceMotion: Boolean,
+    onBarcodeScanned: (String) -> Unit,
+    onSelectFromMultipleResults: (Product) -> Unit,
+    onSelectCombination: (Combination) -> Unit,
+    onResetDelta: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            PermanentBarcodeScanner(
+                isActive = state.isScannerActive,
+                onBarcodeScanned = onBarcodeScanned,
+                modifier = Modifier.fillMaxWidth().height(REPLENISH_CAMERA_HEIGHT),
+            )
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(Dimensions.screenEdgeMargin),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
+            ) {
+                ReplenishBody(
+                    state = state,
+                    onSelectFromMultipleResults = onSelectFromMultipleResults,
+                    onSelectCombination = onSelectCombination,
+                    onResetDelta = onResetDelta,
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showAddedFlash,
+            enter = if (reduceMotion) EnterTransition.None else fadeIn() + scaleIn(initialScale = 0.85f),
+            exit = if (reduceMotion) ExitTransition.None else fadeOut(),
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = Dimensions.spacingM),
+        ) {
+            QueueAddedFlash()
+        }
+    }
+}
+
+/** Hauteur de l'aperçu caméra — réduite (240dp → 140dp) pour laisser la place à la zone d'action épinglée en bas. */
+private val REPLENISH_CAMERA_HEIGHT = 140.dp
 
 /** Durée d'affichage de [QueueAddedFlash] après chaque validation. */
 private const val QUEUE_ADDED_FLASH_DURATION_MS = 1_200L
@@ -605,21 +653,19 @@ private fun CameraPermissionPlaceholder(
     }
 }
 
-// ─── Corps de l'écran : dispatch selon l'état ──────────────────────────────────
+// ─── Corps de l'écran (zone scrollable) : dispatch selon l'état ────────────────
 
-@Suppress("LongParameterList")
+/**
+ * Contenu de la zone scrollable de l'écran (sous la caméra) : uniquement les infos (chargement,
+ * introuvable, choix multiples, fiche produit + delta) — les actions (boutons rapides, saisie,
+ * Ignorer/Valider) sont épinglées séparément dans [ReplenishActionBar], toujours visibles.
+ */
 @Composable
 private fun ReplenishBody(
     state: StockReplenishUiState,
-    quickAddAmounts: List<Int>,
     onSelectFromMultipleResults: (Product) -> Unit,
     onSelectCombination: (Combination) -> Unit,
-    onQuantityInputChange: (String) -> Unit,
-    onAddTypedQuantity: () -> Unit,
-    onQuickAdd: (Int) -> Unit,
     onResetDelta: () -> Unit,
-    onSkip: () -> Unit,
-    onValidate: () -> Unit,
 ) {
     when {
         state.isLookupLoading ->
@@ -639,15 +685,11 @@ private fun ReplenishBody(
         state.combinationChoices.isNotEmpty() ->
             CombinationChoiceList(state.combinationChoices, onSelectCombination)
         state.product != null ->
-            ProductAdjustContent(
-                state = state,
-                quickAddAmounts = quickAddAmounts,
-                onQuantityInputChange = onQuantityInputChange,
-                onAddTypedQuantity = onAddTypedQuantity,
-                onQuickAdd = onQuickAdd,
+            ScannedProductInfo(
+                product = state.product,
+                delta = state.delta,
+                newQuantity = state.newQuantity,
                 onResetDelta = onResetDelta,
-                onSkip = onSkip,
-                onValidate = onValidate,
             )
         else ->
             Text(
@@ -724,44 +766,71 @@ private fun CombinationChoiceList(
     }
 }
 
-// ─── Produit scanné : infos + accumulation du delta + validation ──────────────
+// ─── Produit scanné : fiche + delta (zone scrollable) ──────────────────────────
 
-@Suppress("LongParameterList", "LongMethod")
+/** Fiche produit + delta accumulé — partie scrollable de l'écran (cf. [ReplenishBody]). */
 @Composable
-private fun ProductAdjustContent(
+private fun ScannedProductInfo(
+    product: Product,
+    delta: Int,
+    newQuantity: Int,
+    onResetDelta: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM)) {
+        ScannedProductHeader(product = product)
+        DeltaSummary(delta = delta, newQuantity = newQuantity, onResetDelta = onResetDelta)
+    }
+}
+
+// ─── Zone d'action épinglée : boutons rapides + saisie + validation ───────────
+
+/**
+ * Zone d'action épinglée en bas de l'écran (boutons rapides, saisie libre, Ignorer/Valider) —
+ * toujours visible quelle que soit la hauteur d'écran, jamais poussée sous l'écran par la fiche
+ * produit scrollable au-dessus (cf. mise en page 3 zones de [StockReplenishScreen]). Portée par une
+ * [Surface] avec élévation tonale pour se détacher visuellement du contenu défilant.
+ */
+@Suppress("LongParameterList")
+@Composable
+private fun ReplenishActionBar(
     state: StockReplenishUiState,
     quickAddAmounts: List<Int>,
     onQuantityInputChange: (String) -> Unit,
     onAddTypedQuantity: () -> Unit,
     onQuickAdd: (Int) -> Unit,
-    onResetDelta: () -> Unit,
     onSkip: () -> Unit,
     onValidate: () -> Unit,
 ) {
-    val product = state.product ?: return
-
-    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM)) {
-        ScannedProductHeader(product = product)
-
-        DeltaSummary(delta = state.delta, newQuantity = state.newQuantity, onResetDelta = onResetDelta)
-
-        QuickAddRow(amounts = quickAddAmounts, onQuickAdd = onQuickAdd)
-
-        TypedQuantityRow(
-            quantityInput = state.quantityInput,
-            onQuantityInputChange = onQuantityInputChange,
-            onAdd = onAddTypedQuantity,
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 3.dp,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingS),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
         ) {
-            TextButton(onClick = onSkip) {
-                Text(stringResource(R.string.stock_replenish_skip_action))
-            }
-            Button(onClick = onValidate, enabled = state.canValidate) {
-                Text(stringResource(R.string.stock_replenish_validate_action))
+            QuickAddRow(amounts = quickAddAmounts, onQuickAdd = onQuickAdd)
+
+            TypedQuantityRow(
+                quantityInput = state.quantityInput,
+                onQuantityInputChange = onQuantityInputChange,
+                onAdd = onAddTypedQuantity,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                TextButton(onClick = onSkip) {
+                    Text(stringResource(R.string.stock_replenish_skip_action))
+                }
+                Button(onClick = onValidate, enabled = state.canValidate) {
+                    Text(stringResource(R.string.stock_replenish_validate_action))
+                }
             }
         }
     }
@@ -987,28 +1056,69 @@ private fun previewReplenishProduct() =
         ean13 = "3401234567890",
     )
 
-@Preview(showBackground = true, name = "Réappro — produit scanné")
+@Preview(showBackground = true, name = "Réappro — fiche produit (zone scrollable)")
 @Composable
-private fun PreviewProductAdjustContent() {
+private fun PreviewScannedProductInfo() {
     PrestaFlowTheme {
         Surface {
             Column(modifier = Modifier.padding(Dimensions.screenEdgeMargin)) {
-                ProductAdjustContent(
-                    state =
-                        StockReplenishUiState(
-                            product = previewReplenishProduct(),
-                            delta = 15,
-                        ),
-                    quickAddAmounts = DEFAULT_QUICK_ADD_AMOUNTS,
-                    onQuantityInputChange = {},
-                    onAddTypedQuantity = {},
-                    onQuickAdd = {},
+                ScannedProductInfo(
+                    product = previewReplenishProduct(),
+                    delta = 15,
+                    newQuantity = 27,
                     onResetDelta = {},
-                    onSkip = {},
-                    onValidate = {},
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true, name = "Réappro — zone d'action épinglée")
+@Composable
+private fun PreviewReplenishActionBar() {
+    PrestaFlowTheme {
+        ReplenishActionBar(
+            state = StockReplenishUiState(product = previewReplenishProduct(), delta = 15),
+            quickAddAmounts = DEFAULT_QUICK_ADD_AMOUNTS,
+            onQuantityInputChange = {},
+            onAddTypedQuantity = {},
+            onQuickAdd = {},
+            onSkip = {},
+            onValidate = {},
+        )
+    }
+}
+
+/**
+ * Vérification anti-régression « petit écran » : écran complet à hauteur réduite (480dp, plus bas
+ * qu'un Pixel compact) avec récap de session + une écriture en attente + fiche produit — la zone
+ * d'action (dont le bouton Valider) doit rester entièrement visible, la fiche produit peut scroller.
+ */
+@Preview(showBackground = true, heightDp = 480, name = "Réappro — écran complet, petite hauteur")
+@Composable
+private fun PreviewStockReplenishScreenSmallHeight() {
+    PrestaFlowTheme {
+        StockReplenishScreen(
+            state =
+                StockReplenishUiState(
+                    product = previewReplenishProduct(),
+                    delta = 15,
+                    sessionRecap = ReplenishSessionRecap(articleCount = 3, unitsCount = 42),
+                    pendingWrites =
+                        listOf(
+                            PendingStockWrite(
+                                id = "1",
+                                productId = 1L,
+                                combinationId = null,
+                                warehouseId = null,
+                                productName = "Pelote de laine — Coloris Bleu",
+                                delta = 15,
+                                newQuantity = 27,
+                            ),
+                        ),
+                ),
+            onBackClick = {},
+        )
     }
 }
 
