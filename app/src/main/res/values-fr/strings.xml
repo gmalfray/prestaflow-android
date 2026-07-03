@@ -372,6 +372,13 @@
     <string name="settings_swipe_statuses_error">Impossible de charger les statuts</string>
     <string name="settings_swipe_statuses_retry">Réessayer</string>
 
+    <!-- Réglages — section Réappro stock (boutons rapides configurables) -->
+    <string name="settings_stock_replenish_label">Réappro / boutons rapides</string>
+    <string name="settings_stock_replenish_hint">Configurez la quantité ajoutée par chaque bouton rapide de l\'écran de réappro (1 à 5 boutons).</string>
+    <string name="settings_stock_replenish_amount_label">Bouton %1$d</string>
+    <string name="settings_stock_replenish_add_button">Ajouter un bouton</string>
+    <string name="settings_stock_replenish_remove_content_description">Retirer ce bouton</string>
+
     <!-- Filtres stock produits -->
     <string name="products_filter_all">Tous</string>
     <string name="products_filter_in_stock">En stock</string>

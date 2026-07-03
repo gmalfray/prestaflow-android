@@ -5,15 +5,19 @@ import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
+import com.rebuildit.prestaflow.domain.products.StockReplenishPreferencesRepository
 import com.rebuildit.prestaflow.domain.products.model.Combination
+import com.rebuildit.prestaflow.domain.products.model.DEFAULT_QUICK_ADD_AMOUNTS
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.toMatchedCombination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -31,8 +35,9 @@ private const val COMBINATION_CHOICE_THRESHOLD = 2
 
 /**
  * Pilote l'écran « Ajout / réappro stock » (Lot 1) : scanner permanent → produit résolu → delta
- * accumulé via boutons rapides (+5/+10/+20) et saisie libre → écriture unique via [onValidate],
- * avec fenêtre d'annulation de [REPLENISH_UNDO_DELAY_MS] ms (même pattern que le swipe commandes,
+ * accumulé via boutons rapides ([quickAddAmounts], configurables en préférences depuis le Lot 2 —
+ * défaut [DEFAULT_QUICK_ADD_AMOUNTS] = +5/+10/+20) et saisie libre → écriture unique via
+ * [onValidate], avec fenêtre d'annulation de [REPLENISH_UNDO_DELAY_MS] ms (même pattern que le swipe commandes,
  * cf. [com.rebuildit.prestaflow.ui.orders.OrdersViewModel.onSwipeAction]).
  *
  * Remplace le flux historique "scan → fiche stock" ([ProductScanViewModel]) pour l'ajustement d'un
@@ -59,9 +64,23 @@ class StockReplenishViewModel
     constructor(
         private val productsRepository: ProductsRepository,
         private val networkErrorMapper: NetworkErrorMapper,
+        stockReplenishPreferencesRepository: StockReplenishPreferencesRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(StockReplenishUiState())
         val uiState: StateFlow<StockReplenishUiState> = _uiState.asStateFlow()
+
+        /**
+         * Montants des boutons rapides (Lot 2 — configurables en préférences, cf.
+         * [com.rebuildit.prestaflow.ui.settings.StockReplenishPrefsViewModel]). Défaut
+         * [DEFAULT_QUICK_ADD_AMOUNTS] tant que rien n'est chargé/configuré (comportement Lot 1).
+         */
+        val quickAddAmounts: StateFlow<List<Int>> =
+            stockReplenishPreferencesRepository.quickAddAmounts
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5_000),
+                    initialValue = DEFAULT_QUICK_ADD_AMOUNTS,
+                )
 
         /** Jobs des écritures en attente (fenêtre d'annulation), indexés par [PendingStockWrite.id]. */
         private val pendingJobs = mutableMapOf<String, Job>()

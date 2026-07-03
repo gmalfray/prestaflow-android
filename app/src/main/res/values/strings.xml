@@ -373,6 +373,13 @@
     <string name="settings_swipe_statuses_error">Couldn\'t load statuses</string>
     <string name="settings_swipe_statuses_retry">Retry</string>
 
+    <!-- Settings — section Réappro stock (boutons rapides configurables) -->
+    <string name="settings_stock_replenish_label">Restock Quick Buttons</string>
+    <string name="settings_stock_replenish_hint">Configure the amount added by each quick button on the restock screen (1 to 5 buttons).</string>
+    <string name="settings_stock_replenish_amount_label">Button %1$d</string>
+    <string name="settings_stock_replenish_add_button">Add a button</string>
+    <string name="settings_stock_replenish_remove_content_description">Remove this button</string>
+
     <!-- Filtres stock produits -->
     <string name="products_filter_all">All</string>
     <string name="products_filter_in_stock">In stock</string>

@@ -77,6 +77,7 @@ import com.journeyapps.barcodescanner.DefaultDecoderFactory
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.products.model.Combination
+import com.rebuildit.prestaflow.domain.products.model.DEFAULT_QUICK_ADD_AMOUNTS
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.ui.theme.Dimensions
@@ -99,6 +100,7 @@ private val REPLENISH_BARCODE_FORMATS =
  * et récupère la main dès que l'association aboutit.
  */
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongMethod") // Orchestration scan + sous-flux d'association (2 ViewModels observés)
 @Composable
 fun StockReplenishRoute(
     onBackClick: () -> Unit,
@@ -107,6 +109,7 @@ fun StockReplenishRoute(
     associationViewModel: ProductScanViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val quickAddAmounts by viewModel.quickAddAmounts.collectAsStateWithLifecycle()
     val associationState by associationViewModel.uiState.collectAsStateWithLifecycle()
 
     // Code introuvable → délègue au flux d'association existant (inchangé), sur le MÊME code.
@@ -131,6 +134,7 @@ fun StockReplenishRoute(
     StockReplenishScreen(
         modifier = modifier,
         state = state,
+        quickAddAmounts = quickAddAmounts,
         onBackClick = onBackClick,
         onBarcodeScanned = viewModel::onBarcodeScanned,
         onSelectFromMultipleResults = viewModel::onSelectFromMultipleResults,
@@ -179,6 +183,8 @@ fun StockReplenishScreen(
     state: StockReplenishUiState,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Montants des boutons rapides — configurables en préférences (Lot 2), défaut +5/+10/+20. */
+    quickAddAmounts: List<Int> = DEFAULT_QUICK_ADD_AMOUNTS,
     onBarcodeScanned: (String) -> Unit = {},
     onSelectFromMultipleResults: (Product) -> Unit = {},
     onSelectCombination: (Combination) -> Unit = {},
@@ -241,6 +247,7 @@ fun StockReplenishScreen(
                 ) {
                     ReplenishBody(
                         state = state,
+                        quickAddAmounts = quickAddAmounts,
                         onSelectFromMultipleResults = onSelectFromMultipleResults,
                         onSelectCombination = onSelectCombination,
                         onQuantityInputChange = onQuantityInputChange,
@@ -394,6 +401,7 @@ private fun CameraPermissionPlaceholder(
 @Composable
 private fun ReplenishBody(
     state: StockReplenishUiState,
+    quickAddAmounts: List<Int>,
     onSelectFromMultipleResults: (Product) -> Unit,
     onSelectCombination: (Combination) -> Unit,
     onQuantityInputChange: (String) -> Unit,
@@ -423,6 +431,7 @@ private fun ReplenishBody(
         state.product != null ->
             ProductAdjustContent(
                 state = state,
+                quickAddAmounts = quickAddAmounts,
                 onQuantityInputChange = onQuantityInputChange,
                 onAddTypedQuantity = onAddTypedQuantity,
                 onQuickAdd = onQuickAdd,
@@ -511,6 +520,7 @@ private fun CombinationChoiceList(
 @Composable
 private fun ProductAdjustContent(
     state: StockReplenishUiState,
+    quickAddAmounts: List<Int>,
     onQuantityInputChange: (String) -> Unit,
     onAddTypedQuantity: () -> Unit,
     onQuickAdd: (Int) -> Unit,
@@ -525,7 +535,7 @@ private fun ProductAdjustContent(
 
         DeltaSummary(delta = state.delta, newQuantity = state.newQuantity, onResetDelta = onResetDelta)
 
-        QuickAddRow(onQuickAdd = onQuickAdd)
+        QuickAddRow(amounts = quickAddAmounts, onQuickAdd = onQuickAdd)
 
         TypedQuantityRow(
             quantityInput = state.quantityInput,
@@ -639,10 +649,15 @@ private fun DeltaSummary(
 
 private fun formatSignedDelta(delta: Int): String = if (delta > 0) "+$delta" else delta.toString()
 
-/** Rangée de 3 boutons rapides FIXES (+5 / +10 / +20) — configuration en préférences hors Lot 1. */
+/**
+ * Rangée de boutons rapides — montants configurables en préférences (Lot 2, Réglages ›
+ * « Réappro / boutons rapides »), défaut +5/+10/+20 (Lot 1) tant que rien n'est configuré.
+ */
 @Composable
-private fun QuickAddRow(onQuickAdd: (Int) -> Unit) {
-    val amounts = listOf(5, 10, 20)
+private fun QuickAddRow(
+    amounts: List<Int>,
+    onQuickAdd: (Int) -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
@@ -774,6 +789,7 @@ private fun PreviewProductAdjustContent() {
                             product = previewReplenishProduct(),
                             delta = 15,
                         ),
+                    quickAddAmounts = DEFAULT_QUICK_ADD_AMOUNTS,
                     onQuantityInputChange = {},
                     onAddTypedQuantity = {},
                     onQuickAdd = {},

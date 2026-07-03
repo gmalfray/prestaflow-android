@@ -2,13 +2,16 @@ package com.rebuildit.prestaflow.ui.products
 
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.domain.products.model.Combination
+import com.rebuildit.prestaflow.domain.products.model.DEFAULT_QUICK_ADD_AMOUNTS
 import com.rebuildit.prestaflow.domain.products.model.MatchedCombination
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductImage
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.fakes.FakeProductsRepository
+import com.rebuildit.prestaflow.fakes.FakeStockReplenishPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -33,11 +36,13 @@ class StockReplenishViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var fakeRepo: FakeProductsRepository
+    private lateinit var fakePrefsRepo: FakeStockReplenishPreferencesRepository
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeRepo = FakeProductsRepository()
+        fakePrefsRepo = FakeStockReplenishPreferencesRepository()
     }
 
     @After
@@ -49,6 +54,7 @@ class StockReplenishViewModelTest {
         StockReplenishViewModel(
             productsRepository = fakeRepo,
             networkErrorMapper = NetworkErrorMapper(),
+            stockReplenishPreferencesRepository = fakePrefsRepo,
         )
 
     // ─── Résolution du scan ──────────────────────────────────────────────────
@@ -406,6 +412,47 @@ class StockReplenishViewModelTest {
                 1,
                 state.pendingWrites.size,
             )
+        }
+
+    // ─── Boutons rapides configurables (Lot 2) ───────────────────────────────
+
+    @Test
+    fun `sans preference enregistree expose le defaut Lot 1`() =
+        runTest {
+            val vm = buildViewModel()
+            backgroundScope.launch { vm.quickAddAmounts.collect {} }
+            advanceUntilIdle()
+
+            assertEquals(DEFAULT_QUICK_ADD_AMOUNTS, vm.quickAddAmounts.value)
+        }
+
+    @Test
+    fun `un changement des preferences met a jour quickAddAmounts en direct`() =
+        runTest {
+            val vm = buildViewModel()
+            backgroundScope.launch { vm.quickAddAmounts.collect {} }
+            advanceUntilIdle()
+
+            fakePrefsRepo.emit(listOf(1, 25))
+            advanceUntilIdle()
+
+            assertEquals(listOf(1, 25), vm.quickAddAmounts.value)
+        }
+
+    @Test
+    fun `onQuickAdd fonctionne avec un montant issu des preferences configurees`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = listOf(buildProduct(1L, quantity = 10))
+            fakePrefsRepo.emit(listOf(1, 25, 50))
+
+            val vm = buildViewModel()
+            backgroundScope.launch { vm.quickAddAmounts.collect {} }
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+
+            vm.onQuickAdd(25)
+
+            assertEquals(25, vm.uiState.value.delta)
         }
 
     // ─── Builders ────────────────────────────────────────────────────────────

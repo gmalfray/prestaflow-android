@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
@@ -67,6 +68,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -80,6 +82,9 @@ import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.printer.model.SavedPrinterDevice
+import com.rebuildit.prestaflow.domain.products.model.DEFAULT_QUICK_ADD_AMOUNTS
+import com.rebuildit.prestaflow.domain.products.model.MAX_QUICK_ADD_BUTTONS
+import com.rebuildit.prestaflow.domain.products.model.MIN_QUICK_ADD_BUTTONS
 import com.rebuildit.prestaflow.domain.theme.DarkThemeConfig
 import com.rebuildit.prestaflow.domain.theme.PrestaFlowSkin
 import com.rebuildit.prestaflow.domain.theme.ThemeSettings
@@ -90,6 +95,7 @@ import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import com.rebuildit.prestaflow.ui.theme.ThemeViewModel
 import com.rebuildit.prestaflow.ui.theme.displayNameRes
 
+@Suppress("LongParameterList") // Écran Réglages : un ViewModel Hilt par section (thème, boutiques, dashboard, imprimante, swipe, réappro)
 @Composable
 fun SettingsRoute(
     onLogoutClick: () -> Unit,
@@ -99,6 +105,7 @@ fun SettingsRoute(
     dashboardPrefsViewModel: DashboardPrefsViewModel = hiltViewModel(),
     thermalPrinterViewModel: ThermalPrinterViewModel = hiltViewModel(),
     swipePrefsViewModel: SwipePrefsViewModel = hiltViewModel(),
+    stockReplenishPrefsViewModel: StockReplenishPrefsViewModel = hiltViewModel(),
 ) {
     val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
@@ -106,6 +113,7 @@ fun SettingsRoute(
     val defaultPeriod by dashboardPrefsViewModel.defaultPeriod.collectAsStateWithLifecycle()
     val savedPrinterDevice by thermalPrinterViewModel.savedDevice.collectAsStateWithLifecycle()
     val swipePrefsState by swipePrefsViewModel.uiState.collectAsStateWithLifecycle()
+    val stockReplenishQuickAddAmounts by stockReplenishPrefsViewModel.quickAddAmounts.collectAsStateWithLifecycle()
 
     val qrScanPrompt = stringResource(id = R.string.auth_scan_prompt)
     val qrScanLauncher =
@@ -154,6 +162,8 @@ fun SettingsRoute(
         onSwipeLeftStatusSelected = swipePrefsViewModel::setSwipeLeftTargetStatusId,
         onSwipeRightStatusSelected = swipePrefsViewModel::setSwipeRightTargetStatusId,
         onRetryStatuses = swipePrefsViewModel::loadStatuses,
+        stockReplenishQuickAddAmounts = stockReplenishQuickAddAmounts,
+        onStockReplenishQuickAddAmountsChanged = stockReplenishPrefsViewModel::setQuickAddAmounts,
     )
 }
 
@@ -187,6 +197,8 @@ fun SettingsScreen(
     onSwipeLeftStatusSelected: (Int?) -> Unit = {},
     onSwipeRightStatusSelected: (Int?) -> Unit = {},
     onRetryStatuses: () -> Unit = {},
+    stockReplenishQuickAddAmounts: List<Int> = DEFAULT_QUICK_ADD_AMOUNTS,
+    onStockReplenishQuickAddAmountsChanged: (List<Int>) -> Unit = {},
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -344,6 +356,14 @@ fun SettingsScreen(
                 onSwipeLeftStatusSelected = onSwipeLeftStatusSelected,
                 onSwipeRightStatusSelected = onSwipeRightStatusSelected,
                 onRetryStatuses = onRetryStatuses,
+            )
+        }
+
+        // Section RÉAPPRO STOCK — boutons rapides configurables (Lot 2)
+        SettingsSection(label = stringResource(R.string.settings_stock_replenish_label)) {
+            StockReplenishQuickAddSection(
+                amounts = stockReplenishQuickAddAmounts,
+                onAmountsChanged = onStockReplenishQuickAddAmountsChanged,
             )
         }
 
@@ -1192,6 +1212,100 @@ private fun SwipeStatusDropdown(
                     )
                 }
             }
+        }
+    }
+}
+
+// ─── Section réappro stock — boutons rapides configurables (Lot 2) ──────────
+
+/** Incrément suggéré au-dessus du plus grand bouton existant, quand on ajoute un nouveau bouton. */
+private const val SUGGESTED_QUICK_ADD_STEP = 5
+
+/**
+ * Section de configuration des boutons rapides de l'écran de réappro stock.
+ *
+ * Un champ numérique par bouton (1 à [MAX_QUICK_ADD_BUTTONS]) + un bouton "Ajouter" tant que le
+ * maximum n'est pas atteint + une icône de suppression par ligne tant qu'il en reste plus d'un
+ * ([MIN_QUICK_ADD_BUTTONS]).
+ *
+ * Édition locale : la saisie affichée ([localAmounts]) n'est resynchronisée avec [amounts] (source
+ * persistée) que lorsque leur NOMBRE change (ajout/retrait de bouton) — jamais à chaque frappe —
+ * pour ne pas écraser une saisie en cours pendant le round-trip DataStore asynchrone. Un champ n'est
+ * commité via [onAmountsChanged] que lorsque TOUTES les valeurs affichées sont des entiers > 0
+ * valides (évite de committer un état partiel/vide pendant la frappe).
+ */
+@Suppress("LongMethod") // Liste éditable (champ + suppression) + bouton d'ajout, même style que SwipeCommandsSection
+@Composable
+private fun StockReplenishQuickAddSection(
+    amounts: List<Int>,
+    onAmountsChanged: (List<Int>) -> Unit,
+) {
+    var localAmounts by remember(amounts.size) { mutableStateOf(amounts.map { it.toString() }) }
+
+    Text(
+        text = stringResource(R.string.settings_stock_replenish_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    localAmounts.forEachIndexed { index, value ->
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+        ) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = { newValue ->
+                    if (newValue.isEmpty() || newValue.all(Char::isDigit)) {
+                        val updated = localAmounts.toMutableList().also { it[index] = newValue }
+                        localAmounts = updated
+                        val parsed = updated.map { it.toIntOrNull() }
+                        if (parsed.all { it != null && it > 0 }) {
+                            onAmountsChanged(parsed.filterNotNull())
+                        }
+                    }
+                },
+                label = {
+                    Text(
+                        stringResource(R.string.settings_stock_replenish_amount_label, index + 1),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+            if (amounts.size > MIN_QUICK_ADD_BUTTONS) {
+                IconButton(onClick = { onAmountsChanged(amounts.filterIndexed { i, _ -> i != index }) }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = stringResource(R.string.settings_stock_replenish_remove_content_description),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+    }
+
+    if (amounts.size < MAX_QUICK_ADD_BUTTONS) {
+        OutlinedButton(
+            onClick = {
+                val suggested = (amounts.maxOrNull() ?: 0) + SUGGESTED_QUICK_ADD_STEP
+                onAmountsChanged(amounts + suggested)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(50),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Add,
+                contentDescription = null,
+                modifier = Modifier.padding(end = Dimensions.spacingS),
+            )
+            Text(
+                text = stringResource(R.string.settings_stock_replenish_add_button),
+                style = MaterialTheme.typography.titleSmall,
+            )
         }
     }
 }
