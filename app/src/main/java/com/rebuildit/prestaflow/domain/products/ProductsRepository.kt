@@ -46,12 +46,15 @@ interface ProductsRepository {
 
     /**
      * Associe le code-barres [ean13] au produit [productId] (cas d'un scan sans correspondance :
-     * le produit existe mais son EAN13 n'est pas encore renseigné côté boutique).
+     * le produit existe mais son EAN13 n'est pas encore renseigné côté boutique), ou à l'une de
+     * ses combinaisons (déclinaisons) si [combinationId] est renseigné (cas d'un produit à
+     * plusieurs déclinaisons — cf. [com.rebuildit.prestaflow.domain.products.model.Combination]).
      * @return Le produit tel que renvoyé par le serveur après mise à jour.
      */
     suspend fun setProductEan13(
         productId: Long,
         ean13: String,
+        combinationId: Long? = null,
     ): Product
 
     /**

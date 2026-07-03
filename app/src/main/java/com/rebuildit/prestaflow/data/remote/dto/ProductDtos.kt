@@ -37,6 +37,11 @@ data class ProductDto(
     // (déclinaison) plutôt que le produit lui-même — ex. pelotes de laine, 1 coloris = 1 EAN13 +
     // 1 stock propres. Absent/null pour un produit sans déclinaison (comportement inchangé).
     @SerialName("matched_combination") val matchedCombination: MatchedCombinationDto? = null,
+    // Toutes les déclinaisons du produit (absent/vide si le produit n'a pas de déclinaison).
+    // Utilisé quand un scan ne peut pas désigner une déclinaison précise ([matchedCombination]
+    // absent) mais que le produit en porte plusieurs : l'app doit alors laisser choisir laquelle
+    // ajuster/associer, plutôt que de deviner.
+    @SerialName("combinations") val combinations: List<CombinationDto> = emptyList(),
 )
 
 /**
@@ -45,6 +50,20 @@ data class ProductDto(
  */
 @Serializable
 data class MatchedCombinationDto(
+    @SerialName("id") val id: Long,
+    @SerialName("name") val name: String,
+    @SerialName("ean13") val ean13: String? = null,
+    @SerialName("reference") val reference: String? = null,
+    @SerialName("quantity") val quantity: Int,
+)
+
+/**
+ * Déclinaison d'un produit, telle que listée dans `combinations` (contrat `GET /products?barcode=`)
+ * — même forme que [MatchedCombinationDto], mais couvre TOUTES les déclinaisons du produit (pas
+ * seulement celle matchée par le scan), pour permettre à l'app de proposer un choix.
+ */
+@Serializable
+data class CombinationDto(
     @SerialName("id") val id: Long,
     @SerialName("name") val name: String,
     @SerialName("ean13") val ean13: String? = null,
@@ -93,4 +112,7 @@ data class ProductUpdateRequestDto(
     @SerialName("price_tax_excl") val priceTaxExcl: Double? = null,
     @SerialName("active") val active: Boolean? = null,
     @SerialName("ean13") val ean13: String? = null,
+    // Renseigné quand l'association d'[ean13] concerne une COMBINAISON (déclinaison) plutôt que
+    // le produit lui-même — cf. [CombinationDto]. Omis si null (`explicitNulls = false`).
+    @SerialName("combination_id") val combinationId: Long? = null,
 )

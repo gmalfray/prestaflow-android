@@ -1,6 +1,7 @@
 package com.rebuildit.prestaflow.ui.products
 
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.domain.products.model.Combination
 import com.rebuildit.prestaflow.domain.products.model.MatchedCombination
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductImage
@@ -245,6 +246,72 @@ class ProductScanViewModelTest {
             assertNull(call.combinationId)
         }
 
+    // ─── Déclinaisons multiples (sélecteur "Quelle déclinaison ?") ──────────
+
+    @Test
+    fun `un scan sur un produit a une seule declinaison ne declenche pas de selecteur`() =
+        runTest {
+            val combination = Combination(id = 5L, name = "Taille - M", quantity = 3)
+            val product = buildProduct(1L, quantity = 20).copy(combinations = listOf(combination))
+            fakeRepo.barcodeSearchResult = listOf(product)
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+
+            val state = vm.uiState.value
+            // 1 seule déclinaison = pas d'ambiguïté : sélection auto au niveau produit, comme avant.
+            assertFalse(state.needsCombinationChoice)
+            assertEquals(product, state.selectedProduct)
+            assertNull(state.selectedProduct?.matchedCombination)
+        }
+
+    @Test
+    fun `un scan sur un produit a plusieurs declinaisons affiche un selecteur`() =
+        runTest {
+            val combinationA = Combination(id = 5L, name = "Coloris - Bleu", quantity = 3)
+            val combinationB = Combination(id = 6L, name = "Coloris - Rouge", quantity = 9)
+            val product = buildProduct(1L, quantity = 20).copy(combinations = listOf(combinationA, combinationB))
+            fakeRepo.barcodeSearchResult = listOf(product)
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+
+            val state = vm.uiState.value
+            assertTrue(state.needsCombinationChoice)
+            assertNull(state.selectedProduct)
+            assertEquals(listOf(combinationA, combinationB), state.combinationChoices)
+        }
+
+    @Test
+    fun `choisir une declinaison ouvre sa fiche stock et confirmer envoie son combinationId`() =
+        runTest {
+            val combinationA = Combination(id = 5L, name = "Coloris - Bleu", quantity = 3)
+            val combinationB = Combination(id = 6L, name = "Coloris - Rouge", quantity = 9)
+            val product = buildProduct(1L, quantity = 20).copy(combinations = listOf(combinationA, combinationB))
+            fakeRepo.barcodeSearchResult = listOf(product)
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("3401234567890")
+            advanceUntilIdle()
+
+            vm.onSelectCombination(combinationB)
+
+            val afterChoice = vm.uiState.value
+            assertFalse(afterChoice.needsCombinationChoice)
+            assertEquals("9", afterChoice.quantityInput)
+            assertEquals(combinationB.id, afterChoice.selectedProduct?.matchedCombination?.id)
+
+            vm.onConfirmAdjustment()
+            advanceUntilIdle()
+
+            val call = fakeRepo.updateStockCalls.single()
+            assertEquals(1L, call.productId)
+            assertEquals(6L, call.combinationId)
+            assertTrue(vm.uiState.value.submitSuccess)
+        }
+
     // ─── Association code-barres → produit existant ─────────────────────────
 
     @Test
@@ -343,6 +410,71 @@ class ProductScanViewModelTest {
             assertNull(state.selectedProduct)
             assertTrue(state.associationError != null)
             assertFalse(state.isAssociationSubmitting)
+        }
+
+    @Test
+    fun `associer un produit a une seule declinaison pose l ean sur celle-ci automatiquement`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = emptyList()
+            val combination = Combination(id = 15L, name = "Taille - M", quantity = 2)
+            val candidate = buildProduct(9L, quantity = 4).copy(combinations = listOf(combination))
+            val updated = candidate.copy(ean13 = "0000000000000")
+            fakeRepo.searchProductsResult = listOf(candidate)
+            fakeRepo.setProductEan13Result = updated
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("0000000000000")
+            advanceUntilIdle()
+            vm.onStartAssociation()
+            vm.onAssociationQueryChange("laine rico")
+            testDispatcher.scheduler.advanceTimeBy(400L)
+            advanceUntilIdle()
+
+            vm.onAssociationProductSelected(candidate)
+            advanceUntilIdle()
+
+            // Pas de sélecteur affiché : 1 seule déclinaison, pas d'ambiguïté.
+            assertTrue(vm.uiState.value.associationCombinationChoices.isEmpty())
+            val call = fakeRepo.setProductEan13Calls.single()
+            assertEquals(9L, call.productId)
+            assertEquals("0000000000000", call.ean13)
+            assertEquals(15L, call.combinationId)
+        }
+
+    @Test
+    fun `associer un produit a plusieurs declinaisons affiche un selecteur puis pose l ean sur celle choisie`() =
+        runTest {
+            fakeRepo.barcodeSearchResult = emptyList()
+            val combinationA = Combination(id = 15L, name = "Taille - M", quantity = 2)
+            val combinationB = Combination(id = 16L, name = "Taille - L", quantity = 5)
+            val candidate = buildProduct(9L, quantity = 4).copy(combinations = listOf(combinationA, combinationB))
+            val updated = candidate.copy(ean13 = "0000000000000")
+            fakeRepo.searchProductsResult = listOf(candidate)
+            fakeRepo.setProductEan13Result = updated
+
+            val vm = buildViewModel()
+            vm.onBarcodeScanned("0000000000000")
+            advanceUntilIdle()
+            vm.onStartAssociation()
+            vm.onAssociationQueryChange("laine rico")
+            testDispatcher.scheduler.advanceTimeBy(400L)
+            advanceUntilIdle()
+
+            vm.onAssociationProductSelected(candidate)
+
+            val afterSelectProduct = vm.uiState.value
+            assertEquals(listOf(combinationA, combinationB), afterSelectProduct.associationCombinationChoices)
+            assertTrue(fakeRepo.setProductEan13Calls.isEmpty())
+
+            vm.onSelectAssociationCombination(combinationB)
+            advanceUntilIdle()
+
+            val call = fakeRepo.setProductEan13Calls.single()
+            assertEquals(9L, call.productId)
+            assertEquals("0000000000000", call.ean13)
+            assertEquals(16L, call.combinationId)
+            assertTrue(vm.uiState.value.associationCombinationChoices.isEmpty())
+            assertEquals(updated, vm.uiState.value.selectedProduct)
         }
 
     @Test

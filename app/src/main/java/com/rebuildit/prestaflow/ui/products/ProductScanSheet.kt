@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
+import com.rebuildit.prestaflow.domain.products.model.Combination
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.ui.components.SearchField
@@ -64,6 +65,7 @@ fun ProductScanSheet(
     onScanAgain: () -> Unit,
     onSelectProduct: (Product) -> Unit,
     onBackToResults: () -> Unit,
+    onSelectCombination: (Combination) -> Unit,
     onQuantityChange: (String) -> Unit,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
@@ -72,6 +74,8 @@ fun ProductScanSheet(
     onCancelAssociation: () -> Unit,
     onAssociationQueryChange: (String) -> Unit,
     onSelectAssociationProduct: (Product) -> Unit,
+    onSelectAssociationCombination: (Combination) -> Unit,
+    onCancelAssociationCombinationChoice: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ModalBottomSheet(
@@ -86,49 +90,126 @@ fun ProductScanSheet(
                     .padding(horizontal = Dimensions.screenEdgeMargin)
                     .padding(bottom = Dimensions.spacingXl),
         ) {
-            when {
-                state.submitSuccess -> ScanSuccessContent(onScanAgain = onScanAgain, onClose = onDismiss)
-                state.isLoading -> ScanLoadingContent()
-                state.isAssociating ->
-                    AssociationSearchContent(
-                        query = state.associationQuery,
-                        results = state.associationResults,
-                        isSearching = state.isAssociationSearching,
-                        isSubmitting = state.isAssociationSubmitting,
-                        errorMessage = state.associationError?.asString(),
-                        onQueryChange = onAssociationQueryChange,
-                        onSelectProduct = onSelectAssociationProduct,
-                        onCancel = onCancelAssociation,
-                    )
-                state.notFound ->
-                    ScanNotFoundContent(
-                        code = state.scannedCode,
-                        onScanAgain = onScanAgain,
-                        onStartAssociation = onStartAssociation,
-                    )
-                state.selectedProduct != null ->
-                    StockAdjustContent(
-                        product = state.selectedProduct,
-                        quantityInput = state.quantityInput,
-                        isSubmitting = state.isSubmitting,
-                        errorMessage = state.error?.asString(),
-                        showBackToResults = state.results.size > 1,
-                        onBackToResults = onBackToResults,
-                        onQuantityChange = onQuantityChange,
-                        onIncrement = onIncrement,
-                        onDecrement = onDecrement,
-                        onConfirm = onConfirm,
-                        onCancel = onDismiss,
-                    )
-                state.error != null ->
-                    ScanErrorContent(message = state.error.asString(), onScanAgain = onScanAgain)
-                state.hasMultipleResults ->
-                    ScanResultsListContent(results = state.results, onSelectProduct = onSelectProduct)
-                else -> ScanLoadingContent()
-            }
+            ProductScanSheetBody(
+                state = state,
+                onDismiss = onDismiss,
+                onScanAgain = onScanAgain,
+                onSelectProduct = onSelectProduct,
+                onBackToResults = onBackToResults,
+                onSelectCombination = onSelectCombination,
+                onQuantityChange = onQuantityChange,
+                onIncrement = onIncrement,
+                onDecrement = onDecrement,
+                onConfirm = onConfirm,
+                onStartAssociation = onStartAssociation,
+                onCancelAssociation = onCancelAssociation,
+                onAssociationQueryChange = onAssociationQueryChange,
+                onSelectAssociationProduct = onSelectAssociationProduct,
+                onSelectAssociationCombination = onSelectAssociationCombination,
+                onCancelAssociationCombinationChoice = onCancelAssociationCombinationChoice,
+            )
         }
     }
 }
+
+/**
+ * Dispatch des sous-états du flux de scan, extrait de [ProductScanSheet] pour rester sous les
+ * seuils detekt (longueur/complexité) : chaque état de [ProductScanUiState] pointe vers un unique
+ * contenu, cf. KDoc de [ProductScanViewModel].
+ */
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod") // Dispatch 1:1 avec les états de ProductScanUiState
+@Composable
+private fun ProductScanSheetBody(
+    state: ProductScanUiState,
+    onDismiss: () -> Unit,
+    onScanAgain: () -> Unit,
+    onSelectProduct: (Product) -> Unit,
+    onBackToResults: () -> Unit,
+    onSelectCombination: (Combination) -> Unit,
+    onQuantityChange: (String) -> Unit,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit,
+    onConfirm: () -> Unit,
+    onStartAssociation: () -> Unit,
+    onCancelAssociation: () -> Unit,
+    onAssociationQueryChange: (String) -> Unit,
+    onSelectAssociationProduct: (Product) -> Unit,
+    onSelectAssociationCombination: (Combination) -> Unit,
+    onCancelAssociationCombinationChoice: () -> Unit,
+) {
+    when {
+        state.submitSuccess -> ScanSuccessContent(onScanAgain = onScanAgain, onClose = onDismiss)
+        state.isLoading -> ScanLoadingContent()
+        state.isAssociating && state.associationCombinationChoices.isNotEmpty() ->
+            CombinationChoiceContent(
+                title = stringResource(R.string.products_scan_association_combination_title),
+                productName = state.associationPendingProduct?.name.orEmpty(),
+                choices = state.associationCombinationChoices,
+                isSubmitting = state.isAssociationSubmitting,
+                errorMessage = state.associationError?.asString(),
+                onChoose = onSelectAssociationCombination,
+                onBack = onCancelAssociationCombinationChoice,
+            )
+        state.isAssociating ->
+            AssociationSearchContent(
+                query = state.associationQuery,
+                results = state.associationResults,
+                isSearching = state.isAssociationSearching,
+                isSubmitting = state.isAssociationSubmitting,
+                errorMessage = state.associationError?.asString(),
+                onQueryChange = onAssociationQueryChange,
+                onSelectProduct = onSelectAssociationProduct,
+                onCancel = onCancelAssociation,
+            )
+        state.notFound ->
+            ScanNotFoundContent(
+                code = state.scannedCode,
+                onScanAgain = onScanAgain,
+                onStartAssociation = onStartAssociation,
+            )
+        state.needsCombinationChoice ->
+            CombinationChoiceContent(
+                title = stringResource(R.string.products_scan_combination_choice_title),
+                productName = state.results.firstOrNull()?.name.orEmpty(),
+                choices = state.combinationChoices,
+                isSubmitting = false,
+                errorMessage = null,
+                onChoose = onSelectCombination,
+                onBack = null,
+            )
+        state.selectedProduct != null ->
+            StockAdjustContent(
+                product = state.selectedProduct,
+                quantityInput = state.quantityInput,
+                isSubmitting = state.isSubmitting,
+                errorMessage = state.error?.asString(),
+                backLabel = stockAdjustBackLabel(state),
+                onBackToResults = onBackToResults,
+                onQuantityChange = onQuantityChange,
+                onIncrement = onIncrement,
+                onDecrement = onDecrement,
+                onConfirm = onConfirm,
+                onCancel = onDismiss,
+            )
+        state.error != null ->
+            ScanErrorContent(message = state.error.asString(), onScanAgain = onScanAgain)
+        state.hasMultipleResults ->
+            ScanResultsListContent(results = state.results, onSelectProduct = onSelectProduct)
+        else -> ScanLoadingContent()
+    }
+}
+
+/**
+ * Libellé du bouton "retour" de [StockAdjustContent] selon d'où vient la sélection courante :
+ * liste de produits distincts, sélecteur de déclinaison, ou aucun (résultat direct).
+ */
+@Composable
+private fun stockAdjustBackLabel(state: ProductScanUiState): String? =
+    when {
+        state.results.size > 1 -> stringResource(R.string.products_scan_back_to_results)
+        state.combinationChoices.isNotEmpty() -> stringResource(R.string.products_scan_back_to_combinations)
+        else -> null
+    }
 
 @Composable
 private fun ScanLoadingContent() {
@@ -346,6 +427,81 @@ private fun ScanResultRow(
     }
 }
 
+/**
+ * Sélecteur "Quelle déclinaison ?" affiché quand un scan matche un unique produit à ≥2
+ * déclinaisons sans en désigner une précisément, ou quand l'association d'un code-barres doit
+ * choisir sur quelle déclinaison le poser. [onBack] est optionnel (absent pour le flux de scan,
+ * qui repart plutôt via [onBackToResults] depuis la fiche stock).
+ */
+@Suppress("LongParameterList") // Sélecteur réutilisé par 2 flux (scan et association) : chaque paramètre pilote une action distincte
+@Composable
+private fun CombinationChoiceContent(
+    title: String,
+    productName: String,
+    choices: List<Combination>,
+    isSubmitting: Boolean,
+    errorMessage: String?,
+    onChoose: (Combination) -> Unit,
+    onBack: (() -> Unit)?,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = Dimensions.spacingM),
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+    ) {
+        Text(text = title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+        if (productName.isNotBlank()) {
+            Text(text = productName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Column {
+            choices.forEachIndexed { index, combination ->
+                CombinationChoiceRow(
+                    combination = combination,
+                    onClick = { if (!isSubmitting) onChoose(combination) },
+                )
+                if (index < choices.lastIndex) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainer)
+                }
+            }
+        }
+        if (errorMessage != null) {
+            Text(text = errorMessage, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+        }
+        if (isSubmitting) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                CircularProgressIndicator(modifier = Modifier.size(Dimensions.iconSizeMedium))
+            }
+        } else if (onBack != null) {
+            TextButton(onClick = onBack) {
+                Text(stringResource(R.string.products_scan_combination_back))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CombinationChoiceRow(
+    combination: Combination,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = Dimensions.spacingS),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = combination.name, style = MaterialTheme.typography.titleSmall)
+            Text(
+                text = stringResource(R.string.products_scan_combination_stock_row, combination.quantity),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 @Suppress("LongParameterList") // Fiche stock : chaque paramètre pilote une action distincte du formulaire
 @Composable
 private fun StockAdjustContent(
@@ -353,7 +509,7 @@ private fun StockAdjustContent(
     quantityInput: String,
     isSubmitting: Boolean,
     errorMessage: String?,
-    showBackToResults: Boolean,
+    backLabel: String?,
     onBackToResults: () -> Unit,
     onQuantityChange: (String) -> Unit,
     onIncrement: () -> Unit,
@@ -367,9 +523,9 @@ private fun StockAdjustContent(
         modifier = Modifier.fillMaxWidth().padding(vertical = Dimensions.spacingM),
         verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
     ) {
-        if (showBackToResults) {
+        if (backLabel != null) {
             TextButton(onClick = onBackToResults) {
-                Text(stringResource(R.string.products_scan_back_to_results))
+                Text(backLabel)
             }
         }
 
@@ -565,7 +721,7 @@ private fun PreviewStockAdjustContent() {
                 quantityInput = "50",
                 isSubmitting = false,
                 errorMessage = null,
-                showBackToResults = false,
+                backLabel = null,
                 onBackToResults = {},
                 onQuantityChange = {},
                 onIncrement = {},

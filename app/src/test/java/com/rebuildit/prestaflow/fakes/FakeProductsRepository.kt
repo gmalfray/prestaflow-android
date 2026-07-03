@@ -72,7 +72,7 @@ class FakeProductsRepository : ProductsRepository {
         return searchProductsResult
     }
 
-    data class SetProductEan13Call(val productId: Long, val ean13: String)
+    data class SetProductEan13Call(val productId: Long, val ean13: String, val combinationId: Long? = null)
 
     val setProductEan13Calls = mutableListOf<SetProductEan13Call>()
     var setProductEan13Result: Product? = null
@@ -81,8 +81,9 @@ class FakeProductsRepository : ProductsRepository {
     override suspend fun setProductEan13(
         productId: Long,
         ean13: String,
+        combinationId: Long?,
     ): Product {
-        setProductEan13Calls += SetProductEan13Call(productId, ean13)
+        setProductEan13Calls += SetProductEan13Call(productId, ean13, combinationId)
         if (shouldThrowOnSetProductEan13) throw RuntimeException("Erreur réseau simulée")
         return setProductEan13Result ?: error("setProductEan13Result non défini dans le fake")
     }

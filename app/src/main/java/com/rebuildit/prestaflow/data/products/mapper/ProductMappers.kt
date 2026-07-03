@@ -2,9 +2,11 @@ package com.rebuildit.prestaflow.data.products.mapper
 
 import com.rebuildit.prestaflow.data.local.entity.ProductEntity
 import com.rebuildit.prestaflow.data.local.entity.StockAvailabilityEntity
+import com.rebuildit.prestaflow.data.remote.dto.CombinationDto
 import com.rebuildit.prestaflow.data.remote.dto.MatchedCombinationDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductDto
 import com.rebuildit.prestaflow.data.remote.dto.StockDto
+import com.rebuildit.prestaflow.domain.products.model.Combination
 import com.rebuildit.prestaflow.domain.products.model.MatchedCombination
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductImage
@@ -62,10 +64,20 @@ fun ProductDto.toDomain(): Product =
         descriptionShort = descriptionShort,
         priceTaxExcl = priceTaxExcl,
         matchedCombination = matchedCombination?.toDomain(),
+        combinations = combinations.map { it.toDomain() },
     )
 
 fun MatchedCombinationDto.toDomain(): MatchedCombination =
     MatchedCombination(
+        id = id,
+        name = name,
+        ean13 = ean13,
+        reference = reference,
+        quantity = quantity,
+    )
+
+fun CombinationDto.toDomain(): Combination =
+    Combination(
         id = id,
         name = name,
         ean13 = ean13,

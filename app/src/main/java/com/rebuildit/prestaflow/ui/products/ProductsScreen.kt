@@ -155,6 +155,7 @@ private fun ProductScanBottomSheet(
         onScanAgain = onScanAgain,
         onSelectProduct = scanViewModel::onSelectProduct,
         onBackToResults = scanViewModel::onBackToResults,
+        onSelectCombination = scanViewModel::onSelectCombination,
         onQuantityChange = scanViewModel::onQuantityChange,
         onIncrement = scanViewModel::onIncrement,
         onDecrement = scanViewModel::onDecrement,
@@ -163,6 +164,8 @@ private fun ProductScanBottomSheet(
         onCancelAssociation = scanViewModel::onCancelAssociation,
         onAssociationQueryChange = scanViewModel::onAssociationQueryChange,
         onSelectAssociationProduct = scanViewModel::onAssociationProductSelected,
+        onSelectAssociationCombination = scanViewModel::onSelectAssociationCombination,
+        onCancelAssociationCombinationChoice = scanViewModel::onCancelAssociationCombinationChoice,
     )
 }
 

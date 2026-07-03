@@ -166,6 +166,11 @@
     <string name="products_scan_associate_action">Link to a product</string>
     <string name="products_scan_associate_title">Search for the product to link this barcode to</string>
     <string name="products_scan_associate_empty">No product matches this search.</string>
+    <string name="products_scan_combination_choice_title">Which variant?</string>
+    <string name="products_scan_combination_stock_row">Stock: %1$d</string>
+    <string name="products_scan_back_to_combinations">Back to variants</string>
+    <string name="products_scan_association_combination_title">Which variant should this barcode be linked to?</string>
+    <string name="products_scan_combination_back">Back</string>
     <string name="clients_list_empty">No customers yet.</string>
     <string name="clients_total_spent">Spent %1$s</string>
     <string name="clients_last_order">Last order %1$s</string>

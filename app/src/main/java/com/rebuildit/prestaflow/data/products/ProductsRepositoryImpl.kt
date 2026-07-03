@@ -127,9 +127,11 @@ class ProductsRepositoryImpl
         override suspend fun setProductEan13(
             productId: Long,
             ean13: String,
+            combinationId: Long?,
         ): Product =
             withContext(ioDispatcher) {
-                val response = api.updateProduct(productId, ProductUpdateRequestDto(ean13 = ean13))
+                val response =
+                    api.updateProduct(productId, ProductUpdateRequestDto(ean13 = ean13, combinationId = combinationId))
                 val dto = response.product
                 // Le produit vient d'une recherche texte transitoire (pas forcément en cache) :
                 // on le met en cache maintenant qu'on dispose de la version serveur à jour.

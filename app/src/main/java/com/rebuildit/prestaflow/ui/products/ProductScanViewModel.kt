@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
+import com.rebuildit.prestaflow.domain.products.model.Combination
 import com.rebuildit.prestaflow.domain.products.model.Product
+import com.rebuildit.prestaflow.domain.products.model.toMatchedCombination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,8 +27,15 @@ import javax.inject.Inject
  *
  * Étapes du flux :
  *  1. [onBarcodeScanned] : reçoit le code lu par ZXing, interroge `GET /products?barcode=`.
- *  2. Résultat unique → sélection auto ([selectedProduct]) et fiche stock prête à ajuster.
- *     Plusieurs résultats → l'UI affiche une liste de choix, [onSelectProduct] fixe la sélection.
+ *  2. Résultat unique :
+ *     - le produit a une déclinaison [Product.matchedCombination] matchée par le scan → sélection
+ *       auto ([selectedProduct]) et fiche stock de cette déclinaison, comme avant.
+ *     - sinon, le produit porte ≥2 déclinaisons ([Product.combinations]) sans qu'aucune n'ait été
+ *       désignée par le scan → [ProductScanUiState.needsCombinationChoice] affiche un sélecteur
+ *       "Quelle déclinaison ?", [onSelectCombination] fixe le choix et bascule sur sa fiche stock.
+ *     - sinon → sélection auto au niveau produit (comportement historique, inchangé).
+ *     Plusieurs résultats (produits distincts) → l'UI affiche une liste de choix, [onSelectProduct]
+ *     fixe la sélection.
  *     Aucun résultat → [ProductScanUiState.notFound], avec une action [onStartAssociation] pour
  *     associer le code scanné à un produit existant (cas d'un produit sans EAN13 en base).
  *  3. [onIncrement]/[onDecrement]/[onQuantityChange] ajustent la quantité saisie localement.
@@ -36,9 +45,14 @@ import javax.inject.Inject
  *  1. [onStartAssociation] ouvre la recherche produit ([ProductScanUiState.isAssociating]).
  *  2. [onAssociationQueryChange] pilote une recherche `GET /products?search=` debouncée
  *     (voir [observeAssociationQuery]), résultats dans [ProductScanUiState.associationResults].
- *  3. [onAssociationProductSelected] envoie `PATCH /products/{id}` avec le code scanné en EAN13
- *     ([ProductsRepository.setProductEan13]) puis enchaîne directement sur la fiche stock du
- *     produit désormais associé (comme un scan trouvé).
+ *  3. [onAssociationProductSelected] choisit le produit auquel associer le code scanné :
+ *     - 0 déclinaison → associe l'EAN13 au produit directement.
+ *     - 1 déclinaison → l'associe automatiquement à cette déclinaison (son `combination_id`).
+ *     - ≥2 déclinaisons → [ProductScanUiState.associationCombinationChoices] affiche un sélecteur
+ *       "À quelle déclinaison associer ce code-barres ?", [onSelectAssociationCombination] fixe
+ *       le choix.
+ *     Dans tous les cas, envoie `PATCH /products/{id}` ([ProductsRepository.setProductEan13]) puis
+ *     enchaîne directement sur la fiche stock du produit désormais associé (comme un scan trouvé).
  */
 @OptIn(FlowPreview::class)
 @HiltViewModel
@@ -50,6 +64,9 @@ class ProductScanViewModel
     ) : ViewModel() {
         private companion object {
             private const val ASSOCIATION_SEARCH_DEBOUNCE_MS = 300L
+
+            /** Seuil à partir duquel un choix explicite de déclinaison est nécessaire (en-dessous, pas d'ambiguïté). */
+            private const val COMBINATION_CHOICE_THRESHOLD = 2
         }
 
         private val _uiState = MutableStateFlow(ProductScanUiState())
@@ -93,18 +110,37 @@ class ProductScanViewModel
                 when {
                     results.isEmpty() ->
                         current.copy(isLoading = false, results = emptyList(), notFound = true)
-                    results.size == 1 ->
-                        current.copy(
-                            isLoading = false,
-                            results = results,
-                            selectedProduct = results.first(),
-                            quantityInput = results.first().scannedQuantity.toString(),
-                        )
+                    results.size == 1 -> applySingleResult(current, results.first())
                     else -> current.copy(isLoading = false, results = results)
                 }
             }
             Timber.d("Barcode lookup for code=%s returned %d result(s)", code, results.size)
         }
+
+        /**
+         * Résout le résultat unique d'un scan : sélection directe si aucune ambiguïté
+         * (déclinaison déjà matchée, ou produit à 0/1 déclinaison), sinon expose un sélecteur de
+         * déclinaison ([ProductScanUiState.needsCombinationChoice]) — cf. KDoc de la classe.
+         */
+        private fun applySingleResult(
+            current: ProductScanUiState,
+            product: Product,
+        ): ProductScanUiState =
+            when {
+                product.matchedCombination != null || product.combinations.size < COMBINATION_CHOICE_THRESHOLD ->
+                    current.copy(
+                        isLoading = false,
+                        results = listOf(product),
+                        selectedProduct = product,
+                        quantityInput = product.scannedQuantity.toString(),
+                    )
+                else ->
+                    current.copy(
+                        isLoading = false,
+                        results = listOf(product),
+                        combinationChoices = product.combinations,
+                    )
+            }
 
         fun onSelectProduct(product: Product) {
             _uiState.update {
@@ -112,7 +148,23 @@ class ProductScanViewModel
             }
         }
 
-        /** Repart du choix multiple (retour depuis la fiche stock vers la liste de résultats). */
+        /**
+         * Fixe la déclinaison choisie dans le sélecteur "Quelle déclinaison ?" (produit unique à
+         * ≥2 déclinaisons, cf. [ProductScanUiState.needsCombinationChoice]) et ouvre sa fiche
+         * stock, comme si le scan l'avait matchée directement.
+         */
+        fun onSelectCombination(combination: Combination) {
+            val product = _uiState.value.results.firstOrNull() ?: return
+            val updated = product.copy(matchedCombination = combination.toMatchedCombination())
+            _uiState.update {
+                it.copy(selectedProduct = updated, quantityInput = combination.quantity.toString())
+            }
+        }
+
+        /**
+         * Repart du choix multiple vers la liste de résultats précédente (autres produits, ou
+         * déclinaisons du même produit si [ProductScanUiState.combinationChoices] est renseigné).
+         */
         fun onBackToResults() {
             _uiState.update { it.copy(selectedProduct = null) }
         }
@@ -189,7 +241,19 @@ class ProductScanViewModel
                     associationResults = emptyList(),
                     isAssociationSearching = false,
                     associationError = null,
+                    associationCombinationChoices = emptyList(),
+                    associationPendingProduct = null,
                 )
+            }
+        }
+
+        /**
+         * Repart du sélecteur de déclinaison ("À quelle déclinaison associer ce code-barres ?")
+         * vers la liste de résultats de recherche, sans perdre la requête tapée.
+         */
+        fun onCancelAssociationCombinationChoice() {
+            _uiState.update {
+                it.copy(associationCombinationChoices = emptyList(), associationPendingProduct = null)
             }
         }
 
@@ -235,27 +299,65 @@ class ProductScanViewModel
         }
 
         /**
-         * Associe le code scanné au [product] choisi, puis enchaîne directement sur la fiche
-         * stock (comme un scan trouvé) en cas de succès.
+         * Choisit le [product] auquel associer le code scanné :
+         *  - 0 déclinaison → associe l'EAN13 au produit directement.
+         *  - 1 déclinaison → l'associe automatiquement à cette déclinaison (pas d'ambiguïté).
+         *  - ≥2 déclinaisons → expose [ProductScanUiState.associationCombinationChoices] pour
+         *    laisser choisir laquelle recevra l'EAN13 ([onSelectAssociationCombination]).
          */
         fun onAssociationProductSelected(product: Product) {
+            if (product.combinations.size >= COMBINATION_CHOICE_THRESHOLD) {
+                _uiState.update {
+                    it.copy(associationCombinationChoices = product.combinations, associationPendingProduct = product)
+                }
+                return
+            }
+            submitAssociation(product, product.combinations.singleOrNull()?.id)
+        }
+
+        /**
+         * Fixe la déclinaison choisie dans le sélecteur d'association et soumet l'EAN13 avec son
+         * `combination_id`.
+         */
+        fun onSelectAssociationCombination(combination: Combination) {
+            val product = _uiState.value.associationPendingProduct ?: return
+            submitAssociation(product, combination.id)
+        }
+
+        /**
+         * Associe le code scanné au [product] (et, le cas échéant, à sa déclinaison
+         * [combinationId]), puis enchaîne directement sur la fiche stock (comme un scan trouvé)
+         * en cas de succès. En cas d'échec, le sélecteur de déclinaison (s'il était affiché) reste
+         * ouvert pour permettre de réessayer.
+         */
+        private fun submitAssociation(
+            product: Product,
+            combinationId: Long?,
+        ) {
             val code = _uiState.value.scannedCode ?: return
             viewModelScope.launch {
                 _uiState.update { it.copy(isAssociationSubmitting = true, associationError = null) }
-                runCatching { productsRepository.setProductEan13(product.id, code) }
+                runCatching { productsRepository.setProductEan13(product.id, code, combinationId) }
                     .onSuccess { updated ->
-                        Timber.d("Associated ean13=%s to product %d", code, updated.id)
+                        Timber.d(
+                            "Associated ean13=%s to product %d (combinationId=%s)",
+                            code,
+                            updated.id,
+                            combinationId,
+                        )
                         _uiState.update {
                             it.copy(
                                 isAssociating = false,
                                 isAssociationSubmitting = false,
                                 associationQuery = "",
                                 associationResults = emptyList(),
+                                associationCombinationChoices = emptyList(),
+                                associationPendingProduct = null,
                                 associationError = null,
                                 notFound = false,
                                 results = listOf(updated),
                                 selectedProduct = updated,
-                                quantityInput = updated.stock.quantity.toString(),
+                                quantityInput = updated.scannedQuantity.toString(),
                             )
                         }
                     }
@@ -284,6 +386,12 @@ data class ProductScanUiState(
     val isSubmitting: Boolean = false,
     val submitSuccess: Boolean = false,
     val error: UiText? = null,
+    /**
+     * Déclinaisons à choisir quand le scan a matché un unique produit à ≥2 déclinaisons sans en
+     * désigner une précisément (cf. [ProductScanViewModel.onSelectCombination]). Le produit
+     * concerné est [results] (résultat unique dans ce cas).
+     */
+    val combinationChoices: List<Combination> = emptyList(),
     /** Recherche produit ouverte pour associer le code scanné (cas [notFound]). */
     val isAssociating: Boolean = false,
     val associationQuery: String = "",
@@ -291,6 +399,17 @@ data class ProductScanUiState(
     val isAssociationSearching: Boolean = false,
     val isAssociationSubmitting: Boolean = false,
     val associationError: UiText? = null,
+    /**
+     * Déclinaisons à choisir pour savoir laquelle recevra l'EAN13 scanné, quand le produit
+     * sélectionné pour l'association ([associationPendingProduct]) a ≥2 déclinaisons (cf.
+     * [ProductScanViewModel.onSelectAssociationCombination]).
+     */
+    val associationCombinationChoices: List<Combination> = emptyList(),
+    /** Produit en attente d'un choix de déclinaison pour l'association (cf. [associationCombinationChoices]). */
+    val associationPendingProduct: Product? = null,
 ) {
     val hasMultipleResults: Boolean get() = results.size > 1 && selectedProduct == null
+
+    /** Sélecteur "Quelle déclinaison ?" à afficher pour l'ajustement de stock. */
+    val needsCombinationChoice: Boolean get() = combinationChoices.isNotEmpty() && selectedProduct == null
 }

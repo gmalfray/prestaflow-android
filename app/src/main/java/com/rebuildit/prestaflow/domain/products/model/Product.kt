@@ -36,6 +36,14 @@ data class Product(
      * combinaison, cf. [ProductsRepository.updateStock]).
      */
     val matchedCombination: MatchedCombination? = null,
+    /**
+     * Toutes les déclinaisons du produit (vide si le produit n'en a pas). Utilisé quand un scan
+     * ne peut pas désigner une déclinaison précise ([matchedCombination] absent) mais que le
+     * produit en porte plusieurs : l'UI doit alors laisser choisir laquelle ajuster/associer
+     * plutôt que de deviner. Résultat transitoire de scan/recherche uniquement — non mis en
+     * cache local (comme [matchedCombination]).
+     */
+    val combinations: List<Combination> = emptyList(),
 ) {
     /**
      * Quantité à afficher/éditer pour un résultat de scan : celle de la combinaison matchée si
@@ -56,6 +64,28 @@ data class MatchedCombination(
     val reference: String? = null,
     val quantity: Int,
 )
+
+/**
+ * Déclinaison d'un produit parmi [Product.combinations] — même forme que [MatchedCombination]
+ * mais couvre TOUTES les déclinaisons (pas seulement celle matchée par un scan), pour permettre
+ * de proposer un choix à l'utilisateur.
+ */
+@Serializable
+data class Combination(
+    val id: Long,
+    val name: String,
+    val ean13: String? = null,
+    val reference: String? = null,
+    val quantity: Int,
+)
+
+/**
+ * Convertit une déclinaison choisie parmi [Product.combinations] en [MatchedCombination], pour
+ * réutiliser le même chemin d'affichage/soumission que celui d'un scan ayant matché directement
+ * une combinaison.
+ */
+fun Combination.toMatchedCombination(): MatchedCombination =
+    MatchedCombination(id = id, name = name, ean13 = ean13, reference = reference, quantity = quantity)
 
 @Serializable
 data class ProductStock(
