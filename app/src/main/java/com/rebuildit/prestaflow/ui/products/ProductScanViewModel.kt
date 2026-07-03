@@ -102,6 +102,19 @@ class ProductScanViewModel
             }
         }
 
+        /**
+         * Point d'entrée quand [code] a déjà été recherché ailleurs (scanner permanent de réappro,
+         * [StockReplenishViewModel]) et est connu introuvable : ouvre directement l'état
+         * "introuvable" du sheet, sans relancer un 2ᵉ `GET /products?barcode=` du même code déjà
+         * su vide côté [StockReplenishViewModel.onBarcodeScanned]. Produit exactement l'état que
+         * [onBarcodeScanned] aurait atteint pour un résultat vide (`applyResults` avec
+         * `results = emptyList()`), en sautant l'appel réseau et le passage par `isLoading = true`.
+         */
+        fun onKnownNotFound(code: String) {
+            if (code.isBlank()) return
+            _uiState.value = ProductScanUiState(isSheetVisible = true, scannedCode = code, notFound = true)
+        }
+
         private fun applyResults(
             code: String,
             results: List<Product>,

@@ -68,6 +68,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -75,6 +76,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -133,10 +135,14 @@ fun StockReplenishRoute(
     val associationState by associationViewModel.uiState.collectAsStateWithLifecycle()
 
     // Code introuvable → délègue au flux d'association existant (inchangé), sur le MÊME code.
+    // `onKnownNotFound` (pas `onBarcodeScanned`) : le code vient déjà d'être cherché ci-dessus par
+    // [StockReplenishViewModel] et déclaré introuvable — relancer `onBarcodeScanned` referait un 2ᵉ
+    // `GET /products?barcode=` du même code déjà su vide, retardant inutilement l'ouverture du sheet
+    // d'association.
     LaunchedEffect(state.notFound, state.scannedCode) {
         val code = state.scannedCode
         if (state.notFound && code != null) {
-            associationViewModel.onBarcodeScanned(code)
+            associationViewModel.onKnownNotFound(code)
         }
     }
     // Association terminée (succès → produit résolu) ou abandonnée (sheet refermée sans résultat) :
@@ -304,14 +310,19 @@ fun StockReplenishScreen(
         // Mise en page compacte à 3 zones, dans l'ordre :
         //  1. Bandeau récap de session (fixe, tout en haut — jamais scrollé hors champ).
         //  2. Zone scrollable (caméra compacte + fiche produit) : seule partie qui rétrécit/scrolle
-        //     sur petit écran, jamais la zone d'action.
+        //     sur petit écran, jamais la zone d'action. `weight(1f, fill = false)` (au lieu de
+        //     `weight(1f)`) : la zone ne réclame QUE l'espace dont son contenu a besoin, plafonné à
+        //     l'espace restant — sur un écran de hauteur normale, le contenu (caméra + fiche) est
+        //     plus petit que l'espace dispo, donc plus de grand vide poussant la zone d'action tout
+        //     en bas ; sur petit écran, le plafond force le scroll interne (cf.
+        //     [ReplenishScrollableSection]) et la zone d'action reste entièrement visible en dessous.
         //  3. Zone d'action épinglée (écritures en attente + boutons rapides/quantité/Valider) :
         //     toujours visible en bas, jamais coupée par la hauteur d'écran.
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             SessionRecapBanner(recap = state.sessionRecap)
 
             ReplenishScrollableSection(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
+                modifier = Modifier.weight(1f, fill = false).fillMaxWidth(),
                 state = state,
                 showAddedFlash = showAddedFlash,
                 reduceMotion = reduceMotion,
@@ -362,6 +373,12 @@ fun StockReplenishScreen(
  * ambiguïté de résolution entre les overloads `ColumnScope.AnimatedVisibility` et `BoxScope`/générique
  * (récepteurs implicites empilés) → échec de compilation. Une fonction dédiée démarre une pile de
  * récepteurs implicites propre : seul `BoxScope` est en jeu ici.
+ *
+ * Ni la [Box] racine ni le [Column] interne (caméra + fiche) ne portent `fillMaxSize`/`weight` : leur
+ * hauteur est bornée par le `weight(1f, fill = false)` posé par l'appelant ([StockReplenishScreen])
+ * mais pas forcée à l'atteindre — le contenu ne prend que la place dont il a besoin (plus de grand
+ * vide sur écran normal), et déborde vers le scroll interne de [ReplenishBody] si la hauteur d'écran
+ * est trop petite pour tout afficher (la caméra, elle, garde toujours sa hauteur fixe).
  */
 @Suppress("LongParameterList")
 @Composable
@@ -376,16 +393,15 @@ private fun ReplenishScrollableSection(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             PermanentBarcodeScanner(
                 isActive = state.isScannerActive,
                 onBarcodeScanned = onBarcodeScanned,
-                modifier = Modifier.fillMaxWidth().height(REPLENISH_CAMERA_HEIGHT),
+                modifier = Modifier.fillMaxWidth().height(replenishCameraHeight()),
             )
             Column(
                 modifier =
                     Modifier
-                        .weight(1f)
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
                         .padding(Dimensions.screenEdgeMargin),
@@ -414,8 +430,29 @@ private fun ReplenishScrollableSection(
     }
 }
 
-/** Hauteur de l'aperçu caméra — réduite (240dp → 140dp) pour laisser la place à la zone d'action épinglée en bas. */
-private val REPLENISH_CAMERA_HEIGHT = 140.dp
+/** Hauteur de l'aperçu caméra sur écran de hauteur normale — 140dp (trop étriqué pour viser) → 188dp. */
+private val REPLENISH_CAMERA_HEIGHT = 188.dp
+
+/**
+ * Hauteur repliée de l'aperçu caméra sur très petit écran (cf. [PreviewStockReplenishScreenSmallHeight],
+ * 480dp) : sous [REPLENISH_COMPACT_SCREEN_HEIGHT_THRESHOLD_DP], la fiche produit scrollable a trop peu
+ * de place restante pour respirer si la caméra garde sa pleine hauteur — reprend la taille précédente.
+ */
+private val REPLENISH_CAMERA_HEIGHT_COMPACT = 140.dp
+
+/** Seuil de hauteur d'écran (dp) sous lequel [REPLENISH_CAMERA_HEIGHT_COMPACT] remplace [REPLENISH_CAMERA_HEIGHT]. */
+private const val REPLENISH_COMPACT_SCREEN_HEIGHT_THRESHOLD_DP = 600
+
+/** Hauteur de l'aperçu caméra, adaptée à la hauteur d'écran courante (cf. constantes ci-dessus). */
+@Composable
+private fun replenishCameraHeight(): Dp {
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    return if (screenHeightDp < REPLENISH_COMPACT_SCREEN_HEIGHT_THRESHOLD_DP) {
+        REPLENISH_CAMERA_HEIGHT_COMPACT
+    } else {
+        REPLENISH_CAMERA_HEIGHT
+    }
+}
 
 /** Durée d'affichage de [QueueAddedFlash] après chaque validation. */
 private const val QUEUE_ADDED_FLASH_DURATION_MS = 1_200L

@@ -86,6 +86,40 @@ class ProductScanViewModelTest {
             assertFalse(state.isLoading)
         }
 
+    // ─── Code déjà connu introuvable (hand-off depuis StockReplenishViewModel) ──
+
+    @Test
+    fun `onKnownNotFound ouvre directement l etat introuvable sans appel reseau`() =
+        runTest {
+            val vm = buildViewModel()
+            vm.onKnownNotFound("0000000000000")
+
+            val state = vm.uiState.value
+            assertTrue(state.isSheetVisible)
+            assertTrue(state.notFound)
+            assertEquals("0000000000000", state.scannedCode)
+            assertFalse(state.isLoading)
+            assertNull(state.selectedProduct)
+            assertTrue(fakeRepo.barcodeSearchCalls.isEmpty())
+        }
+
+    @Test
+    fun `onKnownNotFound permet ensuite de lancer l association normalement`() =
+        runTest {
+            val match = buildProduct(9L, quantity = 4)
+            fakeRepo.searchProductsResult = listOf(match)
+
+            val vm = buildViewModel()
+            vm.onKnownNotFound("0000000000000")
+            vm.onStartAssociation()
+            vm.onAssociationQueryChange("laine rico")
+            testDispatcher.scheduler.advanceTimeBy(400L)
+            advanceUntilIdle()
+
+            assertEquals(listOf("laine rico"), fakeRepo.searchProductsCalls)
+            assertEquals(listOf(match), vm.uiState.value.associationResults)
+        }
+
     // ─── Plusieurs résultats ─────────────────────────────────────────────────
 
     @Test
