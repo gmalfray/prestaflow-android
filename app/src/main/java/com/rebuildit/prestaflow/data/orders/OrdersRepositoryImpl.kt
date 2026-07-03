@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.data.orders
 
+import com.rebuildit.prestaflow.core.network.ApiEndpointManager
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.data.local.dao.OrderDao
 import com.rebuildit.prestaflow.data.orders.mapper.toDomain
@@ -11,6 +12,7 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderStatusUpdateRequestDto
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
+import com.rebuildit.prestaflow.domain.sync.SyncQueueRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -24,6 +26,7 @@ import javax.inject.Singleton
 private val errorBodyJson = Json { ignoreUnknownKeys = true }
 
 @Singleton
+@Suppress("LongParameterList") // Repository Hilt : dépendances API, DAO, mapper d'erreurs, dispatcher, queue sync et endpoint
 class OrdersRepositoryImpl
     @Inject
     constructor(
@@ -31,6 +34,8 @@ class OrdersRepositoryImpl
         private val orderDao: OrderDao,
         private val networkErrorMapper: NetworkErrorMapper,
         private val ioDispatcher: CoroutineDispatcher,
+        private val syncQueueRepository: SyncQueueRepository,
+        private val endpointManager: ApiEndpointManager,
     ) : OrdersRepository {
         override fun observeOrders(): Flow<List<Order>> =
             orderDao.observeOrders().map { entities ->
@@ -121,10 +126,39 @@ class OrdersRepositoryImpl
                     onSuccess = { refreshOrder(orderId) },
                     onFailure = { error ->
                         Timber.w(networkErrorMapper.map(error).toString())
+                        enqueueStatusUpdateRetry(orderId, status)
                         throw error
                     },
                 )
             }
+        }
+
+        /**
+         * Enfile un retry offline du changement de statut échoué (file `pending_sync`, rejouée
+         * par `SyncWorker` contre la boutique active AU MOMENT DE L'ÉCHEC — cf. FIX "file offline
+         * rejouée contre la mauvaise boutique"). Best-effort : un échec d'enfilement ne doit
+         * jamais masquer l'erreur d'origine remontée à l'appelant.
+         */
+        private suspend fun enqueueStatusUpdateRetry(
+            orderId: Long,
+            status: String,
+        ) {
+            val shopUrl = endpointManager.getStoredShopUrl()
+            if (shopUrl.isNullOrBlank()) return
+            runCatching {
+                syncQueueRepository.enqueue(
+                    endpoint = "orders/$orderId/status",
+                    method = "PATCH",
+                    payloadJson =
+                        errorBodyJson.encodeToString(
+                            OrderStatusUpdateRequestDto.serializer(),
+                            OrderStatusUpdateRequestDto(status = status),
+                        ),
+                    shopUrl = shopUrl,
+                    resourceType = "order",
+                    resourceId = orderId,
+                )
+            }.onFailure { Timber.w(it, "Impossible d'enfiler le retry de statut pour la commande $orderId") }
         }
 
         override suspend fun updateOrderShipping(

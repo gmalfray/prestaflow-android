@@ -331,6 +331,15 @@ class OrdersViewModel
                     ordersRepository.updateOrderStatus(orderId, targetStatus.id.toString())
                 }.onFailure { error ->
                     Timber.w(error, "Swipe status update failed orderId=$orderId")
+                    // La fenêtre d'annulation est passée : l'utilisateur croit la commande
+                    // traitée. Un simple log serait silencieux — on DOIT le prévenir (canal
+                    // snackbar existant, déjà utilisé par bulkUpdateStatus) qu'aucun changement
+                    // n'est parti côté serveur pour cette commande.
+                    _uiState.update {
+                        it.copy(
+                            bulkSnackbar = "Échec de la mise à jour de $orderReference : la commande n'a pas été modifiée",
+                        )
+                    }
                 }
                 refresh(forceRemote = true, notifyOnError = false)
             }

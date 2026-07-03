@@ -397,6 +397,54 @@ class OrdersViewModelTest {
         }
 
     @Test
+    fun `un swipe qui echoue apres le delai emet un message d erreur visible`() =
+        runTest {
+            // Régression : un échec silencieux après la fenêtre d'annulation faisait croire à
+            // l'utilisateur que la commande était traitée alors que rien n'était parti côté
+            // serveur (cf. FIX "échec du changement de statut par swipe silencieux").
+            fakeOrdersRepo.orderStatuses =
+                listOf(OrderStatusFilter(3, "En cours de préparation", "#0000FF"))
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "#ORD-001", status = "Paiement accepté")))
+            fakeOrdersRepo.shouldThrowOnUpdateStatus = true
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.LEFT)
+            advanceTimeBy(5_001)
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un échec après la fenêtre d'annulation doit remonter un message visible, pas seulement un log",
+                vm.uiState.value.bulkSnackbar != null,
+            )
+            assertTrue(
+                "Le message doit permettre d'identifier la commande concernée",
+                vm.uiState.value.bulkSnackbar?.contains("#ORD-001") == true,
+            )
+        }
+
+    @Test
+    fun `un swipe reussi n emet pas de message d erreur`() =
+        runTest {
+            fakeOrdersRepo.orderStatuses =
+                listOf(OrderStatusFilter(3, "En cours de préparation", "#0000FF"))
+            fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "#ORD-001", status = "Paiement accepté")))
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onSwipeAction(1L, "#ORD-001", SwipeDirection.LEFT)
+            advanceTimeBy(5_001)
+            advanceUntilIdle()
+
+            assertNull(
+                "Un swipe réussi ne doit déclencher aucun message d'erreur",
+                vm.uiState.value.bulkSnackbar,
+            )
+        }
+
+    @Test
     fun `un second swipe annule le premier sans envoyer et declenche le second`() =
         runTest {
             fakeOrdersRepo.orderStatuses =

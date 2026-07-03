@@ -49,10 +49,19 @@ class FakePrestaFlowApi : PrestaFlowApi {
 
     override suspend fun getOrder(orderId: Long): OrderDetailResponseDto = throw UnsupportedOperationException("Non utilisé dans ce test")
 
+    /** Si non null, [updateOrderStatus] lancera cette exception (au lieu de réussir silencieusement). */
+    var updateOrderStatusException: Throwable? = null
+
+    /** Appels reçus par [updateOrderStatus] : (orderId, status). */
+    val updateOrderStatusCalls = mutableListOf<Pair<Long, String>>()
+
     override suspend fun updateOrderStatus(
         orderId: Long,
         body: OrderStatusUpdateRequestDto,
-    ) = throw UnsupportedOperationException("Non utilisé dans ce test")
+    ) {
+        updateOrderStatusCalls += orderId to body.status
+        updateOrderStatusException?.let { throw it }
+    }
 
     override suspend fun updateOrderShipping(
         orderId: Long,

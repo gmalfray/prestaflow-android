@@ -1,11 +1,14 @@
 package com.rebuildit.prestaflow.data.orders
 
+import com.rebuildit.prestaflow.core.network.ApiEndpointManager
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.data.remote.dto.OrderListCustomerDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListItemDto
 import com.rebuildit.prestaflow.fakes.FakeOrderDao
 import com.rebuildit.prestaflow.fakes.FakePrestaFlowApi
+import com.rebuildit.prestaflow.fakes.FakeSharedPreferences
+import com.rebuildit.prestaflow.fakes.FakeSyncQueueRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -29,18 +32,22 @@ import org.junit.Test
 class OrdersRepositoryImplTest {
     private lateinit var fakeApi: FakePrestaFlowApi
     private lateinit var fakeDao: FakeOrderDao
+    private lateinit var fakeSyncQueueRepository: FakeSyncQueueRepository
     private lateinit var repository: OrdersRepositoryImpl
 
     @Before
     fun setUp() {
         fakeApi = FakePrestaFlowApi()
         fakeDao = FakeOrderDao()
+        fakeSyncQueueRepository = FakeSyncQueueRepository()
         repository =
             OrdersRepositoryImpl(
                 api = fakeApi,
                 orderDao = fakeDao,
                 networkErrorMapper = NetworkErrorMapper(),
                 ioDispatcher = UnconfinedTestDispatcher(),
+                syncQueueRepository = fakeSyncQueueRepository,
+                endpointManager = ApiEndpointManager(FakeSharedPreferences()),
             )
     }
 
@@ -214,6 +221,53 @@ class OrdersRepositoryImplTest {
             val byId = fakeDao.currentEntities().associateBy { it.id }
             assertEquals(50, byId[40L]?.position)
             assertEquals(51, byId[50L]?.position)
+        }
+
+    // ─── updateOrderStatus : retry offline en cas d'échec (FIX swipe silencieux) ─
+
+    @Test(expected = RuntimeException::class)
+    fun `updateOrderStatus propage toujours l erreur d origine`() =
+        runTest {
+            fakeApi.updateOrderStatusException = RuntimeException("Timeout")
+
+            repository.updateOrderStatus(orderId = 1L, status = "5")
+        }
+
+    @Test
+    fun `updateOrderStatus en echec enfile un retry avec la boutique active`() =
+        runTest {
+            fakeApi.updateOrderStatusException = RuntimeException("Timeout")
+            val endpointManager = ApiEndpointManager(FakeSharedPreferences())
+            endpointManager.buildApiBaseUrl("https://shop.test")?.let {
+                endpointManager.setActiveBaseUrl(it, "https://shop.test", persist = true)
+            }
+            val repoAvecBoutiqueActive =
+                OrdersRepositoryImpl(
+                    api = fakeApi,
+                    orderDao = fakeDao,
+                    networkErrorMapper = NetworkErrorMapper(),
+                    ioDispatcher = UnconfinedTestDispatcher(),
+                    syncQueueRepository = fakeSyncQueueRepository,
+                    endpointManager = endpointManager,
+                )
+
+            runCatching { repoAvecBoutiqueActive.updateOrderStatus(orderId = 42L, status = "5") }
+
+            assertEquals(1, fakeSyncQueueRepository.enqueueCalls.size)
+            val call = fakeSyncQueueRepository.enqueueCalls.first()
+            assertEquals("orders/42/status", call.endpoint)
+            assertEquals("https://shop.test", call.shopUrl)
+            assertEquals(42L, call.resourceId)
+        }
+
+    @Test
+    fun `updateOrderStatus reussi n enfile aucun retry`() =
+        runTest {
+            // refreshOrder() (appelé après succès) échoue sur getOrder non stubbé dans ce fake ;
+            // seul l'enfilement du retry nous intéresse ici (côté échec réseau, pas ce throw-là).
+            runCatching { repository.updateOrderStatus(orderId = 1L, status = "5") }
+
+            assertTrue(fakeSyncQueueRepository.enqueueCalls.isEmpty())
         }
 
     // ─── Builders ────────────────────────────────────────────────────────────
