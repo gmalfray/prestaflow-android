@@ -33,7 +33,8 @@ class TokenAuthenticatorTest {
         val token =
             AuthToken(
                 value = "tok",
-                expiresAtEpochMillis = 1L, // timestamp epoch très ancien
+                // timestamp epoch très ancien
+                expiresAtEpochMillis = 1L,
             )
 
         assertTrue(token.isExpired)
@@ -57,7 +58,8 @@ class TokenAuthenticatorTest {
         val token =
             AuthToken(
                 value = "tok",
-                expiresAtEpochMillis = now - 1L, // légèrement dans le passé
+                // légèrement dans le passé
+                expiresAtEpochMillis = now - 1L,
             )
 
         assertTrue(token.isExpired)

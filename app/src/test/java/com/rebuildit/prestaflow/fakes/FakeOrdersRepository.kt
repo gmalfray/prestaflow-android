@@ -17,10 +17,10 @@ import kotlinx.coroutines.flow.map
  * - [shouldThrowOnRefresh] force un échec réseau si vrai.
  */
 class FakeOrdersRepository : OrdersRepository {
-    private val _ordersFlow = MutableStateFlow<List<Order>>(emptyList())
+    private val ordersFlowState = MutableStateFlow<List<Order>>(emptyList())
 
     fun setOrders(orders: List<Order>) {
-        _ordersFlow.value = orders
+        ordersFlowState.value = orders
     }
 
     /** Liste des paires (forceRemote, statusId du premier statut sélectionné) reçues par [refresh]. */
@@ -48,10 +48,10 @@ class FakeOrdersRepository : OrdersRepository {
      */
     val failingOrderIds = mutableSetOf<Long>()
 
-    override fun observeOrders(): Flow<List<Order>> = _ordersFlow.asStateFlow()
+    override fun observeOrders(): Flow<List<Order>> = ordersFlowState.asStateFlow()
 
-    // Flow réactif : réagit aux mises à jour de _ordersFlow (ex. après generateShippingLabel)
-    override fun getOrder(orderId: Long): Flow<Order?> = _ordersFlow.map { orders -> orders.find { it.id == orderId } }
+    // Flow réactif : réagit aux mises à jour de ordersFlowState (ex. après generateShippingLabel)
+    override fun getOrder(orderId: Long): Flow<Order?> = ordersFlowState.map { orders -> orders.find { it.id == orderId } }
 
     var orderStatuses: List<OrderStatusFilter> = emptyList()
 
@@ -118,18 +118,18 @@ class FakeOrdersRepository : OrdersRepository {
 
     /**
      * N° de suivi à placer sur la commande après génération.
-     * Si non null et [generateLabelUpdatesOrder] = true, met à jour [_ordersFlow].
+     * Si non null et [generateLabelUpdatesOrder] = true, met à jour [ordersFlowState].
      */
     var generateLabelTrackingNumber: String? = "8R01234567890"
 
-    /** Si vrai, met à jour la commande dans [_ordersFlow] pour simuler le refreshOrder. */
+    /** Si vrai, met à jour la commande dans [ordersFlowState] pour simuler le refreshOrder. */
     var generateLabelUpdatesOrder: Boolean = true
 
     override suspend fun generateShippingLabel(orderId: Long) {
         generateLabelCalls += orderId
         if (shouldThrowOnGenerateLabel) throw generateLabelException
         if (generateLabelUpdatesOrder) {
-            val currentOrders = _ordersFlow.value.toMutableList()
+            val currentOrders = ordersFlowState.value.toMutableList()
             val idx = currentOrders.indexOfFirst { it.id == orderId }
             if (idx >= 0) {
                 val order = currentOrders[idx]
@@ -140,7 +140,7 @@ class FakeOrdersRepository : OrdersRepository {
                             order.shipping?.copy(trackingNumber = generateLabelTrackingNumber)
                                 ?: OrderShipping(carrierName = "", trackingNumber = generateLabelTrackingNumber),
                     )
-                _ordersFlow.value = currentOrders
+                ordersFlowState.value = currentOrders
             }
         }
     }

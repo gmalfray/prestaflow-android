@@ -245,7 +245,6 @@ object InvoicePrinter {
                     pdfPage.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
 
                     val paint = Paint(Paint.FILTER_BITMAP_FLAG)
-                    val src = android.graphics.RectF(0f, 0f, widthPx.toFloat(), heightPx.toFloat())
                     val dst =
                         android.graphics.RectF(
                             0f,
@@ -297,7 +296,6 @@ object InvoicePrinter {
             val destLeft = if (leftHalf) 0f else HALF_LANDSCAPE_WIDTH_PT.toFloat()
             val destRight = if (leftHalf) HALF_LANDSCAPE_WIDTH_PT.toFloat() else A4_LANDSCAPE_WIDTH_PT.toFloat()
 
-            val src = android.graphics.RectF(0f, 0f, halfWidthPx.toFloat(), pageHeightPx.toFloat())
             val dst = android.graphics.RectF(destLeft, 0f, destRight, A4_LANDSCAPE_HEIGHT_PT.toFloat())
             canvas.drawBitmap(bitmap, null, dst, paint)
             bitmap.recycle()

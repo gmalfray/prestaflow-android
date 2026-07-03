@@ -47,6 +47,6 @@ class LocalizationParityTest {
             ).map { it.absoluteFile.normalize() }
 
         return candidates.firstOrNull { it.exists() }
-            ?: throw IllegalStateException("Unable to locate resource file for path '$relativePath' from ${File(".").absolutePath}")
+            ?: error("Unable to locate resource file for path '$relativePath' from ${File(".").absolutePath}")
     }
 }

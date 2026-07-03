@@ -335,7 +335,6 @@ class ClientsViewModelTest {
             vm.onFilterChange(ClientFilter.ALL_CLIENTS)
             advanceUntilIdle()
 
-            val callCountBefore = fakeClientsRepo.lastFetchClientsCall
             vm.onLoadMore() // ne doit rien faire
             advanceUntilIdle()
 

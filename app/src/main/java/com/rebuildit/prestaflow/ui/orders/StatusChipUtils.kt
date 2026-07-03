@@ -2,11 +2,11 @@ package com.rebuildit.prestaflow.ui.orders
 
 import com.rebuildit.prestaflow.core.util.normalizeForMatch
 
-/**
+/*
  * Utilitaires pour les chips de filtre statut : libellés courts et accessibilité.
  *
  * Le mapping couvre les noms standards PrestaShop FR. La correspondance est insensible
- * à la casse et aux accents (via [normalizeForMatch] déjà défini dans [OrdersViewModel]).
+ * à la casse et aux accents (via normalizeForMatch déjà défini dans OrdersViewModel).
  * Pour un statut non mappé, le fallback retourne le premier mot tronqué à 12 caractères
  * max avec une ellipse propre (pas de troncature violente).
  */

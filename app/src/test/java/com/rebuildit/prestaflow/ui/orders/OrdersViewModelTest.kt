@@ -265,7 +265,6 @@ class OrdersViewModelTest {
             advanceUntilIdle()
 
             // Après init, hasMore=true, on peut charger plus
-            val ordersCount = vm.uiState.value.orders.size
             fakeOrdersRepo.refreshStatusIdsCalls.clear()
 
             vm.loadMore()
@@ -941,19 +940,14 @@ class OrdersViewModelTest {
             advanceUntilIdle()
 
             val config = SwipeConfig(enabled = true, sourceStatusId = 2)
-            val statuses =
-                listOf(
-                    OrderStatusFilter(2, "Paiement accepté", "#00FF00"),
-                    OrderStatusFilter(3, "En préparation", "#0000FF"),
-                )
 
             assertTrue(
                 "isSwipeSource doit retourner true quand currentStateId == sourceStatusId",
-                vm.isSwipeSource(config, "Paiement accepté", 2, statuses),
+                vm.isSwipeSource(config, "Paiement accepté", 2),
             )
             assertFalse(
                 "isSwipeSource doit retourner false quand currentStateId != sourceStatusId",
-                vm.isSwipeSource(config, "En préparation", 3, statuses),
+                vm.isSwipeSource(config, "En préparation", 3),
             )
         }
 
@@ -964,11 +958,10 @@ class OrdersViewModelTest {
             advanceUntilIdle()
 
             val config = SwipeConfig(enabled = false, sourceStatusId = null)
-            val statuses = listOf(OrderStatusFilter(2, "Paiement accepté", "#00FF00"))
 
             assertFalse(
                 "isSwipeSource doit retourner false quand swipe désactivé",
-                vm.isSwipeSource(config, "Paiement accepté", 2, statuses),
+                vm.isSwipeSource(config, "Paiement accepté", 2),
             )
         }
 
@@ -979,15 +972,14 @@ class OrdersViewModelTest {
             advanceUntilIdle()
 
             val configSansId = SwipeConfig(enabled = true, sourceStatusId = null)
-            val statuses = listOf(OrderStatusFilter(2, "Paiement accepté", "#00FF00"))
 
             assertTrue(
                 "isSwipeSource doit matcher par nom 'paiement accepte' quand sourceStatusId est null",
-                vm.isSwipeSource(configSansId, "Paiement accepté", 2, statuses),
+                vm.isSwipeSource(configSansId, "Paiement accepté", 2),
             )
             assertFalse(
                 "Un statut sans 'paiement accepte' dans le nom ne doit pas matcher",
-                vm.isSwipeSource(configSansId, "En préparation", 3, statuses),
+                vm.isSwipeSource(configSansId, "En préparation", 3),
             )
         }
 

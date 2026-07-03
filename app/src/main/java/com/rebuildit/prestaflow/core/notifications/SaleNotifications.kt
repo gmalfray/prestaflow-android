@@ -27,6 +27,9 @@ object SaleNotifications {
     // Conservé pour compatibilité des appelants existants (SettingsScreen).
     const val CHANNEL_ID = NotificationChannels.CHANNEL_SALES
 
+    /** Masque pour dériver un ID de notification positif (Int) depuis un timestamp epoch ms. */
+    private const val NOTIFICATION_ID_MASK = 0x7FFFFFFFL
+
     private fun soundUri(context: Context): Uri = NotificationChannels.cashRegisterSoundUri(context)
 
     /**
@@ -86,7 +89,7 @@ object SaleNotifications {
                 .setSound(soundUri(context))
                 .build()
 
-        val notificationId = orderId?.toInt() ?: (System.currentTimeMillis() and 0x7FFFFFFF).toInt()
+        val notificationId = orderId?.toInt() ?: (System.currentTimeMillis() and NOTIFICATION_ID_MASK).toInt()
         NotificationManagerCompat.from(context).notify(notificationId, notification)
     }
 }

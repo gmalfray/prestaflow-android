@@ -753,46 +753,6 @@ fun PrintModeDialog(
     )
 }
 
-// Dialog générique : titres, labels et callbacks distincts, non fusionnables sans perdre la clarté
-@Suppress("LongParameterList")
-@Composable
-private fun TextInputDialog(
-    title: String,
-    label: String,
-    initialValue: String,
-    confirmLabel: String,
-    cancelLabel: String,
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var value by remember { mutableStateOf(initialValue) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            OutlinedTextField(
-                value = value,
-                onValueChange = { value = it },
-                label = { Text(label) },
-                singleLine = true,
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(value) },
-                enabled = value.isNotBlank(),
-            ) {
-                Text(confirmLabel)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(cancelLabel)
-            }
-        },
-    )
-}
-
 /**
  * Dialog de saisie/scan du numéro de suivi.
  *

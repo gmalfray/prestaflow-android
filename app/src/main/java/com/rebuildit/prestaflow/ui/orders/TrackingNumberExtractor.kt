@@ -1,24 +1,24 @@
 package com.rebuildit.prestaflow.ui.orders
 
-/**
+/*
  * Extraction du numéro de suivi à partir d'un contenu brut scanné.
  *
  * Trois cas gérés :
  *
- * 1. **Colissimo / Lettre Max (code-barres 1D)** — le Code 128 d'une étiquette colis encode un payload
- *    de routage qui contient `<préfixe = 1 chiffre + 1 lettre><10 chiffres = serial>` MAIS **sans la clé
- *    de contrôle finale** (noyée dans des données de tri/service/poids).
- *    Ex (brut) : `%0055170115Y0052689628801250` → préfixe `5Y` + serial `0052689628`.
- *    La clé de contrôle est un **check digit type EAN/GS1** (poids 3,1 alternés depuis la droite, mod 10)
+ * 1. Colissimo / Lettre Max (code-barres 1D) — le Code 128 d'une étiquette colis encode un payload
+ *    de routage qui contient <préfixe = 1 chiffre + 1 lettre><10 chiffres = serial> MAIS sans la clé
+ *    de contrôle finale (noyée dans des données de tri/service/poids).
+ *    Ex (brut) : %0055170115Y0052689628801250 → préfixe 5Y + serial 0052689628.
+ *    La clé de contrôle est un check digit type EAN/GS1 (poids 3,1 alternés depuis la droite, mod 10)
  *    calculé sur les 10 chiffres du serial — vérifié sur ~300 vrais numéros de la boutique (5Y/6A/1L).
- *    On la recalcule et on l'ajoute → `5Y00526896286` (13 caractères, le numéro complet trackable).
+ *    On la recalcule et on l'ajoute → 5Y00526896286 (13 caractères, le numéro complet trackable).
  *
- * 2. **La Poste « Lettre suivie » / « Courrier suivi » (DataMatrix 2D)** — payload
- *    `%<zéros de padding><14 chiffres = n° de suivi><données date/lot>^<signature>`.
- *    Ex : `%000000087001335318721601250A18^edb7b43` → `87001335318721` (les 14 chiffres ; la lettre de
+ * 2. La Poste « Lettre suivie » / « Courrier suivi » (DataMatrix 2D) — payload
+ *    %<zéros de padding><14 chiffres = n° de suivi><données date/lot>^<signature>.
+ *    Ex : %000000087001335318721601250A18^edb7b43 → 87001335318721 (les 14 chiffres ; la lettre de
  *    contrôle imprimée est facultative, La Poste la recalcule).
  *
- * 3. **Code simple / numéro déjà complet** — on nettoie un préfixe « SD : » et on garde le token.
+ * 3. Code simple / numéro déjà complet — on nettoie un préfixe « SD : » et on garde le token.
  *
  * Ne lève jamais d'exception ; en dernier recours renvoie le contenu nettoyé (champ éditable).
  */

@@ -18,10 +18,10 @@ import java.io.File
  * - [refreshTotal] : valeur renvoyée par [refresh] (simule le total API).
  */
 class FakeProductsRepository : ProductsRepository {
-    private val _productsFlow = MutableStateFlow<List<Product>>(emptyList())
+    private val productsFlowState = MutableStateFlow<List<Product>>(emptyList())
 
     fun setProducts(products: List<Product>) {
-        _productsFlow.value = products
+        productsFlowState.value = products
     }
 
     data class RefreshCall(val forceRemote: Boolean, val stockFilter: String?, val search: String?)
@@ -31,9 +31,9 @@ class FakeProductsRepository : ProductsRepository {
     var refreshTotal: Int? = 42
     var shouldThrowOnRefresh = false
 
-    override fun observeProducts(): Flow<List<Product>> = _productsFlow.asStateFlow()
+    override fun observeProducts(): Flow<List<Product>> = productsFlowState.asStateFlow()
 
-    override fun observeProduct(productId: Long): Flow<Product?> = MutableStateFlow(_productsFlow.value.find { it.id == productId })
+    override fun observeProduct(productId: Long): Flow<Product?> = MutableStateFlow(productsFlowState.value.find { it.id == productId })
 
     override fun observeStockAvailabilities(productId: Long): Flow<List<StockAvailability>> = MutableStateFlow(emptyList())
 

@@ -8,20 +8,20 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /** Implémentation en mémoire de [ThermalPrinterPreferencesRepository] pour les tests JVM. */
 class FakeThermalPrinterPreferencesRepository : ThermalPrinterPreferencesRepository {
-    private val _device = MutableStateFlow<SavedPrinterDevice?>(null)
+    private val deviceState = MutableStateFlow<SavedPrinterDevice?>(null)
 
-    override val savedDevice: Flow<SavedPrinterDevice?> = _device.asStateFlow()
+    override val savedDevice: Flow<SavedPrinterDevice?> = deviceState.asStateFlow()
 
     override suspend fun saveDevice(device: SavedPrinterDevice) {
-        _device.value = device
+        deviceState.value = device
     }
 
     override suspend fun clearDevice() {
-        _device.value = null
+        deviceState.value = null
     }
 
     /** Permet d'initialiser l'état depuis un test sans passer par [saveDevice]. */
     fun setDevice(device: SavedPrinterDevice?) {
-        _device.value = device
+        deviceState.value = device
     }
 }

@@ -31,7 +31,8 @@ class CartMappersTest {
             CartDetailDto(
                 id = 42,
                 customer = CartCustomerDto(firstname = "Alice", lastname = "Dupont"),
-                itemsCount = 0, // ← valeur backend potentiellement erronée
+                // ← valeur backend potentiellement erronée
+                itemsCount = 0,
                 products =
                     listOf(
                         makeProductDto(quantity = 2),
@@ -54,7 +55,8 @@ class CartMappersTest {
         val dto =
             CartDetailDto(
                 id = 1,
-                itemsCount = 0, // backend ne remplit pas ce champ dans le détail
+                // backend ne remplit pas ce champ dans le détail
+                itemsCount = 0,
                 products = listOf(makeProductDto(quantity = 3)),
             )
 

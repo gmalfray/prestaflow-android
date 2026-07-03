@@ -10,21 +10,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * Toutes les catégories sont actives par défaut.
  */
 class FakeNotificationCategoriesRepository : NotificationCategoriesRepository {
-    private val _prefs =
+    private val prefsState =
         MutableStateFlow(
             NotificationCategory.entries.associateWith { true },
         )
-    override val categoryPreferences: Flow<Map<NotificationCategory, Boolean>> = _prefs
+    override val categoryPreferences: Flow<Map<NotificationCategory, Boolean>> = prefsState
 
     override suspend fun setCategory(
         category: NotificationCategory,
         enabled: Boolean,
     ) {
-        _prefs.value = _prefs.value + (category to enabled)
+        prefsState.value = prefsState.value + (category to enabled)
     }
 
     override suspend fun enabledTopics(): List<String> =
-        _prefs.value
+        prefsState.value
             .filter { (_, enabled) -> enabled }
             .keys
             .map { it.key }

@@ -86,7 +86,7 @@ class ClientsViewModel
         val uiState: StateFlow<ClientsUiState> = _uiState.asStateFlow()
 
         /** Flow interne de la query de recherche, débouncé avant d'émettre une requête. */
-        private val _searchQuery = MutableStateFlow("")
+        private val searchQueryState = MutableStateFlow("")
 
         /** Job de la coroutine de chargement en cours (annulable). */
         private var loadJob: Job? = null
@@ -112,7 +112,7 @@ class ClientsViewModel
 
         fun onQueryChange(query: String) {
             _uiState.update { it.copy(query = query) }
-            _searchQuery.value = query
+            searchQueryState.value = query
         }
 
         /**
@@ -249,7 +249,7 @@ class ClientsViewModel
                                 query = "",
                             )
                         }
-                        _searchQuery.value = ""
+                        searchQueryState.value = ""
                         loadInitialData()
                         observeTopClients()
                     }
@@ -280,7 +280,7 @@ class ClientsViewModel
 
         private fun observeSearchQuery() {
             viewModelScope.launch {
-                _searchQuery
+                searchQueryState
                     .debounce(SEARCH_DEBOUNCE_MS)
                     .distinctUntilChanged()
                     .collect { query ->

@@ -17,6 +17,9 @@ style:
   WildcardImport:
     active: true
     excludeImports: ["java.time.*"]
+  UnusedPrivateMember:
+    active: true
+    ignoreAnnotated: ['Preview']
   MaxLineLength:
     active: true
     maxLineLength: 140

@@ -44,7 +44,7 @@ class SwipePrefsViewModel
     ) : ViewModel() {
         // État de chargement des statuts regroupé (liste + loading + erreur) dans UN seul flow,
         // pour que le combine ré-émette bien à chaque changement (loading/erreur inclus).
-        private val _statusesLoad = MutableStateFlow(StatusesLoadState())
+        private val statusesLoadState = MutableStateFlow(StatusesLoadState())
 
         val uiState: StateFlow<SwipePrefsUiState> =
             combine(
@@ -52,7 +52,7 @@ class SwipePrefsViewModel
                 ordersPreferencesRepository.swipeSourceStatusId,
                 ordersPreferencesRepository.swipeLeftTargetStatusId,
                 ordersPreferencesRepository.swipeRightTargetStatusId,
-                _statusesLoad,
+                statusesLoadState,
             ) { enabled, sourceId, leftId, rightId, load ->
                 SwipePrefsUiState(
                     swipeEnabled = enabled,
@@ -76,14 +76,14 @@ class SwipePrefsViewModel
         /** Charge (ou recharge, pour le bouton Réessayer) la liste des statuts. */
         fun loadStatuses() {
             viewModelScope.launch {
-                _statusesLoad.update { it.copy(isLoading = true, isError = false) }
+                statusesLoadState.update { it.copy(isLoading = true, isError = false) }
                 runCatching { ordersRepository.getOrderStatuses() }
                     .onSuccess { statuses ->
-                        _statusesLoad.value = StatusesLoadState(statuses = statuses, isLoading = false, isError = false)
+                        statusesLoadState.value = StatusesLoadState(statuses = statuses, isLoading = false, isError = false)
                     }
                     .onFailure { error ->
                         Timber.w(error, "Impossible de charger les statuts pour les préférences swipe")
-                        _statusesLoad.update { it.copy(isLoading = false, isError = true) }
+                        statusesLoadState.update { it.copy(isLoading = false, isError = true) }
                     }
             }
         }

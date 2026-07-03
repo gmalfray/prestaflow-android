@@ -18,10 +18,10 @@ import kotlinx.coroutines.flow.asStateFlow
  * - [shouldThrowOnFetchClients] : force un échec sur [fetchClients].
  */
 class FakeClientsRepository : ClientsRepository {
-    private val _clientsFlow = MutableStateFlow<List<Client>>(emptyList())
+    private val clientsFlowState = MutableStateFlow<List<Client>>(emptyList())
 
     fun setClients(clients: List<Client>) {
-        _clientsFlow.value = clients
+        clientsFlowState.value = clients
     }
 
     var fetchStatsResult: ClientStats? = ClientStats(total = 150, newThisMonth = 12)
@@ -38,7 +38,7 @@ class FakeClientsRepository : ClientsRepository {
     /** Dernier appel reçu par [fetchClients] (pour assertions). */
     var lastFetchClientsCall: FetchClientsCall? = null
 
-    override fun observeTopClients(limit: Int): Flow<List<Client>> = _clientsFlow.asStateFlow()
+    override fun observeTopClients(limit: Int): Flow<List<Client>> = clientsFlowState.asStateFlow()
 
     override suspend fun refreshTopClients(
         limit: Int,
@@ -47,7 +47,7 @@ class FakeClientsRepository : ClientsRepository {
         if (shouldThrowOnRefresh) throw RuntimeException("Erreur réseau simulée")
     }
 
-    override fun observeClient(clientId: Long): Flow<Client?> = MutableStateFlow(_clientsFlow.value.find { it.id == clientId })
+    override fun observeClient(clientId: Long): Flow<Client?> = MutableStateFlow(clientsFlowState.value.find { it.id == clientId })
 
     override suspend fun refreshClient(
         clientId: Long,

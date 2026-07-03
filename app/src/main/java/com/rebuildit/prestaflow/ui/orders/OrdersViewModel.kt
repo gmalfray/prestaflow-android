@@ -406,7 +406,6 @@ class OrdersViewModel
             config: SwipeConfig,
             orderStatus: String,
             currentStateId: Int,
-            statuses: List<com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter>,
         ): Boolean {
             if (!config.enabled) return false
             val configuredId = config.sourceStatusId
@@ -672,6 +671,12 @@ class OrdersViewModel
         }
     }
 
+/** Nombre de jours en arrière (inclus) pour couvrir une semaine glissante de 7 jours. */
+private const val WEEK_RANGE_DAYS_BACK = 6L
+
+/** Nombre de jours en arrière (inclus) pour couvrir un mois glissant de 30 jours. */
+private const val MONTH_RANGE_DAYS_BACK = 29L
+
 /**
  * Convertit une [DashboardPeriod] en plage (dateFrom, dateTo) pour le filtre `GET /orders`.
  */
@@ -680,8 +685,8 @@ internal fun DashboardPeriod.toDateRange(today: LocalDate = LocalDate.now()): Pa
     val fromDate =
         when (this) {
             DashboardPeriod.TODAY -> today
-            DashboardPeriod.WEEK -> today.minusDays(6)
-            DashboardPeriod.MONTH -> today.minusDays(29)
+            DashboardPeriod.WEEK -> today.minusDays(WEEK_RANGE_DAYS_BACK)
+            DashboardPeriod.MONTH -> today.minusDays(MONTH_RANGE_DAYS_BACK)
             DashboardPeriod.QUARTER -> today.minusMonths(3)
             DashboardPeriod.YEAR -> today.withDayOfYear(1)
         }

@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * OrdersRepositoryImpl).
  */
 class FakeSyncQueueRepository : SyncQueueRepository {
-    private val _tasks = MutableStateFlow<List<PendingSyncTask>>(emptyList())
+    private val tasksState = MutableStateFlow<List<PendingSyncTask>>(emptyList())
 
     /** Appels reçus par [enqueue] : (endpoint, method, payloadJson, shopUrl, resourceType, resourceId, conflictStrategy). */
     data class EnqueueCall(
@@ -31,7 +31,7 @@ class FakeSyncQueueRepository : SyncQueueRepository {
 
     private var nextId = 1L
 
-    override fun observeQueue(): Flow<List<PendingSyncTask>> = _tasks.asStateFlow()
+    override fun observeQueue(): Flow<List<PendingSyncTask>> = tasksState.asStateFlow()
 
     override suspend fun enqueue(
         endpoint: String,
@@ -44,7 +44,7 @@ class FakeSyncQueueRepository : SyncQueueRepository {
     ): Long {
         val id = nextId++
         enqueueCalls += EnqueueCall(endpoint, method, payloadJson, shopUrl, resourceType, resourceId, conflictStrategy)
-        _tasks.value +=
+        tasksState.value +=
             PendingSyncTask(
                 id = id,
                 endpoint = endpoint,
@@ -61,7 +61,7 @@ class FakeSyncQueueRepository : SyncQueueRepository {
         return id
     }
 
-    override suspend fun pendingTasks(): List<PendingSyncTask> = _tasks.value
+    override suspend fun pendingTasks(): List<PendingSyncTask> = tasksState.value
 
     override suspend fun markAttempt(
         taskId: Long,
@@ -72,10 +72,10 @@ class FakeSyncQueueRepository : SyncQueueRepository {
 
     override suspend fun remove(taskId: Long) {
         removedIds += taskId
-        _tasks.value = _tasks.value.filterNot { it.id == taskId }
+        tasksState.value = tasksState.value.filterNot { it.id == taskId }
     }
 
     override suspend fun clear() {
-        _tasks.value = emptyList()
+        tasksState.value = emptyList()
     }
 }

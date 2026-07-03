@@ -165,4 +165,6 @@ private fun parseHexColor(hex: String): Color =
                 else -> null
             }
         if (normalized != null) Color(android.graphics.Color.parseColor("#$normalized")) else null
-    }.getOrNull() ?: Color(0xFFBDBDBD)
+    }.getOrNull() ?: FALLBACK_STATUS_COLOR
+
+private val FALLBACK_STATUS_COLOR = Color(0xFFBDBDBD)

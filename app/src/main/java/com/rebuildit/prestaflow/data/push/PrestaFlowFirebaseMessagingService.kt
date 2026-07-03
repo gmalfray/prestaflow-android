@@ -26,6 +26,9 @@ import timber.log.Timber
 import java.io.IOException
 import javax.inject.Inject
 
+/** Masque pour dériver un ID de notification positif (Int) depuis un timestamp epoch ms. */
+private const val NOTIFICATION_ID_MASK = 0x7FFFFFFFL
+
 @AndroidEntryPoint
 class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
@@ -122,7 +125,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
             builder.setContentIntent(buildOrderDeepLinkIntent(orderId))
         }
 
-        val notificationId = orderId?.toInt() ?: (System.currentTimeMillis() and 0x7FFFFFFF).toInt()
+        val notificationId = orderId?.toInt() ?: (System.currentTimeMillis() and NOTIFICATION_ID_MASK).toInt()
         NotificationManagerCompat.from(applicationContext).notify(notificationId, builder.build())
     }
 

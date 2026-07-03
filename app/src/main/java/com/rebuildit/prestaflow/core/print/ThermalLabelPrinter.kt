@@ -127,10 +127,10 @@ object ThermalLabelPrinter {
     ) {
         val bluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
-                ?: throw IllegalStateException("BluetoothManager indisponible")
+                ?: error("BluetoothManager indisponible")
         val adapter =
             bluetoothManager.adapter
-                ?: throw IllegalStateException("Bluetooth non supporté sur cet appareil")
+                ?: error("Bluetooth non supporté sur cet appareil")
 
         // getRemoteDevice fonctionne pour n'importe quelle MAC valide, appairée ou non :
         // pour une imprimante découverte (non appairée), Android déclenche l'appairage à la

@@ -25,6 +25,11 @@ import javax.inject.Singleton
 /** Instance Json réutilisée pour parser les body d'erreur du connecteur. */
 private val errorBodyJson = Json { ignoreUnknownKeys = true }
 
+private const val HTTP_NOT_FOUND = 404
+private const val HTTP_UNPROCESSABLE_ENTITY = 422
+private const val HTTP_NOT_IMPLEMENTED = 501
+private const val HTTP_BAD_GATEWAY = 502
+
 @Singleton
 @Suppress("LongParameterList") // Repository Hilt : dépendances API, DAO, mapper d'erreurs, dispatcher, queue sync et endpoint
 class OrdersRepositoryImpl
@@ -190,7 +195,7 @@ class OrdersRepositoryImpl
                 val response = api.getInvoicePdf(orderId)
                 when {
                     response.isSuccessful -> response.body()?.bytes()
-                    response.code() == 404 -> null
+                    response.code() == HTTP_NOT_FOUND -> null
                     else -> {
                         val msg = "Erreur HTTP ${response.code()} lors du téléchargement de la facture #$orderId"
                         Timber.w(msg)
@@ -204,7 +209,7 @@ class OrdersRepositoryImpl
                 val response = api.getShippingLabelPdf(orderId)
                 when {
                     response.isSuccessful -> response.body()?.bytes()
-                    response.code() == 404 -> null
+                    response.code() == HTTP_NOT_FOUND -> null
                     else -> {
                         val msg = "Erreur HTTP ${response.code()} lors du téléchargement du bordereau #$orderId"
                         Timber.w(msg)
@@ -243,10 +248,10 @@ class OrdersRepositoryImpl
             errorBody: String?,
         ): String =
             when (code) {
-                404 -> "Commande introuvable"
-                422 -> "Génération dispo uniquement pour Colissimo"
-                501 -> "Contrat transporteur non configuré"
-                502 -> {
+                HTTP_NOT_FOUND -> "Commande introuvable"
+                HTTP_UNPROCESSABLE_ENTITY -> "Génération dispo uniquement pour Colissimo"
+                HTTP_NOT_IMPLEMENTED -> "Contrat transporteur non configuré"
+                HTTP_BAD_GATEWAY -> {
                     val connectorMessage =
                         runCatching {
                             errorBody

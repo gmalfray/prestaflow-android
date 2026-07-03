@@ -22,6 +22,9 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+/** Debounce (ms) avant de déclencher une recherche API sur changement de query. */
+private const val SEARCH_DEBOUNCE_MS = 300L
+
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class ProductsViewModel
@@ -86,7 +89,7 @@ class ProductsViewModel
                     .map { it.query }
                     .distinctUntilChanged()
                     .drop(1) // ignore la valeur initiale vide
-                    .debounce(300L)
+                    .debounce(SEARCH_DEBOUNCE_MS)
                     .collect {
                         refresh(forceRemote = true, notifyOnError = false)
                     }

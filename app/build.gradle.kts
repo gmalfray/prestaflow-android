@@ -191,6 +191,9 @@ detekt {
     config.from(files("$rootDir/config/detekt/detekt.yml"))
     buildUponDefaultConfig = true
     autoCorrect = false
+    // Gèle la dette detekt pré-existante (complexité/taille sur god-files déjà en prod) sans
+    // bloquer la CI ; tout nouveau code reste sous contrôle (les nouvelles violations font échouer).
+    baseline = file("$rootDir/config/detekt/baseline.xml")
 }
 
 // ═══════════════════════════════════════════════════════════════
