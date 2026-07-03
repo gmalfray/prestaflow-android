@@ -57,7 +57,7 @@ fun OrderEntity.toDomain(): Order {
  * Maps the FLAT order row returned by the list endpoint (`formatOrderRow`).
  * The list endpoint does not carry items/shipping so the JSON columns stay null.
  */
-fun OrderListItemDto.toEntity(): OrderEntity =
+fun OrderListItemDto.toEntity(position: Int = 0): OrderEntity =
     OrderEntity(
         id = id,
         reference = reference,
@@ -74,12 +74,13 @@ fun OrderListItemDto.toEntity(): OrderEntity =
         shippingJson = null,
         statusColor = statusColor,
         currentStateId = currentStateId,
+        position = position,
     )
 
 /**
  * Maps the NESTED order object returned by the detail endpoint (`getOrderById`).
  */
-fun OrderDto.toEntity(): OrderEntity {
+fun OrderDto.toEntity(position: Int = 0): OrderEntity {
     val itemsJsonStr =
         items?.let { dtos ->
             val domainItems = dtos.map { it.toDomain() }
@@ -109,6 +110,7 @@ fun OrderDto.toEntity(): OrderEntity {
         statusColor = null,
         currentStateId = status.id.toInt(),
         customerId = customerId,
+        position = position,
     )
 }
 

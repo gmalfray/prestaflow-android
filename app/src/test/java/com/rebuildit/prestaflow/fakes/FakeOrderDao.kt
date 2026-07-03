@@ -19,6 +19,8 @@ class FakeOrderDao : OrderDao {
 
     override fun observeOrder(orderId: Long): Flow<OrderEntity?> = MutableStateFlow(_store.value.find { it.id == orderId })
 
+    override suspend fun getPosition(orderId: Long): Int? = _store.value.find { it.id == orderId }?.position
+
     override suspend fun upsertOrders(entities: List<OrderEntity>) {
         upsertedBatches += entities
         val current = _store.value.toMutableList()

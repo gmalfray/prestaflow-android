@@ -188,6 +188,34 @@ class OrdersRepositoryImplTest {
             repository.refresh(forceRemote = false)
         }
 
+    // ─── Position (préservation du tri serveur) ─────────────────────────────
+
+    @Test
+    fun `refresh assigne position = index pour preserver l ordre serveur`() =
+        runTest {
+            fakeApi.ordersResponse =
+                OrderListDto(orders = listOf(buildDto(id = 10L), buildDto(id = 20L), buildDto(id = 30L)))
+
+            repository.refresh(forceRemote = true, offset = 0)
+
+            val byId = fakeDao.currentEntities().associateBy { it.id }
+            assertEquals(0, byId[10L]?.position)
+            assertEquals(1, byId[20L]?.position)
+            assertEquals(2, byId[30L]?.position)
+        }
+
+    @Test
+    fun `refresh en pagination continue les positions depuis l offset`() =
+        runTest {
+            fakeApi.ordersResponse = OrderListDto(orders = listOf(buildDto(id = 40L), buildDto(id = 50L)))
+
+            repository.refresh(forceRemote = true, offset = 50)
+
+            val byId = fakeDao.currentEntities().associateBy { it.id }
+            assertEquals(50, byId[40L]?.position)
+            assertEquals(51, byId[50L]?.position)
+        }
+
     // ─── Builders ────────────────────────────────────────────────────────────
 
     private fun buildDto(

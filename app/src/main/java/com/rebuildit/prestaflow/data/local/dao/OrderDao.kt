@@ -9,11 +9,16 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface OrderDao {
-    @Query("SELECT * FROM orders ORDER BY updated_at_iso DESC")
+    // ORDER BY position : préserve l'ordre renvoyé par le serveur (tri date/montant/statut/réf).
+    @Query("SELECT * FROM orders ORDER BY position ASC")
     fun observeOrders(): Flow<List<OrderEntity>>
 
     @Query("SELECT * FROM orders WHERE id = :orderId")
     fun observeOrder(orderId: Long): Flow<OrderEntity?>
+
+    /** Position actuelle d'une commande (pour la préserver lors d'un rafraîchissement du détail). */
+    @Query("SELECT position FROM orders WHERE id = :orderId")
+    suspend fun getPosition(orderId: Long): Int?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertOrders(entities: List<OrderEntity>)

@@ -24,4 +24,10 @@ data class OrderEntity(
     @ColumnInfo(name = "current_state_id", defaultValue = "0") val currentStateId: Int = 0,
     /** ID PrestaShop du client — null si le connecteur ne le renvoie pas encore. */
     @ColumnInfo(name = "customer_id") val customerId: Long? = null,
+    /**
+     * Rang de la commande dans l'ordre RENVOYÉ PAR LE SERVEUR (offset + index de page).
+     * La liste est lue `ORDER BY position` pour **préserver le tri serveur** (date/montant/statut/réf) :
+     * sans ça, un `ORDER BY updated_at` local écrasait le tri choisi (visible surtout en vue filtrée).
+     */
+    @ColumnInfo(name = "position", defaultValue = "0") val position: Int = 0,
 )

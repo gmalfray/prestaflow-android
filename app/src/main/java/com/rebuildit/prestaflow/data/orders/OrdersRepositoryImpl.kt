@@ -76,7 +76,9 @@ class OrdersRepositoryImpl
                         // Première page : vider la table pour que Room reflète exactement
                         // le résultat de l'API. Pages suivantes : upsert sans clear (accumulation).
                         if (offset == 0) orderDao.clear()
-                        val entities = payload.orders.map { it.toEntity() }
+                        // position = rang global (offset de page + index) → préserve l'ordre du
+                        // serveur (le tri choisi) à la relecture Room, y compris en pagination.
+                        val entities = payload.orders.mapIndexed { index, dto -> dto.toEntity(position = offset + index) }
                         orderDao.upsertOrders(entities)
                         // hasMore : la page était pleine → il y a probablement des suivantes
                         payload.orders.size >= limit
@@ -94,7 +96,10 @@ class OrdersRepositoryImpl
                 val result = runCatching { api.getOrder(orderId) }
                 result.fold(
                     onSuccess = { payload ->
-                        val entity = payload.order.toEntity()
+                        // Rafraîchissement du détail : on préserve la position existante dans la liste
+                        // (sinon l'upsert REPLACE remettrait la commande en tête).
+                        val position = orderDao.getPosition(orderId) ?: 0
+                        val entity = payload.order.toEntity(position = position)
                         orderDao.upsertOrders(listOf(entity))
                     },
                     onFailure = { error ->
