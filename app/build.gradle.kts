@@ -26,8 +26,8 @@ android {
         applicationId = "com.rebuildit.prestaflow"
         minSdk = 26
         targetSdk = 36
-        versionCode = 60
-        versionName = "0.31.0"
+        versionCode = 61
+        versionName = "0.32.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -78,7 +78,11 @@ android {
             enableAndroidTestCoverage = true
         }
         release {
-            isMinifyEnabled = false
+            // R8 activé depuis v0.32.0 — voir keep rules conservatrices dans proguard-rules.pro.
+            // isShrinkResources reste désactivé pour limiter le risque (pas de test runtime possible
+            // ici sans installer sur device) : Greg DOIT valider l'APK release signé avant distribution.
+            isMinifyEnabled = true
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
