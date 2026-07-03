@@ -33,7 +33,8 @@ coroutinesPlayServices = "1.9.0"
 jacoco = "0.8.12"
 escposPrinter = "3.3.0"
 robolectric = "4.14.1"
-mlkitTextRecognition = "16.0.1"
+playServicesMlkitTextRecognition = "19.0.1"
+playServicesBase = "18.5.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -86,10 +87,12 @@ androidx-compose-material3-windowsizeclass = { module = "androidx.compose.materi
 # Impression thermique Bluetooth ESC/POS
 escpos-thermal-printer = { module = "com.github.DantSu:ESCPOS-ThermalPrinter-Android", version.ref = "escposPrinter" }
 
-# OCR étiquette (secours réappro stock) — modèle latin BUNDLED (pas le variant Play Services, cf.
-# core/ocr/MlKitLabelTextRecognizer : disponibilité instantanée hors-ligne requise, la latence de
-# téléchargement du modèle Play Services au 1er usage est inacceptable ici)
-mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkitTextRecognition" }
+# OCR étiquette (secours réappro stock) — variant Google Play Services (modèle livré par Play
+# Services, PAS embarqué dans l'APK, cf. core/ocr/MlKitLabelTextRecognizer : ~8 Mo au lieu de ~48 Mo
+# en APK release avec le modèle latin bundled). `play-services-base` : API `ModuleInstall` utilisée
+# pour déclencher le téléchargement du modèle en amont, best-effort, dès l'entrée sur l'écran.
+play-services-mlkit-text-recognition = { module = "com.google.android.gms:play-services-mlkit-text-recognition", version.ref = "playServicesMlkitTextRecognition" }
+play-services-base = { module = "com.google.android.gms:play-services-base", version.ref = "playServicesBase" }
 
 # Testing
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutinesPlayServices" }
