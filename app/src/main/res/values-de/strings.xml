@@ -46,7 +46,7 @@
     <string name="dashboard_kpi_turnover">Umsatz</string>
     <string name="dashboard_kpi_orders">Bestellungen</string>
     <string name="dashboard_kpi_customers">Neue Kunden</string>
-    <string name="dashboard_kpi_avg_cart">Durchschnittlicher Bestellwert</string>
+    <string name="dashboard_kpi_avg_cart">Ø Bestellwert</string>
     <string name="dashboard_chart_title_turnover">Umsatz</string>
     <string name="dashboard_chart_empty">Keine Diagrammdaten für den ausgewählten Zeitraum.</string>
     <string name="dashboard_chart_total_period">Gesamt Zeitraum</string>
@@ -243,6 +243,7 @@
     <string name="order_detail_title">Bestelldetails</string>
     <string name="order_detail_reference_label">Referenz</string>
     <string name="order_detail_error">Fehler beim Laden der Bestellung</string>
+    <string name="order_detail_cache_fallback">Details nicht verfügbar – zwischengespeicherte Daten werden angezeigt</string>
     <string name="order_detail_tracking_title">Sendungsnummer</string>
     <string name="order_detail_tracking_label">Sendungsnummer</string>
     <string name="order_detail_tracking_save">Speichern</string>

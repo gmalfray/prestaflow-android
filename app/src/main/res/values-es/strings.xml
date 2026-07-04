@@ -46,7 +46,7 @@
     <string name="dashboard_kpi_turnover">Facturación</string>
     <string name="dashboard_kpi_orders">Pedidos</string>
     <string name="dashboard_kpi_customers">Nuevos clientes</string>
-    <string name="dashboard_kpi_avg_cart">Valor medio del pedido</string>
+    <string name="dashboard_kpi_avg_cart">Ticket medio</string>
     <string name="dashboard_chart_title_turnover">Facturación</string>
     <string name="dashboard_chart_empty">No hay datos de gráfico para el periodo seleccionado.</string>
     <string name="dashboard_chart_total_period">Total del periodo</string>
@@ -243,6 +243,7 @@
     <string name="order_detail_title">Detalle del pedido</string>
     <string name="order_detail_reference_label">Referencia</string>
     <string name="order_detail_error">Error al cargar el pedido</string>
+    <string name="order_detail_cache_fallback">Detalles no disponibles: mostrando datos en caché</string>
     <string name="order_detail_tracking_title">Número de seguimiento</string>
     <string name="order_detail_tracking_label">Número de seguimiento</string>
     <string name="order_detail_tracking_save">Guardar</string>

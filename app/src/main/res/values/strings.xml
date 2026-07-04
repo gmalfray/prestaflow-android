@@ -243,6 +243,7 @@
     <string name="order_detail_title">Détail commande</string>
     <string name="order_detail_reference_label">Référence</string>
     <string name="order_detail_error">Erreur lors du chargement de la commande</string>
+    <string name="order_detail_cache_fallback">Détail indisponible : affichage des données en cache</string>
     <string name="order_detail_tracking_title">Numéro de suivi</string>
     <string name="order_detail_tracking_label">Numéro de suivi</string>
     <string name="order_detail_tracking_save">Enregistrer</string>

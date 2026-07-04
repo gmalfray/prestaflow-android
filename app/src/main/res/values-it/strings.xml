@@ -46,7 +46,7 @@
     <string name="dashboard_kpi_turnover">Fatturato</string>
     <string name="dashboard_kpi_orders">Ordini</string>
     <string name="dashboard_kpi_customers">Nuovi clienti</string>
-    <string name="dashboard_kpi_avg_cart">Valore medio ordine</string>
+    <string name="dashboard_kpi_avg_cart">Valore medio</string>
     <string name="dashboard_chart_title_turnover">Fatturato</string>
     <string name="dashboard_chart_empty">Nessun dato grafico per il periodo selezionato.</string>
     <string name="dashboard_chart_total_period">Totale periodo</string>
@@ -243,6 +243,7 @@
     <string name="order_detail_title">Dettaglio ordine</string>
     <string name="order_detail_reference_label">Riferimento</string>
     <string name="order_detail_error">Errore durante il caricamento dell\'ordine</string>
+    <string name="order_detail_cache_fallback">Dettagli non disponibili: visualizzazione dei dati in cache</string>
     <string name="order_detail_tracking_title">Numero di tracciamento</string>
     <string name="order_detail_tracking_label">Numero di tracciamento</string>
     <string name="order_detail_tracking_save">Salva</string>

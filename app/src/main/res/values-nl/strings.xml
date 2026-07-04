@@ -46,7 +46,7 @@
     <string name="dashboard_kpi_turnover">Omzet</string>
     <string name="dashboard_kpi_orders">Bestellingen</string>
     <string name="dashboard_kpi_customers">Nieuwe klanten</string>
-    <string name="dashboard_kpi_avg_cart">Gemiddelde bestelwaarde</string>
+    <string name="dashboard_kpi_avg_cart">Gem. bestelwaarde</string>
     <string name="dashboard_chart_title_turnover">Omzet</string>
     <string name="dashboard_chart_empty">Geen grafiekgegevens voor de geselecteerde periode.</string>
     <string name="dashboard_chart_total_period">Totaal periode</string>
@@ -243,6 +243,7 @@
     <string name="order_detail_title">Besteldetails</string>
     <string name="order_detail_reference_label">Referentie</string>
     <string name="order_detail_error">Fout bij het laden van de bestelling</string>
+    <string name="order_detail_cache_fallback">Details niet beschikbaar: gegevens uit cache worden weergegeven</string>
     <string name="order_detail_tracking_title">Trackingnummer</string>
     <string name="order_detail_tracking_label">Trackingnummer</string>
     <string name="order_detail_tracking_save">Opslaan</string>

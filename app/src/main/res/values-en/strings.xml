@@ -46,7 +46,7 @@
     <string name="dashboard_kpi_turnover">Turnover</string>
     <string name="dashboard_kpi_orders">Orders</string>
     <string name="dashboard_kpi_customers">Customers</string>
-    <string name="dashboard_kpi_avg_cart">Average order value</string>
+    <string name="dashboard_kpi_avg_cart">Avg. order value</string>
     <string name="dashboard_chart_title_turnover">Turnover trend</string>
     <string name="dashboard_chart_empty">No chart data for the selected period.</string>
     <string name="dashboard_chart_total_period">Total period</string>
@@ -243,6 +243,7 @@
     <string name="order_detail_title">Order Details</string>
     <string name="order_detail_reference_label">Reference</string>
     <string name="order_detail_error">Error loading order</string>
+    <string name="order_detail_cache_fallback">Details unavailable — showing cached data</string>
     <string name="order_detail_tracking_title">Tracking number</string>
     <string name="order_detail_tracking_label">Tracking number</string>
     <string name="order_detail_tracking_save">Save</string>

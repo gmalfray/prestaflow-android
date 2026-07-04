@@ -64,7 +64,7 @@ class OrderDetailViewModel
                     // pour diagnostiquer (ex. endpoint détail du connecteur indisponible).
                     Timber.w(error, "Échec du chargement du détail commande #%d", orderId)
                     _actionState.update {
-                        it.copy(error = UiText.Dynamic("Détail indisponible : affichage des données en cache"))
+                        it.copy(error = UiText.FromResources(R.string.order_detail_cache_fallback))
                     }
                 }
             }

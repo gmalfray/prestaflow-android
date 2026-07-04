@@ -785,7 +785,9 @@ private fun KpiCard(
                     text = item.title.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    // 2 lignes en filet de sécurité pour les langues à libellés longs (DE/NL) :
+                    // évite la troncature « DURCHSCHNITTLICHER BE… » vue en recette i18n.
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
