@@ -440,6 +440,18 @@
     <string name="settings_dashboard_label">Dashboard</string>
     <string name="settings_dashboard_default_period">Periodo predefinito</string>
 
+    <!-- Selettore lingua in-app -->
+    <string name="settings_language_label">Lingua</string>
+    <string name="settings_language_system">Sistema (auto)</string>
+    <string name="settings_language_hint">Forza una lingua per l\'app, indipendentemente da quella del telefono.</string>
+    <string name="language_fr">Français</string>
+    <string name="language_en">English</string>
+    <string name="language_es">Español</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_it">Italiano</string>
+    <string name="language_pt">Português</string>
+    <string name="language_nl">Nederlands</string>
+
     <!-- Schermata Carrelli -->
     <string name="carts_list_empty">Nessun carrello trovato.</string>
     <string name="carts_list_abandoned">Carrelli abbandonati</string>

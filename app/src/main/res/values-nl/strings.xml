@@ -440,6 +440,18 @@
     <string name="settings_dashboard_label">Dashboard</string>
     <string name="settings_dashboard_default_period">Standaardperiode</string>
 
+    <!-- Taalkeuze in de app -->
+    <string name="settings_language_label">Taal</string>
+    <string name="settings_language_system">Systeem (auto)</string>
+    <string name="settings_language_hint">Forceert een taal voor de app, onafhankelijk van de taal van de telefoon.</string>
+    <string name="language_fr">Français</string>
+    <string name="language_en">English</string>
+    <string name="language_es">Español</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_it">Italiano</string>
+    <string name="language_pt">Português</string>
+    <string name="language_nl">Nederlands</string>
+
     <!-- Scherm Winkelwagens -->
     <string name="carts_list_empty">Geen winkelwagens gevonden.</string>
     <string name="carts_list_abandoned">Verlaten winkelwagens</string>

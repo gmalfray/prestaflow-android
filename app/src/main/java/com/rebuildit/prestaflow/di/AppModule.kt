@@ -30,6 +30,7 @@ import com.rebuildit.prestaflow.data.carts.CartsRepositoryImpl
 import com.rebuildit.prestaflow.data.clients.ClientsRepositoryImpl
 import com.rebuildit.prestaflow.data.dashboard.DashboardPreferencesRepositoryImpl
 import com.rebuildit.prestaflow.data.dashboard.DashboardRepositoryImpl
+import com.rebuildit.prestaflow.data.language.LanguageRepositoryImpl
 import com.rebuildit.prestaflow.data.local.dao.ClientDao
 import com.rebuildit.prestaflow.data.local.dao.DashboardDao
 import com.rebuildit.prestaflow.data.local.dao.OrderDao
@@ -59,6 +60,7 @@ import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
+import com.rebuildit.prestaflow.domain.language.LanguageRepository
 import com.rebuildit.prestaflow.domain.notifications.NotificationCategoriesRepository
 import com.rebuildit.prestaflow.domain.notifications.NotificationsRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersPreferencesRepository
@@ -258,6 +260,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideThemeRepository(impl: ThemeRepositoryImpl): ThemeRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideLanguageRepository(impl: LanguageRepositoryImpl): LanguageRepository = impl
 
     @Provides
     @Singleton

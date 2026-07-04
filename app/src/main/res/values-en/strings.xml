@@ -434,6 +434,18 @@
     <string name="settings_dashboard_label">Dashboard</string>
     <string name="settings_dashboard_default_period">Default period</string>
 
+    <!-- In-app language picker -->
+    <string name="settings_language_label">Language</string>
+    <string name="settings_language_system">System (auto)</string>
+    <string name="settings_language_hint">Forces a language for the app, independently of the phone\'s language.</string>
+    <string name="language_fr">Français</string>
+    <string name="language_en">English</string>
+    <string name="language_es">Español</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_it">Italiano</string>
+    <string name="language_pt">Português</string>
+    <string name="language_nl">Nederlands</string>
+
     <!-- Shop switcher -->
     <string name="shop_switcher_content_description">Active shop, tap to switch</string>
     <string name="shop_switcher_sheet_title">Switch shop</string>

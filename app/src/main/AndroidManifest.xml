@@ -97,6 +97,20 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- Sélecteur de langue in-app (Réglages) — API AndroidX per-app language.
+             Sur API < 33, ce service déclenche la persistance automatique (SharedPreferences
+             internes à AppCompat) de la langue choisie via AppCompatDelegate.setApplicationLocales.
+             Sur API 33+, la plateforme (LocaleManager) persiste elle-même ; ce service reste sans
+             effet mais n'est pas nuisible. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
     </application>
 
 </manifest>

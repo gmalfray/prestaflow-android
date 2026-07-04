@@ -83,6 +83,7 @@ import com.rebuildit.prestaflow.core.notifications.SaleNotifications
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
+import com.rebuildit.prestaflow.domain.language.AppLanguage
 import com.rebuildit.prestaflow.domain.printer.model.SavedPrinterDevice
 import com.rebuildit.prestaflow.domain.products.model.DEFAULT_QUICK_ADD_AMOUNTS
 import com.rebuildit.prestaflow.domain.products.model.MAX_QUICK_ADD_BUTTONS
@@ -109,8 +110,10 @@ fun SettingsRoute(
     thermalPrinterViewModel: ThermalPrinterViewModel = hiltViewModel(),
     swipePrefsViewModel: SwipePrefsViewModel = hiltViewModel(),
     stockReplenishPrefsViewModel: StockReplenishPrefsViewModel = hiltViewModel(),
+    languageViewModel: LanguageViewModel = hiltViewModel(),
 ) {
     val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
+    val currentLanguage by languageViewModel.currentLanguage.collectAsStateWithLifecycle()
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     val addState by shopsViewModel.addState.collectAsStateWithLifecycle()
     val defaultPeriod by dashboardPrefsViewModel.defaultPeriod.collectAsStateWithLifecycle()
@@ -170,6 +173,8 @@ fun SettingsRoute(
         onStockReplenishQuickAddAmountsChanged = stockReplenishPrefsViewModel::setQuickAddAmounts,
         stockReplenishSoundOnScan = stockReplenishSoundOnScan,
         onStockReplenishSoundOnScanChanged = stockReplenishPrefsViewModel::setSoundOnScan,
+        currentLanguage = currentLanguage,
+        onLanguageSelected = languageViewModel::setLanguage,
     )
 }
 
@@ -207,6 +212,8 @@ fun SettingsScreen(
     onStockReplenishQuickAddAmountsChanged: (List<Int>) -> Unit = {},
     stockReplenishSoundOnScan: Boolean = true,
     onStockReplenishSoundOnScanChanged: (Boolean) -> Unit = {},
+    currentLanguage: AppLanguage? = null,
+    onLanguageSelected: (AppLanguage?) -> Unit = {},
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -333,6 +340,14 @@ fun SettingsScreen(
             DarkModeSelector(
                 current = settings.darkThemeConfig,
                 onSelected = onDarkThemeSelected,
+            )
+        }
+
+        // Section LANGUE — force une langue pour l'app, indépendamment de la langue système
+        SettingsSection(label = stringResource(R.string.settings_language_label)) {
+            LanguageSelector(
+                current = currentLanguage,
+                onSelected = onLanguageSelected,
             )
         }
 
@@ -750,6 +765,79 @@ private fun DarkModeSelector(
                     ),
                 modifier = Modifier.weight(1f),
             )
+        }
+    }
+}
+
+// ─── Langue de l'app ──────────────────────────────────────────────────────────
+
+/**
+ * Sélecteur de langue in-app (Réglages) — liste déroulante Material 3.
+ *
+ * `current == null` correspond au mode « Système (auto) » : l'app suit la langue du téléphone.
+ * Sélectionner une langue force l'affichage dans cette langue, indépendamment du système ; la
+ * sélection déclenche la recréation de l'Activity (cf. [LanguageViewModel]).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguageSelector(
+    current: AppLanguage?,
+    onSelected: (AppLanguage?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val systemLabel = stringResource(R.string.settings_language_system)
+    val currentLabel = current?.let { stringResource(it.displayNameRes()) } ?: systemLabel
+
+    Text(
+        text = stringResource(R.string.settings_language_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = currentLabel,
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            label = { Text(stringResource(R.string.settings_language_label)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            modifier =
+                Modifier
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(systemLabel, style = MaterialTheme.typography.bodyMedium) },
+                onClick = {
+                    onSelected(null)
+                    expanded = false
+                },
+                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+            )
+            AppLanguage.values().forEach { language ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = stringResource(language.displayNameRes()),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    },
+                    onClick = {
+                        onSelected(language)
+                        expanded = false
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                )
+            }
         }
     }
 }
