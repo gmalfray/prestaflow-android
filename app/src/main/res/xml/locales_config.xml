@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Langues supportées par l'app (per-app language / Android 13+). Déclare les locales exposées
+     dans les réglages système « Langue de l'application » et validées par le LocaleManager. -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="fr" />
+    <locale android:name="en" />
+    <locale android:name="es" />
+    <locale android:name="de" />
+    <locale android:name="it" />
+    <locale android:name="pt" />
+    <locale android:name="nl" />
+</locale-config>

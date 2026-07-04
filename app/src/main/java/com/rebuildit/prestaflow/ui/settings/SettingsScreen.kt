@@ -300,6 +300,14 @@ fun SettingsScreen(
                 .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingL),
         verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
     ) {
+        // Section LANGUE — en tête d'écran : force une langue pour l'app, indépendamment du système
+        SettingsSection(label = stringResource(R.string.settings_language_label)) {
+            LanguageSelector(
+                current = currentLanguage,
+                onSelected = onLanguageSelected,
+            )
+        }
+
         // Section BOUTIQUES — liste des connexions + bascule + suppression + ajout
         SettingsSection(label = stringResource(R.string.settings_shops_label)) {
             connections.forEach { connection ->
@@ -340,14 +348,6 @@ fun SettingsScreen(
             DarkModeSelector(
                 current = settings.darkThemeConfig,
                 onSelected = onDarkThemeSelected,
-            )
-        }
-
-        // Section LANGUE — force une langue pour l'app, indépendamment de la langue système
-        SettingsSection(label = stringResource(R.string.settings_language_label)) {
-            LanguageSelector(
-                current = currentLanguage,
-                onSelected = onLanguageSelected,
             )
         }
 
@@ -786,7 +786,9 @@ private fun LanguageSelector(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val systemLabel = stringResource(R.string.settings_language_system)
-    val currentLabel = current?.let { stringResource(it.displayNameRes()) } ?: systemLabel
+    // 🌐 pour « Système (auto) », le drapeau du pays pour chaque langue.
+    val currentLabel =
+        current?.let { "${it.flag}  ${stringResource(it.displayNameRes())}" } ?: "🌐  $systemLabel"
 
     Text(
         text = stringResource(R.string.settings_language_hint),
@@ -816,7 +818,7 @@ private fun LanguageSelector(
             onDismissRequest = { expanded = false },
         ) {
             DropdownMenuItem(
-                text = { Text(systemLabel, style = MaterialTheme.typography.bodyMedium) },
+                text = { Text("🌐  $systemLabel", style = MaterialTheme.typography.bodyMedium) },
                 onClick = {
                     onSelected(null)
                     expanded = false
@@ -827,7 +829,7 @@ private fun LanguageSelector(
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = stringResource(language.displayNameRes()),
+                            text = "${language.flag}  ${stringResource(language.displayNameRes())}",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     },

@@ -26,8 +26,8 @@ android {
         applicationId = "com.rebuildit.prestaflow"
         minSdk = 26
         targetSdk = 36
-        versionCode = 70
-        versionName = "0.41.0"
+        versionCode = 71
+        versionName = "0.41.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
