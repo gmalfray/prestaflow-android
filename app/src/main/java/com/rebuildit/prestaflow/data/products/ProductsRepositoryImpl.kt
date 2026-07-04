@@ -10,6 +10,7 @@ import com.rebuildit.prestaflow.data.local.entity.StockAvailabilityEntity
 import com.rebuildit.prestaflow.data.products.mapper.toDomain
 import com.rebuildit.prestaflow.data.products.mapper.toEntity
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
+import com.rebuildit.prestaflow.data.remote.dto.PaginationDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
@@ -68,10 +69,11 @@ class ProductsRepositoryImpl
         override suspend fun refresh(
             forceRemote: Boolean,
             stockFilter: String?,
+            active: String?,
             search: String?,
         ): Int? =
             withContext(ioDispatcher) {
-                val result = runCatching { fetchAllProducts(stockFilter, search) }
+                val result = runCatching { fetchAllProducts(stockFilter, active, search) }
                 result.fold(
                     onSuccess = { (products, total) ->
                         val productEntities = products.map { it.toEntity() }
@@ -320,6 +322,7 @@ class ProductsRepositoryImpl
          */
         private suspend fun fetchAllProducts(
             stockFilter: String? = null,
+            active: String? = null,
             search: String? = null,
         ): Pair<List<ProductDto>, Int> {
             val collected = mutableListOf<ProductDto>()
@@ -327,13 +330,7 @@ class ProductsRepositoryImpl
             var hasNext = true
             var reportedTotal = 0
             while (hasNext) {
-                val filters = mutableMapOf("limit" to FETCH_LIMIT.toString())
-                if (offset > 0) {
-                    filters["offset"] = offset.toString()
-                }
-                if (stockFilter != null) {
-                    filters["stock"] = stockFilter
-                }
+                val filters = buildProductFilters(offset, stockFilter, active)
                 val response = api.getProducts(filters, search = search?.takeIf { it.isNotBlank() })
                 if (collected.isEmpty()) {
                     // Le total de la première page est le vrai total (filtres + recherche actifs)
@@ -347,27 +344,61 @@ class ProductsRepositoryImpl
                 }
                 collected += response.products
 
-                val pagination = response.pagination
-                val pageCount = pagination?.count ?: response.products.size
-                val nextOffset =
-                    when {
-                        pagination?.offset != null -> pagination.offset + pageCount
-                        pageCount > 0 -> offset + pageCount
-                        else -> offset
-                    }
-                Timber.d(
-                    "Products page fetched (offset=%d, count=%d, hasNext=%s, nextOffset=%d)",
-                    pagination?.offset ?: offset,
-                    pageCount,
-                    pagination?.hasNext,
-                    nextOffset,
-                )
-
-                hasNext = pagination?.hasNext == true && pageCount > 0 && nextOffset > offset
-                offset = nextOffset
+                val advance = advancePage(response.pagination, offset, response.products.size)
+                hasNext = advance.hasNext
+                offset = advance.nextOffset
             }
             // Fallback : si le backend n'a pas renvoyé de total, on utilise le nombre réel collecté
             if (reportedTotal == 0 && collected.isNotEmpty()) reportedTotal = collected.size
             return collected to reportedTotal
+        }
+
+        /**
+         * Construit les paramètres de requête `GET products` pour une page donnée. `stockFilter` et
+         * `active` ne sont JAMAIS combinés côté appelant (cf. [com.rebuildit.prestaflow.domain.products.model.StockFilter]),
+         * mais cette fonction reste défensive et ajoute chacun indépendamment s'il est fourni.
+         */
+        private fun buildProductFilters(
+            offset: Int,
+            stockFilter: String?,
+            active: String?,
+        ): MutableMap<String, String> {
+            val filters = mutableMapOf("limit" to FETCH_LIMIT.toString())
+            if (offset > 0) {
+                filters["offset"] = offset.toString()
+            }
+            if (stockFilter != null) {
+                filters["stock"] = stockFilter
+            }
+            if (active != null) {
+                filters["active"] = active
+            }
+            return filters
+        }
+
+        private data class PageAdvance(val nextOffset: Int, val hasNext: Boolean)
+
+        /** Calcule le prochain offset et si une page suivante doit être chargée, à partir de la pagination renvoyée. */
+        private fun advancePage(
+            pagination: PaginationDto?,
+            offset: Int,
+            fetchedCount: Int,
+        ): PageAdvance {
+            val pageCount = pagination?.count ?: fetchedCount
+            val nextOffset =
+                when {
+                    pagination?.offset != null -> pagination.offset + pageCount
+                    pageCount > 0 -> offset + pageCount
+                    else -> offset
+                }
+            Timber.d(
+                "Products page fetched (offset=%d, count=%d, hasNext=%s, nextOffset=%d)",
+                pagination?.offset ?: offset,
+                pageCount,
+                pagination?.hasNext,
+                nextOffset,
+            )
+            val hasNext = pagination?.hasNext == true && pageCount > 0 && nextOffset > offset
+            return PageAdvance(nextOffset, hasNext)
         }
     }

@@ -103,7 +103,7 @@ class ProductsViewModelTest {
             )
             assertTrue(
                 "countByStock doit être appelé avec le filtre 'low_stock'",
-                fakeProductsRepo.countByStockCalls.contains(StockFilter.LOW_STOCK.apiValue),
+                fakeProductsRepo.countByStockCalls.contains(StockFilter.LOW_STOCK.stockParam),
             )
         }
 
@@ -116,6 +116,45 @@ class ProductsViewModelTest {
             advanceUntilIdle()
 
             assertNull(vm.uiState.value.lowStockTotal)
+        }
+
+    // ─── KPI « Total produits » (catalogue complet, indépendant du filtre) ───
+
+    @Test
+    fun `catalogTotal vient du compteur serveur sans filtre, pas de la liste locale`() =
+        runTest {
+            fakeProductsRepo.catalogCountResult = 321
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            assertEquals(
+                "catalogTotal doit correspondre au compteur serveur du catalogue complet (321)",
+                321,
+                vm.uiState.value.catalogTotal,
+            )
+            assertTrue(
+                "countByStock doit être appelé sans filtre (null) pour le catalogue complet",
+                fakeProductsRepo.countByStockCalls.contains(null),
+            )
+        }
+
+    @Test
+    fun `catalogTotal ne change pas quand on selectionne un filtre`() =
+        runTest {
+            fakeProductsRepo.catalogCountResult = 321
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onStockFilterSelected(StockFilter.INACTIVE)
+            advanceUntilIdle()
+
+            assertEquals(
+                "catalogTotal doit rester le total catalogue complet, indépendant du filtre sélectionné",
+                321,
+                vm.uiState.value.catalogTotal,
+            )
         }
 
     // ─── Recherche déléguée à l'API ──────────────────────────────────────────
@@ -166,7 +205,7 @@ class ProductsViewModelTest {
     // ─── Filtre de stock ─────────────────────────────────────────────────────
 
     @Test
-    fun `onStockFilterSelected transmet l apiValue du filtre au repository`() =
+    fun `onStockFilterSelected transmet le stockParam du filtre au repository`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
@@ -177,14 +216,18 @@ class ProductsViewModelTest {
 
             val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
             assertEquals(
-                "Le filtre LOW_STOCK doit transmettre son apiValue au repository",
-                StockFilter.LOW_STOCK.apiValue,
+                "Le filtre LOW_STOCK doit transmettre son stockParam au repository",
+                StockFilter.LOW_STOCK.stockParam,
                 lastCall?.stockFilter,
+            )
+            assertNull(
+                "Un filtre de stock ne doit jamais transmettre de paramètre 'active'",
+                lastCall?.active,
             )
         }
 
     @Test
-    fun `onStockFilterSelected ALL transmet null comme stockFilter au repository`() =
+    fun `onStockFilterSelected ALL transmet null comme stockFilter et active au repository`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
@@ -196,6 +239,32 @@ class ProductsViewModelTest {
             val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
             assertNull(
                 "StockFilter.ALL doit transmettre null comme stockFilter",
+                lastCall?.stockFilter,
+            )
+            assertNull(
+                "StockFilter.ALL doit transmettre null comme active",
+                lastCall?.active,
+            )
+        }
+
+    @Test
+    fun `onStockFilterSelected INACTIVE transmet active=0 sans filtre de stock`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeProductsRepo.refreshCalls.clear()
+
+            vm.onStockFilterSelected(StockFilter.INACTIVE)
+            advanceUntilIdle()
+
+            val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
+            assertEquals(
+                "Le filtre INACTIVE doit transmettre active=\"0\" au repository",
+                "0",
+                lastCall?.active,
+            )
+            assertNull(
+                "Le filtre INACTIVE ne doit transmettre aucun paramètre stock",
                 lastCall?.stockFilter,
             )
         }

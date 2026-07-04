@@ -393,6 +393,7 @@
     <string name="products_filter_in_stock">Auf Lager</string>
     <string name="products_filter_out_of_stock">Nicht vorrätig</string>
     <string name="products_filter_low_stock">Niedriger Bestand</string>
+    <string name="products_filter_inactive">Inaktiv</string>
 
     <string name="products_search_placeholder">Nach Name oder Referenz suchen</string>
     <string name="clients_search_placeholder">Nach Name oder E-Mail suchen</string>

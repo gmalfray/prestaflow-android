@@ -41,6 +41,7 @@ class ProductsViewModel
             observeProducts()
             refresh(forceRemote = true, notifyOnError = false)
             refreshLowStockCount()
+            refreshCatalogTotal()
             observeActiveShopSwitch()
             observeSearchQuery()
         }
@@ -48,6 +49,7 @@ class ProductsViewModel
         fun onRefresh() {
             refresh(forceRemote = true, notifyOnError = true)
             refreshLowStockCount()
+            refreshCatalogTotal()
         }
 
         /**
@@ -58,9 +60,27 @@ class ProductsViewModel
          */
         private fun refreshLowStockCount() {
             viewModelScope.launch {
-                val count = productsRepository.countByStock(StockFilter.LOW_STOCK.apiValue)
+                val count = productsRepository.countByStock(StockFilter.LOW_STOCK.stockParam)
                 if (count != null) {
                     _uiState.update { it.copy(lowStockTotal = count) }
+                }
+            }
+        }
+
+        /**
+         * Récupère le total serveur du catalogue COMPLET (actifs + inactifs, cf.
+         * [ProductsRepository.countByStock] appelé sans filtre) pour le KPI « Total produits » en
+         * tête d'écran. Volontairement indépendant du filtre actif : sélectionner « Inactifs » (ou
+         * tout autre filtre) ne doit pas faire chuter ce chiffre au sous-ensemble filtré — sinon le
+         * libellé « Total produits » deviendrait trompeur. Silencieux en cas d'échec (on garde la
+         * valeur courante, avec repli sur le total du filtre actif tant qu'aucune réponse n'est
+         * arrivée, cf. [ProductsUiState.catalogTotal]).
+         */
+        private fun refreshCatalogTotal() {
+            viewModelScope.launch {
+                val count = productsRepository.countByStock(null)
+                if (count != null) {
+                    _uiState.update { it.copy(catalogTotal = count) }
                 }
             }
         }
@@ -90,10 +110,12 @@ class ProductsViewModel
                                 error = null,
                                 stockFilter = StockFilter.ALL,
                                 lowStockTotal = null,
+                                catalogTotal = null,
                             )
                         }
                         refresh(forceRemote = true, notifyOnError = true)
                         refreshLowStockCount()
+                        refreshCatalogTotal()
                     }
             }
         }
@@ -147,9 +169,9 @@ class ProductsViewModel
                     )
                 }
 
-                val stockFilter = _uiState.value.stockFilter.apiValue
+                val filter = _uiState.value.stockFilter
                 val search = _uiState.value.query.takeIf { it.isNotBlank() }
-                runCatching { productsRepository.refresh(forceRemote, stockFilter, search) }
+                runCatching { productsRepository.refresh(forceRemote, filter.stockParam, filter.activeParam, search) }
                     .onFailure { error ->
                         Timber.w(error, "Failed to refresh products")
                         _uiState.update { current ->
@@ -194,6 +216,12 @@ data class ProductsUiState(
      * une approximation locale.
      */
     val lowStockTotal: Int? = null,
+    /**
+     * Total serveur du catalogue COMPLET (actifs + inactifs), indépendant du filtre actif — sert au
+     * KPI « Total produits ». `null` tant que le compteur n'a pas répondu → l'écran retombe alors sur
+     * [totalCount] (total du filtre actif) en attendant.
+     */
+    val catalogTotal: Int? = null,
 ) {
     /**
      * La recherche est déléguée à l'API : [products] contient déjà les résultats filtrés

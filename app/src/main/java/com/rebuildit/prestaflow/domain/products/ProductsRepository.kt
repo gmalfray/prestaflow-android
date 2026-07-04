@@ -16,12 +16,16 @@ interface ProductsRepository {
     /**
      * Rafraîchit la liste des produits depuis le serveur.
      * @param stockFilter Si non nul, filtre par état de stock : "in_stock", "out_of_stock" ou "low_stock".
+     *   Le connecteur restreint déjà ce filtre aux produits actifs — ne pas le combiner avec [active].
+     * @param active Si non nul, filtre par état d'activation ("0" = inactifs, "1" = actifs). Utilisé
+     *   pour le filtre « Inactifs » ; ne pas le combiner avec [stockFilter].
      * @param search Si non nul, délègue la recherche textuelle à l'API (nom, référence).
      * @return Le total réel de produits rapporté par l'API (selon filtres actifs), ou null si la requête échoue.
      */
     suspend fun refresh(
         forceRemote: Boolean = false,
         stockFilter: String? = null,
+        active: String? = null,
         search: String? = null,
     ): Int?
 
@@ -30,7 +34,9 @@ interface ProductsRepository {
      * dépendre de la pagination locale ni du filtre actif de l'écran. Un seul appel API léger
      * (`limit=1`, on ne lit que le `total`). Sert à alimenter le KPI « Stock faible » avec un chiffre
      * **stable et identique au total du filtre** (le comptage sur la liste chargée était faux car
-     * toutes les pages ne sont pas forcément en mémoire).
+     * toutes les pages ne sont pas forcément en mémoire). Avec `stockFilter = null`, le connecteur ne
+     * restreint ni le stock ni l'activation : le total renvoyé est celui du catalogue complet
+     * (actifs + inactifs) — sert aussi au KPI « Total produits ».
      * @param stockFilter "in_stock", "out_of_stock", "low_stock", ou null pour tout le catalogue.
      * @return Le total serveur, ou null si la requête échoue.
      */

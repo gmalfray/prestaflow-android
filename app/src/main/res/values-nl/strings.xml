@@ -393,6 +393,7 @@
     <string name="products_filter_in_stock">Op voorraad</string>
     <string name="products_filter_out_of_stock">Uitverkocht</string>
     <string name="products_filter_low_stock">Lage voorraad</string>
+    <string name="products_filter_inactive">Inactief</string>
 
     <string name="products_search_placeholder">Zoeken op naam of referentie</string>
     <string name="clients_search_placeholder">Zoeken op naam of e-mail</string>

@@ -394,6 +394,7 @@
     <string name="products_filter_in_stock">In stock</string>
     <string name="products_filter_out_of_stock">Out of stock</string>
     <string name="products_filter_low_stock">Low stock</string>
+    <string name="products_filter_inactive">Inactive</string>
 
     <string name="products_search_placeholder">Search by name or reference</string>
     <string name="clients_search_placeholder">Search by name or email</string>

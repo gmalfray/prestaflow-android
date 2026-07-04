@@ -24,7 +24,12 @@ class FakeProductsRepository : ProductsRepository {
         productsFlowState.value = products
     }
 
-    data class RefreshCall(val forceRemote: Boolean, val stockFilter: String?, val search: String?)
+    data class RefreshCall(
+        val forceRemote: Boolean,
+        val stockFilter: String?,
+        val active: String? = null,
+        val search: String?,
+    )
 
     val refreshCalls = mutableListOf<RefreshCall>()
 
@@ -40,9 +45,10 @@ class FakeProductsRepository : ProductsRepository {
     override suspend fun refresh(
         forceRemote: Boolean,
         stockFilter: String?,
+        active: String?,
         search: String?,
     ): Int? {
-        refreshCalls += RefreshCall(forceRemote, stockFilter, search)
+        refreshCalls += RefreshCall(forceRemote, stockFilter, active, search)
         if (shouldThrowOnRefresh) throw RuntimeException("Erreur réseau simulée")
         return refreshTotal
     }
@@ -50,9 +56,13 @@ class FakeProductsRepository : ProductsRepository {
     val countByStockCalls = mutableListOf<String?>()
     var lowStockCountResult: Int? = 7
 
+    // Total catalogue complet (actifs + inactifs), renvoyé quand countByStock est appelé sans
+    // filtre (stockFilter = null) — cf. ProductsRepository.countByStock kdoc.
+    var catalogCountResult: Int? = 100
+
     override suspend fun countByStock(stockFilter: String?): Int? {
         countByStockCalls += stockFilter
-        return lowStockCountResult
+        return if (stockFilter == null) catalogCountResult else lowStockCountResult
     }
 
     override suspend fun refreshProduct(

@@ -67,7 +67,6 @@ import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList") // Route Hilt : callback nav + 2 viewModels (produits, boutiques)
 @Composable
@@ -131,7 +130,10 @@ fun ProductsScreen(
                 ProductList(
                     modifier = Modifier.fillMaxSize(),
                     products = state.visibleProducts,
-                    totalCount = state.totalCount,
+                    // KPI « Total produits » = total serveur du catalogue COMPLET (actifs + inactifs),
+                    // indépendant du filtre actif. Tant que le compteur serveur n'a pas répondu, on
+                    // retombe sur le total du filtre actif (approximation, cf. state.catalogTotal).
+                    totalCount = state.catalogTotal ?: state.totalCount,
                     // KPI « Stock faible » = total serveur (stable, = total du filtre « Stock faible »,
                     // indépendant de la pagination). Tant que le compteur serveur n'a pas répondu, on
                     // affiche une approximation locale (produits chargés marqués is_low). Les ruptures
@@ -550,6 +552,7 @@ private fun StockFilterBar(
                     StockFilter.IN_STOCK -> stringResource(R.string.products_filter_in_stock)
                     StockFilter.OUT_OF_STOCK -> stringResource(R.string.products_filter_out_of_stock)
                     StockFilter.LOW_STOCK -> stringResource(R.string.products_filter_low_stock)
+                    StockFilter.INACTIVE -> stringResource(R.string.products_filter_inactive)
                 }
             FilterChip(
                 selected = selected == filter,
