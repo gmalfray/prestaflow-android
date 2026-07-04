@@ -25,6 +25,17 @@ interface ProductsRepository {
         search: String? = null,
     ): Int?
 
+    /**
+     * Compte, côté serveur, le nombre total de produits correspondant à un état de stock, sans
+     * dépendre de la pagination locale ni du filtre actif de l'écran. Un seul appel API léger
+     * (`limit=1`, on ne lit que le `total`). Sert à alimenter le KPI « Stock faible » avec un chiffre
+     * **stable et identique au total du filtre** (le comptage sur la liste chargée était faux car
+     * toutes les pages ne sont pas forcément en mémoire).
+     * @param stockFilter "in_stock", "out_of_stock", "low_stock", ou null pour tout le catalogue.
+     * @return Le total serveur, ou null si la requête échoue.
+     */
+    suspend fun countByStock(stockFilter: String?): Int?
+
     suspend fun refreshProduct(
         productId: Long,
         forceRemote: Boolean = false,

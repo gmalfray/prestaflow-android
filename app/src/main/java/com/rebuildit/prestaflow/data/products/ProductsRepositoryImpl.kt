@@ -94,6 +94,21 @@ class ProductsRepositoryImpl
                 )
             }
 
+        override suspend fun countByStock(stockFilter: String?): Int? =
+            withContext(ioDispatcher) {
+                runCatching {
+                    val filters = mutableMapOf("limit" to "1")
+                    if (stockFilter != null) {
+                        filters["stock"] = stockFilter
+                    }
+                    val response = api.getProducts(filters)
+                    response.total.takeIf { it > 0 } ?: response.pagination?.total ?: 0
+                }.getOrElse { error ->
+                    Timber.w(networkErrorMapper.map(error).toString())
+                    null
+                }
+            }
+
         override suspend fun refreshProduct(
             productId: Long,
             forceRemote: Boolean,

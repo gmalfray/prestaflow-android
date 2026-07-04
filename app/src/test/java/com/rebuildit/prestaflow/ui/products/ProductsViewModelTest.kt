@@ -86,6 +86,38 @@ class ProductsViewModelTest {
             assertEquals(0, vm.uiState.value.totalCount)
         }
 
+    // ─── Compteur KPI « stock faible » (serveur, stable) ─────────────────────
+
+    @Test
+    fun `lowStockTotal vient du compteur serveur low_stock, pas de la liste locale`() =
+        runTest {
+            fakeProductsRepo.lowStockCountResult = 57
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            assertEquals(
+                "lowStockTotal doit correspondre au compteur serveur (57)",
+                57,
+                vm.uiState.value.lowStockTotal,
+            )
+            assertTrue(
+                "countByStock doit être appelé avec le filtre 'low_stock'",
+                fakeProductsRepo.countByStockCalls.contains(StockFilter.LOW_STOCK.apiValue),
+            )
+        }
+
+    @Test
+    fun `lowStockTotal reste null si le compteur serveur echoue`() =
+        runTest {
+            fakeProductsRepo.lowStockCountResult = null
+
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            assertNull(vm.uiState.value.lowStockTotal)
+        }
+
     // ─── Recherche déléguée à l'API ──────────────────────────────────────────
 
     @Test

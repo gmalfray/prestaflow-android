@@ -67,11 +67,6 @@ import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
 
-/**
- * Seuil de stock faible local (fallback) — utilisé quand le backend ne fournit pas
- * `stock.is_low`. Si l'API retourne `is_low`, ce seuil est ignoré.
- */
-private const val LOW_STOCK_THRESHOLD_FALLBACK = 5
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList") // Route Hilt : callback nav + 2 viewModels (produits, boutiques)
@@ -137,10 +132,11 @@ fun ProductsScreen(
                     modifier = Modifier.fillMaxSize(),
                     products = state.visibleProducts,
                     totalCount = state.totalCount,
-                    lowStockCount =
-                        state.products.count {
-                            it.stock.isLow || it.stock.quantity <= LOW_STOCK_THRESHOLD_FALLBACK
-                        },
+                    // KPI « Stock faible » = total serveur (stable, = total du filtre « Stock faible »,
+                    // indépendant de la pagination). Tant que le compteur serveur n'a pas répondu, on
+                    // affiche une approximation locale (produits chargés marqués is_low). Les ruptures
+                    // (quantité 0) ne sont pas comptées ici — elles ont leur filtre « En rupture ».
+                    lowStockCount = state.lowStockTotal ?: state.products.count { it.stock.isLow },
                     query = state.query,
                     onQueryChange = onQueryChange,
                     isRefreshing = state.isRefreshing,
@@ -408,8 +404,10 @@ private fun ProductRow(
     onClick: () -> Unit,
 ) {
     val priceText = remember(product.price) { currencyFormatter.format(product.price) }
-    // Priorité à is_low fourni par le backend ; fallback local si le backend n'envoie pas le champ
-    val isLowStock = product.stock.isLow || product.stock.quantity <= LOW_STOCK_THRESHOLD_FALLBACK
+    // Badge « stock faible » = définition serveur `is_low` (quantité > 0 ET ≤ seuil), cohérent avec
+    // le compteur KPI et le filtre. Une rupture (quantité 0) n'est pas « faible » : elle s'affiche
+    // « Stock : 0 » sans badge et relève du filtre « En rupture ».
+    val isLowStock = product.stock.isLow
     val stockText = stringResource(R.string.products_stock_label, product.stock.quantity)
 
     Row(

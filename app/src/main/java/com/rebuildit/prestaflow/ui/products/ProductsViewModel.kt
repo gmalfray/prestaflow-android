@@ -40,12 +40,29 @@ class ProductsViewModel
         init {
             observeProducts()
             refresh(forceRemote = true, notifyOnError = false)
+            refreshLowStockCount()
             observeActiveShopSwitch()
             observeSearchQuery()
         }
 
         fun onRefresh() {
             refresh(forceRemote = true, notifyOnError = true)
+            refreshLowStockCount()
+        }
+
+        /**
+         * Récupère le total serveur des produits en stock faible (KPI en tête d'écran), indépendamment
+         * du filtre actif et de la pagination locale. Silencieux en cas d'échec : on garde la valeur
+         * courante (à défaut, l'écran retombe sur une approximation locale). Cf.
+         * [ProductsRepository.countByStock].
+         */
+        private fun refreshLowStockCount() {
+            viewModelScope.launch {
+                val count = productsRepository.countByStock(StockFilter.LOW_STOCK.apiValue)
+                if (count != null) {
+                    _uiState.update { it.copy(lowStockTotal = count) }
+                }
+            }
         }
 
         fun onQueryChange(query: String) {
@@ -72,9 +89,11 @@ class ProductsViewModel
                                 isLoading = true,
                                 error = null,
                                 stockFilter = StockFilter.ALL,
+                                lowStockTotal = null,
                             )
                         }
                         refresh(forceRemote = true, notifyOnError = true)
+                        refreshLowStockCount()
                     }
             }
         }
@@ -169,6 +188,12 @@ data class ProductsUiState(
     val query: String = "",
     /** Filtre de stock actif. */
     val stockFilter: StockFilter = StockFilter.ALL,
+    /**
+     * Total serveur des produits en stock faible (KPI en tête), stable et indépendant du filtre
+     * actif / de la pagination. `null` tant que le compteur n'a pas répondu → l'écran affiche alors
+     * une approximation locale.
+     */
+    val lowStockTotal: Int? = null,
 ) {
     /**
      * La recherche est déléguée à l'API : [products] contient déjà les résultats filtrés

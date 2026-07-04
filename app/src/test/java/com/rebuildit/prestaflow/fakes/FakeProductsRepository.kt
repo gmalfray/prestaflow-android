@@ -47,6 +47,14 @@ class FakeProductsRepository : ProductsRepository {
         return refreshTotal
     }
 
+    val countByStockCalls = mutableListOf<String?>()
+    var lowStockCountResult: Int? = 7
+
+    override suspend fun countByStock(stockFilter: String?): Int? {
+        countByStockCalls += stockFilter
+        return lowStockCountResult
+    }
+
     override suspend fun refreshProduct(
         productId: Long,
         forceRemote: Boolean,
