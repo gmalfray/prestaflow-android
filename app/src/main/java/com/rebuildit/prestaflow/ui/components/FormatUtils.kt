@@ -6,6 +6,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Currency
+import java.util.Locale
 
 /**
  * Formate un montant en devise avec le symbole correspondant à [currencyCode].
@@ -19,6 +20,17 @@ fun formatCurrency(
     runCatching { formatter.currency = Currency.getInstance(currencyCode) }
     return formatter.format(amount)
 }
+
+/**
+ * Formateur de devise pour les montants boutique (toujours en euros — les boutiques gérées
+ * sont mono-devise EUR). Utilise la locale de l'appareil pour la position du symbole et les
+ * séparateurs (milliers/décimales), mais fige la devise en EUR pour éviter qu'un appareil
+ * réglé sur une locale non-euro (ex : anglais US) n'affiche $ au lieu de €.
+ */
+fun euroCurrencyFormatter(locale: Locale = Locale.getDefault()): NumberFormat =
+    NumberFormat.getCurrencyInstance(locale).apply {
+        runCatching { currency = Currency.getInstance("EUR") }
+    }
 
 /**
  * Tente de parser et de formater un timestamp ISO ou "yyyy-MM-dd HH:mm:ss".

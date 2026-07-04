@@ -95,6 +95,7 @@ import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartPoint
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
 import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
+import com.rebuildit.prestaflow.ui.components.euroCurrencyFormatter
 import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
@@ -1640,7 +1641,7 @@ private fun rememberChartContentDescription(points: List<DashboardChartPoint>): 
 private fun rememberCurrencyFormatter(): NumberFormat {
     val locales = LocalConfiguration.current.locales
     val locale = if (!locales.isEmpty) locales[0] else java.util.Locale.getDefault()
-    return remember(locale) { NumberFormat.getCurrencyInstance(locale) }
+    return remember(locale) { euroCurrencyFormatter(locale) }
 }
 
 @Composable

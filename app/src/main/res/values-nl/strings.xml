@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PrestaFlow</string>
+    <string name="notif_channel_sales_name">Verkoop</string>
+    <string name="notif_channel_sales_desc">Meldingen bij nieuwe bestellingen (kassa-geluid)</string>
+    <string name="notif_channel_order_status_name">Statuswijzigingen bestelling</string>
+    <string name="notif_channel_order_status_desc">Meldingen wanneer de status van een bestelling wordt bijgewerkt</string>
+    <string name="notif_channel_order_shipping_name">Verzendingen</string>
+    <string name="notif_channel_order_shipping_desc">Meldingen wanneer de tracking van een bestelling wordt bijgewerkt</string>
+    <string name="notif_channel_default_name">Meldingen</string>
+    <string name="notif_channel_default_desc">Algemene app-meldingen</string>
+    <string name="notif_sale_default_title">Nieuwe bestelling</string>
+    <!-- Sync worker — offline taak gestopt na een niet-herhaalbare HTTP-reactie (400/422…) -->
+    <string name="sync_failure_notif_title">Synchronisatie mislukt</string>
+    <string name="sync_failure_notif_body">Een wijziging (%1$s) kon niet worden opgeslagen (HTTP %2$d). Open de app om te controleren.</string>
+    <string name="action_retry">Opnieuw proberen</string>
+    <string name="label_last_sync">Laatste synchronisatie: %1$s</string>
+    <string name="destination_dashboard">Start</string>
+    <string name="destination_orders">Bestellingen</string>
+    <string name="destination_products">Producten</string>
+    <string name="destination_clients">Klanten</string>
+    <string name="destination_carts">Winkelwagens</string>
+    <string name="auth_title">Verbind met je winkel</string>
+    <string name="auth_subtitle">Voer de HTTPS-URL van je PrestaShop-winkel en de API-sleutel voor deze app in.</string>
+    <string name="auth_field_shop_url">URL van de winkel</string>
+    <string name="auth_field_shop_url_placeholder">https://jouwwinkel.tld</string>
+    <string name="auth_field_api_key">API-sleutel</string>
+    <string name="auth_field_api_key_placeholder">Plak je API-sleutel</string>
+    <string name="auth_action_connect">Verbinden</string>
+    <string name="auth_action_prefill_https">Gebruik het voorvoegsel https://</string>
+    <string name="auth_action_scan_qr">QR-code scannen</string>
+    <string name="auth_error_shop_url_empty">Voer de URL van de winkel in.</string>
+    <string name="auth_error_shop_url_malformed">De URL van de winkel lijkt ongeldig.</string>
+    <string name="auth_error_shop_url_https">HTTPS is verplicht.</string>
+    <string name="auth_error_api_key_empty">Voer de API-sleutel in.</string>
+    <string name="auth_error_qr_invalid">De gegevens van de QR-code kunnen niet worden gelezen.</string>
+    <string name="auth_error_qr_cancelled">Scannen van de QR-code geannuleerd.</string>
+    <string name="auth_scan_prompt">Richt de camera op de PrestaFlow QR-code</string>
+    <string name="error_network_unreachable">Netwerk niet beschikbaar. Controleer je verbinding.</string>
+    <string name="error_unauthorized">Authenticatie mislukt. Controleer je gegevens.</string>
+    <string name="error_forbidden">Je hebt geen toegang tot deze bron.</string>
+    <string name="error_generic">Er is een fout opgetreden. Probeer het opnieuw.</string>
+    <string name="error_http_with_code">De server gaf HTTP-code %1$d terug. Controleer de winkelconfiguratie en probeer het opnieuw.</string>
+
+    <string name="dashboard_state_empty">Nog geen gegevens beschikbaar.</string>
+    <string name="dashboard_kpi_turnover">Omzet</string>
+    <string name="dashboard_kpi_orders">Bestellingen</string>
+    <string name="dashboard_kpi_customers">Nieuwe klanten</string>
+    <string name="dashboard_kpi_avg_cart">Gemiddelde bestelwaarde</string>
+    <string name="dashboard_chart_title_turnover">Omzet</string>
+    <string name="dashboard_chart_empty">Geen grafiekgegevens voor de geselecteerde periode.</string>
+    <string name="dashboard_chart_total_period">Totaal periode</string>
+    <string name="dashboard_chart_vs_yesterday">vs gisteren</string>
+    <string name="dashboard_chart_vs_prev_week">vs vorige 7 dagen</string>
+    <string name="dashboard_chart_vs_prev_month">vs vorige 30 dagen</string>
+    <string name="dashboard_chart_vs_prev_quarter">vs vorig kwartaal</string>
+    <string name="dashboard_chart_vs_prev_year">vs vorig jaar</string>
+    <string name="dashboard_period_today">Vandaag</string>
+    <string name="dashboard_period_week">7 dagen</string>
+    <string name="dashboard_period_month">30 dagen</string>
+    <string name="dashboard_period_quarter">Kwartaal</string>
+    <string name="dashboard_period_year">Jaar</string>
+    <string name="dashboard_period_custom">Aangepast</string>
+    <!-- Args: 1=startdatum, 2=einddatum -->
+    <string name="dashboard_date_picker_title">Periode selecteren</string>
+    <string name="dashboard_chart_new_customers">Nieuwe klanten</string>
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Annuleren</string>
+    <!-- Toegankelijkheid: beschrijving van de grafiek. Args: 1=geformatteerde waarde, 2=trend -->
+    <string name="dashboard_chart_content_description">Omzet over de periode: %1$s, trend: %2$s</string>
+    <string name="dashboard_chart_trend_rising">stijgend</string>
+    <string name="dashboard_chart_trend_falling">dalend</string>
+    <string name="dashboard_chart_trend_stable">stabiel</string>
+    <!-- Dashboard — legenda en tooltip van de grafiek -->
+    <string name="dashboard_legend_orders">Bestellingen</string>
+    <string name="dashboard_legend_turnover">Omzet</string>
+    <string name="dashboard_tooltip_orders">Best.: %1$d</string>
+    <string name="dashboard_tooltip_turnover">Omzet: %1$s</string>
+    <string name="dashboard_tooltip_new_customers">Nieuwe kl.: %1$d</string>
+    <string name="dashboard_greeting">Hallo</string>
+    <string name="dashboard_content_description_refresh">Dashboard vernieuwen</string>
+    <string name="dashboard_content_description_kpi_card">%1$s: %2$s</string>
+    <!-- Dashboard — KPI-trendbadge. Arg: 1=geformatteerd percentage (bijv. "12,3%") -->
+    <string name="dashboard_kpi_trend_up">%1$s hoger</string>
+    <string name="dashboard_kpi_trend_down">%1$s lager</string>
+    <!-- Dashboard — volledig scherm grafiek -->
+    <string name="dashboard_chart_expand_content_description">Grafiek op volledig scherm bekijken</string>
+    <string name="dashboard_chart_fullscreen_close">Sluiten</string>
+
+    <string name="skin_terracotta">Terracotta</string>
+    <string name="skin_royal">Koninklijk Paars</string>
+    <string name="skin_lagoon">Turquoise Lagune</string>
+    <string name="skin_ember">Zonsondergang</string>
+    <string name="skin_forest">Bos</string>
+    <string name="skin_slate">Leisteen</string>
+    <string name="skin_soft">Zacht &amp; Vriendelijk</string>
+    <string name="skin_dark_follow_system">Systeeminstelling</string>
+    <string name="skin_dark_light">Altijd licht</string>
+    <string name="skin_dark_dark">Altijd donker</string>
+    <string name="auth_loading">Je gegevens worden gecontroleerd…</string>
+    <string name="auth_error_module_not_installed">De module Rebuild Connector is niet geïnstalleerd op deze winkel.</string>
+    <string name="auth_action_see_install_guide">Bekijk de installatiehandleiding</string>
+
+    <!-- Onboardingscherm (eerste start, geen verbinding ingesteld) -->
+    <string name="onboarding_title">Welkom bij PrestaFlow</string>
+    <string name="onboarding_subtitle">Om te beginnen moet de module Rebuild Connector geïnstalleerd zijn in het backoffice van je PrestaShop-winkel.</string>
+    <string name="onboarding_action_has_module">Ik heb de module al geïnstalleerd</string>
+    <string name="onboarding_action_no_module">Ik heb de module nog niet</string>
+
+    <!-- Scherm installatiehandleiding module -->
+    <string name="module_guide_title">Installatie van de module</string>
+    <string name="module_guide_intro">De installatie gebeurt op je computer, rechtstreeks in het backoffice van je PrestaShop-winkel. Volg deze 3 stappen:</string>
+    <string name="module_guide_step1_title">Module downloaden</string>
+    <string name="module_guide_step1_desc">Open op je computer de releasepagina (link hieronder) en download het bestand rebuildconnector.zip (laatste versie).</string>
+    <string name="module_guide_step2_title">Installeren via het backoffice</string>
+    <string name="module_guide_step2_desc">In je PrestaShop-backoffice → Modules → Module uploaden → selecteer het zip-bestand en activeer het.</string>
+    <string name="module_guide_step3_title">Terugkeren en verbinden</string>
+    <string name="module_guide_step3_desc">Ga terug naar de app en scan de QR-code die door de module wordt weergegeven (of voer de URL en sleutel handmatig in).</string>
+    <string name="module_guide_action_share">Downloadlink delen</string>
+    <string name="module_guide_action_open">Openen in browser</string>
+    <string name="module_guide_action_go_connect">Module geïnstalleerd → QR-code scannen</string>
+    <string name="module_guide_share_chooser">Delen via…</string>
+    <string name="orders_list_empty">Nog geen bestellingen.</string>
+    <string name="orders_status_unknown">Status niet beschikbaar</string>
+    <string name="orders_list_section_title">Recente bestellingen</string>
+    <string name="orders_list_count">%1$d geladen</string>
+    <string name="orders_action_open">Bestelling openen</string>
+    <string name="orders_customer_unknown">Onbekende klant</string>
+    <string name="products_list_empty">Geen producten beschikbaar.</string>
+    <string name="products_status_active">Actief</string>
+    <string name="products_status_inactive">Inactief</string>
+    <string name="products_stock_label">Voorraad: %1$d</string>
+    <string name="products_list_section_title">Artikelvoorraad</string>
+    <string name="products_stats_total">Totaal producten</string>
+    <string name="products_stats_low_stock">Lage voorraad</string>
+    <string name="products_action_open">Product openen</string>
+    <string name="products_scan_fab_content_description">Een product scannen</string>
+    <string name="products_scan_prompt">Richt de camera op de barcode van het product</string>
+    <string name="products_scan_loading">Product zoeken…</string>
+    <string name="products_scan_not_found">Geen product komt overeen met deze barcode.</string>
+    <string name="products_scan_scan_again">Opnieuw scannen</string>
+    <string name="products_scan_multiple_title">Meerdere producten komen overeen</string>
+    <string name="products_scan_barcode_label">Code: %1$s</string>
+    <string name="products_scan_current_stock">Huidige voorraad: %1$d</string>
+    <string name="products_scan_combination_label">Variant: %1$s</string>
+    <string name="products_scan_quantity_label">Nieuw aantal</string>
+    <string name="products_scan_decrement_content_description">Aantal verlagen</string>
+    <string name="products_scan_increment_content_description">Aantal verhogen</string>
+    <string name="products_scan_confirm">Bevestigen</string>
+    <string name="products_scan_cancel">Annuleren</string>
+    <string name="products_scan_back_to_results">Terug naar resultaten</string>
+    <string name="products_scan_success">Voorraad bijgewerkt</string>
+    <string name="products_scan_another">Nog een product scannen</string>
+    <string name="products_scan_close">Sluiten</string>
+    <string name="products_scan_associate_action">Koppelen aan een product</string>
+    <string name="products_scan_associate_title">Zoek het product waaraan je deze barcode wilt koppelen</string>
+    <string name="products_scan_associate_empty">Geen product komt overeen met deze zoekopdracht.</string>
+    <string name="products_scan_combination_choice_title">Welke variant?</string>
+    <string name="products_scan_combination_stock_row">Voorraad: %1$d</string>
+    <string name="products_scan_back_to_combinations">Terug naar varianten</string>
+    <string name="products_scan_association_combination_title">Aan welke variant moet deze barcode worden gekoppeld?</string>
+    <string name="products_scan_combination_back">Terug</string>
+
+    <!-- Scherm voorraad aanvullen (snel meervoudig scannen) -->
+    <string name="stock_replenish_title">Voorraad aanvullen</string>
+    <string name="stock_replenish_camera_permission_rationale">Cameratoegang is nodig om barcodes te scannen</string>
+    <string name="stock_replenish_camera_permission_action">Camera toestaan</string>
+    <string name="stock_replenish_not_found">Barcode niet gevonden, koppeling wordt geopend…</string>
+    <string name="stock_replenish_label_search_loading">Zoeken op etiket…</string>
+    <string name="stock_replenish_idle_hint">Scan een artikel om te beginnen</string>
+    <string name="stock_replenish_delta_label">Aanpassing: %1$s</string>
+    <string name="stock_replenish_new_quantity">Nieuwe voorraad: %1$d</string>
+    <string name="stock_replenish_reset_action">Reset</string>
+    <string name="stock_replenish_skip_action">Overslaan</string>
+    <string name="stock_replenish_validate_action">Bevestigen</string>
+    <string name="stock_replenish_add_content_description">Aantal toevoegen</string>
+    <string name="stock_replenish_quantity_placeholder">Aantal</string>
+    <string name="stock_replenish_pending_label">%1$s: %2$s in behandeling</string>
+    <string name="stock_replenish_queue_added_content_description">Toegevoegd aan de wachtrij</string>
+    <string name="stock_replenish_session_recap">%1$d artikel(en) · +%2$d op voorraad</string>
+    <string name="stock_replenish_session_recap_exit_title">Sessieoverzicht</string>
+    <string name="stock_replenish_session_recap_exit_message">%1$d artikel(en) aangevuld, +%2$d eenheden.</string>
+    <string name="stock_replenish_session_recap_exit_action">OK</string>
+
+    <string name="clients_list_empty">Nog geen klanten.</string>
+    <string name="clients_orders_count">%1$d bestellingen</string>
+    <string name="clients_list_section_title">Beste klanten</string>
+    <string name="clients_list_section_all">Alle klanten</string>
+    <string name="clients_list_section_new">Nieuw deze maand</string>
+    <string name="clients_list_section_search">Zoekresultaten</string>
+    <string name="clients_stats_total">Totaal klanten</string>
+    <string name="clients_stats_new_month">Nieuw (maand)</string>
+    <string name="clients_action_open">Klant openen</string>
+    <string name="clients_load_more">Meer laden</string>
+
+    <string name="client_detail_title">Klantgegevens</string>
+    <string name="client_stats_section">Statistieken</string>
+    <string name="client_total_spent_label">Totaal uitgegeven</string>
+    <string name="client_orders_count_label">Bestellingen</string>
+    <string name="client_order_history_title">Bestelgeschiedenis</string>
+    <string name="client_show_all_orders">Alles bekijken (%1$d)</string>
+
+    <string name="product_detail_title">Productgegevens</string>
+    <string name="product_reference_label">Referentie: %1$s</string>
+    <string name="product_price_section">Prijs</string>
+    <string name="product_price_label">Prijs</string>
+    <string name="product_update_price">Prijs bijwerken</string>
+    <string name="product_stock_section">Voorraad</string>
+    <string name="product_stock_quantity_label">Aantal</string>
+    <string name="product_update_stock">Voorraad bijwerken</string>
+    <string name="product_status_section">Status</string>
+    <string name="product_detail_edit_content_description">Productgegevens bewerken</string>
+
+    <string name="product_edit_title">Product bewerken</string>
+    <string name="product_edit_name_label">Naam</string>
+    <string name="product_edit_name_error">Naam is verplicht</string>
+    <string name="product_edit_description_label">Beschrijving</string>
+    <string name="product_edit_description_short_label">Korte beschrijving</string>
+    <string name="product_edit_reference_label">Referentie</string>
+    <string name="product_edit_reference_error">Referentie mag maximaal 64 tekens bevatten</string>
+    <string name="product_edit_price_label">Prijs (excl. btw)</string>
+    <string name="product_edit_price_error">Voer een geldige prijs in (0 of meer)</string>
+    <string name="product_edit_active_label">Actief</string>
+    <string name="product_edit_save_button">Opslaan</string>
+    <string name="product_edit_images_title">Afbeeldingen</string>
+    <string name="product_edit_images_add_content_description">Een afbeelding toevoegen</string>
+    <string name="product_edit_images_source_camera">Camera</string>
+    <string name="product_edit_images_source_gallery">Galerij</string>
+    <string name="product_edit_images_remove_content_description">Afbeelding verwijderen</string>
+    <string name="product_edit_images_thumbnail_content_description">Productafbeelding</string>
+    <string name="product_edit_images_delete_dialog_title">Deze afbeelding verwijderen?</string>
+    <string name="product_edit_images_delete_dialog_message">Deze afbeelding wordt definitief verwijderd uit het product.</string>
+    <string name="product_edit_images_delete_dialog_confirm">Verwijderen</string>
+    <string name="product_edit_images_delete_dialog_cancel">Annuleren</string>
+    <string name="product_edit_images_camera_permission_denied">Sta cameratoegang toe om een foto te maken.</string>
+    <string name="product_edit_images_prepare_error">Deze afbeelding kan niet worden voorbereid. Probeer het opnieuw.</string>
+    <string name="dismiss">Sluiten</string>
+
+    <!-- Layout met twee kolommen (tablet) -->
+    <string name="orders_detail_pane_placeholder">Selecteer een bestelling om de details te bekijken.</string>
+
+    <!-- Scherm Besteldetails -->
+    <string name="order_detail_title">Besteldetails</string>
+    <string name="order_detail_reference_label">Referentie</string>
+    <string name="order_detail_error">Fout bij het laden van de bestelling</string>
+    <string name="order_detail_tracking_title">Trackingnummer</string>
+    <string name="order_detail_tracking_label">Trackingnummer</string>
+    <string name="order_detail_tracking_save">Opslaan</string>
+    <string name="order_detail_customer_section">Klant</string>
+    <string name="order_detail_shipping_section">Verzending</string>
+    <string name="order_detail_items_section">Artikelen (%1$d)</string>
+    <string name="order_detail_total_paid">Totaal betaald</string>
+    <string name="order_detail_cancel">Annuleren</string>
+    <string name="order_detail_scan_tracking_prompt">Richt de camera op de barcode van de zending</string>
+    <string name="order_detail_scan_tracking_content_description">Barcode scannen</string>
+    <string name="order_detail_tracking_edit_content_description">Trackingnummer bewerken</string>
+    <string name="order_detail_status_edit_content_description">Bestelstatus bewerken</string>
+    <string name="order_detail_qty_label">Aantal: %1$d</string>
+    <string name="order_detail_tracking_display">Tracking: %1$s</string>
+    <string name="order_detail_print_invoice">Factuur afdrukken</string>
+    <string name="order_detail_print_shipping_label">Verzendlabel afdrukken</string>
+    <string name="order_detail_share_shipping_label">PDF van label delen</string>
+    <string name="order_detail_share_shipping_label_content_description">PDF van het verzendlabel delen</string>
+    <string name="order_detail_share_chooser_title">Label delen</string>
+    <string name="order_detail_generate_label">Label genereren</string>
+    <string name="order_detail_generate_label_content_description">Colissimo-verzendlabel genereren</string>
+    <!-- Bluetooth thermische printer -->
+    <string name="order_detail_thermal_bt_disabled">Bluetooth is uitgeschakeld. Schakel het in om af te drukken.</string>
+    <string name="order_detail_thermal_bt_permission_denied">Bluetooth-toestemming vereist om verbinding te maken met de printer.</string>
+    <string name="order_detail_thermal_connecting">Verbinden met de printer…</string>
+    <!-- Instellingen — sectie thermische printer -->
+    <string name="settings_thermal_printer_label">Thermische printer</string>
+    <string name="settings_thermal_printer_none">Geen printer geselecteerd</string>
+    <string name="settings_thermal_printer_selected">Geselecteerd: %1$s (%2$s)</string>
+    <string name="settings_thermal_printer_choose">Een printer kiezen</string>
+    <string name="settings_thermal_printer_clear">Printer verwijderen</string>
+    <string name="settings_thermal_printer_dialog_title">Bluetooth-printers</string>
+    <string name="settings_thermal_printer_dialog_empty">Geen printer gevonden. Zorg dat hij aanstaat en in de buurt is, en scan opnieuw.</string>
+    <string name="settings_thermal_printer_dialog_cancel">Annuleren</string>
+    <string name="settings_thermal_printer_scanning">Printers in de buurt zoeken…</string>
+    <string name="settings_thermal_printer_scan_hint">Gekoppelde en in de buurt gedetecteerde apparaten.</string>
+    <string name="settings_thermal_printer_rescan">Opnieuw scannen</string>
+    <string name="settings_thermal_printer_hint">Zoek en selecteer je Munbyn- of andere ESC/POS-thermische printer (vooraf koppelen is niet nodig).</string>
+
+    <!-- Dialoogvenster afdrukmodus kiezen -->
+    <string name="print_mode_dialog_title">Afdrukmodus</string>
+    <string name="print_mode_two_up">Twee per pagina</string>
+    <string name="print_mode_one_per_page">Eén per pagina</string>
+    <string name="print_mode_cancel">Annuleren</string>
+
+    <!-- Gedeelde terugnavigatie -->
+    <string name="content_description_back">Terug</string>
+    <string name="content_description_retry">Opnieuw proberen</string>
+
+    <!-- Zoeken -->
+    <string name="content_description_clear_search">Zoekopdracht wissen</string>
+    <string name="orders_search_placeholder">Zoeken op klant of referentie</string>
+    <string name="orders_selection_count">%1$d geselecteerd</string>
+    <string name="orders_selection_print">Afdrukken (%1$d)</string>
+    <string name="orders_selection_cancel">Selectie annuleren</string>
+    <string name="orders_selection_change_status">Status wijzigen</string>
+    <string name="orders_action_toggle_selection">Selectie wisselen</string>
+    <string name="orders_print_job_name">Facturen (%1$d)</string>
+    <!-- Statuskiezer (StatusPickerDialog) -->
+    <string name="status_picker_title">Kies een status</string>
+    <string name="status_picker_empty">Geen status beschikbaar.</string>
+    <string name="status_picker_confirm">Toepassen</string>
+    <string name="status_picker_cancel">Annuleren</string>
+    <!-- Statusfilters bestellingen -->
+    <string name="orders_filter_all">Alle</string>
+    <string name="orders_filter_configure">Statussen filteren en aanpassen</string>
+    <string name="orders_filter_empty">Geen bestellingen met deze status.</string>
+    <string name="orders_filter_reset">Filters resetten</string>
+    <!-- Toegankelijkheid chips: het getoonde label is kort, contentDescription geeft de volledige naam -->
+    <string name="orders_filter_chip_description">Filteren op status: %1$s</string>
+
+    <!-- Statusmenu (bottom sheet): 2 delen — filter (100% van de statussen) + snelkoppelingen (balk, max N) -->
+    <string name="orders_filter_prefs_title">Statussen</string>
+    <string name="orders_filter_prefs_section_filter">Filteren op status</string>
+    <string name="orders_filter_prefs_section_filter_hint">Selecteer zoveel statussen als nodig om de lijst te filteren</string>
+    <string name="orders_filter_prefs_clear_all">Alles wissen</string>
+    <string name="orders_filter_prefs_section_shortcuts">Snelkoppelingen (balk)</string>
+    <string name="orders_filter_prefs_pin_description_add">%1$s vastzetten als snelkoppeling</string>
+    <string name="orders_filter_prefs_pin_description_remove">%1$s losmaken van snelkoppelingen</string>
+    <string name="orders_filter_prefs_cancel">Annuleren</string>
+    <string name="orders_filter_prefs_confirm">Toepassen</string>
+
+    <!-- Bestellingen sorteren -->
+    <string name="orders_sort_label">Bestellingen sorteren</string>
+    <string name="orders_sort_date_desc">Datum (nieuwste eerst)</string>
+    <string name="orders_sort_date_asc">Datum (oudste eerst)</string>
+    <string name="orders_sort_amount_desc">Bedrag (aflopend)</string>
+    <string name="orders_sort_amount_asc">Bedrag (oplopend)</string>
+    <string name="orders_sort_status">Status</string>
+    <string name="orders_sort_reference">Referentie</string>
+
+    <!-- Filterchip periode (vanaf dashboard) -->
+    <string name="orders_period_chip">Periode: %1$s</string>
+    <string name="orders_period_chip_clear">Periodefilter wissen</string>
+
+    <!-- Klanten: actieve filter deactiveren -->
+    <string name="clients_filter_dismiss">Filter deactiveren</string>
+
+    <!-- Paginering bestellingen -->
+    <string name="orders_load_more">Meer laden</string>
+
+    <!-- Swipe status bestelling -->
+    <string name="orders_swipe_pending">Bestelling %1$s → %2$s</string>
+    <!-- Annuleren-knop met seconden-aftelling voordat de wijziging echt wordt verstuurd (bijv. "Annuleren (8 s)"). -->
+    <string name="orders_swipe_undo_countdown">Annuleren (%1$d s)</string>
+    <string name="orders_swipe_left_label">In voorbereiding</string>
+    <string name="orders_swipe_right_label">Voltooid</string>
+
+    <!-- Besteldetails — actiemeldingen (uitgelicht voor i18n) -->
+    <string name="order_detail_status_updated">Status bijgewerkt</string>
+    <string name="order_detail_tracking_updated">Tracking bijgewerkt</string>
+    <string name="order_detail_invoice_unavailable">Voor deze bestelling is geen factuur beschikbaar.</string>
+    <string name="order_detail_shipping_label_unavailable">Geen verzendlabel beschikbaar voor deze bestelling.</string>
+    <string name="order_detail_label_generated">Label succesvol gegenereerd</string>
+    <string name="order_detail_thermal_print_success">Label afgedrukt op de thermische printer.</string>
+
+    <!-- Instellingen — bevestiging winkel verwijderen -->
+    <string name="settings_shops_remove_confirm_title">Winkel verwijderen?</string>
+    <string name="settings_shops_remove_confirm_message">Hierdoor word je afgemeld bij de winkel %1$s.</string>
+    <string name="settings_shops_remove_confirm_action">Verwijderen</string>
+
+    <!-- Instellingen — Bluetooth-toestemming geweigerd -->
+    <string name="settings_thermal_printer_bt_permission_denied">Bluetooth-toestemming vereist om een printer te kiezen. Sta dit toe in de systeeminstellingen.</string>
+
+    <!-- Instellingen — sectie Bestellingen swipen -->
+    <string name="settings_swipe_label">Bestellingen swipen</string>
+    <string name="settings_swipe_enabled">Swipen inschakelen</string>
+    <string name="settings_swipe_source_status">Actief op</string>
+    <string name="settings_swipe_left_status">Swipe ← (links)</string>
+    <string name="settings_swipe_right_status">Swipe → (rechts)</string>
+    <string name="settings_swipe_status_default">Standaard (op naam)</string>
+    <string name="settings_swipe_no_statuses">Statussen laden…</string>
+    <string name="settings_swipe_statuses_error">Statussen konden niet worden geladen</string>
+    <string name="settings_swipe_statuses_retry">Opnieuw proberen</string>
+
+    <!-- Instellingen — sectie Voorraad aanvullen (instelbare snelknoppen) -->
+    <string name="settings_stock_replenish_label">Snelknoppen voorraad aanvullen</string>
+    <string name="settings_stock_replenish_hint">Stel in hoeveel elke snelknop toevoegt op het scherm voorraad aanvullen (1 tot 5 knoppen).</string>
+    <string name="settings_stock_replenish_amount_label">Knop %1$d</string>
+    <string name="settings_stock_replenish_add_button">Knop toevoegen</string>
+    <string name="settings_stock_replenish_remove_content_description">Deze knop verwijderen</string>
+    <string name="settings_stock_replenish_sound_label">Geluid bij scannen</string>
+    <string name="settings_stock_replenish_sound_hint">Speelt een korte bevestigingstoon af wanneer een barcode wordt herkend.</string>
+
+    <!-- Voorraadfilters producten -->
+    <string name="products_filter_all">Alle</string>
+    <string name="products_filter_in_stock">Op voorraad</string>
+    <string name="products_filter_out_of_stock">Uitverkocht</string>
+    <string name="products_filter_low_stock">Lage voorraad</string>
+
+    <string name="products_search_placeholder">Zoeken op naam of referentie</string>
+    <string name="clients_search_placeholder">Zoeken op naam of e-mail</string>
+    <string name="list_no_results">Geen resultaat voor \"%1$s\"</string>
+
+    <!-- Status niet gevonden -->
+    <string name="product_not_found">Product niet gevonden.</string>
+    <string name="client_not_found">Klant niet gevonden.</string>
+
+    <!-- Scherm voorkeuren meldingscategorieën -->
+    <string name="notif_categories_title">Meldingsvoorkeuren</string>
+    <string name="notif_categories_section_label">Ontvangen meldingen</string>
+    <string name="notif_category_order_created">Nieuwe verkopen</string>
+    <string name="notif_category_order_status_changed">Statuswijzigingen</string>
+    <string name="notif_category_order_shipping_updated">Verzendingen</string>
+    <string name="notif_categories_all_disabled_warning">Er wordt geen melding ontvangen zolang alle categorieën uitgeschakeld zijn.</string>
+
+    <!-- Link vanuit instellingen -->
+    <string name="settings_notif_categories">Meldingscategorieën</string>
+
+    <!-- Scherm Instellingen -->
+    <string name="destination_settings">Instellingen</string>
+    <string name="settings_theme_label">Thema</string>
+    <string name="settings_dark_mode_title">Donkere modus</string>
+    <string name="settings_shops_label">Winkels</string>
+    <string name="settings_shops_add">Winkel toevoegen</string>
+    <string name="settings_shops_scan_qr">QR-code scannen</string>
+    <string name="settings_shops_remove">Winkel verwijderen</string>
+    <string name="shops_add_label_optional">Naam (optioneel)</string>
+    <string name="shops_add_error_required">URL van de winkel en API-sleutel zijn verplicht.</string>
+    <!-- Winkelwisselaar -->
+    <string name="shop_switcher_content_description">Actieve winkel, tik om te wisselen</string>
+    <string name="shop_switcher_sheet_title">Van winkel wisselen</string>
+    <string name="shop_switcher_add">+ Winkel toevoegen</string>
+
+    <string name="settings_about_label">Over</string>
+    <string name="settings_about_app">Applicatie</string>
+    <string name="settings_about_version">Versie</string>
+    <string name="settings_notifications_label">Meldingen</string>
+    <string name="settings_notification_sound">Meldingsgeluid</string>
+    <string name="settings_logout">Afmelden</string>
+    <string name="settings_logout_confirm_title">Afmelden?</string>
+    <string name="settings_logout_confirm_message">Je moet opnieuw verbinden met je winkel.</string>
+    <string name="settings_logout_confirm">Afmelden</string>
+    <string name="settings_logout_cancel">Annuleren</string>
+    <string name="settings_dashboard_label">Dashboard</string>
+    <string name="settings_dashboard_default_period">Standaardperiode</string>
+
+    <!-- Scherm Winkelwagens -->
+    <string name="carts_list_empty">Geen winkelwagens gevonden.</string>
+    <string name="carts_list_abandoned">Verlaten winkelwagens</string>
+    <string name="carts_detail_title">Winkelwagengegevens</string>
+    <string name="carts_total_incl">Totaal (incl. btw): %1$s</string>
+    <string name="carts_items_count">%1$d artikel(en)</string>
+    <string name="carts_has_order">Omgezet in bestelling</string>
+    <string name="carts_abandoned">Verlaten winkelwagen</string>
+    <string name="carts_customer_guest">Gast</string>
+    <string name="carts_products_section">Producten</string>
+    <string name="carts_detail_not_found">Winkelwagen niet gevonden.</string>
+    <string name="carts_search_placeholder">Zoeken op klantnaam</string>
+    <string name="carts_load_more">Meer laden</string>
+
+</resources>

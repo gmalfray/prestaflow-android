@@ -61,6 +61,7 @@ import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.components.SectionHeader
 import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
+import com.rebuildit.prestaflow.ui.components.euroCurrencyFormatter
 import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
@@ -190,7 +191,7 @@ private fun ProductList(
     stockFilter: StockFilter = StockFilter.ALL,
     onStockFilterSelected: (StockFilter) -> Unit = {},
 ) {
-    val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
+    val currencyFormatter = remember { euroCurrencyFormatter() }
 
     Surface(
         modifier = modifier.fillMaxSize(),

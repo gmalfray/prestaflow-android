@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PrestaFlow</string>
+    <string name="notif_channel_sales_name">Ventas</string>
+    <string name="notif_channel_sales_desc">Notificaciones de nuevos pedidos (sonido de caja registradora)</string>
+    <string name="notif_channel_order_status_name">Cambios de estado de pedido</string>
+    <string name="notif_channel_order_status_desc">Notificaciones cuando se actualiza el estado de un pedido</string>
+    <string name="notif_channel_order_shipping_name">Envíos</string>
+    <string name="notif_channel_order_shipping_desc">Notificaciones cuando se actualiza el seguimiento de un pedido</string>
+    <string name="notif_channel_default_name">Alertas</string>
+    <string name="notif_channel_default_desc">Notificaciones generales de la aplicación</string>
+    <string name="notif_sale_default_title">Nuevo pedido</string>
+    <!-- Sync worker — tarea offline abandonada tras una respuesta HTTP no reintentable (400/422…) -->
+    <string name="sync_failure_notif_title">Error de sincronización</string>
+    <string name="sync_failure_notif_body">No se pudo guardar un cambio (%1$s) (HTTP %2$d). Abre la app para comprobarlo.</string>
+    <string name="action_retry">Reintentar</string>
+    <string name="label_last_sync">Última sincronización: %1$s</string>
+    <string name="destination_dashboard">Inicio</string>
+    <string name="destination_orders">Pedidos</string>
+    <string name="destination_products">Productos</string>
+    <string name="destination_clients">Clientes</string>
+    <string name="destination_carts">Carritos</string>
+    <string name="auth_title">Conéctate a tu tienda</string>
+    <string name="auth_subtitle">Introduce la URL HTTPS de tu tienda PrestaShop y la clave API generada para esta aplicación.</string>
+    <string name="auth_field_shop_url">URL de la tienda</string>
+    <string name="auth_field_shop_url_placeholder">https://tutienda.tld</string>
+    <string name="auth_field_api_key">Clave API</string>
+    <string name="auth_field_api_key_placeholder">Pega tu clave API</string>
+    <string name="auth_action_connect">Conectar</string>
+    <string name="auth_action_prefill_https">Usar el prefijo https://</string>
+    <string name="auth_action_scan_qr">Escanear código QR</string>
+    <string name="auth_error_shop_url_empty">Introduce la URL de la tienda.</string>
+    <string name="auth_error_shop_url_malformed">La URL de la tienda no parece válida.</string>
+    <string name="auth_error_shop_url_https">Se requiere HTTPS.</string>
+    <string name="auth_error_api_key_empty">Introduce la clave API.</string>
+    <string name="auth_error_qr_invalid">No se pueden leer los datos del código QR.</string>
+    <string name="auth_error_qr_cancelled">Escaneo del código QR cancelado.</string>
+    <string name="auth_scan_prompt">Enfoca la cámara al código QR de PrestaFlow</string>
+    <string name="error_network_unreachable">Red no disponible. Comprueba tu conexión.</string>
+    <string name="error_unauthorized">Error de autenticación. Comprueba tus credenciales.</string>
+    <string name="error_forbidden">No tienes acceso a este recurso.</string>
+    <string name="error_generic">Se ha producido un error. Inténtalo de nuevo.</string>
+    <string name="error_http_with_code">El servidor devolvió el código HTTP %1$d. Comprueba la configuración de la tienda e inténtalo de nuevo.</string>
+
+    <string name="dashboard_state_empty">No hay datos disponibles por el momento.</string>
+    <string name="dashboard_kpi_turnover">Facturación</string>
+    <string name="dashboard_kpi_orders">Pedidos</string>
+    <string name="dashboard_kpi_customers">Nuevos clientes</string>
+    <string name="dashboard_kpi_avg_cart">Valor medio del pedido</string>
+    <string name="dashboard_chart_title_turnover">Facturación</string>
+    <string name="dashboard_chart_empty">No hay datos de gráfico para el periodo seleccionado.</string>
+    <string name="dashboard_chart_total_period">Total del periodo</string>
+    <string name="dashboard_chart_vs_yesterday">vs ayer</string>
+    <string name="dashboard_chart_vs_prev_week">vs 7 días anteriores</string>
+    <string name="dashboard_chart_vs_prev_month">vs 30 días anteriores</string>
+    <string name="dashboard_chart_vs_prev_quarter">vs trimestre anterior</string>
+    <string name="dashboard_chart_vs_prev_year">vs año anterior</string>
+    <string name="dashboard_period_today">Hoy</string>
+    <string name="dashboard_period_week">7 días</string>
+    <string name="dashboard_period_month">30 días</string>
+    <string name="dashboard_period_quarter">Trimestre</string>
+    <string name="dashboard_period_year">Año</string>
+    <string name="dashboard_period_custom">Personalizado</string>
+    <!-- Args: 1=fecha inicio, 2=fecha fin -->
+    <string name="dashboard_date_picker_title">Seleccionar un intervalo</string>
+    <string name="dashboard_chart_new_customers">Nuevos clientes</string>
+    <string name="action_ok">Aceptar</string>
+    <string name="action_cancel">Cancelar</string>
+    <!-- Accesibilidad: descripción del gráfico. Args: 1=valor formateado, 2=tendencia -->
+    <string name="dashboard_chart_content_description">Facturación del periodo: %1$s, tendencia: %2$s</string>
+    <string name="dashboard_chart_trend_rising">al alza</string>
+    <string name="dashboard_chart_trend_falling">a la baja</string>
+    <string name="dashboard_chart_trend_stable">estable</string>
+    <!-- Dashboard — leyenda y tooltip del gráfico -->
+    <string name="dashboard_legend_orders">Pedidos</string>
+    <string name="dashboard_legend_turnover">Facturación</string>
+    <string name="dashboard_tooltip_orders">Ped.: %1$d</string>
+    <string name="dashboard_tooltip_turnover">Facturación: %1$s</string>
+    <string name="dashboard_tooltip_new_customers">Nuevos cli.: %1$d</string>
+    <string name="dashboard_greeting">Hola</string>
+    <string name="dashboard_content_description_refresh">Actualizar el panel</string>
+    <string name="dashboard_content_description_kpi_card">%1$s: %2$s</string>
+    <!-- Dashboard — insignia de tendencia KPI. Arg: 1=porcentaje formateado (ej.: "12,3 %") -->
+    <string name="dashboard_kpi_trend_up">sube %1$s</string>
+    <string name="dashboard_kpi_trend_down">baja %1$s</string>
+    <!-- Dashboard — gráfico a pantalla completa -->
+    <string name="dashboard_chart_expand_content_description">Ver el gráfico a pantalla completa</string>
+    <string name="dashboard_chart_fullscreen_close">Cerrar</string>
+
+    <string name="skin_terracotta">Terracota</string>
+    <string name="skin_royal">Violeta Real</string>
+    <string name="skin_lagoon">Laguna Turquesa</string>
+    <string name="skin_ember">Atardecer</string>
+    <string name="skin_forest">Bosque</string>
+    <string name="skin_slate">Pizarra</string>
+    <string name="skin_soft">Suave y Amistoso</string>
+    <string name="skin_dark_follow_system">Predeterminado del sistema</string>
+    <string name="skin_dark_light">Siempre claro</string>
+    <string name="skin_dark_dark">Siempre oscuro</string>
+    <string name="auth_loading">Comprobando tus credenciales…</string>
+    <string name="auth_error_module_not_installed">El módulo Rebuild Connector no está instalado en esta tienda.</string>
+    <string name="auth_action_see_install_guide">Ver la guía de instalación</string>
+
+    <!-- Pantalla de bienvenida (primer lanzamiento, sin conexión configurada) -->
+    <string name="onboarding_title">Bienvenido a PrestaFlow</string>
+    <string name="onboarding_subtitle">Para empezar, necesitas tener instalado el módulo Rebuild Connector en el back office de tu tienda PrestaShop.</string>
+    <string name="onboarding_action_has_module">Ya tengo el módulo instalado</string>
+    <string name="onboarding_action_no_module">Todavía no tengo el módulo</string>
+
+    <!-- Pantalla de guía de instalación del módulo -->
+    <string name="module_guide_title">Instalación del módulo</string>
+    <string name="module_guide_intro">La instalación se realiza en tu ordenador, directamente en el back office de tu tienda PrestaShop. Sigue estos 3 pasos:</string>
+    <string name="module_guide_step1_title">Descargar el módulo</string>
+    <string name="module_guide_step1_desc">En tu ordenador, abre la página de versiones (enlace abajo) y descarga el archivo rebuildconnector.zip (última versión).</string>
+    <string name="module_guide_step2_title">Instalar desde el back office</string>
+    <string name="module_guide_step2_desc">En el back office de tu PrestaShop → Módulos → Subir un módulo → selecciona el archivo zip y actívalo.</string>
+    <string name="module_guide_step3_title">Volver y conectarte</string>
+    <string name="module_guide_step3_desc">Vuelve a la app y escanea el código QR que muestra el módulo (o introduce la URL y la clave manualmente).</string>
+    <string name="module_guide_action_share">Compartir el enlace de descarga</string>
+    <string name="module_guide_action_open">Abrir en el navegador</string>
+    <string name="module_guide_action_go_connect">Módulo instalado → Escanear el código QR</string>
+    <string name="module_guide_share_chooser">Compartir vía…</string>
+    <string name="orders_list_empty">Todavía no hay pedidos.</string>
+    <string name="orders_status_unknown">Estado no disponible</string>
+    <string name="orders_list_section_title">Pedidos recientes</string>
+    <string name="orders_list_count">%1$d cargados</string>
+    <string name="orders_action_open">Abrir pedido</string>
+    <string name="orders_customer_unknown">Cliente desconocido</string>
+    <string name="products_list_empty">No hay productos disponibles.</string>
+    <string name="products_status_active">Activo</string>
+    <string name="products_status_inactive">Inactivo</string>
+    <string name="products_stock_label">Stock: %1$d</string>
+    <string name="products_list_section_title">Inventario de artículos</string>
+    <string name="products_stats_total">Total de productos</string>
+    <string name="products_stats_low_stock">Stock bajo</string>
+    <string name="products_action_open">Abrir producto</string>
+    <string name="products_scan_fab_content_description">Escanear un producto</string>
+    <string name="products_scan_prompt">Apunta la cámara al código de barras del producto</string>
+    <string name="products_scan_loading">Buscando producto…</string>
+    <string name="products_scan_not_found">Ningún producto coincide con este código de barras.</string>
+    <string name="products_scan_scan_again">Escanear de nuevo</string>
+    <string name="products_scan_multiple_title">Varios productos coinciden</string>
+    <string name="products_scan_barcode_label">Código: %1$s</string>
+    <string name="products_scan_current_stock">Stock actual: %1$d</string>
+    <string name="products_scan_combination_label">Variante: %1$s</string>
+    <string name="products_scan_quantity_label">Nueva cantidad</string>
+    <string name="products_scan_decrement_content_description">Disminuir la cantidad</string>
+    <string name="products_scan_increment_content_description">Aumentar la cantidad</string>
+    <string name="products_scan_confirm">Confirmar</string>
+    <string name="products_scan_cancel">Cancelar</string>
+    <string name="products_scan_back_to_results">Volver a los resultados</string>
+    <string name="products_scan_success">Stock actualizado</string>
+    <string name="products_scan_another">Escanear otro producto</string>
+    <string name="products_scan_close">Cerrar</string>
+    <string name="products_scan_associate_action">Asociar a un producto</string>
+    <string name="products_scan_associate_title">Busca el producto al que asociar este código de barras</string>
+    <string name="products_scan_associate_empty">Ningún producto coincide con esta búsqueda.</string>
+    <string name="products_scan_combination_choice_title">¿Qué variante?</string>
+    <string name="products_scan_combination_stock_row">Stock: %1$d</string>
+    <string name="products_scan_back_to_combinations">Volver a las variantes</string>
+    <string name="products_scan_association_combination_title">¿A qué variante debe asociarse este código de barras?</string>
+    <string name="products_scan_combination_back">Volver</string>
+
+    <!-- Pantalla de reposición de stock (escaneo múltiple rápido) -->
+    <string name="stock_replenish_title">Reposición de stock</string>
+    <string name="stock_replenish_camera_permission_rationale">Se necesita acceso a la cámara para escanear códigos de barras</string>
+    <string name="stock_replenish_camera_permission_action">Permitir cámara</string>
+    <string name="stock_replenish_not_found">Código no encontrado, abriendo la asociación…</string>
+    <string name="stock_replenish_label_search_loading">Buscando por etiqueta…</string>
+    <string name="stock_replenish_idle_hint">Escanea un artículo para empezar</string>
+    <string name="stock_replenish_delta_label">Ajuste: %1$s</string>
+    <string name="stock_replenish_new_quantity">Nuevo stock: %1$d</string>
+    <string name="stock_replenish_reset_action">Reiniciar</string>
+    <string name="stock_replenish_skip_action">Omitir</string>
+    <string name="stock_replenish_validate_action">Confirmar</string>
+    <string name="stock_replenish_add_content_description">Añadir cantidad</string>
+    <string name="stock_replenish_quantity_placeholder">Cantidad</string>
+    <string name="stock_replenish_pending_label">%1$s: %2$s pendiente(s)</string>
+    <string name="stock_replenish_queue_added_content_description">Añadido a la cola de pendientes</string>
+    <string name="stock_replenish_session_recap">%1$d artículo(s) · +%2$d en stock</string>
+    <string name="stock_replenish_session_recap_exit_title">Resumen de la sesión</string>
+    <string name="stock_replenish_session_recap_exit_message">%1$d artículo(s) repuesto(s), +%2$d unidades.</string>
+    <string name="stock_replenish_session_recap_exit_action">Aceptar</string>
+
+    <string name="clients_list_empty">Todavía no hay clientes.</string>
+    <string name="clients_orders_count">%1$d pedidos</string>
+    <string name="clients_list_section_title">Mejores clientes</string>
+    <string name="clients_list_section_all">Todos los clientes</string>
+    <string name="clients_list_section_new">Nuevos este mes</string>
+    <string name="clients_list_section_search">Resultados de búsqueda</string>
+    <string name="clients_stats_total">Total de clientes</string>
+    <string name="clients_stats_new_month">Nuevos (mes)</string>
+    <string name="clients_action_open">Abrir cliente</string>
+    <string name="clients_load_more">Cargar más</string>
+
+    <string name="client_detail_title">Detalles del cliente</string>
+    <string name="client_stats_section">Estadísticas</string>
+    <string name="client_total_spent_label">Total gastado</string>
+    <string name="client_orders_count_label">Pedidos</string>
+    <string name="client_order_history_title">Historial de pedidos</string>
+    <string name="client_show_all_orders">Ver todos (%1$d)</string>
+
+    <string name="product_detail_title">Detalles del producto</string>
+    <string name="product_reference_label">Referencia: %1$s</string>
+    <string name="product_price_section">Precio</string>
+    <string name="product_price_label">Precio</string>
+    <string name="product_update_price">Actualizar precio</string>
+    <string name="product_stock_section">Stock</string>
+    <string name="product_stock_quantity_label">Cantidad</string>
+    <string name="product_update_stock">Actualizar stock</string>
+    <string name="product_status_section">Estado</string>
+    <string name="product_detail_edit_content_description">Editar la ficha del producto</string>
+
+    <string name="product_edit_title">Editar producto</string>
+    <string name="product_edit_name_label">Nombre</string>
+    <string name="product_edit_name_error">El nombre es obligatorio</string>
+    <string name="product_edit_description_label">Descripción</string>
+    <string name="product_edit_description_short_label">Descripción corta</string>
+    <string name="product_edit_reference_label">Referencia</string>
+    <string name="product_edit_reference_error">La referencia debe tener 64 caracteres como máximo</string>
+    <string name="product_edit_price_label">Precio (sin impuestos)</string>
+    <string name="product_edit_price_error">Introduce un precio válido (0 o más)</string>
+    <string name="product_edit_active_label">Activo</string>
+    <string name="product_edit_save_button">Guardar</string>
+    <string name="product_edit_images_title">Imágenes</string>
+    <string name="product_edit_images_add_content_description">Añadir una imagen</string>
+    <string name="product_edit_images_source_camera">Cámara</string>
+    <string name="product_edit_images_source_gallery">Galería</string>
+    <string name="product_edit_images_remove_content_description">Eliminar imagen</string>
+    <string name="product_edit_images_thumbnail_content_description">Imagen del producto</string>
+    <string name="product_edit_images_delete_dialog_title">¿Eliminar esta imagen?</string>
+    <string name="product_edit_images_delete_dialog_message">Esta imagen se eliminará definitivamente de la ficha del producto.</string>
+    <string name="product_edit_images_delete_dialog_confirm">Eliminar</string>
+    <string name="product_edit_images_delete_dialog_cancel">Cancelar</string>
+    <string name="product_edit_images_camera_permission_denied">Permite el acceso a la cámara para tomar una foto.</string>
+    <string name="product_edit_images_prepare_error">No se ha podido preparar esta imagen. Inténtalo de nuevo.</string>
+    <string name="dismiss">Cerrar</string>
+
+    <!-- Diseño en dos columnas (tablet) -->
+    <string name="orders_detail_pane_placeholder">Selecciona un pedido para ver sus detalles.</string>
+
+    <!-- Pantalla Detalle del pedido -->
+    <string name="order_detail_title">Detalle del pedido</string>
+    <string name="order_detail_reference_label">Referencia</string>
+    <string name="order_detail_error">Error al cargar el pedido</string>
+    <string name="order_detail_tracking_title">Número de seguimiento</string>
+    <string name="order_detail_tracking_label">Número de seguimiento</string>
+    <string name="order_detail_tracking_save">Guardar</string>
+    <string name="order_detail_customer_section">Cliente</string>
+    <string name="order_detail_shipping_section">Envío</string>
+    <string name="order_detail_items_section">Artículos (%1$d)</string>
+    <string name="order_detail_total_paid">Total pagado</string>
+    <string name="order_detail_cancel">Cancelar</string>
+    <string name="order_detail_scan_tracking_prompt">Apunta la cámara al código de barras del envío</string>
+    <string name="order_detail_scan_tracking_content_description">Escanear código de barras</string>
+    <string name="order_detail_tracking_edit_content_description">Editar el número de seguimiento</string>
+    <string name="order_detail_status_edit_content_description">Editar el estado del pedido</string>
+    <string name="order_detail_qty_label">Cant.: %1$d</string>
+    <string name="order_detail_tracking_display">Seguimiento: %1$s</string>
+    <string name="order_detail_print_invoice">Imprimir factura</string>
+    <string name="order_detail_print_shipping_label">Imprimir etiqueta de envío</string>
+    <string name="order_detail_share_shipping_label">Compartir PDF de la etiqueta</string>
+    <string name="order_detail_share_shipping_label_content_description">Compartir PDF de la etiqueta de envío</string>
+    <string name="order_detail_share_chooser_title">Compartir etiqueta</string>
+    <string name="order_detail_generate_label">Generar etiqueta</string>
+    <string name="order_detail_generate_label_content_description">Generar etiqueta de envío Colissimo</string>
+    <!-- Impresora térmica Bluetooth -->
+    <string name="order_detail_thermal_bt_disabled">El Bluetooth está desactivado. Actívalo para imprimir.</string>
+    <string name="order_detail_thermal_bt_permission_denied">Se requiere permiso de Bluetooth para conectar con la impresora.</string>
+    <string name="order_detail_thermal_connecting">Conectando con la impresora…</string>
+    <!-- Ajustes — sección impresora térmica -->
+    <string name="settings_thermal_printer_label">Impresora térmica</string>
+    <string name="settings_thermal_printer_none">Ninguna impresora seleccionada</string>
+    <string name="settings_thermal_printer_selected">Seleccionada: %1$s (%2$s)</string>
+    <string name="settings_thermal_printer_choose">Elegir una impresora</string>
+    <string name="settings_thermal_printer_clear">Quitar la impresora</string>
+    <string name="settings_thermal_printer_dialog_title">Impresoras Bluetooth</string>
+    <string name="settings_thermal_printer_dialog_empty">No se ha encontrado ninguna impresora. Comprueba que esté encendida y cerca, y vuelve a buscar.</string>
+    <string name="settings_thermal_printer_dialog_cancel">Cancelar</string>
+    <string name="settings_thermal_printer_scanning">Buscando impresoras cercanas…</string>
+    <string name="settings_thermal_printer_scan_hint">Dispositivos emparejados y detectados cerca.</string>
+    <string name="settings_thermal_printer_rescan">Volver a buscar</string>
+    <string name="settings_thermal_printer_hint">Busca y selecciona tu impresora térmica Munbyn u otra compatible ESC/POS (no es necesario emparejarla antes).</string>
+
+    <!-- Diálogo de elección del modo de impresión -->
+    <string name="print_mode_dialog_title">Modo de impresión</string>
+    <string name="print_mode_two_up">Dos por página</string>
+    <string name="print_mode_one_per_page">Una por página</string>
+    <string name="print_mode_cancel">Cancelar</string>
+
+    <!-- Navegación de retroceso compartida -->
+    <string name="content_description_back">Volver</string>
+    <string name="content_description_retry">Reintentar</string>
+
+    <!-- Búsqueda -->
+    <string name="content_description_clear_search">Borrar búsqueda</string>
+    <string name="orders_search_placeholder">Buscar por cliente o referencia</string>
+    <string name="orders_selection_count">%1$d seleccionado(s)</string>
+    <string name="orders_selection_print">Imprimir (%1$d)</string>
+    <string name="orders_selection_cancel">Cancelar selección</string>
+    <string name="orders_selection_change_status">Cambiar estado</string>
+    <string name="orders_action_toggle_selection">Alternar selección</string>
+    <string name="orders_print_job_name">Facturas (%1$d)</string>
+    <!-- Selector de estado (StatusPickerDialog) -->
+    <string name="status_picker_title">Elegir un estado</string>
+    <string name="status_picker_empty">No hay ningún estado disponible.</string>
+    <string name="status_picker_confirm">Aplicar</string>
+    <string name="status_picker_cancel">Cancelar</string>
+    <!-- Filtros de estado de pedidos -->
+    <string name="orders_filter_all">Todos</string>
+    <string name="orders_filter_configure">Filtrar y personalizar los estados</string>
+    <string name="orders_filter_empty">No hay pedidos con este estado.</string>
+    <string name="orders_filter_reset">Restablecer filtros</string>
+    <!-- Accesibilidad chips: la etiqueta mostrada es corta, contentDescription da el nombre completo -->
+    <string name="orders_filter_chip_description">Filtrar por estado: %1$s</string>
+
+    <!-- Menú de estados (bottom sheet): 2 secciones — filtro (100% de los estados) + accesos directos (barra, máx. N) -->
+    <string name="orders_filter_prefs_title">Estados</string>
+    <string name="orders_filter_prefs_section_filter">Filtrar por estado</string>
+    <string name="orders_filter_prefs_section_filter_hint">Selecciona tantos estados como necesites para filtrar la lista</string>
+    <string name="orders_filter_prefs_clear_all">Borrar todo</string>
+    <string name="orders_filter_prefs_section_shortcuts">Accesos directos (barra)</string>
+    <string name="orders_filter_prefs_pin_description_add">Fijar %1$s como acceso directo</string>
+    <string name="orders_filter_prefs_pin_description_remove">Quitar %1$s de los accesos directos</string>
+    <string name="orders_filter_prefs_cancel">Cancelar</string>
+    <string name="orders_filter_prefs_confirm">Aplicar</string>
+
+    <!-- Ordenar pedidos -->
+    <string name="orders_sort_label">Ordenar pedidos</string>
+    <string name="orders_sort_date_desc">Fecha (más reciente primero)</string>
+    <string name="orders_sort_date_asc">Fecha (más antigua primero)</string>
+    <string name="orders_sort_amount_desc">Importe (de mayor a menor)</string>
+    <string name="orders_sort_amount_asc">Importe (de menor a mayor)</string>
+    <string name="orders_sort_status">Estado</string>
+    <string name="orders_sort_reference">Referencia</string>
+
+    <!-- Chip de filtro de periodo (desde el dashboard) -->
+    <string name="orders_period_chip">Periodo: %1$s</string>
+    <string name="orders_period_chip_clear">Borrar el filtro de periodo</string>
+
+    <!-- Clientes: desactivación del filtro activo -->
+    <string name="clients_filter_dismiss">Desactivar filtro</string>
+
+    <!-- Paginación de pedidos -->
+    <string name="orders_load_more">Cargar más</string>
+
+    <!-- Deslizar estado del pedido -->
+    <string name="orders_swipe_pending">Pedido %1$s → %2$s</string>
+    <!-- Botón de cancelar con cuenta atrás de segundos antes del envío efectivo (ej.: "Cancelar (8 s)"). -->
+    <string name="orders_swipe_undo_countdown">Cancelar (%1$d s)</string>
+    <string name="orders_swipe_left_label">En preparación</string>
+    <string name="orders_swipe_right_label">Completado</string>
+
+    <!-- Detalle del pedido — mensajes de acción (externalizados para i18n) -->
+    <string name="order_detail_status_updated">Estado actualizado</string>
+    <string name="order_detail_tracking_updated">Seguimiento actualizado</string>
+    <string name="order_detail_invoice_unavailable">Este pedido no tiene factura disponible.</string>
+    <string name="order_detail_shipping_label_unavailable">No hay etiqueta de envío disponible para este pedido.</string>
+    <string name="order_detail_label_generated">Etiqueta generada correctamente</string>
+    <string name="order_detail_thermal_print_success">Etiqueta impresa en la impresora térmica.</string>
+
+    <!-- Ajustes — confirmación de eliminación de tienda -->
+    <string name="settings_shops_remove_confirm_title">¿Eliminar la tienda?</string>
+    <string name="settings_shops_remove_confirm_message">Esto te desconectará de la tienda %1$s.</string>
+    <string name="settings_shops_remove_confirm_action">Eliminar</string>
+
+    <!-- Ajustes — permiso de Bluetooth denegado -->
+    <string name="settings_thermal_printer_bt_permission_denied">Se requiere permiso de Bluetooth para elegir una impresora. Autorízalo en los ajustes del sistema.</string>
+
+    <!-- Ajustes — sección Deslizar pedidos -->
+    <string name="settings_swipe_label">Deslizar pedidos</string>
+    <string name="settings_swipe_enabled">Activar el deslizamiento</string>
+    <string name="settings_swipe_source_status">Activo en</string>
+    <string name="settings_swipe_left_status">Deslizar ← (izquierda)</string>
+    <string name="settings_swipe_right_status">Deslizar → (derecha)</string>
+    <string name="settings_swipe_status_default">Predeterminado (por nombre)</string>
+    <string name="settings_swipe_no_statuses">Cargando estados…</string>
+    <string name="settings_swipe_statuses_error">No se han podido cargar los estados</string>
+    <string name="settings_swipe_statuses_retry">Reintentar</string>
+
+    <!-- Ajustes — sección Reposición de stock (botones rápidos configurables) -->
+    <string name="settings_stock_replenish_label">Botones rápidos de reposición</string>
+    <string name="settings_stock_replenish_hint">Configura la cantidad añadida por cada botón rápido de la pantalla de reposición de stock (1 a 5 botones).</string>
+    <string name="settings_stock_replenish_amount_label">Botón %1$d</string>
+    <string name="settings_stock_replenish_add_button">Añadir un botón</string>
+    <string name="settings_stock_replenish_remove_content_description">Quitar este botón</string>
+    <string name="settings_stock_replenish_sound_label">Sonido al escanear</string>
+    <string name="settings_stock_replenish_sound_hint">Reproduce un breve pitido de confirmación cuando se reconoce un código de barras.</string>
+
+    <!-- Filtros de stock de productos -->
+    <string name="products_filter_all">Todos</string>
+    <string name="products_filter_in_stock">En stock</string>
+    <string name="products_filter_out_of_stock">Agotado</string>
+    <string name="products_filter_low_stock">Stock bajo</string>
+
+    <string name="products_search_placeholder">Buscar por nombre o referencia</string>
+    <string name="clients_search_placeholder">Buscar por nombre o correo electrónico</string>
+    <string name="list_no_results">Sin resultados para «%1$s»</string>
+
+    <!-- Estados no encontrado -->
+    <string name="product_not_found">Producto no encontrado.</string>
+    <string name="client_not_found">Cliente no encontrado.</string>
+
+    <!-- Pantalla de preferencias de categorías de notificaciones -->
+    <string name="notif_categories_title">Preferencias de notificaciones</string>
+    <string name="notif_categories_section_label">Notificaciones recibidas</string>
+    <string name="notif_category_order_created">Nuevas ventas</string>
+    <string name="notif_category_order_status_changed">Cambios de estado</string>
+    <string name="notif_category_order_shipping_updated">Envíos</string>
+    <string name="notif_categories_all_disabled_warning">No se recibirá ninguna notificación mientras todas las categorías estén desactivadas.</string>
+
+    <!-- Enlace desde ajustes -->
+    <string name="settings_notif_categories">Categorías de notificaciones</string>
+
+    <!-- Pantalla de ajustes -->
+    <string name="destination_settings">Ajustes</string>
+    <string name="settings_theme_label">Tema</string>
+    <string name="settings_dark_mode_title">Modo oscuro</string>
+    <string name="settings_shops_label">Tiendas</string>
+    <string name="settings_shops_add">Añadir una tienda</string>
+    <string name="settings_shops_scan_qr">Escanear código QR</string>
+    <string name="settings_shops_remove">Eliminar tienda</string>
+    <string name="shops_add_label_optional">Nombre (opcional)</string>
+    <string name="shops_add_error_required">La URL de la tienda y la clave API son obligatorias.</string>
+    <!-- Selector de tienda -->
+    <string name="shop_switcher_content_description">Tienda activa, toca para cambiar</string>
+    <string name="shop_switcher_sheet_title">Cambiar de tienda</string>
+    <string name="shop_switcher_add">+ Añadir una tienda</string>
+
+    <string name="settings_about_label">Acerca de</string>
+    <string name="settings_about_app">Aplicación</string>
+    <string name="settings_about_version">Versión</string>
+    <string name="settings_notifications_label">Notificaciones</string>
+    <string name="settings_notification_sound">Sonido de notificación</string>
+    <string name="settings_logout">Cerrar sesión</string>
+    <string name="settings_logout_confirm_title">¿Cerrar sesión?</string>
+    <string name="settings_logout_confirm_message">Deberás volver a conectarte a tu tienda.</string>
+    <string name="settings_logout_confirm">Cerrar sesión</string>
+    <string name="settings_logout_cancel">Cancelar</string>
+    <string name="settings_dashboard_label">Dashboard</string>
+    <string name="settings_dashboard_default_period">Periodo predeterminado</string>
+
+    <!-- Pantalla de carritos -->
+    <string name="carts_list_empty">No se ha encontrado ningún carrito.</string>
+    <string name="carts_list_abandoned">Carritos abandonados</string>
+    <string name="carts_detail_title">Detalles del carrito</string>
+    <string name="carts_total_incl">Total (con impuestos): %1$s</string>
+    <string name="carts_items_count">%1$d artículo(s)</string>
+    <string name="carts_has_order">Convertido en pedido</string>
+    <string name="carts_abandoned">Carrito abandonado</string>
+    <string name="carts_customer_guest">Invitado</string>
+    <string name="carts_products_section">Productos</string>
+    <string name="carts_detail_not_found">Carrito no encontrado.</string>
+    <string name="carts_search_placeholder">Buscar por nombre de cliente</string>
+    <string name="carts_load_more">Cargar más</string>
+
+</resources>

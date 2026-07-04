@@ -1,456 +1,457 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PrestaFlow</string>
-    <string name="notif_channel_sales_name">Sales</string>
-    <string name="notif_channel_sales_desc">New order notifications (cash register sound)</string>
-    <string name="notif_channel_order_status_name">Order status changes</string>
-    <string name="notif_channel_order_status_desc">Notifications when an order status is updated</string>
-    <string name="notif_channel_order_shipping_name">Shipments</string>
-    <string name="notif_channel_order_shipping_desc">Notifications when an order tracking is updated</string>
-    <string name="notif_channel_default_name">Alerts</string>
-    <string name="notif_channel_default_desc">General app notifications</string>
-    <string name="notif_sale_default_title">New order</string>
+    <string name="notif_channel_sales_name">Ventes</string>
+    <string name="notif_channel_sales_desc">Notifications de nouvelle commande (son de caisse)</string>
+    <string name="notif_channel_order_status_name">Changements de statut commande</string>
+    <string name="notif_channel_order_status_desc">Notifications lors de la mise à jour du statut d\'une commande</string>
+    <string name="notif_channel_order_shipping_name">Expéditions</string>
+    <string name="notif_channel_order_shipping_desc">Notifications lors de la mise à jour du suivi d\'une commande</string>
+    <string name="notif_channel_default_name">Alertes</string>
+    <string name="notif_channel_default_desc">Notifications générales de l\'application</string>
+    <string name="notif_sale_default_title">Nouvelle commande</string>
     <!-- Sync worker — tâche offline abandonnée après une réponse HTTP non réessayable (400/422…) -->
-    <string name="sync_failure_notif_title">Sync failed</string>
-    <string name="sync_failure_notif_body">A change (%1$s) could not be saved (HTTP %2$d). Open the app to check.</string>
-    <string name="action_retry">Retry</string>
-    <string name="label_last_sync">Last sync: %1$s</string>
-    <string name="destination_dashboard">Dashboard</string>
-    <string name="destination_orders">Orders</string>
-    <string name="destination_products">Products</string>
+    <string name="sync_failure_notif_title">Échec de synchronisation</string>
+    <string name="sync_failure_notif_body">Une modification (%1$s) n\'a pas pu être enregistrée (HTTP %2$d). Ouvrez l\'app pour vérifier.</string>
+    <string name="action_retry">Réessayer</string>
+    <string name="label_last_sync">Dernière synchronisation : %1$s</string>
+    <string name="destination_dashboard">Accueil</string>
+    <string name="destination_orders">Commandes</string>
+    <string name="destination_products">Produits</string>
     <string name="destination_clients">Clients</string>
-    <string name="destination_carts">Carts</string>
-    <string name="auth_title">Connect to your shop</string>
-    <string name="auth_subtitle">Enter the HTTPS URL of your PrestaShop and the API key generated for this app.</string>
-    <string name="auth_field_shop_url">Shop URL</string>
-    <string name="auth_field_shop_url_placeholder">https://yourshop.tld</string>
-    <string name="auth_field_api_key">API Key</string>
-    <string name="auth_field_api_key_placeholder">Paste your API key</string>
-    <string name="auth_action_connect">Connect</string>
-    <string name="auth_action_prefill_https">Use https:// prefix</string>
-    <string name="auth_action_scan_qr">Scan QR code</string>
-    <string name="auth_error_shop_url_empty">Please enter the shop URL.</string>
-    <string name="auth_error_shop_url_malformed">The shop URL looks invalid.</string>
-    <string name="auth_error_shop_url_https">HTTPS is required.</string>
-    <string name="auth_error_api_key_empty">Please enter the API key.</string>
-    <string name="auth_error_qr_invalid">Unable to read the QR code payload.</string>
-    <string name="auth_error_qr_cancelled">QR code scan cancelled.</string>
-    <string name="auth_scan_prompt">Point the camera at the PrestaFlow QR code</string>
-    <string name="error_network_unreachable">Network unavailable. Check your connection.</string>
-    <string name="error_unauthorized">Authentication failed. Check your credentials.</string>
-    <string name="error_forbidden">You do not have access to this resource.</string>
-    <string name="error_generic">Something went wrong. Please try again.</string>
-    <string name="error_http_with_code">The server returned HTTP %1$d. Check your shop configuration and try again.</string>
+    <string name="destination_carts">Paniers</string>
+    <string name="auth_title">Connexion à votre boutique</string>
+    <string name="auth_subtitle">Saisissez l’URL HTTPS de votre boutique PrestaShop et la clé API dédiée à cette application.</string>
+    <string name="auth_field_shop_url">URL de la boutique</string>
+    <string name="auth_field_shop_url_placeholder">https://votreboutique.fr</string>
+    <string name="auth_field_api_key">Clé API</string>
+    <string name="auth_field_api_key_placeholder">Collez votre clé API</string>
+    <string name="auth_action_connect">Se connecter</string>
+    <string name="auth_action_prefill_https">Utiliser le préfixe https://</string>
+    <string name="auth_action_scan_qr">Scanner un QR code</string>
+    <string name="auth_error_shop_url_empty">Veuillez renseigner l’URL de la boutique.</string>
+    <string name="auth_error_shop_url_malformed">L’URL de la boutique semble invalide.</string>
+    <string name="auth_error_shop_url_https">HTTPS est requis.</string>
+    <string name="auth_error_api_key_empty">Veuillez renseigner la clé API.</string>
+    <string name="auth_error_qr_invalid">Impossible de lire les données du QR code.</string>
+    <string name="auth_error_qr_cancelled">Scan du QR code annulé.</string>
+    <string name="auth_scan_prompt">Cadrez le QR code PrestaFlow avec la caméra</string>
+    <string name="error_network_unreachable">Réseau indisponible. Vérifiez votre connexion.</string>
+    <string name="error_unauthorized">Échec d’authentification. Vérifiez vos identifiants.</string>
+    <string name="error_forbidden">Vous n’avez pas accès à cette ressource.</string>
+    <string name="error_generic">Une erreur est survenue. Réessayez.</string>
+    <string name="error_http_with_code">Le serveur a renvoyé le code HTTP %1$d. Vérifiez la configuration de la boutique et réessayez.</string>
 
-    <string name="dashboard_state_empty">No metrics available yet.</string>
-    <string name="dashboard_kpi_turnover">Turnover</string>
-    <string name="dashboard_kpi_orders">Orders</string>
-    <string name="dashboard_kpi_customers">Customers</string>
-    <string name="dashboard_kpi_avg_cart">Avg. basket</string>
-    <string name="dashboard_chart_title_turnover">Turnover trend</string>
-    <string name="dashboard_chart_empty">No chart data for the selected period.</string>
-    <string name="dashboard_chart_total_period">Total period</string>
-    <string name="dashboard_chart_vs_yesterday">vs yesterday</string>
-    <string name="dashboard_chart_vs_prev_week">vs prev. 7 days</string>
-    <string name="dashboard_chart_vs_prev_month">vs prev. 30 days</string>
-    <string name="dashboard_chart_vs_prev_quarter">vs prev. quarter</string>
-    <string name="dashboard_chart_vs_prev_year">vs prev. year</string>
-    <string name="dashboard_period_today">Today</string>
-    <string name="dashboard_period_week">7 days</string>
-    <string name="dashboard_period_month">30 days</string>
-    <string name="dashboard_period_quarter">Quarter</string>
-    <string name="dashboard_period_year">Year</string>
-    <string name="dashboard_period_custom">Custom</string>
-    <!-- Args: 1=date début, 2=date fin -->
-    <string name="dashboard_date_picker_title">Select date range</string>
-    <string name="dashboard_chart_new_customers">New customers</string>
+    <string name="dashboard_state_empty">Aucune donnée disponible pour le moment.</string>
+    <string name="dashboard_kpi_turnover">Chiffre d\’affaires</string>
+    <string name="dashboard_kpi_orders">Commandes</string>
+    <string name="dashboard_kpi_customers">Nouveaux clients</string>
+    <string name="dashboard_kpi_avg_cart">Panier moyen</string>
+    <string name="dashboard_chart_title_turnover">Chiffre d\’affaires</string>
+    <string name="dashboard_chart_empty">Aucune donnée graphique pour la période sélectionnée.</string>
+    <string name="dashboard_chart_total_period">Total période</string>
+    <string name="dashboard_chart_vs_yesterday">vs hier</string>
+    <string name="dashboard_chart_vs_prev_week">vs 7 j précédents</string>
+    <string name="dashboard_chart_vs_prev_month">vs 30 j précédents</string>
+    <string name="dashboard_chart_vs_prev_quarter">vs trimestre précédent</string>
+    <string name="dashboard_chart_vs_prev_year">vs année précédente</string>
+    <string name="dashboard_period_today">Aujourd\’hui</string>
+    <string name="dashboard_period_week">7 jours</string>
+    <string name="dashboard_period_month">30 jours</string>
+    <string name="dashboard_period_quarter">Trimestre</string>
+    <string name="dashboard_period_year">Année</string>
+    <string name="dashboard_period_custom">Personnalisé</string>
+    <!-- Args : 1=date début, 2=date fin -->
+    <string name="dashboard_date_picker_title">Sélectionner une plage</string>
+    <string name="dashboard_chart_new_customers">Nouveaux clients</string>
     <string name="action_ok">OK</string>
-    <string name="action_cancel">Cancel</string>
-    <!-- Accessibility: chart content description. Args: 1=formatted value, 2=trend (rising/falling) -->
-    <string name="dashboard_chart_content_description">Turnover for the period: %1$s, trend: %2$s</string>
-    <string name="dashboard_chart_trend_rising">rising</string>
-    <string name="dashboard_chart_trend_falling">falling</string>
+    <string name="action_cancel">Annuler</string>
+    <!-- Accessibilité : description du graphique. Args : 1=valeur formatée, 2=tendance -->
+    <string name="dashboard_chart_content_description">Chiffre d\’affaires sur la période : %1$s, tendance : %2$s</string>
+    <string name="dashboard_chart_trend_rising">en hausse</string>
+    <string name="dashboard_chart_trend_falling">en baisse</string>
     <string name="dashboard_chart_trend_stable">stable</string>
     <!-- Dashboard — légende et tooltip graphe -->
-    <string name="dashboard_legend_orders">Orders</string>
-    <string name="dashboard_legend_turnover">Turnover</string>
-    <string name="dashboard_tooltip_orders">Ord: %1$d</string>
-    <string name="dashboard_tooltip_turnover">Sales: %1$s</string>
-    <string name="dashboard_tooltip_new_customers">New cust.: %1$d</string>
-    <string name="dashboard_greeting">Hello</string>
-    <string name="dashboard_content_description_refresh">Refresh dashboard</string>
-    <string name="dashboard_content_description_kpi_card">%1$s: %2$s</string>
-    <!-- Dashboard — KPI trend badge. Arg: 1=formatted percentage (e.g. "12.3%") -->
-    <string name="dashboard_kpi_trend_up">up %1$s</string>
-    <string name="dashboard_kpi_trend_down">down %1$s</string>
-    <!-- Dashboard — full-screen chart -->
-    <string name="dashboard_chart_expand_content_description">View chart full screen</string>
-    <string name="dashboard_chart_fullscreen_close">Close</string>
+    <string name="dashboard_legend_orders">Commandes</string>
+    <string name="dashboard_legend_turnover">Chiffre d\'affaires</string>
+    <string name="dashboard_tooltip_orders">Cmd : %1$d</string>
+    <string name="dashboard_tooltip_turnover">CA : %1$s</string>
+    <string name="dashboard_tooltip_new_customers">Nv. clients : %1$d</string>
+    <string name="dashboard_greeting">Bonjour</string>
+    <string name="dashboard_content_description_refresh">Actualiser le tableau de bord</string>
+    <string name="dashboard_content_description_kpi_card">%1$s : %2$s</string>
+    <!-- Dashboard — badge de tendance KPI. Arg : 1=pourcentage formaté (ex : "12,3 %") -->
+    <string name="dashboard_kpi_trend_up">en hausse de %1$s</string>
+    <string name="dashboard_kpi_trend_down">en baisse de %1$s</string>
+    <!-- Dashboard — graphique plein écran -->
+    <string name="dashboard_chart_expand_content_description">Voir le graphique en plein écran</string>
+    <string name="dashboard_chart_fullscreen_close">Fermer</string>
 
     <string name="skin_terracotta">Terracotta</string>
-    <string name="skin_royal">Royal Violet</string>
-    <string name="skin_lagoon">Lagoon Teal</string>
-    <string name="skin_ember">Ember Sunset</string>
-    <string name="skin_forest">Forest</string>
-    <string name="skin_slate">Slate</string>
-    <string name="skin_soft">Soft &amp; Friendly</string>
-    <string name="skin_dark_follow_system">System default</string>
-    <string name="skin_dark_light">Always light</string>
-    <string name="skin_dark_dark">Always dark</string>
-    <string name="auth_loading">Checking your credentials…</string>
-    <string name="auth_error_module_not_installed">The Rebuild Connector module is not installed on this shop.</string>
-    <string name="auth_action_see_install_guide">See the installation guide</string>
+    <string name="skin_royal">Violet Royal</string>
+    <string name="skin_lagoon">Lagune Turquoise</string>
+    <string name="skin_ember">Coucher de Soleil</string>
+    <string name="skin_forest">Canopée</string>
+    <string name="skin_slate">Horizons Ardoise</string>
+    <string name="skin_soft">Doux &amp; Amical</string>
+    <string name="skin_dark_follow_system">Suivre le système</string>
+    <string name="skin_dark_light">Toujours clair</string>
+    <string name="skin_dark_dark">Toujours sombre</string>
+    <string name="auth_loading">Vérification de vos identifiants…</string>
+    <string name="auth_error_module_not_installed">Le module Rebuild Connector n\'est pas installé sur cette boutique.</string>
+    <string name="auth_action_see_install_guide">Voir le guide d\'installation</string>
 
-    <!-- Onboarding screen (first launch, no connection configured) -->
-    <string name="onboarding_title">Welcome to PrestaFlow</string>
-    <string name="onboarding_subtitle">To get started, you need the Rebuild Connector module installed on your PrestaShop back office.</string>
-    <string name="onboarding_action_has_module">I already have the module installed</string>
-    <string name="onboarding_action_no_module">I don\'t have the module yet</string>
+    <!-- Écran d'onboarding (premier lancement, aucune connexion configurée) -->
+    <string name="onboarding_title">Bienvenue dans PrestaFlow</string>
+    <string name="onboarding_subtitle">Pour commencer, vous devez installer le module Rebuild Connector dans le back-office de votre boutique PrestaShop.</string>
+    <string name="onboarding_action_has_module">J\'ai déjà installé le module</string>
+    <string name="onboarding_action_no_module">Je n\'ai pas encore le module</string>
 
-    <!-- Module install guide screen -->
-    <string name="module_guide_title">Module installation</string>
-    <string name="module_guide_intro">The installation takes place on your computer, directly in your PrestaShop back office. Follow these 3 steps:</string>
-    <string name="module_guide_step1_title">Download the module</string>
-    <string name="module_guide_step1_desc">On your computer, go to the releases page (link below) and download the file rebuildconnector.zip (latest version).</string>
-    <string name="module_guide_step2_title">Install via the back office</string>
-    <string name="module_guide_step2_desc">In your PrestaShop back office → Modules → Upload a module → select the zip file and activate it.</string>
-    <string name="module_guide_step3_title">Come back and connect</string>
-    <string name="module_guide_step3_desc">Return to the app and scan the QR code displayed by the module (or enter the URL and key manually).</string>
-    <string name="module_guide_action_share">Share the download link</string>
-    <string name="module_guide_action_open">Open in browser</string>
-    <string name="module_guide_action_go_connect">Module installed → Scan the QR code</string>
-    <string name="module_guide_share_chooser">Share via…</string>
-    <string name="orders_list_empty">No orders yet.</string>
-    <string name="orders_status_unknown">Status unavailable</string>
-    <string name="orders_list_section_title">Recent orders</string>
-    <string name="orders_list_count">%1$d loaded</string>
-    <string name="orders_action_open">Open order</string>
-    <string name="orders_customer_unknown">Unknown customer</string>
-    <string name="products_list_empty">No products available.</string>
-    <string name="products_status_active">Active</string>
-    <string name="products_status_inactive">Inactive</string>
-    <string name="products_stock_label">Stock: %1$d</string>
-    <string name="products_list_section_title">Item inventory</string>
-    <string name="products_stats_total">Total products</string>
-    <string name="products_stats_low_stock">Low stock</string>
-    <string name="products_action_open">Open product</string>
-    <string name="products_scan_fab_content_description">Scan a product</string>
-    <string name="products_scan_prompt">Point the camera at the product barcode</string>
-    <string name="products_scan_loading">Looking up product…</string>
-    <string name="products_scan_not_found">No product matches this barcode.</string>
-    <string name="products_scan_scan_again">Scan again</string>
-    <string name="products_scan_multiple_title">Several products match</string>
-    <string name="products_scan_barcode_label">Code: %1$s</string>
-    <string name="products_scan_current_stock">Current stock: %1$d</string>
-    <string name="products_scan_combination_label">Variant: %1$s</string>
-    <string name="products_scan_quantity_label">New quantity</string>
-    <string name="products_scan_decrement_content_description">Decrease quantity</string>
-    <string name="products_scan_increment_content_description">Increase quantity</string>
-    <string name="products_scan_confirm">Confirm</string>
-    <string name="products_scan_cancel">Cancel</string>
-    <string name="products_scan_back_to_results">Back to results</string>
-    <string name="products_scan_success">Stock updated</string>
-    <string name="products_scan_another">Scan another product</string>
-    <string name="products_scan_close">Close</string>
-    <string name="products_scan_associate_action">Link to a product</string>
-    <string name="products_scan_associate_title">Search for the product to link this barcode to</string>
-    <string name="products_scan_associate_empty">No product matches this search.</string>
-    <string name="products_scan_combination_choice_title">Which variant?</string>
-    <string name="products_scan_combination_stock_row">Stock: %1$d</string>
-    <string name="products_scan_back_to_combinations">Back to variants</string>
-    <string name="products_scan_association_combination_title">Which variant should this barcode be linked to?</string>
-    <string name="products_scan_combination_back">Back</string>
+    <!-- Écran guide d'installation du module -->
+    <string name="module_guide_title">Installation du module</string>
+    <string name="module_guide_intro">L\'installation se fait sur votre ordinateur, directement dans le back-office de votre boutique PrestaShop. Suivez ces 3 étapes :</string>
+    <string name="module_guide_step1_title">Télécharger le module</string>
+    <string name="module_guide_step1_desc">Sur votre ordinateur, ouvrez la page des releases (lien ci-dessous) et téléchargez le fichier rebuildconnector.zip (dernière version).</string>
+    <string name="module_guide_step2_title">Installer via le back-office</string>
+    <string name="module_guide_step2_desc">Dans votre back-office PrestaShop → Modules → Installer un module → envoyez le fichier zip et activez-le.</string>
+    <string name="module_guide_step3_title">Revenir et se connecter</string>
+    <string name="module_guide_step3_desc">Revenez dans l\'app et scannez le QR code affiché par le module (ou saisissez l\'URL et la clé manuellement).</string>
+    <string name="module_guide_action_share">Partager le lien de téléchargement</string>
+    <string name="module_guide_action_open">Ouvrir dans le navigateur</string>
+    <string name="module_guide_action_go_connect">Module installé → Scanner le QR code</string>
+    <string name="module_guide_share_chooser">Partager via…</string>
+    <string name="orders_list_empty">Aucune commande pour le moment.</string>
+    <string name="orders_status_unknown">Statut indisponible</string>
+    <string name="orders_list_section_title">Commandes récentes</string>
+    <string name="orders_list_count">%1$d chargées</string>
+    <string name="orders_action_open">Ouvrir la commande</string>
+    <string name="orders_customer_unknown">Client inconnu</string>
+    <string name="products_list_empty">Aucun produit disponible.</string>
+    <string name="products_status_active">Actif</string>
+    <string name="products_status_inactive">Inactif</string>
+    <string name="products_stock_label">Stock : %1$d</string>
+    <string name="products_list_section_title">Inventaire des articles</string>
+    <string name="products_stats_total">Total produits</string>
+    <string name="products_stats_low_stock">Stock faible</string>
+    <string name="products_action_open">Ouvrir le produit</string>
+    <string name="products_scan_fab_content_description">Scanner un produit</string>
+    <string name="products_scan_prompt">Pointez l\'appareil photo vers le code-barres du produit</string>
+    <string name="products_scan_loading">Recherche du produit…</string>
+    <string name="products_scan_not_found">Aucun produit pour ce code-barres.</string>
+    <string name="products_scan_scan_again">Rescanner</string>
+    <string name="products_scan_multiple_title">Plusieurs produits correspondent</string>
+    <string name="products_scan_barcode_label">Code : %1$s</string>
+    <string name="products_scan_current_stock">Stock actuel : %1$d</string>
+    <string name="products_scan_combination_label">Déclinaison : %1$s</string>
+    <string name="products_scan_quantity_label">Nouvelle quantité</string>
+    <string name="products_scan_decrement_content_description">Diminuer la quantité</string>
+    <string name="products_scan_increment_content_description">Augmenter la quantité</string>
+    <string name="products_scan_confirm">Valider</string>
+    <string name="products_scan_cancel">Annuler</string>
+    <string name="products_scan_back_to_results">Retour aux résultats</string>
+    <string name="products_scan_success">Stock mis à jour</string>
+    <string name="products_scan_another">Scanner un autre produit</string>
+    <string name="products_scan_close">Fermer</string>
+    <string name="products_scan_associate_action">Associer à un produit</string>
+    <string name="products_scan_associate_title">Recherchez le produit auquel associer ce code-barres</string>
+    <string name="products_scan_associate_empty">Aucun produit ne correspond à cette recherche.</string>
+    <string name="products_scan_combination_choice_title">Quelle déclinaison ?</string>
+    <string name="products_scan_combination_stock_row">Stock : %1$d</string>
+    <string name="products_scan_back_to_combinations">Retour aux déclinaisons</string>
+    <string name="products_scan_association_combination_title">À quelle déclinaison associer ce code-barres ?</string>
+    <string name="products_scan_combination_back">Retour</string>
 
-    <!-- Stock replenishment screen (rapid multi-scan restock) -->
-    <string name="stock_replenish_title">Restock</string>
-    <string name="stock_replenish_camera_permission_rationale">Camera access is needed to scan barcodes</string>
-    <string name="stock_replenish_camera_permission_action">Allow camera</string>
-    <string name="stock_replenish_not_found">Barcode not found, opening the linking flow…</string>
-    <string name="stock_replenish_label_search_loading">Searching by label…</string>
-    <string name="stock_replenish_idle_hint">Scan an item to start</string>
-    <string name="stock_replenish_delta_label">Adjustment: %1$s</string>
-    <string name="stock_replenish_new_quantity">New stock: %1$d</string>
-    <string name="stock_replenish_reset_action">Reset</string>
-    <string name="stock_replenish_skip_action">Skip</string>
-    <string name="stock_replenish_validate_action">Confirm</string>
-    <string name="stock_replenish_add_content_description">Add quantity</string>
-    <string name="stock_replenish_quantity_placeholder">Quantity</string>
-    <string name="stock_replenish_pending_label">%1$s: %2$s pending</string>
-    <string name="stock_replenish_queue_added_content_description">Added to the pending queue</string>
-    <string name="stock_replenish_session_recap">%1$d item(s) · +%2$d in stock</string>
-    <string name="stock_replenish_session_recap_exit_title">Session summary</string>
-    <string name="stock_replenish_session_recap_exit_message">%1$d item(s) restocked, +%2$d units.</string>
+    <!-- Écran de réappro stock (scan en série) -->
+    <string name="stock_replenish_title">Réappro stock</string>
+    <string name="stock_replenish_camera_permission_rationale">L\'appareil photo est nécessaire pour scanner les codes-barres</string>
+    <string name="stock_replenish_camera_permission_action">Autoriser l\'appareil photo</string>
+    <string name="stock_replenish_not_found">Code introuvable, ouverture de l\'association…</string>
+    <string name="stock_replenish_label_search_loading">Recherche par étiquette…</string>
+    <string name="stock_replenish_idle_hint">Scannez un article pour commencer</string>
+    <string name="stock_replenish_delta_label">Ajustement : %1$s</string>
+    <string name="stock_replenish_new_quantity">Nouveau stock : %1$d</string>
+    <string name="stock_replenish_reset_action">Réinitialiser</string>
+    <string name="stock_replenish_skip_action">Passer</string>
+    <string name="stock_replenish_validate_action">Valider</string>
+    <string name="stock_replenish_add_content_description">Ajouter la quantité</string>
+    <string name="stock_replenish_quantity_placeholder">Quantité</string>
+    <string name="stock_replenish_pending_label">%1$s : %2$s en attente</string>
+    <string name="stock_replenish_queue_added_content_description">Ajouté à la file d\'attente</string>
+    <string name="stock_replenish_session_recap">%1$d article(s) · +%2$d en stock</string>
+    <string name="stock_replenish_session_recap_exit_title">Récap de la session</string>
+    <string name="stock_replenish_session_recap_exit_message">%1$d article(s) réapprovisionné(s), +%2$d unités.</string>
     <string name="stock_replenish_session_recap_exit_action">OK</string>
 
-    <string name="clients_list_empty">No customers yet.</string>
-    <string name="clients_orders_count">%1$d orders</string>
-    <string name="clients_list_section_title">Top customers</string>
-    <string name="clients_list_section_all">All customers</string>
-    <string name="clients_list_section_new">New this month</string>
-    <string name="clients_list_section_search">Search results</string>
+    <string name="clients_list_empty">Aucun client pour l\’instant.</string>
+    <string name="clients_orders_count">%1$d commandes</string>
+    <string name="clients_list_section_title">Clients fidèles</string>
+    <string name="clients_list_section_all">Tous les clients</string>
+    <string name="clients_list_section_new">Nouveaux ce mois</string>
+    <string name="clients_list_section_search">Résultats de recherche</string>
     <string name="clients_stats_total">Total clients</string>
-    <string name="clients_stats_new_month">New (month)</string>
-    <string name="clients_action_open">Open customer</string>
-    <string name="clients_load_more">Load more</string>
+    <string name="clients_stats_new_month">Nouveaux (mois)</string>
+    <string name="clients_action_open">Ouvrir le client</string>
+    <string name="clients_load_more">Charger plus</string>
 
-    <string name="client_detail_title">Customer Details</string>
-    <string name="client_stats_section">Statistics</string>
-    <string name="client_total_spent_label">Total Spent</string>
-    <string name="client_orders_count_label">Orders</string>
-    <string name="client_order_history_title">Order History</string>
-    <string name="client_show_all_orders">Show all (%1$d)</string>
+    <string name="client_detail_title">Détails du client</string>
+    <string name="client_stats_section">Statistiques</string>
+    <string name="client_total_spent_label">Total dépensé</string>
+    <string name="client_orders_count_label">Commandes</string>
+    <string name="client_order_history_title">Historique des commandes</string>
+    <string name="client_show_all_orders">Voir tout (%1$d)</string>
 
-    <string name="product_detail_title">Product Details</string>
-    <string name="product_reference_label">Reference: %1$s</string>
-    <string name="product_price_section">Price</string>
-    <string name="product_price_label">Price</string>
-    <string name="product_update_price">Update Price</string>
+    <string name="product_detail_title">Détails du produit</string>
+    <string name="product_reference_label">Référence : %1$s</string>
+    <string name="product_price_section">Prix</string>
+    <string name="product_price_label">Prix</string>
+    <string name="product_update_price">Mettre à jour le prix</string>
     <string name="product_stock_section">Stock</string>
-    <string name="product_stock_quantity_label">Quantity</string>
-    <string name="product_update_stock">Update Stock</string>
-    <string name="product_status_section">Status</string>
-    <string name="product_detail_edit_content_description">Edit product details</string>
+    <string name="product_stock_quantity_label">Quantité</string>
+    <string name="product_update_stock">Mettre à jour le stock</string>
+    <string name="product_status_section">Statut</string>
+    <string name="product_detail_edit_content_description">Modifier la fiche produit</string>
 
-    <string name="product_edit_title">Edit Product</string>
-    <string name="product_edit_name_label">Name</string>
-    <string name="product_edit_name_error">Name is required</string>
+    <string name="product_edit_title">Modifier le produit</string>
+    <string name="product_edit_name_label">Nom</string>
+    <string name="product_edit_name_error">Le nom est requis</string>
     <string name="product_edit_description_label">Description</string>
-    <string name="product_edit_description_short_label">Short description</string>
-    <string name="product_edit_reference_label">Reference</string>
-    <string name="product_edit_reference_error">Reference must be 64 characters or fewer</string>
-    <string name="product_edit_price_label">Price (excl. tax)</string>
-    <string name="product_edit_price_error">Enter a valid price (0 or more)</string>
-    <string name="product_edit_active_label">Active</string>
-    <string name="product_edit_save_button">Save</string>
+    <string name="product_edit_description_short_label">Description courte</string>
+    <string name="product_edit_reference_label">Référence</string>
+    <string name="product_edit_reference_error">La référence doit comporter au maximum 64 caractères</string>
+    <string name="product_edit_price_label">Prix (HT)</string>
+    <string name="product_edit_price_error">Saisissez un prix valide (0 ou plus)</string>
+    <string name="product_edit_active_label">Actif</string>
+    <string name="product_edit_save_button">Enregistrer</string>
     <string name="product_edit_images_title">Images</string>
-    <string name="product_edit_images_add_content_description">Add an image</string>
-    <string name="product_edit_images_source_camera">Camera</string>
-    <string name="product_edit_images_source_gallery">Gallery</string>
-    <string name="product_edit_images_remove_content_description">Remove image</string>
-    <string name="product_edit_images_thumbnail_content_description">Product image</string>
-    <string name="product_edit_images_delete_dialog_title">Delete this image?</string>
-    <string name="product_edit_images_delete_dialog_message">This image will be permanently removed from the product.</string>
-    <string name="product_edit_images_delete_dialog_confirm">Delete</string>
-    <string name="product_edit_images_delete_dialog_cancel">Cancel</string>
-    <string name="product_edit_images_camera_permission_denied">Allow camera access to take a photo.</string>
-    <string name="product_edit_images_prepare_error">Unable to prepare this image. Please try again.</string>
-    <string name="dismiss">Dismiss</string>
+    <string name="product_edit_images_add_content_description">Ajouter une image</string>
+    <string name="product_edit_images_source_camera">Appareil photo</string>
+    <string name="product_edit_images_source_gallery">Galerie</string>
+    <string name="product_edit_images_remove_content_description">Supprimer l\'image</string>
+    <string name="product_edit_images_thumbnail_content_description">Image du produit</string>
+    <string name="product_edit_images_delete_dialog_title">Supprimer cette image ?</string>
+    <string name="product_edit_images_delete_dialog_message">Cette image sera définitivement retirée de la fiche produit.</string>
+    <string name="product_edit_images_delete_dialog_confirm">Supprimer</string>
+    <string name="product_edit_images_delete_dialog_cancel">Annuler</string>
+    <string name="product_edit_images_camera_permission_denied">Autorisez l\'accès à l\'appareil photo pour prendre une photo.</string>
+    <string name="product_edit_images_prepare_error">Impossible de préparer cette image. Réessayez.</string>
+    <string name="dismiss">Fermer</string>
 
-    <!-- Two-pane layout (tablet) -->
-    <string name="orders_detail_pane_placeholder">Select an order to view its details.</string>
+    <!-- Layout deux colonnes (tablette) -->
+    <string name="orders_detail_pane_placeholder">Sélectionnez une commande pour afficher ses détails.</string>
 
-    <!-- OrderDetail screen -->
-    <string name="order_detail_title">Order Details</string>
-    <string name="order_detail_reference_label">Reference</string>
-    <string name="order_detail_error">Error loading order</string>
-    <string name="order_detail_tracking_title">Tracking number</string>
-    <string name="order_detail_tracking_label">Tracking number</string>
-    <string name="order_detail_tracking_save">Save</string>
-    <string name="order_detail_customer_section">Customer</string>
-    <string name="order_detail_shipping_section">Shipping</string>
-    <string name="order_detail_items_section">Items (%1$d)</string>
-    <string name="order_detail_total_paid">Total Paid</string>
-    <string name="order_detail_cancel">Cancel</string>
-    <string name="order_detail_scan_tracking_prompt">Point the camera at the shipment barcode</string>
-    <string name="order_detail_scan_tracking_content_description">Scan barcode</string>
-    <string name="order_detail_tracking_edit_content_description">Edit tracking number</string>
-    <string name="order_detail_status_edit_content_description">Edit order status</string>
-    <string name="order_detail_qty_label">Qty: %1$d</string>
-    <string name="order_detail_tracking_display">Tracking: %1$s</string>
-    <string name="order_detail_print_invoice">Print invoice</string>
-    <string name="order_detail_print_shipping_label">Print shipping label</string>
-    <string name="order_detail_share_shipping_label">Share label PDF</string>
-    <string name="order_detail_share_shipping_label_content_description">Share shipping label PDF</string>
-    <string name="order_detail_share_chooser_title">Share label</string>
-    <string name="order_detail_generate_label">Generate label</string>
-    <string name="order_detail_generate_label_content_description">Generate Colissimo shipping label</string>
+    <!-- Écran Détail commande -->
+    <string name="order_detail_title">Détail commande</string>
+    <string name="order_detail_reference_label">Référence</string>
+    <string name="order_detail_error">Erreur lors du chargement de la commande</string>
+    <string name="order_detail_tracking_title">Numéro de suivi</string>
+    <string name="order_detail_tracking_label">Numéro de suivi</string>
+    <string name="order_detail_tracking_save">Enregistrer</string>
+    <string name="order_detail_customer_section">Client</string>
+    <string name="order_detail_shipping_section">Livraison</string>
+    <string name="order_detail_items_section">Articles (%1$d)</string>
+    <string name="order_detail_total_paid">Total payé</string>
+    <string name="order_detail_cancel">Annuler</string>
+    <string name="order_detail_scan_tracking_prompt">Pointez l\'appareil photo vers le code-barres du suivi</string>
+    <string name="order_detail_scan_tracking_content_description">Scanner le code-barres</string>
+    <string name="order_detail_tracking_edit_content_description">Modifier le numéro de suivi</string>
+    <string name="order_detail_status_edit_content_description">Modifier le statut de la commande</string>
+    <string name="order_detail_qty_label">Qté : %1$d</string>
+    <string name="order_detail_tracking_display">Suivi : %1$s</string>
+    <string name="order_detail_print_invoice">Imprimer la facture</string>
+    <string name="order_detail_print_shipping_label">Imprimer le bordereau</string>
+    <string name="order_detail_share_shipping_label">Partager le PDF du bordereau</string>
+    <string name="order_detail_share_shipping_label_content_description">Partager le PDF du bordereau d\'expédition</string>
+    <string name="order_detail_share_chooser_title">Partager le bordereau</string>
+    <string name="order_detail_generate_label">Générer l\'étiquette</string>
+    <string name="order_detail_generate_label_content_description">Générer l\'étiquette de transport Colissimo</string>
     <!-- Imprimante thermique Bluetooth -->
-    <string name="order_detail_thermal_bt_disabled">Bluetooth is disabled. Please enable it to print.</string>
-    <string name="order_detail_thermal_bt_permission_denied">Bluetooth permission required to connect to the printer.</string>
-    <string name="order_detail_thermal_connecting">Connecting to printer…</string>
-    <!-- Settings — section imprimante thermique -->
-    <string name="settings_thermal_printer_label">Thermal Printer</string>
-    <string name="settings_thermal_printer_none">No printer selected</string>
-    <string name="settings_thermal_printer_selected">Selected: %1$s (%2$s)</string>
-    <string name="settings_thermal_printer_choose">Choose a printer</string>
-    <string name="settings_thermal_printer_clear">Remove printer</string>
-    <string name="settings_thermal_printer_dialog_title">Bluetooth printers</string>
-    <string name="settings_thermal_printer_dialog_empty">No printer found. Make sure it is powered on and nearby, then rescan.</string>
-    <string name="settings_thermal_printer_dialog_cancel">Cancel</string>
-    <string name="settings_thermal_printer_scanning">Searching for nearby printers…</string>
-    <string name="settings_thermal_printer_scan_hint">Paired and nearby detected devices.</string>
-    <string name="settings_thermal_printer_rescan">Rescan</string>
-    <string name="settings_thermal_printer_hint">Search for and select your Munbyn or other ESC/POS thermal printer (no prior pairing needed).</string>
+    <string name="order_detail_thermal_bt_disabled">Le Bluetooth est désactivé. Veuillez l\'activer pour imprimer.</string>
+    <string name="order_detail_thermal_bt_permission_denied">Permission Bluetooth requise pour se connecter à l\'imprimante.</string>
+    <string name="order_detail_thermal_connecting">Connexion à l\'imprimante…</string>
+    <!-- Réglages — section imprimante thermique -->
+    <string name="settings_thermal_printer_label">Imprimante thermique</string>
+    <string name="settings_thermal_printer_none">Aucune imprimante sélectionnée</string>
+    <string name="settings_thermal_printer_selected">Sélectionnée : %1$s (%2$s)</string>
+    <string name="settings_thermal_printer_choose">Choisir une imprimante</string>
+    <string name="settings_thermal_printer_clear">Supprimer l\'imprimante</string>
+    <string name="settings_thermal_printer_dialog_title">Imprimantes Bluetooth</string>
+    <string name="settings_thermal_printer_dialog_empty">Aucune imprimante trouvée. Vérifiez qu\'elle est allumée et à proximité, puis relancez la recherche.</string>
+    <string name="settings_thermal_printer_dialog_cancel">Annuler</string>
+    <string name="settings_thermal_printer_scanning">Recherche des imprimantes à proximité…</string>
+    <string name="settings_thermal_printer_scan_hint">Appareils appairés et détectés à proximité.</string>
+    <string name="settings_thermal_printer_rescan">Relancer</string>
+    <string name="settings_thermal_printer_hint">Recherchez et sélectionnez votre imprimante thermique Munbyn ou ESC/POS (appairage préalable non nécessaire).</string>
 
     <!-- Dialogue de choix du mode d'impression -->
-    <string name="print_mode_dialog_title">Print mode</string>
-    <string name="print_mode_two_up">Two per page</string>
-    <string name="print_mode_one_per_page">One per page</string>
-    <string name="print_mode_cancel">Cancel</string>
+    <string name="print_mode_dialog_title">Mode d\'impression</string>
+    <string name="print_mode_two_up">Deux par page</string>
+    <string name="print_mode_one_per_page">Une par page</string>
+    <string name="print_mode_cancel">Annuler</string>
 
-    <!-- Shared back navigation -->
-    <string name="content_description_back">Back</string>
-    <string name="content_description_retry">Retry</string>
+    <!-- Navigation retour partagée -->
+    <string name="content_description_back">Retour</string>
+    <string name="content_description_retry">Réessayer</string>
 
-    <!-- Search -->
-    <string name="content_description_clear_search">Clear search</string>
-    <string name="orders_search_placeholder">Search by customer or reference</string>
-    <string name="orders_selection_count">%1$d selected</string>
-    <string name="orders_selection_print">Print (%1$d)</string>
-    <string name="orders_selection_cancel">Cancel selection</string>
-    <string name="orders_selection_change_status">Change status</string>
-    <string name="orders_action_toggle_selection">Toggle selection</string>
-    <string name="orders_print_job_name">Invoices (%1$d)</string>
+    <!-- Recherche -->
+    <string name="content_description_clear_search">Effacer la recherche</string>
+    <string name="orders_search_placeholder">Rechercher par client ou référence</string>
+    <string name="orders_selection_count">%1$d sélectionnée(s)</string>
+    <string name="orders_selection_print">Imprimer (%1$d)</string>
+    <string name="orders_selection_cancel">Annuler la sélection</string>
+    <string name="orders_selection_change_status">Changer le statut</string>
+    <string name="orders_action_toggle_selection">Basculer la sélection</string>
+    <string name="orders_print_job_name">Factures (%1$d)</string>
     <!-- Sélecteur de statut (StatusPickerDialog) -->
-    <string name="status_picker_title">Choose a status</string>
-    <string name="status_picker_empty">No status available.</string>
-    <string name="status_picker_confirm">Apply</string>
-    <string name="status_picker_cancel">Cancel</string>
-
+    <string name="status_picker_title">Choisir un statut</string>
+    <string name="status_picker_empty">Aucun statut disponible.</string>
+    <string name="status_picker_confirm">Appliquer</string>
+    <string name="status_picker_cancel">Annuler</string>
     <!-- Filtres statuts commandes -->
-    <string name="orders_filter_all">All</string>
-    <string name="orders_filter_configure">Filter and customize statuses</string>
-    <string name="orders_filter_empty">No orders for this status.</string>
-    <string name="orders_filter_reset">Reset filters</string>
+    <string name="orders_filter_all">Toutes</string>
+    <string name="orders_filter_configure">Filtrer et personnaliser les statuts</string>
+    <string name="orders_filter_empty">Aucune commande pour ce statut.</string>
+    <string name="orders_filter_reset">Réinitialiser les filtres</string>
     <!-- Accessibilité chips : le libellé affiché est court, le contentDescription donne le nom complet -->
-    <string name="orders_filter_chip_description">Filter by status: %1$s</string>
+    <string name="orders_filter_chip_description">Filtrer par statut : %1$s</string>
 
     <!-- Menu statuts (bottom sheet) : 2 volets — filtre (100% des statuts) + raccourcis (barre, max N) -->
-    <string name="orders_filter_prefs_title">Statuses</string>
-    <string name="orders_filter_prefs_section_filter">Filter by status</string>
-    <string name="orders_filter_prefs_section_filter_hint">Select any number of statuses to filter the list</string>
-    <string name="orders_filter_prefs_clear_all">Clear all</string>
-    <string name="orders_filter_prefs_section_shortcuts">Shortcuts (bar)</string>
-    <string name="orders_filter_prefs_pin_description_add">Pin %1$s as a shortcut</string>
-    <string name="orders_filter_prefs_pin_description_remove">Unpin %1$s from shortcuts</string>
-    <string name="orders_filter_prefs_cancel">Cancel</string>
-    <string name="orders_filter_prefs_confirm">Apply</string>
+    <string name="orders_filter_prefs_title">Statuts</string>
+    <string name="orders_filter_prefs_section_filter">Filtrer par statut</string>
+    <string name="orders_filter_prefs_section_filter_hint">Sélectionnez autant de statuts que nécessaire pour filtrer la liste</string>
+    <string name="orders_filter_prefs_clear_all">Tout effacer</string>
+    <string name="orders_filter_prefs_section_shortcuts">Raccourcis (barre)</string>
+    <string name="orders_filter_prefs_pin_description_add">Épingler %1$s comme raccourci</string>
+    <string name="orders_filter_prefs_pin_description_remove">Désépingler %1$s des raccourcis</string>
+    <string name="orders_filter_prefs_cancel">Annuler</string>
+    <string name="orders_filter_prefs_confirm">Appliquer</string>
 
     <!-- Tri commandes -->
-    <string name="orders_sort_label">Sort orders</string>
-    <string name="orders_sort_date_desc">Date (newest first)</string>
-    <string name="orders_sort_date_asc">Date (oldest first)</string>
-    <string name="orders_sort_amount_desc">Amount (highest first)</string>
-    <string name="orders_sort_amount_asc">Amount (lowest first)</string>
-    <string name="orders_sort_status">Status</string>
-    <string name="orders_sort_reference">Reference</string>
+    <string name="orders_sort_label">Trier les commandes</string>
+    <string name="orders_sort_date_desc">Date (récent en premier)</string>
+    <string name="orders_sort_date_asc">Date (ancien en premier)</string>
+    <string name="orders_sort_amount_desc">Montant (décroissant)</string>
+    <string name="orders_sort_amount_asc">Montant (croissant)</string>
+    <string name="orders_sort_status">Statut</string>
+    <string name="orders_sort_reference">Référence</string>
 
     <!-- Chip de filtre période (depuis dashboard) -->
-    <string name="orders_period_chip">Period: %1$s</string>
-    <string name="orders_period_chip_clear">Clear period filter</string>
+    <string name="orders_period_chip">Période : %1$s</string>
+    <string name="orders_period_chip_clear">Effacer le filtre de période</string>
 
     <!-- Clients : désactivation du filtre actif -->
-    <string name="clients_filter_dismiss">Deactivate filter</string>
+    <string name="clients_filter_dismiss">Désactiver le filtre</string>
 
     <!-- Pagination commandes -->
-    <string name="orders_load_more">Load more</string>
+    <string name="orders_load_more">Charger plus</string>
 
     <!-- Swipe statut commande -->
-    <string name="orders_swipe_pending">Order %1$s → %2$s</string>
-    <!-- Cancel button with a live seconds countdown before the change is actually sent (e.g. "Cancel (8s)"). -->
-    <string name="orders_swipe_undo_countdown">Cancel (%1$ds)</string>
-    <string name="orders_swipe_left_label">In preparation</string>
-    <string name="orders_swipe_right_label">Done</string>
+    <string name="orders_swipe_pending">Commande %1$s → %2$s</string>
+    <!-- Bouton d'annulation avec décompte des secondes restantes avant envoi effectif (ex. "Annuler (8 s)"). -->
+    <string name="orders_swipe_undo_countdown">Annuler (%1$d s)</string>
+    <string name="orders_swipe_left_label">En préparation</string>
+    <string name="orders_swipe_right_label">Terminé</string>
 
-    <!-- OrderDetail — messages d'action (externalisés pour i18n) -->
-    <string name="order_detail_status_updated">Status updated</string>
-    <string name="order_detail_tracking_updated">Tracking updated</string>
-    <string name="order_detail_invoice_unavailable">This order has no invoice available.</string>
-    <string name="order_detail_shipping_label_unavailable">No shipping label available for this order.</string>
-    <string name="order_detail_label_generated">Label generated successfully</string>
-    <string name="order_detail_thermal_print_success">Label printed on thermal printer.</string>
+    <!-- Détail commande — messages d'action (externalisés pour i18n) -->
+    <string name="order_detail_status_updated">Statut mis à jour</string>
+    <string name="order_detail_tracking_updated">Suivi mis à jour</string>
+    <string name="order_detail_invoice_unavailable">Cette commande n\'a pas de facture disponible.</string>
+    <string name="order_detail_shipping_label_unavailable">Aucun bordereau disponible pour cette commande.</string>
+    <string name="order_detail_label_generated">Étiquette générée avec succès</string>
+    <string name="order_detail_thermal_print_success">Bordereau imprimé sur l\'imprimante thermique.</string>
 
-    <!-- Settings — confirmation suppression boutique -->
-    <string name="settings_shops_remove_confirm_title">Remove shop?</string>
-    <string name="settings_shops_remove_confirm_message">This will log you out of the shop %1$s.</string>
-    <string name="settings_shops_remove_confirm_action">Remove</string>
+    <!-- Réglages — confirmation suppression boutique -->
+    <string name="settings_shops_remove_confirm_title">Supprimer la boutique ?</string>
+    <string name="settings_shops_remove_confirm_message">Cette action vous déconnectera de la boutique %1$s.</string>
+    <string name="settings_shops_remove_confirm_action">Supprimer</string>
 
-    <!-- Settings — permission Bluetooth refusée -->
-    <string name="settings_thermal_printer_bt_permission_denied">Bluetooth permission required to choose a printer. Please grant it in system settings.</string>
+    <!-- Réglages — permission Bluetooth refusée -->
+    <string name="settings_thermal_printer_bt_permission_denied">Permission Bluetooth requise pour choisir une imprimante. Autorisez-la dans les paramètres système.</string>
 
-    <!-- Settings — section Swipe commandes -->
-    <string name="settings_swipe_label">Order Swipe</string>
-    <string name="settings_swipe_enabled">Enable swipe</string>
-    <string name="settings_swipe_source_status">Swipe active on</string>
-    <string name="settings_swipe_left_status">Swipe ← (left)</string>
-    <string name="settings_swipe_right_status">Swipe → (right)</string>
-    <string name="settings_swipe_status_default">Default (by name)</string>
-    <string name="settings_swipe_no_statuses">Loading statuses…</string>
-    <string name="settings_swipe_statuses_error">Couldn\'t load statuses</string>
-    <string name="settings_swipe_statuses_retry">Retry</string>
+    <!-- Réglages — section Swipe commandes -->
+    <string name="settings_swipe_label">Swipe commandes</string>
+    <string name="settings_swipe_enabled">Activer le swipe</string>
+    <string name="settings_swipe_source_status">Actif sur</string>
+    <string name="settings_swipe_left_status">Swipe ← (gauche)</string>
+    <string name="settings_swipe_right_status">Swipe → (droite)</string>
+    <string name="settings_swipe_status_default">Défaut (par nom)</string>
+    <string name="settings_swipe_no_statuses">Chargement des statuts…</string>
+    <string name="settings_swipe_statuses_error">Impossible de charger les statuts</string>
+    <string name="settings_swipe_statuses_retry">Réessayer</string>
 
-    <!-- Settings — section Réappro stock (boutons rapides configurables) -->
-    <string name="settings_stock_replenish_label">Restock Quick Buttons</string>
-    <string name="settings_stock_replenish_hint">Configure the amount added by each quick button on the restock screen (1 to 5 buttons).</string>
-    <string name="settings_stock_replenish_amount_label">Button %1$d</string>
-    <string name="settings_stock_replenish_add_button">Add a button</string>
-    <string name="settings_stock_replenish_remove_content_description">Remove this button</string>
-    <string name="settings_stock_replenish_sound_label">Sound on scan</string>
-    <string name="settings_stock_replenish_sound_hint">Play a short confirmation beep when a barcode is recognized.</string>
+    <!-- Réglages — section Réappro stock (boutons rapides configurables) -->
+    <string name="settings_stock_replenish_label">Réappro / boutons rapides</string>
+    <string name="settings_stock_replenish_hint">Configurez la quantité ajoutée par chaque bouton rapide de l\'écran de réappro (1 à 5 boutons).</string>
+    <string name="settings_stock_replenish_amount_label">Bouton %1$d</string>
+    <string name="settings_stock_replenish_add_button">Ajouter un bouton</string>
+    <string name="settings_stock_replenish_remove_content_description">Retirer ce bouton</string>
+    <string name="settings_stock_replenish_sound_label">Son au scan</string>
+    <string name="settings_stock_replenish_sound_hint">Joue un bref bip de confirmation quand un code-barres est reconnu.</string>
 
     <!-- Filtres stock produits -->
-    <string name="products_filter_all">All</string>
-    <string name="products_filter_in_stock">In stock</string>
-    <string name="products_filter_out_of_stock">Out of stock</string>
-    <string name="products_filter_low_stock">Low stock</string>
+    <string name="products_filter_all">Tous</string>
+    <string name="products_filter_in_stock">En stock</string>
+    <string name="products_filter_out_of_stock">Rupture</string>
+    <string name="products_filter_low_stock">Stock faible</string>
 
-    <string name="products_search_placeholder">Search by name or reference</string>
-    <string name="clients_search_placeholder">Search by name or email</string>
-    <string name="list_no_results">No result for \"%1$s\"</string>
+    <string name="products_search_placeholder">Rechercher par nom ou référence</string>
+    <string name="clients_search_placeholder">Rechercher par nom ou e-mail</string>
+    <string name="list_no_results">Aucun résultat pour « %1$s »</string>
 
-    <!-- Detail not found states -->
-    <string name="product_not_found">Product not found.</string>
-    <string name="client_not_found">Customer not found.</string>
+    <!-- États introuvable -->
+    <string name="product_not_found">Produit introuvable.</string>
+    <string name="client_not_found">Client introuvable.</string>
 
-    <!-- Notification category preferences screen -->
-    <string name="notif_categories_title">Notification preferences</string>
-    <string name="notif_categories_section_label">Received notifications</string>
-    <string name="notif_category_order_created">New sales</string>
-    <string name="notif_category_order_status_changed">Status changes</string>
-    <string name="notif_category_order_shipping_updated">Shipments</string>
-    <string name="notif_categories_all_disabled_warning">No notification will be received while all categories are disabled.</string>
+    <!-- Écran préférences de catégories de notifications -->
+    <string name="notif_categories_title">Préférences de notifications</string>
+    <string name="notif_categories_section_label">Notifications reçues</string>
+    <string name="notif_category_order_created">Nouvelles ventes</string>
+    <string name="notif_category_order_status_changed">Changements de statut</string>
+    <string name="notif_category_order_shipping_updated">Expéditions</string>
+    <string name="notif_categories_all_disabled_warning">Aucune notification ne sera reçue tant que toutes les catégories sont désactivées.</string>
 
-    <!-- Settings screen -->
-    <string name="destination_settings">Settings</string>
-    <string name="settings_theme_label">Theme</string>
-    <string name="settings_dark_mode_title">Dark mode</string>
-    <string name="settings_shops_label">Shops</string>
-    <string name="settings_shops_add">Add a shop</string>
-    <string name="settings_shops_scan_qr">Scan QR code</string>
-    <string name="settings_shops_remove">Remove shop</string>
-    <string name="shops_add_label_optional">Name (optional)</string>
-    <string name="shops_add_error_required">Shop URL and API key are required.</string>
-    <string name="settings_about_label">About</string>
+    <!-- Lien depuis les réglages -->
+    <string name="settings_notif_categories">Catégories de notifications</string>
+
+    <!-- Écran Réglages -->
+    <string name="destination_settings">Réglages</string>
+    <string name="settings_theme_label">Thème</string>
+    <string name="settings_dark_mode_title">Mode sombre</string>
+    <string name="settings_shops_label">Boutiques</string>
+    <string name="settings_shops_add">Ajouter une boutique</string>
+    <string name="settings_shops_scan_qr">Scanner le QR code</string>
+    <string name="settings_shops_remove">Supprimer la boutique</string>
+    <string name="shops_add_label_optional">Nom (optionnel)</string>
+    <string name="shops_add_error_required">L\'URL de la boutique et la clé API sont requises.</string>
+    <!-- Sélecteur de boutique -->
+    <string name="shop_switcher_content_description">Boutique active, appuyer pour changer</string>
+    <string name="shop_switcher_sheet_title">Changer de boutique</string>
+    <string name="shop_switcher_add">+ Ajouter une boutique</string>
+
+    <string name="settings_about_label">À propos</string>
     <string name="settings_about_app">Application</string>
     <string name="settings_about_version">Version</string>
     <string name="settings_notifications_label">Notifications</string>
-    <string name="settings_notification_sound">Notification sound</string>
-    <string name="settings_notif_categories">Notification categories</string>
-    <string name="settings_logout">Log out</string>
-    <string name="settings_logout_confirm_title">Log out?</string>
-    <string name="settings_logout_confirm_message">You will need to reconnect to your shop.</string>
-    <string name="settings_logout_confirm">Log out</string>
-    <string name="settings_logout_cancel">Cancel</string>
+    <string name="settings_notification_sound">Son des notifications</string>
+    <string name="settings_logout">Déconnexion</string>
+    <string name="settings_logout_confirm_title">Se déconnecter ?</string>
+    <string name="settings_logout_confirm_message">Vous devrez vous reconnecter à votre boutique.</string>
+    <string name="settings_logout_confirm">Se déconnecter</string>
+    <string name="settings_logout_cancel">Annuler</string>
     <string name="settings_dashboard_label">Dashboard</string>
-    <string name="settings_dashboard_default_period">Default period</string>
+    <string name="settings_dashboard_default_period">Période par défaut</string>
 
-    <!-- Shop switcher -->
-    <string name="shop_switcher_content_description">Active shop, tap to switch</string>
-    <string name="shop_switcher_sheet_title">Switch shop</string>
-    <string name="shop_switcher_add">+ Add a shop</string>
-
-    <!-- Carts screen -->
-    <string name="carts_list_empty">No carts found.</string>
-    <string name="carts_list_abandoned">Abandoned carts</string>
-    <string name="carts_detail_title">Cart Details</string>
-    <string name="carts_total_incl">Total (incl. tax): %1$s</string>
-    <string name="carts_items_count">%1$d items</string>
-    <string name="carts_has_order">Converted to order</string>
-    <string name="carts_abandoned">Abandoned cart</string>
-    <string name="carts_customer_guest">Guest</string>
-    <string name="carts_products_section">Products</string>
-    <string name="carts_detail_not_found">Cart not found.</string>
-    <string name="carts_search_placeholder">Search by customer name</string>
-    <string name="carts_load_more">Load more</string>
+    <!-- Écran Paniers -->
+    <string name="carts_list_empty">Aucun panier trouvé.</string>
+    <string name="carts_list_abandoned">Paniers abandonnés</string>
+    <string name="carts_detail_title">Détails du panier</string>
+    <string name="carts_total_incl">Total (TTC) : %1$s</string>
+    <string name="carts_items_count">%1$d article(s)</string>
+    <string name="carts_has_order">Converti en commande</string>
+    <string name="carts_abandoned">Panier abandonné</string>
+    <string name="carts_customer_guest">Invité</string>
+    <string name="carts_products_section">Produits</string>
+    <string name="carts_detail_not_found">Panier introuvable.</string>
+    <string name="carts_search_placeholder">Rechercher par nom client</string>
+    <string name="carts_load_more">Charger plus</string>
 
 </resources>

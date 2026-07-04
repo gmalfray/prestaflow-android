@@ -6,16 +6,44 @@ import org.w3c.dom.Element
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
+/**
+ * Garde-fou i18n : le défaut (`values/`, FR) et chaque langue cible doivent exposer exactement
+ * les mêmes clés (0 MissingTranslation) et les mêmes placeholders `%n$s`/`%n$d` dans le même ordre.
+ */
 class LocalizationParityTest {
+    // Langues cibles (v0.40.0) : EN, ES, DE, IT, PT, NL. Le défaut (values/) est le FR.
+    private val targetLocales = listOf("en", "es", "de", "it", "pt", "nl")
+
     @Test
-    fun `english and french strings have matching keys`() {
-        val english = loadStrings(resolveResource("src/main/res/values/strings.xml"))
-        val french = loadStrings(resolveResource("src/main/res/values-fr/strings.xml"))
-        assertEquals(
-            "French translation file should contain the same string keys as the default locale",
-            english.keys,
-            french.keys,
-        )
+    fun `all target locales have the same string keys as the default (fr) locale`() {
+        val default = loadStrings(resolveResource("src/main/res/values/strings.xml"))
+        targetLocales.forEach { locale ->
+            val translated = loadStrings(resolveResource("src/main/res/values-$locale/strings.xml"))
+            assertEquals(
+                "values-$locale/strings.xml should contain the same string keys as the default (fr) locale",
+                default.keys,
+                translated.keys,
+            )
+        }
+    }
+
+    @Test
+    fun `all target locales preserve the default locale placeholders`() {
+        val placeholderRegex = Regex("""%(\d+)\$[sd]""")
+        val default = loadStrings(resolveResource("src/main/res/values/strings.xml"))
+        targetLocales.forEach { locale ->
+            val translated = loadStrings(resolveResource("src/main/res/values-$locale/strings.xml"))
+            default.forEach { (key, defaultValue) ->
+                val defaultPlaceholders = placeholderRegex.findAll(defaultValue).map { it.groupValues[1] }.sorted().toList()
+                val translatedValue = translated[key].orEmpty()
+                val translatedPlaceholders = placeholderRegex.findAll(translatedValue).map { it.groupValues[1] }.sorted().toList()
+                assertEquals(
+                    "values-$locale/strings.xml key '$key' should keep the same placeholders as the default locale",
+                    defaultPlaceholders,
+                    translatedPlaceholders,
+                )
+            }
+        }
     }
 
     private fun loadStrings(file: File): Map<String, String> {

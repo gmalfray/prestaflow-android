@@ -4,6 +4,31 @@ Les versions suivent [Semantic Versioning](https://semver.org/) : `MAJEUR.MINEUR
 
 ---
 
+## [0.40.0] — 2026-07-04
+
+### Ajouts
+- **Internationalisation (i18n)** : l'app s'affiche désormais dans la langue du téléphone,
+  détectée automatiquement par Android (aucun sélecteur de langue en app). Traductions
+  complètes ajoutées pour l'anglais, l'espagnol, l'allemand, l'italien, le portugais et le
+  néerlandais (`values-en/`, `values-es/`, `values-de/`, `values-it/`, `values-pt/`,
+  `values-nl/`), en plus du français qui reste la langue par défaut (`values/`). Le nom
+  « PrestaFlow » n'est jamais traduit.
+
+### Corrections
+- **Devise forcée en euros indépendamment de la langue de l'appareil** : les montants du
+  dashboard, des listes produits et clients utilisaient `NumberFormat.getCurrencyInstance()`
+  sans devise explicite — sur un téléphone réglé sur une locale hors zone euro (ex. anglais
+  US), les montants s'affichaient en dollars au lieu d'euros. La devise est désormais figée en
+  EUR (nouveau helper `euroCurrencyFormatter()`), tout en conservant le formatage (séparateurs,
+  position du symbole) de la locale de l'appareil.
+
+### Interne
+- Un test `LocalizationParityTest` vérifie désormais, pour les 6 langues cibles, que toutes les
+  clés du défaut FR sont traduites (0 `MissingTranslation`) et que les placeholders (`%1$s`,
+  `%1$d`…) sont préservés à l'identique.
+
+---
+
 ## [0.38.0] — 2026-07-04
 
 ### Ajouts

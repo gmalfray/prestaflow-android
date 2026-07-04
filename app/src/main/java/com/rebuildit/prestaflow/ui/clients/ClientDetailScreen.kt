@@ -45,6 +45,7 @@ import com.rebuildit.prestaflow.ui.components.AvatarInitials
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.NotFoundState
 import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
+import com.rebuildit.prestaflow.ui.components.euroCurrencyFormatter
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import java.text.NumberFormat
@@ -136,7 +137,7 @@ private fun ClientContent(
     onOrderClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val currencyFormatter = remember { NumberFormat.getCurrencyInstance() }
+    val currencyFormatter = remember { euroCurrencyFormatter() }
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
     var historyExpanded by rememberSaveable { mutableStateOf(false) }
 
