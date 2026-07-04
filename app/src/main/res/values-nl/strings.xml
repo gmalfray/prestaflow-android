@@ -315,6 +315,20 @@
     <!-- Toegankelijkheid chips: het getoonde label is kort, contentDescription geeft de volledige naam -->
     <string name="orders_filter_chip_description">Filteren op status: %1$s</string>
 
+    <!-- Korte statuschip-labels, per PrestaShop-ID (stabiel, onafhankelijk van de taal die
+         van de server komt). ID 9 "Voltooid" is specifiek voor pensebonheur (in standaard
+         PrestaShop is 9 = "Wacht op betaalde herbevoorrading"). -->
+    <string name="orders_status_short_1">Cheque</string>
+    <string name="orders_status_short_2">Betaald</string>
+    <string name="orders_status_short_3">Voorb.</string>
+    <string name="orders_status_short_4">Verzonden</string>
+    <string name="orders_status_short_5">Geleverd</string>
+    <string name="orders_status_short_6">Geannuleerd</string>
+    <string name="orders_status_short_7">Terugbet.</string>
+    <string name="orders_status_short_8">Fout</string>
+    <string name="orders_status_short_9">Voltooid</string>
+    <string name="orders_status_short_10">Overschr.</string>
+
     <!-- Statusmenu (bottom sheet): 2 delen — filter (100% van de statussen) + snelkoppelingen (balk, max N) -->
     <string name="orders_filter_prefs_title">Statussen</string>
     <string name="orders_filter_prefs_section_filter">Filteren op status</string>

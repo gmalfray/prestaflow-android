@@ -315,6 +315,20 @@
     <!-- Barrierefreiheit Chips: die Anzeige ist kurz, contentDescription liefert den vollständigen Namen -->
     <string name="orders_filter_chip_description">Nach Status filtern: %1$s</string>
 
+    <!-- Kurze Status-Chip-Labels, nach PrestaShop-ID (stabil, unabhängig von der vom Server
+         gelieferten Sprache). ID 9 "Fertig" ist pensebonheur-spezifisch (im Standard-PrestaShop
+         ist 9 = "Wartet auf bezahlten Nachschub"). -->
+    <string name="orders_status_short_1">Scheck</string>
+    <string name="orders_status_short_2">Bezahlt</string>
+    <string name="orders_status_short_3">Vorb.</string>
+    <string name="orders_status_short_4">Versandt</string>
+    <string name="orders_status_short_5">Geliefert</string>
+    <string name="orders_status_short_6">Storniert</string>
+    <string name="orders_status_short_7">Erstattet</string>
+    <string name="orders_status_short_8">Fehler</string>
+    <string name="orders_status_short_9">Fertig</string>
+    <string name="orders_status_short_10">Überw.</string>
+
     <!-- Statusmenü (Bottom Sheet): 2 Bereiche — Filter (alle Status) + Verknüpfungen (Leiste, max. N) -->
     <string name="orders_filter_prefs_title">Status</string>
     <string name="orders_filter_prefs_section_filter">Nach Status filtern</string>

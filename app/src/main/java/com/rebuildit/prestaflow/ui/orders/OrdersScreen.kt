@@ -1118,7 +1118,9 @@ private fun StatusFilterBar(
             )
             statuses.forEach { status ->
                 val chipDescription = stringResource(R.string.orders_filter_chip_description, status.name)
-                val shortLabel = remember(status.name) { statusShortLabel(status.name) }
+                val shortLabelResId = remember(status.id) { statusShortLabelResId(status.id) }
+                val shortLabelFallback = remember(status.name) { statusShortLabelFallback(status.name) }
+                val shortLabel = shortLabelResId?.let { stringResource(it) } ?: shortLabelFallback
                 val dotColor = remember(status.color) { parseHexColor(status.color) }
                 FilterChip(
                     modifier = Modifier.semantics { contentDescription = chipDescription },

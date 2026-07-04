@@ -315,6 +315,20 @@
     <!-- Accessibilità chip: l\'etichetta mostrata è breve, contentDescription fornisce il nome completo -->
     <string name="orders_filter_chip_description">Filtra per stato: %1$s</string>
 
+    <!-- Etichette brevi dei chip di stato, per ID PrestaShop (stabile, indipendente dalla
+         lingua ricevuta dal server). L'ID 9 "Terminato" è specifico di pensebonheur (in
+         PrestaShop standard, 9 = "In attesa di riapprovvigionamento pagato"). -->
+    <string name="orders_status_short_1">Assegno</string>
+    <string name="orders_status_short_2">Pagato</string>
+    <string name="orders_status_short_3">Prep.</string>
+    <string name="orders_status_short_4">Spedito</string>
+    <string name="orders_status_short_5">Consegnato</string>
+    <string name="orders_status_short_6">Annullato</string>
+    <string name="orders_status_short_7">Rimborsato</string>
+    <string name="orders_status_short_8">Errore</string>
+    <string name="orders_status_short_9">Terminato</string>
+    <string name="orders_status_short_10">Bonifico</string>
+
     <!-- Menu stati (bottom sheet): 2 sezioni — filtro (100% degli stati) + scorciatoie (barra, max N) -->
     <string name="orders_filter_prefs_title">Stati</string>
     <string name="orders_filter_prefs_section_filter">Filtra per stato</string>

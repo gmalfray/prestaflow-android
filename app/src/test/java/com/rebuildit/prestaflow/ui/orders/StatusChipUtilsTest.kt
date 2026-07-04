@@ -1,123 +1,123 @@
 package com.rebuildit.prestaflow.ui.orders
 
+import com.rebuildit.prestaflow.R
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * Tests unitaires JVM de [statusShortLabel].
+ * Tests unitaires JVM de [statusShortLabelResId] et [statusShortLabelFallback].
  *
- * Couvre : mapping des statuts FR standards PrestaShop, insensibilité casse/accents,
- * fallback premier-mot avec et sans troncature, et entrées limites (vide, un seul mot long).
+ * Depuis le passage aux statuts localisés serveur (header Accept-Language), le mapping se fait
+ * par ID de statut PrestaShop (stable, indépendant de la langue) → ressource de libellé court —
+ * plus par mot-clé français sur le nom. Couvre : mapping des 10 IDs standards (comparaison de
+ * l'Int `@StringRes`, cf. précédent dans `ShopsViewModelTest`), ID custom non mappé (→ `null`),
+ * et le fallback premier-mot (utilisé uniquement pour un ID non mappé, avec le nom déjà localisé
+ * par le serveur) avec troncature/ellipse et cas limites.
  */
 class StatusChipUtilsTest {
-    // ─── Mapping standard PrestaShop FR ─────────────────────────────────────
+    // ─── Mapping par ID PrestaShop standard ─────────────────────────────────
 
     @Test
-    fun `paiement accepte mapped to Paye`() {
-        assertEquals("Payé", statusShortLabel("Paiement accepté"))
+    fun `id 1 attente cheque mappe sur orders_status_short_1`() {
+        assertEquals(R.string.orders_status_short_1, statusShortLabelResId(1))
     }
 
     @Test
-    fun `en cours de preparation mapped to Prepa`() {
-        assertEquals("Prépa", statusShortLabel("En cours de préparation"))
+    fun `id 2 paiement accepte mappe sur orders_status_short_2`() {
+        assertEquals(R.string.orders_status_short_2, statusShortLabelResId(2))
     }
 
     @Test
-    fun `expedie mapped to Expedie`() {
-        assertEquals("Expédié", statusShortLabel("Expédié(e)"))
+    fun `id 3 en preparation mappe sur orders_status_short_3`() {
+        assertEquals(R.string.orders_status_short_3, statusShortLabelResId(3))
     }
 
     @Test
-    fun `livre mapped to Livre`() {
-        assertEquals("Livré", statusShortLabel("Livré(e)"))
+    fun `id 4 expedie mappe sur orders_status_short_4`() {
+        assertEquals(R.string.orders_status_short_4, statusShortLabelResId(4))
     }
 
     @Test
-    fun `termine mapped to Termine`() {
-        assertEquals("Terminé", statusShortLabel("Terminé(e)"))
+    fun `id 5 livre mappe sur orders_status_short_5`() {
+        assertEquals(R.string.orders_status_short_5, statusShortLabelResId(5))
     }
 
     @Test
-    fun `attente cheque mapped to Cheque`() {
-        assertEquals("Chèque", statusShortLabel("En attente du paiement par chèque"))
+    fun `id 6 annule mappe sur orders_status_short_6`() {
+        assertEquals(R.string.orders_status_short_6, statusShortLabelResId(6))
     }
 
     @Test
-    fun `attente virement mapped to Virement`() {
-        assertEquals("Virement", statusShortLabel("En attente de paiement (virement/banque)"))
+    fun `id 7 rembourse mappe sur orders_status_short_7`() {
+        assertEquals(R.string.orders_status_short_7, statusShortLabelResId(7))
     }
 
     @Test
-    fun `annule mapped to Annule`() {
-        assertEquals("Annulé", statusShortLabel("Annulé(e)"))
+    fun `id 8 erreur de paiement mappe sur orders_status_short_8`() {
+        assertEquals(R.string.orders_status_short_8, statusShortLabelResId(8))
     }
 
     @Test
-    fun `rembourse mapped to Rembourse`() {
-        assertEquals("Remboursé", statusShortLabel("Remboursé(e)"))
+    fun `id 9 terminee pensebonheur mappe sur orders_status_short_9`() {
+        assertEquals(R.string.orders_status_short_9, statusShortLabelResId(9))
     }
 
     @Test
-    fun `paiement erreur mapped to Erreur`() {
-        assertEquals("Erreur", statusShortLabel("Paiement erreur / refusé"))
+    fun `id 10 attente virement mappe sur orders_status_short_10`() {
+        assertEquals(R.string.orders_status_short_10, statusShortLabelResId(10))
     }
 
-    // ─── Insensibilité casse et accents ──────────────────────────────────────
+    // ─── ID custom (non mappé) ───────────────────────────────────────────────
 
     @Test
-    fun `mapping insensible a la casse`() {
-        assertEquals("Payé", statusShortLabel("PAIEMENT ACCEPTÉ"))
-    }
-
-    @Test
-    fun `mapping insensible aux accents`() {
-        assertEquals("Expédié", statusShortLabel("Expedie"))
+    fun `id custom absent du mapping retourne null`() {
+        assertNull(statusShortLabelResId(999))
     }
 
     @Test
-    fun `preparation en majuscules matchee`() {
-        assertEquals("Prépa", statusShortLabel("PREPARATION EN COURS"))
-    }
-
-    // ─── Priorité du mapping (plus spécifique d'abord) ──────────────────────
-
-    @Test
-    fun `paiement accepte prime sur paiement generique`() {
-        // "Paiement accepté" doit retourner "Payé" et non un fallback ou autre
-        assertEquals("Payé", statusShortLabel("Paiement accepté"))
+    fun `id 0 absent du mapping retourne null`() {
+        assertNull(statusShortLabelResId(0))
     }
 
     @Test
-    fun `cheque prime sur paiement generique dans attente cheque`() {
-        // "En attente du paiement par chèque" contient "paiement" mais "cheque" prime
-        assertEquals("Chèque", statusShortLabel("En attente du paiement par chèque"))
+    fun `id negatif absent du mapping retourne null`() {
+        assertNull(statusShortLabelResId(-1))
     }
 
-    // ─── Fallback : statut non mappé ─────────────────────────────────────────
+    // ─── Fallback premier-mot (statut custom, nom déjà localisé) ─────────────
 
     @Test
     fun `statut inconnu retourne le premier mot`() {
-        assertEquals("Inconnu", statusShortLabel("Inconnu custom"))
+        assertEquals("Inconnu", statusShortLabelFallback("Inconnu custom"))
     }
 
     @Test
     fun `premier mot court retourne tel quel`() {
-        assertEquals("Livraison", statusShortLabel("Livraison rapide"))
+        assertEquals("Livraison", statusShortLabelFallback("Livraison rapide"))
+    }
+
+    @Test
+    fun `fallback fonctionne aussi sur un nom localise en allemand`() {
+        // "In Bearbeitung" (DE) : aucun mot-clé FR ne matchait avant ce refactor, d'où le bug
+        // initial ("In" tronqué). Le fallback ne fait plus de matching par mot-clé : il retourne
+        // simplement le premier mot du nom déjà localisé par le serveur.
+        assertEquals("In", statusShortLabelFallback("In Bearbeitung"))
     }
 
     @Test
     fun `premier mot long tronque avec ellipse`() {
         // "Approvisionnement" = 17 chars > 12 → tronqué à 11 + "…"
-        val result = statusShortLabel("Approvisionnement en cours")
+        val result = statusShortLabelFallback("Approvisionnement en cours")
         assertEquals("Approvision…", result)
         assertEquals(12, result.length) // 11 chars + ellipse = 12
     }
 
     @Test
     fun `premier mot exactement 12 chars retourne tel quel`() {
-        // "Prélèvement_" = 12 chars (on s'assure que 12 n'est pas tronqué)
+        // "Préparatoire" = 12 chars (on s'assure que 12 n'est pas tronqué)
         val name = "Préparatoire uniquement"
-        val result = statusShortLabel(name)
+        val result = statusShortLabelFallback(name)
         val firstWord = "Préparatoire" // 12 chars
         assertEquals(firstWord, result)
     }
@@ -126,26 +126,25 @@ class StatusChipUtilsTest {
 
     @Test
     fun `chaine vide retourne chaine vide`() {
-        assertEquals("", statusShortLabel(""))
+        assertEquals("", statusShortLabelFallback(""))
     }
 
     @Test
     fun `chaine avec seulement des espaces retourne chaine vide`() {
         // isBlank → retourne name tel quel (ici "   " après trim)
-        // La fonction retourne name si blank, donc " " → " "
-        val result = statusShortLabel("   ")
+        val result = statusShortLabelFallback("   ")
         assertEquals("   ", result)
     }
 
     @Test
     fun `un seul mot court retourne tel quel`() {
-        assertEquals("Envoyé", statusShortLabel("Envoyé"))
+        assertEquals("Envoyé", statusShortLabelFallback("Envoyé"))
     }
 
     @Test
     fun `un seul mot tres long tronque`() {
-        // "Désengagement" = 13 chars, ne frappe aucune clé du mapping → fallback
-        val result = statusShortLabel("Désengagement")
+        // "Désengagement" = 13 chars → tronqué avec ellipse
+        val result = statusShortLabelFallback("Désengagement")
         assertEquals("Désengageme…", result)
     }
 }

@@ -1,61 +1,81 @@
 package com.rebuildit.prestaflow.ui.orders
 
-import com.rebuildit.prestaflow.core.util.normalizeForMatch
+import androidx.annotation.StringRes
+import com.rebuildit.prestaflow.R
 
 /*
  * Utilitaires pour les chips de filtre statut : libellés courts et accessibilité.
  *
- * Le mapping couvre les noms standards PrestaShop FR. La correspondance est insensible
- * à la casse et aux accents (via normalizeForMatch déjà défini dans OrdersViewModel).
- * Pour un statut non mappé, le fallback retourne le premier mot tronqué à 12 caractères
- * max avec une ellipse propre (pas de troncature violente).
+ * Depuis que l'app reçoit les statuts de commande localisés côté serveur (header
+ * Accept-Language), un mapping par MOT-CLÉ FRANÇAIS ne fonctionne plus dès que la boutique
+ * répond dans une autre langue (ex. allemand) : aucun mot-clé ne matche, et même en cas de
+ * match le libellé retourné restait en français.
+ *
+ * Le mapping se fait donc désormais par **ID de statut PrestaShop** (stable, indépendant de
+ * la langue) → **ressource de libellé court localisée** ([STATUS_SHORT_LABEL_RES]). Pour un
+ * statut dont l'ID n'est pas dans la table (statut custom d'une boutique), on retombe sur le
+ * comportement historique : premier mot du nom (déjà localisé par le serveur) tronqué avec
+ * ellipse ([statusShortLabelFallback]).
  */
 
 /**
- * Table des correspondances normalisée → libellé court.
+ * Table des correspondances ID de statut PrestaShop → ressource de libellé court.
  *
- * Ordonnée du plus spécifique au plus générique pour éviter les faux positifs.
- * La recherche utilise [String.contains] sur la chaîne normalisée (sans accents, minuscules).
+ * IDs standards PrestaShop, sauf mention contraire :
+ * - 9 = « Terminée » est **spécifique à pensebonheur** (en PrestaShop vanilla, l'ID 9 correspond
+ *   à « En attente de réappro payé »). On le mappe quand même ici car c'est le statut final
+ *   utilisé par notre premier client ; une boutique où l'ID 9 a un autre sens verra un libellé
+ *   « Terminé » incorrect sur ce chip précis — accepté pour l'instant, à revisiter si un 2ᵉ
+ *   client utilise l'ID 9 différemment.
  */
-private val STATUS_LABEL_MAP: List<Pair<String, String>> =
-    listOf(
-        "paiement accepte" to "Payé",
-        "paiement erreur" to "Erreur",
-        "paiement refuse" to "Erreur",
-        "cheque" to "Chèque",
-        "virement" to "Virement",
-        "preparation" to "Prépa",
-        "expedi" to "Expédié",
-        "livre" to "Livré",
-        "termin" to "Terminé",
-        "annul" to "Annulé",
-        "rembours" to "Remboursé",
-        "erreur" to "Erreur",
-        "refus" to "Erreur",
+private val STATUS_SHORT_LABEL_RES: Map<Int, Int> =
+    mapOf(
+        // 1 = Attente chèque
+        1 to R.string.orders_status_short_1,
+        // 2 = Paiement accepté
+        2 to R.string.orders_status_short_2,
+        // 3 = En préparation
+        3 to R.string.orders_status_short_3,
+        // 4 = Expédié
+        4 to R.string.orders_status_short_4,
+        // 5 = Livré
+        5 to R.string.orders_status_short_5,
+        // 6 = Annulé
+        6 to R.string.orders_status_short_6,
+        // 7 = Remboursé
+        7 to R.string.orders_status_short_7,
+        // 8 = Erreur de paiement
+        8 to R.string.orders_status_short_8,
+        // 9 = Terminée (pensebonheur)
+        9 to R.string.orders_status_short_9,
+        // 10 = Attente virement
+        10 to R.string.orders_status_short_10,
     )
 
 /** Longueur maximale du libellé court (premier mot, fallback). */
 private const val SHORT_LABEL_MAX_LEN = 12
 
 /**
- * Retourne le libellé court à afficher sur un chip de filtre statut.
+ * Retourne la ressource de libellé court ([androidx.annotation.StringRes]) pour l'ID de statut
+ * PrestaShop [id], ou `null` si cet ID n'est pas mappé (statut custom d'une boutique).
  *
- * Algorithme :
- * 1. Normalise [name] (minuscules, sans accents) via [normalizeForMatch].
- * 2. Cherche la première entrée de [STATUS_LABEL_MAP] dont la clé est une sous-chaîne du nom normalisé.
- * 3. Si aucune correspondance : prend le premier mot du nom original, tronqué à [SHORT_LABEL_MAX_LEN]
- *    caractères avec une ellipse propre si nécessaire.
+ * Fonction pure (pas d'accès Compose), utilisable telle quelle depuis un test JVM.
+ *
+ * @param id ID de statut PrestaShop tel que renvoyé par l'API (`OrderStatusFilter.id`).
+ */
+@StringRes
+internal fun statusShortLabelResId(id: Int): Int? = STATUS_SHORT_LABEL_RES[id]
+
+/**
+ * Libellé court de repli pour un statut dont l'ID n'est pas mappé dans [STATUS_SHORT_LABEL_RES]
+ * (statut custom d'une boutique) : premier mot de [name] (déjà localisé par le serveur), tronqué
+ * à [SHORT_LABEL_MAX_LEN] caractères avec une ellipse propre si nécessaire.
  *
  * @param name Nom complet du statut tel que renvoyé par l'API (ex. « En cours de préparation »).
- * @return Libellé court adapté au chip (ex. « Prépa »).
+ * @return Libellé court adapté au chip (ex. « En »).
  */
-internal fun statusShortLabel(name: String): String {
+internal fun statusShortLabelFallback(name: String): String {
     if (name.isBlank()) return name
-    val normalized = name.normalizeForMatch()
-    STATUS_LABEL_MAP.forEach { (key, label) ->
-        if (normalized.contains(key)) return label
-    }
-    // Fallback : premier mot du nom original
     val firstWord = name.trim().split(Regex("\\s+")).firstOrNull() ?: name.trim()
     return if (firstWord.length > SHORT_LABEL_MAX_LEN) {
         "${firstWord.take(SHORT_LABEL_MAX_LEN - 1)}…"

@@ -315,6 +315,20 @@
     <!-- Accessibilité chips : le libellé affiché est court, le contentDescription donne le nom complet -->
     <string name="orders_filter_chip_description">Filtrer par statut : %1$s</string>
 
+    <!-- Libellés courts des chips de statut, par ID PrestaShop (stable, indépendant de la
+         langue reçue du serveur). L'ID 9 « Terminée » est spécifique à pensebonheur (en
+         PrestaShop vanilla, 9 = « En attente de réappro payé »). -->
+    <string name="orders_status_short_1">Chèque</string>
+    <string name="orders_status_short_2">Payé</string>
+    <string name="orders_status_short_3">Prépa</string>
+    <string name="orders_status_short_4">Expédié</string>
+    <string name="orders_status_short_5">Livré</string>
+    <string name="orders_status_short_6">Annulé</string>
+    <string name="orders_status_short_7">Remboursé</string>
+    <string name="orders_status_short_8">Erreur</string>
+    <string name="orders_status_short_9">Terminé</string>
+    <string name="orders_status_short_10">Virement</string>
+
     <!-- Menu statuts (bottom sheet) : 2 volets — filtre (100% des statuts) + raccourcis (barre, max N) -->
     <string name="orders_filter_prefs_title">Statuts</string>
     <string name="orders_filter_prefs_section_filter">Filtrer par statut</string>

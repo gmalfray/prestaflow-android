@@ -316,6 +316,20 @@
     <!-- Accessibilité chips : le libellé affiché est court, le contentDescription donne le nom complet -->
     <string name="orders_filter_chip_description">Filter by status: %1$s</string>
 
+    <!-- Short status chip labels, by PrestaShop ID (stable, independent of the language
+         received from the server). ID 9 "Done" is specific to pensebonheur (in vanilla
+         PrestaShop, 9 = "Awaiting paid restock"). -->
+    <string name="orders_status_short_1">Check</string>
+    <string name="orders_status_short_2">Paid</string>
+    <string name="orders_status_short_3">Prep</string>
+    <string name="orders_status_short_4">Shipped</string>
+    <string name="orders_status_short_5">Delivered</string>
+    <string name="orders_status_short_6">Cancelled</string>
+    <string name="orders_status_short_7">Refunded</string>
+    <string name="orders_status_short_8">Error</string>
+    <string name="orders_status_short_9">Done</string>
+    <string name="orders_status_short_10">Transfer</string>
+
     <!-- Menu statuts (bottom sheet) : 2 volets — filtre (100% des statuts) + raccourcis (barre, max N) -->
     <string name="orders_filter_prefs_title">Statuses</string>
     <string name="orders_filter_prefs_section_filter">Filter by status</string>
