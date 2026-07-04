@@ -621,6 +621,21 @@ class OrdersViewModel
                     .distinctUntilChanged()
                     .drop(1)
                     .collect {
+                        // Recharge AUSSI la liste des statuts : leurs libellés (badges de commande ET
+                        // puces de filtre de statut) sont localisés côté serveur selon Accept-Language.
+                        // Sans ce rechargement, seules les commandes se rafraîchissaient et les puces
+                        // restaient dans l'ancienne langue (ex. « Expédié » en app allemande). Les IDs
+                        // de statut sont stables entre langues → on met à jour les noms sans toucher à
+                        // la sélection courante (selectedStatusIds).
+                        runCatching { ordersRepository.getOrderStatuses() }
+                            .onSuccess { statuses ->
+                                if (statuses.isNotEmpty()) {
+                                    _uiState.update { it.copy(availableStatuses = statuses) }
+                                }
+                            }
+                            .onFailure { error ->
+                                Timber.w(error, "Rechargement des statuts au changement de langue échoué")
+                            }
                         refresh(forceRemote = true, notifyOnError = false)
                     }
             }

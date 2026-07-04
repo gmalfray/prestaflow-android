@@ -700,6 +700,35 @@ class OrdersViewModelTest {
             assertEquals(2, vm.uiState.value.availableStatuses.size)
         }
 
+    @Test
+    fun `un changement de langue recharge les statuts avec leurs libelles localises`() =
+        runTest {
+            // Au démarrage : statuts renvoyés en français (comme le connecteur sans Accept-Language).
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(2, "Paiement accepté", "#00FF00"),
+                    OrderStatusFilter(9, "Terminée", "#0000FF"),
+                )
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            assertEquals("Terminée", vm.uiState.value.availableStatuses.first { it.id == 9 }.name)
+
+            // Le serveur renverra désormais les statuts en allemand (Accept-Language: de) — mêmes IDs.
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(2, "Zahlung akzeptiert", "#00FF00"),
+                    OrderStatusFilter(9, "Fertig", "#0000FF"),
+                )
+            fakeLanguageRepo.emit("de")
+            advanceUntilIdle()
+
+            assertEquals(
+                "Les libellés de statut (puces de filtre) doivent suivre la nouvelle langue",
+                "Fertig",
+                vm.uiState.value.availableStatuses.first { it.id == 9 }.name,
+            )
+        }
+
     // ─── État d'erreur ───────────────────────────────────────────────────────
 
     @Test
