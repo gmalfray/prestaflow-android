@@ -114,7 +114,7 @@ class OrdersViewModelTest {
         }
 
     @Test
-    fun `taper un 2e chip remplace la selection - selection unique`() =
+    fun `taper un 2e chip l ajoute a la selection - multi statuts`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
@@ -124,22 +124,45 @@ class OrdersViewModelTest {
             vm.onStatusFilterSelected(statusId = 4)
             advanceUntilIdle()
 
-            // Les chips sont en sélection UNIQUE : le 2e tap REMPLACE (il ne s'ajoute pas).
-            // Le multi-statuts reste possible via le menu de filtre (onStatusFiltersReplaced).
-            assertEquals(setOf(4), vm.uiState.value.selectedStatusIds)
+            // Chaque chip est indépendamment toggleable : le 2e tap AJOUTE (multi-statuts).
+            assertEquals(setOf(2, 4), vm.uiState.value.selectedStatusIds)
         }
 
-    // ─── Filtre par défaut (résolution par nom) ──────────────────────────────
+    @Test
+    fun `taper un statut deja actif le retire meme parmi plusieurs - retrait des defauts`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            // Sélection multi (comme le filtre par défaut) : 2, 4, 5 actifs.
+            vm.onStatusFilterSelected(statusId = 2)
+            vm.onStatusFilterSelected(statusId = 4)
+            vm.onStatusFilterSelected(statusId = 5)
+            advanceUntilIdle()
+            assertEquals(setOf(2, 4, 5), vm.uiState.value.selectedStatusIds)
+
+            // Taper 4 (déjà actif) doit le RETIRER sans toucher aux autres.
+            vm.onStatusFilterSelected(statusId = 4)
+            advanceUntilIdle()
+
+            assertEquals(
+                "Un statut actif tapé doit être retiré, les autres conservés",
+                setOf(2, 5),
+                vm.uiState.value.selectedStatusIds,
+            )
+        }
+
+    // ─── Filtre par défaut (résolution par ID PrestaShop stable) ─────────────
 
     @Test
-    fun `les statuts par defaut sont resolus par nom au demarrage`() =
+    fun `les statuts par defaut sont resolus par ID au demarrage`() =
         runTest {
             fakeOrdersRepo.orderStatuses =
                 listOf(
                     OrderStatusFilter(2, "Paiement accepté", "#00FF00"),
                     OrderStatusFilter(3, "En cours de préparation", "#0000FF"),
                     OrderStatusFilter(4, "Expédié", "#FFA500"),
-                    OrderStatusFilter(5, "Terminé", "#888888"),
+                    OrderStatusFilter(9, "Terminée", "#888888"),
                     OrderStatusFilter(6, "Annulé", "#FF0000"),
                 )
 
@@ -147,46 +170,54 @@ class OrdersViewModelTest {
             advanceUntilIdle()
 
             val ids = vm.uiState.value.selectedStatusIds
-            assertTrue("Paiement accepté (id=2) doit être sélectionné par défaut", 2 in ids)
-            assertTrue("En cours de préparation (id=3) doit être sélectionné par défaut", 3 in ids)
-            assertTrue("Expédié (id=4) doit être sélectionné par défaut", 4 in ids)
-            assertTrue("Terminé (id=5) doit être sélectionné par défaut", 5 in ids)
+            assertEquals(
+                "Défaut = IDs 2/3/4/9 présents (à traiter), pas les autres",
+                setOf(2, 3, 4, 9),
+                ids,
+            )
             assertFalse("Annulé (id=6) ne doit PAS être sélectionné par défaut", 6 in ids)
         }
 
     @Test
-    fun `si aucun statut ne matche les defauts le filtre est vide (toutes)`() =
+    fun `si aucun statut par defaut n existe le filtre est vide (toutes)`() =
         runTest {
             fakeOrdersRepo.orderStatuses =
                 listOf(
-                    OrderStatusFilter(1, "Statut inconnu", "#AAAAAA"),
-                    OrderStatusFilter(2, "Autre statut", "#BBBBBB"),
+                    OrderStatusFilter(1, "En attente de paiement", "#AAAAAA"),
+                    OrderStatusFilter(6, "Annulé", "#BBBBBB"),
+                    OrderStatusFilter(7, "Remboursé", "#CCCCCC"),
                 )
 
             val vm = buildViewModel()
             advanceUntilIdle()
 
             assertTrue(
-                "selectedStatusIds doit être vide si aucun statut ne matche",
+                "selectedStatusIds doit être vide si aucun ID par défaut n'existe",
                 vm.uiState.value.selectedStatusIds.isEmpty(),
             )
         }
 
     @Test
-    fun `resolution insensible a la casse et aux accents`() =
+    fun `resolution par ID robuste a la langue d affichage`() =
         runTest {
+            // Mêmes IDs, mais noms en ALLEMAND (statuts localisés côté serveur) : la résolution par
+            // ID doit fonctionner identiquement — c'est tout l'intérêt vs l'ancien matching par nom FR.
             fakeOrdersRepo.orderStatuses =
                 listOf(
-                    OrderStatusFilter(10, "PAIEMENT ACCEPTE", "#00FF00"),
-                    OrderStatusFilter(11, "PREPARATION EN COURS", "#0000FF"),
+                    OrderStatusFilter(2, "Zahlung akzeptiert", "#00FF00"),
+                    OrderStatusFilter(3, "In Bearbeitung", "#0000FF"),
+                    OrderStatusFilter(4, "Versandt", "#FFA500"),
+                    OrderStatusFilter(9, "Fertig", "#888888"),
                 )
 
             val vm = buildViewModel()
             advanceUntilIdle()
 
-            val ids = vm.uiState.value.selectedStatusIds
-            assertTrue("PAIEMENT ACCEPTE doit être résolu", 10 in ids)
-            assertTrue("PREPARATION EN COURS doit être résolu", 11 in ids)
+            assertEquals(
+                "Le défaut par ID doit s'appliquer même avec des noms non-français",
+                setOf(2, 3, 4, 9),
+                vm.uiState.value.selectedStatusIds,
+            )
         }
 
     // ─── Tri ─────────────────────────────────────────────────────────────────
@@ -509,13 +540,14 @@ class OrdersViewModelTest {
         }
 
     @Test
-    fun `swipe RIGHT priorise Termine meme si Livre est avant dans la liste`() =
+    fun `swipe RIGHT priorise Terminee (id 9) meme si Livre (id 5) est avant dans la liste`() =
         runTest {
-            // Cas critique du bug : Livré (id 5, ordre standard PS) précède Terminé (id 6)
+            // Le défaut RIGHT est l'ID 9 (Terminée) ; l'ordre dans la liste n'a pas d'importance
+            // (résolution par ID, pas par position ni par nom).
             fakeOrdersRepo.orderStatuses =
                 listOf(
                     OrderStatusFilter(5, "Livré", "#444444"),
-                    OrderStatusFilter(6, "Terminé", "#888888"),
+                    OrderStatusFilter(9, "Terminée", "#888888"),
                 )
             fakeOrdersRepo.setOrders(listOf(buildOrder(1L, "#ORD-001", status = "Paiement accepté")))
 
@@ -526,8 +558,8 @@ class OrdersViewModelTest {
 
             val pending = vm.uiState.value.pendingSwipeAction
             assertEquals(
-                "RIGHT doit résoudre Terminé même si Livré précède dans la liste",
-                "Terminé",
+                "RIGHT doit résoudre Terminée (id 9) même si Livré précède dans la liste",
+                "Terminée",
                 pending?.targetStatusName,
             )
         }
@@ -976,16 +1008,16 @@ class OrdersViewModelTest {
 
             assertTrue(
                 "isSwipeSource doit retourner true quand currentStateId == sourceStatusId",
-                vm.isSwipeSource(config, "Paiement accepté", 2),
+                vm.isSwipeSource(config, 2),
             )
             assertFalse(
                 "isSwipeSource doit retourner false quand currentStateId != sourceStatusId",
-                vm.isSwipeSource(config, "En préparation", 3),
+                vm.isSwipeSource(config, 3),
             )
         }
 
     @Test
-    fun `isSwipeSource se replie sur le nom quand swipeEnabled false retourne false`() =
+    fun `isSwipeSource retourne false quand swipe desactive`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
@@ -994,25 +1026,26 @@ class OrdersViewModelTest {
 
             assertFalse(
                 "isSwipeSource doit retourner false quand swipe désactivé",
-                vm.isSwipeSource(config, "Paiement accepté", 2),
+                vm.isSwipeSource(config, 2),
             )
         }
 
     @Test
-    fun `isSwipeSource se replie sur le nom quand sourceStatusId est null`() =
+    fun `isSwipeSource utilise le defaut par ID (2 paiement accepte) quand sourceStatusId est null`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
 
             val configSansId = SwipeConfig(enabled = true, sourceStatusId = null)
 
+            // Défaut = ID 2 (Paiement accepté), par ID stable et non par nom → robuste à la langue.
             assertTrue(
-                "isSwipeSource doit matcher par nom 'paiement accepte' quand sourceStatusId est null",
-                vm.isSwipeSource(configSansId, "Paiement accepté", 2),
+                "currentStateId == 2 (défaut) doit matcher, quel que soit le libellé",
+                vm.isSwipeSource(configSansId, 2),
             )
             assertFalse(
-                "Un statut sans 'paiement accepte' dans le nom ne doit pas matcher",
-                vm.isSwipeSource(configSansId, "En préparation", 3),
+                "Un autre currentStateId ne doit pas matcher le défaut",
+                vm.isSwipeSource(configSansId, 3),
             )
         }
 
@@ -1040,18 +1073,18 @@ class OrdersViewModelTest {
         }
 
     @Test
-    fun `resolveTargetStatus LEFT se replie sur le nom quand ID configure introuvable`() =
+    fun `resolveTargetStatus LEFT se replie sur le defaut par ID (3) quand ID configure introuvable`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
 
-            // ID 99 n'existe pas dans la liste → repli par nom
+            // ID 99 n'existe pas dans la liste → repli sur le défaut par ID (3 = En préparation)
             val config = SwipeConfig(enabled = true, leftTargetStatusId = 99)
             val statuses = listOf(OrderStatusFilter(3, "En cours de préparation", "#0000FF"))
 
             val result = vm.resolveTargetStatus(config, statuses, SwipeDirection.LEFT)
             assertEquals(
-                "Si l'ID configuré est introuvable, doit se replier sur le statut 'preparation'",
+                "Si l'ID configuré est introuvable, doit se replier sur le défaut (id 3)",
                 3,
                 result?.id,
             )
@@ -1079,18 +1112,18 @@ class OrdersViewModelTest {
         }
 
     @Test
-    fun `resolveTargetStatus RIGHT se replie sur Termine par nom quand ID introuvable`() =
+    fun `resolveTargetStatus RIGHT se replie sur le defaut par ID (9 puis 5) quand ID introuvable`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
 
-            // ID 99 absent → repli par nom "termin"
+            // ID 99 absent, id 9 absent → repli sur le fallback par ID (5 = Livré)
             val config = SwipeConfig(enabled = true, rightTargetStatusId = 99)
             val statuses = listOf(OrderStatusFilter(5, "Terminé", "#888888"))
 
             val result = vm.resolveTargetStatus(config, statuses, SwipeDirection.RIGHT)
             assertEquals(
-                "Si l'ID RIGHT est introuvable, doit se replier sur le statut contenant 'termin'",
+                "Si l'ID RIGHT et le défaut (9) sont absents, doit se replier sur l'id 5",
                 5,
                 result?.id,
             )

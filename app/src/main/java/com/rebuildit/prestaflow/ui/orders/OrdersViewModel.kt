@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
-import com.rebuildit.prestaflow.core.util.normalizeForMatch
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.language.LanguageRepository
@@ -54,56 +53,56 @@ data class SwipeConfig(
 private const val PAGE_SIZE = OrdersRepository.DEFAULT_PAGE_SIZE
 
 /**
- * Noms de statuts PrestaShop à activer par défaut lors de l'ouverture de l'écran.
- * Chaque entrée est comparée après normalisation (minuscules, sans accents, sans espaces superflus)
- * au nom des statuts disponibles (correspondance par sous-chaîne).
+ * IDs de statut PrestaShop pré-sélectionnés par défaut à l'ouverture de l'écran (« commandes à
+ * traiter »). **Par ID (stable, indépendant de la langue)** et non par nom : le matching par nom FR
+ * cassait dès que l'app affichait les statuts dans une autre langue (filtre par défaut vide) et
+ * pouvait matcher des statuts non voulus (ex. « expedi » matchait aussi « En cours d'expédition »).
+ * 2 = Paiement accepté, 3 = En cours de préparation, 4 = Expédié (IDs standards PrestaShop),
+ * 9 = Terminée (pensebonheur). Un ID absent de la boutique est ignoré (intersection avec les
+ * statuts réellement disponibles), donc sans effet sur une autre boutique.
  */
-private val DEFAULT_STATUS_MATCHERS =
-    listOf(
-        "paiement accepte",
-        "preparation",
-        "expedi",
-        "termin",
-    )
+private val DEFAULT_STATUS_IDS = listOf(2, 3, 4, 9)
 
 /**
- * Noms de statuts à afficher par défaut dans la barre de chips (quand aucune préférence n'est
- * encore enregistrée). Correspondance par sous-chaîne après normalisation, dans l'ordre donné.
- * Max [MAX_VISIBLE_STATUS_CHIPS] chips.
+ * IDs de statuts affichés par défaut comme chips-raccourcis dans la barre (quand aucune préférence
+ * n'est enregistrée), au plus [MAX_VISIBLE_STATUS_CHIPS] : 3 = En préparation, 4 = Expédié,
+ * 9 = Terminée. Par ID pour la même raison que [DEFAULT_STATUS_IDS].
  */
-private val DEFAULT_VISIBLE_CHIP_MATCHERS = listOf("preparation", "expedi", "termin")
+private val DEFAULT_VISIBLE_CHIP_IDS = listOf(3, 4, 9)
 
 /** Nombre maximum de chips de statut dans la barre de filtres (hors chip « Toutes »). */
 internal const val MAX_VISIBLE_STATUS_CHIPS = 3
 
+// IDs de statut PrestaShop utilisés comme défauts du swipe quand rien n'est configuré. Par ID
+// (stable, indépendant de la langue) : le repli historique par nom FR cassait dès que les statuts
+// étaient affichés dans une autre langue (contenu localisé serveur via Accept-Language).
+internal const val SWIPE_DEFAULT_SOURCE_ID = 2 // Paiement accepté
+private const val SWIPE_DEFAULT_LEFT_TARGET_ID = 3 // En cours de préparation
+private const val SWIPE_DEFAULT_RIGHT_TARGET_ID = 9 // Terminée
+private const val SWIPE_DEFAULT_RIGHT_FALLBACK_ID = 5 // Livré
+
 /**
- * Résout les IDs de statuts correspondant aux noms par défaut dans [availableStatuses].
- * Retourne un ensemble vide si aucun statut ne correspond (fallback = tous).
+ * Résout les IDs de statuts pré-sélectionnés par défaut, par intersection de [DEFAULT_STATUS_IDS]
+ * avec les statuts réellement disponibles dans la boutique. Ensemble vide si aucun (fallback = tous).
  */
-internal fun resolveDefaultStatusIds(availableStatuses: List<OrderStatusFilter>): Set<Int> =
-    availableStatuses
-        .filter { status ->
-            val n = status.name.normalizeForMatch()
-            DEFAULT_STATUS_MATCHERS.any { matcher -> n.contains(matcher) }
-        }
-        .map { it.id }
-        .toSet()
+internal fun resolveDefaultStatusIds(availableStatuses: List<OrderStatusFilter>): Set<Int> {
+    val availableIds = availableStatuses.mapTo(HashSet()) { it.id }
+    return DEFAULT_STATUS_IDS.filter { it in availableIds }.toSet()
+}
 
 /**
  * Résout la liste de statuts à afficher par défaut dans la barre de chips.
  *
  * Stratégie :
- * - Pour chaque matcher de [DEFAULT_VISIBLE_CHIP_MATCHERS], prend le premier statut dont le nom
- *   normalisé contient le matcher. Un statut ne peut apparaître qu'une seule fois (dedup par id).
- * - Si aucun statut ne matche, repli sur les [MAX_VISIBLE_STATUS_CHIPS] premiers statuts disponibles.
- * - Retourne au plus [MAX_VISIBLE_STATUS_CHIPS] entrées.
+ * - Prend les statuts dont l'ID figure dans [DEFAULT_VISIBLE_CHIP_IDS] (dans cet ordre), au plus
+ *   [MAX_VISIBLE_STATUS_CHIPS].
+ * - Si aucun de ces IDs n'existe dans la boutique, repli sur les [MAX_VISIBLE_STATUS_CHIPS] premiers
+ *   statuts disponibles.
  */
 internal fun resolveDefaultVisibleChips(availableStatuses: List<OrderStatusFilter>): List<OrderStatusFilter> {
-    val matched =
-        DEFAULT_VISIBLE_CHIP_MATCHERS.mapNotNull { matcher ->
-            availableStatuses.firstOrNull { it.name.normalizeForMatch().contains(matcher) }
-        }.distinctBy { it.id }
-    return if (matched.isEmpty()) availableStatuses.take(MAX_VISIBLE_STATUS_CHIPS) else matched
+    val byId = availableStatuses.associateBy { it.id }
+    val matched = DEFAULT_VISIBLE_CHIP_IDS.mapNotNull { byId[it] }.take(MAX_VISIBLE_STATUS_CHIPS)
+    return matched.ifEmpty { availableStatuses.take(MAX_VISIBLE_STATUS_CHIPS) }
 }
 
 /** Sens du swipe sur une ligne de commande. */
@@ -204,7 +203,11 @@ class OrdersViewModel
 
         /**
          * Bascule le statut [statusId] dans / hors du filtre actif puis recharge la liste.
-         * Si [statusId] est null, réinitialise tous les filtres.
+         *
+         * Chaque chip est **indépendamment toggleable** : taper un statut inactif l'ajoute au filtre,
+         * taper un statut actif le retire — y compris les statuts sélectionnés par défaut. Le filtre
+         * peut donc porter sur plusieurs statuts simultanément (cohérent avec l'affichage multi-chips
+         * de la barre). [statusId] `null` (chip « Toutes ») réinitialise le filtre.
          */
         fun onStatusFilterSelected(statusId: Int?) {
             _uiState.update { current ->
@@ -212,12 +215,10 @@ class OrdersViewModel
                     when {
                         // "Toutes" → aucun filtre.
                         statusId == null -> emptySet()
-                        // Re-tap sur le chip déjà seul sélectionné → désélectionne (revient à "Toutes").
-                        current.selectedStatusIds == setOf(statusId) -> emptySet()
-                        // Sinon : sélection UNIQUE — n'affiche QUE ce statut (les chips sont des
-                        // raccourcis « voir seulement ce statut »). Le multi-statuts reste possible
-                        // via le menu de filtre (onStatusFiltersReplaced).
-                        else -> setOf(statusId)
+                        // Chip déjà actif → on le retire (désélection indépendante, défaut compris).
+                        statusId in current.selectedStatusIds -> current.selectedStatusIds - statusId
+                        // Sinon → on l'ajoute à la sélection (multi-statuts).
+                        else -> current.selectedStatusIds + statusId
                     }
                 current.copy(selectedStatusIds = newSelection)
             }
@@ -368,7 +369,8 @@ class OrdersViewModel
          * Résout le statut cible en fonction de la direction et de la config swipe.
          *
          * - Si un ID est configuré et trouvé dans [statuses] → utilise cet ID.
-         * - Sinon (null ou ID introuvable) → résolution par nom normalisé (repli historique).
+         * - Sinon (null ou ID introuvable) → défaut par ID PrestaShop stable (gauche = En préparation,
+         *   droite = Terminée avec repli Livré) — indépendant de la langue d'affichage des statuts.
          */
         internal fun resolveTargetStatus(
             config: SwipeConfig,
@@ -377,25 +379,14 @@ class OrdersViewModel
         ) = when (direction) {
             SwipeDirection.LEFT -> {
                 val configuredId = config.leftTargetStatusId
-                if (configuredId != null) {
-                    statuses.firstOrNull { it.id == configuredId }
-                        ?: statuses.firstOrNull { it.name.normalizeForMatch().contains("preparation") }
-                } else {
-                    statuses.firstOrNull { it.name.normalizeForMatch().contains("preparation") }
-                }
+                statuses.firstOrNull { it.id == (configuredId ?: SWIPE_DEFAULT_LEFT_TARGET_ID) }
+                    ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_LEFT_TARGET_ID }
             }
             SwipeDirection.RIGHT -> {
                 val configuredId = config.rightTargetStatusId
-                if (configuredId != null) {
-                    statuses.firstOrNull { it.id == configuredId }
-                        ?: (
-                            statuses.firstOrNull { it.name.normalizeForMatch().contains("termin") }
-                                ?: statuses.firstOrNull { it.name.normalizeForMatch().contains("livr") }
-                        )
-                } else {
-                    statuses.firstOrNull { it.name.normalizeForMatch().contains("termin") }
-                        ?: statuses.firstOrNull { it.name.normalizeForMatch().contains("livr") }
-                }
+                statuses.firstOrNull { it.id == (configuredId ?: SWIPE_DEFAULT_RIGHT_TARGET_ID) }
+                    ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_RIGHT_TARGET_ID }
+                    ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_RIGHT_FALLBACK_ID }
             }
         }
 
@@ -403,21 +394,16 @@ class OrdersViewModel
          * Résout si une commande avec le statut [orderStatus] est éligible au swipe,
          * selon la config source.
          *
-         * - Si [SwipeConfig.sourceStatusId] est configuré et trouvé → compare par ID.
-         * - Sinon → repli par nom normalisé (matcher "paiement accepte").
+         * - Si [SwipeConfig.sourceStatusId] est configuré → compare par ID.
+         * - Sinon → défaut par ID PrestaShop stable (Paiement accepté = 2), via [currentStateId] —
+         *   plus de matching par nom FR (cassé en langue étrangère).
          */
         internal fun isSwipeSource(
             config: SwipeConfig,
-            orderStatus: String,
             currentStateId: Int,
         ): Boolean {
             if (!config.enabled) return false
-            val configuredId = config.sourceStatusId
-            return if (configuredId != null) {
-                currentStateId == configuredId
-            } else {
-                orderStatus.normalizeForMatch().contains("paiement accepte")
-            }
+            return currentStateId == (config.sourceStatusId ?: SWIPE_DEFAULT_SOURCE_ID)
         }
 
         /** Annule l'action de swipe en attente (sans envoi API). */

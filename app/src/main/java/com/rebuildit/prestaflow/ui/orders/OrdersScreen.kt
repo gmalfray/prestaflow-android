@@ -88,7 +88,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.print.InvoicePrinter
 import com.rebuildit.prestaflow.core.ui.asString
-import com.rebuildit.prestaflow.core.util.normalizeForMatch
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.orders.model.Order
@@ -659,18 +658,14 @@ private fun SwipeableOrderRow(
     swipeConfig: SwipeConfig = SwipeConfig(),
 ) {
     // Le swipe est actif uniquement si le statut de la commande correspond à la source configurée.
-    // Par défaut (aucun ID configuré) : matcher "paiement accepte" (comportement historique).
+    // Par défaut (aucun ID configuré) : Paiement accepté (id PrestaShop stable), par ID plutôt que
+    // par nom FR — robuste quelle que soit la langue d'affichage des statuts.
     val isSwipeSource =
-        remember(order.status, order.currentStateId, swipeConfig, availableStatuses) {
+        remember(order.currentStateId, swipeConfig, availableStatuses) {
             if (!swipeConfig.enabled) {
                 false
             } else {
-                val configuredId = swipeConfig.sourceStatusId
-                if (configuredId != null) {
-                    order.currentStateId == configuredId
-                } else {
-                    order.status.normalizeForMatch().contains("paiement accepte")
-                }
+                order.currentStateId == (swipeConfig.sourceStatusId ?: SWIPE_DEFAULT_SOURCE_ID)
             }
         }
 
