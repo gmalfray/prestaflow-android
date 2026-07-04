@@ -1,6 +1,9 @@
 package com.rebuildit.prestaflow.core.notifications
 
+import android.content.Context
 import com.rebuildit.prestaflow.core.network.ApiEndpointManager
+import com.rebuildit.prestaflow.data.remote.interceptor.AcceptLanguageInterceptor
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonPrimitive
@@ -28,8 +31,12 @@ class ShopDeviceRegistrar
     constructor(
         private val endpointManager: ApiEndpointManager,
         private val ioDispatcher: CoroutineDispatcher,
+        @ApplicationContext private val context: Context,
     ) : ShopDeviceRegistrarContract {
-        private val client = OkHttpClient()
+        private val client =
+            OkHttpClient.Builder()
+                .addInterceptor(AcceptLanguageInterceptor(context))
+                .build()
 
         override suspend fun registerOnShop(
             shopUrl: String,

@@ -6,6 +6,7 @@ import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
+import com.rebuildit.prestaflow.fakes.FakeLanguageRepository
 import com.rebuildit.prestaflow.fakes.FakeOrdersPreferencesRepository
 import com.rebuildit.prestaflow.fakes.FakeOrdersRepository
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +38,7 @@ class OrdersViewModelTest {
     private lateinit var fakeOrdersRepo: FakeOrdersRepository
     private lateinit var fakePrefsRepo: FakeOrdersPreferencesRepository
     private lateinit var fakeAuthRepo: FakeAuthRepository
+    private lateinit var fakeLanguageRepo: FakeLanguageRepository
 
     @Before
     fun setUp() {
@@ -44,6 +46,7 @@ class OrdersViewModelTest {
         fakeOrdersRepo = FakeOrdersRepository()
         fakePrefsRepo = FakeOrdersPreferencesRepository()
         fakeAuthRepo = FakeAuthRepository()
+        fakeLanguageRepo = FakeLanguageRepository()
     }
 
     @After
@@ -58,6 +61,7 @@ class OrdersViewModelTest {
             ordersPreferencesRepository = fakePrefsRepo,
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = fakeAuthRepo,
+            languageRepository = fakeLanguageRepo,
         )
 
     // ─── Filtre multi-statuts ────────────────────────────────────────────────

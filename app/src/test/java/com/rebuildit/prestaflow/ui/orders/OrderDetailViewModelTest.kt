@@ -5,6 +5,7 @@ import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderShipping
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
+import com.rebuildit.prestaflow.fakes.FakeLanguageRepository
 import com.rebuildit.prestaflow.fakes.FakeOrdersRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,11 +31,13 @@ import org.junit.Test
 class OrderDetailViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeOrdersRepo: FakeOrdersRepository
+    private lateinit var fakeLanguageRepo: FakeLanguageRepository
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeOrdersRepo = FakeOrdersRepository()
+        fakeLanguageRepo = FakeLanguageRepository()
     }
 
     @After
@@ -47,6 +50,7 @@ class OrderDetailViewModelTest {
         return OrderDetailViewModel(
             savedStateHandle = savedState,
             ordersRepository = fakeOrdersRepo,
+            languageRepository = fakeLanguageRepo,
         )
     }
 

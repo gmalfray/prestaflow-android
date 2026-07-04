@@ -49,6 +49,7 @@ import com.rebuildit.prestaflow.data.printer.ThermalPrinterPreferencesRepository
 import com.rebuildit.prestaflow.data.products.ProductsRepositoryImpl
 import com.rebuildit.prestaflow.data.products.StockReplenishPreferencesRepositoryImpl
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
+import com.rebuildit.prestaflow.data.remote.interceptor.AcceptLanguageInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.AuthInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DefaultHeadersInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DynamicBaseUrlInterceptor
@@ -119,10 +120,17 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideAcceptLanguageInterceptor(
+        @ApplicationContext context: Context,
+    ): AcceptLanguageInterceptor = AcceptLanguageInterceptor(context)
+
+    @Provides
+    @Singleton
     fun provideOkHttpClient(
         dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor,
         authInterceptor: AuthInterceptor,
         defaultHeadersInterceptor: DefaultHeadersInterceptor,
+        acceptLanguageInterceptor: AcceptLanguageInterceptor,
         tokenAuthenticator: TokenAuthenticator,
     ): OkHttpClient =
         OkHttpClient.Builder()
@@ -132,6 +140,7 @@ object AppModule {
             .authenticator(tokenAuthenticator)
             .addInterceptor(dynamicBaseUrlInterceptor)
             .addInterceptor(defaultHeadersInterceptor)
+            .addInterceptor(acceptLanguageInterceptor)
             .addInterceptor(authInterceptor)
             .apply {
                 if (BuildConfig.DEBUG) {
@@ -296,11 +305,12 @@ object AppModule {
     @Provides
     @Singleton
     @SyncHttpClient
-    fun provideSyncHttpClient(): OkHttpClient =
+    fun provideSyncHttpClient(acceptLanguageInterceptor: AcceptLanguageInterceptor): OkHttpClient =
         OkHttpClient.Builder()
             .connectTimeout(Duration.ofSeconds(30))
             .readTimeout(Duration.ofSeconds(30))
             .writeTimeout(Duration.ofSeconds(30))
+            .addInterceptor(acceptLanguageInterceptor)
             .build()
 
     @Provides

@@ -1,8 +1,11 @@
 package com.rebuildit.prestaflow.data.auth
 
+import android.content.Context
 import com.rebuildit.prestaflow.data.remote.dto.AuthRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.AuthResponseDto
+import com.rebuildit.prestaflow.data.remote.interceptor.AcceptLanguageInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DefaultHeadersInterceptor
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -48,6 +51,7 @@ class LoginApiClient
     @Inject
     constructor(
         private val json: Json,
+        @ApplicationContext private val context: Context,
     ) : LoginApiClientContract {
         private val httpClient: OkHttpClient =
             OkHttpClient.Builder()
@@ -55,6 +59,7 @@ class LoginApiClient
                 .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                 .writeTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                 .addInterceptor(DefaultHeadersInterceptor())
+                .addInterceptor(AcceptLanguageInterceptor(context))
                 .build()
 
         override suspend fun login(

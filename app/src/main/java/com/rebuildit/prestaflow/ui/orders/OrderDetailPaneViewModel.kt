@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.domain.language.LanguageRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -32,6 +35,7 @@ class OrderDetailPaneViewModel
     @Inject
     constructor(
         private val ordersRepository: OrdersRepository,
+        private val languageRepository: LanguageRepository,
     ) : ViewModel() {
         private val selectedOrderIdFlow = MutableStateFlow<Long?>(null)
 
@@ -65,6 +69,26 @@ class OrderDetailPaneViewModel
 
         init {
             loadStatuses()
+            observeLanguageChange()
+        }
+
+        /**
+         * Recharge les statuts et la commande sélectionnée quand la langue d'affichage change.
+         * Ce ViewModel survit à la recréation d'Activity déclenchée par un changement de langue
+         * in-app : sans ce refresh explicite, le panneau resterait affiché dans l'ancienne langue.
+         */
+        private fun observeLanguageChange() {
+            viewModelScope.launch {
+                languageRepository.currentLanguageTag
+                    .distinctUntilChanged()
+                    .drop(1)
+                    .collect {
+                        loadStatuses()
+                        selectedOrderIdFlow.value?.let { id ->
+                            runCatching { ordersRepository.refreshOrder(id) }
+                        }
+                    }
+            }
         }
 
         /** Charge les statuts disponibles depuis l'API (silencieux en cas d'erreur). */

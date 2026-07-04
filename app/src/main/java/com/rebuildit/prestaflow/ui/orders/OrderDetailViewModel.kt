@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.print.ThermalLabelPrinter
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.domain.language.LanguageRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -30,6 +33,7 @@ class OrderDetailViewModel
     constructor(
         savedStateHandle: SavedStateHandle,
         private val ordersRepository: OrdersRepository,
+        private val languageRepository: LanguageRepository,
     ) : ViewModel() {
         private val orderId: Long = checkNotNull(savedStateHandle["orderId"])
 
@@ -55,6 +59,13 @@ class OrderDetailViewModel
         val availableStatuses: StateFlow<List<OrderStatusFilter>> = _availableStatuses.asStateFlow()
 
         init {
+            loadOrderDetail()
+            loadStatuses()
+            observeLanguageChange()
+        }
+
+        /** Recharge le détail de la commande depuis l'API (silencieux : le cache reste affiché). */
+        private fun loadOrderDetail() {
             viewModelScope.launch {
                 runCatching {
                     ordersRepository.refreshOrder(orderId)
@@ -68,7 +79,6 @@ class OrderDetailViewModel
                     }
                 }
             }
-            loadStatuses()
         }
 
         /** Charge les statuts disponibles depuis l'API (silencieux en cas d'erreur). */
@@ -78,6 +88,26 @@ class OrderDetailViewModel
                     .onSuccess { statuses -> _availableStatuses.value = statuses }
                     .onFailure { error ->
                         Timber.w(error, "Impossible de charger les statuts pour le détail commande")
+                    }
+            }
+        }
+
+        /**
+         * Recharge le détail de commande et les statuts quand la langue d'affichage change.
+         *
+         * Ce ViewModel (scope Navigation Compose) survit à la recréation d'Activity déclenchée
+         * par un changement de langue in-app : sans ce refresh explicite, le détail déjà en cache
+         * Room (statut, libellés) resterait affiché dans l'ancienne langue. Cf.
+         * [com.rebuildit.prestaflow.data.remote.interceptor.AcceptLanguageInterceptor].
+         */
+        private fun observeLanguageChange() {
+            viewModelScope.launch {
+                languageRepository.currentLanguageTag
+                    .distinctUntilChanged()
+                    .drop(1)
+                    .collect {
+                        loadOrderDetail()
+                        loadStatuses()
                     }
             }
         }

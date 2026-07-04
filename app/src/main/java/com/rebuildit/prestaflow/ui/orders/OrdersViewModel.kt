@@ -8,6 +8,7 @@ import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.core.util.normalizeForMatch
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
+import com.rebuildit.prestaflow.domain.language.LanguageRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersPreferencesRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
@@ -129,6 +130,7 @@ data class PendingSwipeAction(
 )
 
 @HiltViewModel
+@Suppress("LongParameterList") // Dépendances ViewModel (repos + mappers) toutes nécessaires, cf. SyncTaskExecutor
 class OrdersViewModel
     @Inject
     constructor(
@@ -137,6 +139,7 @@ class OrdersViewModel
         private val ordersPreferencesRepository: OrdersPreferencesRepository,
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
+        private val languageRepository: LanguageRepository,
     ) : ViewModel() {
         private val _uiState =
             MutableStateFlow(
@@ -157,6 +160,7 @@ class OrdersViewModel
             observeSwipeConfig()
             initializeData()
             observeActiveShopSwitch()
+            observeLanguageChange()
         }
 
         /**
@@ -596,6 +600,28 @@ class OrdersViewModel
                             )
                         }
                         initializeData()
+                    }
+            }
+        }
+
+        /**
+         * Recharge la liste des commandes quand la langue d'affichage change (bascule in-app ou
+         * retour au mode « Système »).
+         *
+         * Le contenu localisé côté serveur (statuts de commande notamment) est renvoyé selon le
+         * header `Accept-Language` posé par [com.rebuildit.prestaflow.data.remote.interceptor.AcceptLanguageInterceptor],
+         * lui-même dérivé de cette même langue d'affichage. Un changement de langue déclenche
+         * normalement une recréation d'Activity — mais ce ViewModel (scope Navigation Compose)
+         * SURVIT à cette recréation, donc `init` ne se relance pas et les commandes déjà en cache
+         * Room resteraient affichées dans l'ancienne langue sans ce refresh explicite.
+         */
+        private fun observeLanguageChange() {
+            viewModelScope.launch {
+                languageRepository.currentLanguageTag
+                    .distinctUntilChanged()
+                    .drop(1)
+                    .collect {
+                        refresh(forceRemote = true, notifyOnError = false)
                     }
             }
         }
