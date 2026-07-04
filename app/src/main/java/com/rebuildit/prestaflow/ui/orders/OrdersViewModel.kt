@@ -13,11 +13,13 @@ import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
@@ -51,6 +53,9 @@ data class SwipeConfig(
 
 /** Taille de page par défaut pour la pagination. */
 private const val PAGE_SIZE = OrdersRepository.DEFAULT_PAGE_SIZE
+
+/** Debounce (ms) avant de déclencher une recherche serveur sur changement de query. */
+private const val SEARCH_DEBOUNCE_MS = 300L
 
 /**
  * IDs de statut PrestaShop pré-sélectionnés par défaut à l'ouverture de l'écran (« commandes à
@@ -128,6 +133,7 @@ data class PendingSwipeAction(
     val targetStatusName: String,
 )
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 @Suppress("LongParameterList") // Dépendances ViewModel (repos + mappers) toutes nécessaires, cf. SyncTaskExecutor
 class OrdersViewModel
@@ -160,6 +166,26 @@ class OrdersViewModel
             initializeData()
             observeActiveShopSwitch()
             observeLanguageChange()
+            observeSearchQuery()
+        }
+
+        /**
+         * Observe la query de recherche (débounce 300 ms) pour déclencher une recherche CÔTÉ SERVEUR :
+         * l'API cherche dans toute la base (référence + nom client), pas seulement les commandes déjà
+         * chargées. Le filtre local [OrdersUiState.visibleOrders] ne reste qu'un repli d'affichage
+         * (réseau KO → on garde au moins le cache filtré, pas d'écran vide).
+         */
+        private fun observeSearchQuery() {
+            viewModelScope.launch {
+                _uiState
+                    .map { it.query }
+                    .distinctUntilChanged()
+                    .drop(1) // ignore la valeur initiale vide
+                    .debounce(SEARCH_DEBOUNCE_MS)
+                    .collect {
+                        refresh(forceRemote = true, notifyOnError = false)
+                    }
+            }
         }
 
         /**
@@ -256,6 +282,7 @@ class OrdersViewModel
                             dateTo = dateTo,
                             offset = nextOffset,
                             limit = PAGE_SIZE,
+                            search = current.query.takeIf { it.isNotBlank() },
                         )
                     }.getOrElse { error ->
                         Timber.w(error, "Échec loadMore commandes offset=$nextOffset")
@@ -673,6 +700,7 @@ class OrdersViewModel
                         dateTo = dateTo,
                         offset = 0,
                         limit = PAGE_SIZE,
+                        search = current.query.takeIf { it.isNotBlank() },
                     )
                 }.onFailure { error ->
                     Timber.w(error, "Failed to refresh orders")
@@ -682,6 +710,9 @@ class OrdersViewModel
                             isRefreshing = false,
                             isLoading = false,
                             error = if (notifyOnError) mapped else state.error,
+                            // Recherche serveur en échec avec une query active → on autorise le repli
+                            // local (filtrage du cache) pour ne pas afficher un écran vide hors-ligne.
+                            searchFallback = state.query.isNotBlank(),
                         )
                     }
                 }.onSuccess { hasMore ->
@@ -691,6 +722,9 @@ class OrdersViewModel
                             isLoading = false,
                             error = null,
                             hasMore = hasMore,
+                            // La recherche serveur a réussi → on affiche ses résultats tels quels
+                            // (pas de re-filtrage local, qui masquerait les matchs email/nom complet).
+                            searchFallback = false,
                         )
                     }
                 }
@@ -726,6 +760,12 @@ data class OrdersUiState(
     val isRefreshing: Boolean = false,
     val error: UiText? = null,
     val query: String = "",
+    /**
+     * Vrai quand la dernière recherche serveur a échoué alors qu'une query est active : autorise le
+     * filtrage local du cache en repli ([visibleOrders]). Faux quand la recherche serveur a réussi
+     * (on affiche alors les résultats de l'API tels quels, sans re-filtrage local).
+     */
+    val searchFallback: Boolean = false,
     /**
      * Période dashboard active (héritée du nav arg "period").
      * Null = aucun filtre de période actif (liste complète, accès direct via navigation).
@@ -787,13 +827,19 @@ data class OrdersUiState(
      */
     val visibleOrders: List<Order>
         get() =
-            if (query.isBlank()) {
-                orders
-            } else {
-                orders.filter {
-                    it.customerName.contains(query, ignoreCase = true) ||
-                        it.reference.contains(query, ignoreCase = true)
-                }
+            when {
+                query.isBlank() -> orders
+                // La recherche est déléguée au SERVEUR (référence + nom/prénom + email) : `orders`
+                // contient déjà exactement les résultats filtrés par l'API. On ne re-filtre PAS en
+                // local (le serveur matche l'email et le nom complet, que le filtre local ignore).
+                !searchFallback -> orders
+                // Repli hors-ligne uniquement (recherche serveur en échec) : on filtre le cache par
+                // nom/référence pour au moins montrer quelque chose.
+                else ->
+                    orders.filter {
+                        it.customerName.contains(query, ignoreCase = true) ||
+                            it.reference.contains(query, ignoreCase = true)
+                    }
             }
 
     /** Vrai si au moins un filtre de statut est actif. */

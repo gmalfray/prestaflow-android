@@ -68,6 +68,7 @@ class OrdersRepositoryImpl
             dateTo: String?,
             offset: Int,
             limit: Int,
+            search: String?,
         ): Boolean =
             withContext(ioDispatcher) {
                 val filters =
@@ -79,6 +80,9 @@ class OrdersRepositoryImpl
                         if (statusIds.isNotEmpty()) put("statuses", statusIds.joinToString(","))
                         if (dateFrom != null) put("date_from", dateFrom)
                         if (dateTo != null) put("date_to", dateTo)
+                        // Recherche côté serveur (référence + nom/prénom client) : le connecteur fait
+                        // le LIKE sur toute la base, pas seulement les commandes déjà chargées.
+                        if (!search.isNullOrBlank()) put("search", search.trim())
                     }
                 val result = runCatching { api.getOrders(filters) }
                 result.fold(

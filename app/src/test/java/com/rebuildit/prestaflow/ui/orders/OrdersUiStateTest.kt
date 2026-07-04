@@ -21,7 +21,9 @@ class OrdersUiStateTest {
     }
 
     @Test
-    fun `visibleOrders filtre sur le nom du client insensible a la casse`() {
+    fun `visibleOrders recherche serveur OK n applique PAS de filtre local`() {
+        // searchFallback=false (recherche serveur réussie) : `orders` = déjà les résultats de l'API,
+        // on les affiche tels quels (le serveur matche aussi email/nom complet que le filtre local ignore).
         val state =
             buildState(
                 orders =
@@ -30,6 +32,23 @@ class OrdersUiStateTest {
                         buildOrder(2L, "REF002", customerName = "Bob Dupont"),
                     ),
                 query = "alice",
+                searchFallback = false,
+            )
+
+        assertEquals(2, state.visibleOrders.size)
+    }
+
+    @Test
+    fun `visibleOrders repli local filtre sur le nom du client insensible a la casse`() {
+        val state =
+            buildState(
+                orders =
+                    listOf(
+                        buildOrder(1L, "REF001", customerName = "Alice Martin"),
+                        buildOrder(2L, "REF002", customerName = "Bob Dupont"),
+                    ),
+                query = "alice",
+                searchFallback = true,
             )
 
         assertEquals(1, state.visibleOrders.size)
@@ -37,7 +56,7 @@ class OrdersUiStateTest {
     }
 
     @Test
-    fun `visibleOrders filtre sur la reference insensible a la casse`() {
+    fun `visibleOrders repli local filtre sur la reference insensible a la casse`() {
         val state =
             buildState(
                 orders =
@@ -46,6 +65,7 @@ class OrdersUiStateTest {
                         buildOrder(2L, "REF002", customerName = "Bob Dupont"),
                     ),
                 query = "ref002",
+                searchFallback = true,
             )
 
         assertEquals(1, state.visibleOrders.size)
@@ -53,11 +73,12 @@ class OrdersUiStateTest {
     }
 
     @Test
-    fun `visibleOrders retourne liste vide si aucune commande ne correspond`() {
+    fun `visibleOrders repli local retourne liste vide si aucune commande ne correspond`() {
         val state =
             buildState(
                 orders = listOf(buildOrder(1L, "REF001", "Alice Martin")),
                 query = "zzz",
+                searchFallback = true,
             )
 
         assertTrue(state.visibleOrders.isEmpty())
@@ -157,18 +178,21 @@ class OrdersUiStateTest {
 
     // ─── Builders ────────────────────────────────────────────────────────────
 
+    @Suppress("LongParameterList") // helper de test : reflète les champs de OrdersUiState
     private fun buildState(
         orders: List<Order> = emptyList(),
         query: String = "",
         availableStatuses: List<OrderStatusFilter> = emptyList(),
         visibleStatusIds: Set<Int>? = null,
         selectedStatusIds: Set<Int> = emptySet(),
+        searchFallback: Boolean = false,
     ) = OrdersUiState(
         orders = orders,
         query = query,
         availableStatuses = availableStatuses,
         visibleStatusIds = visibleStatusIds,
         selectedStatusIds = selectedStatusIds,
+        searchFallback = searchFallback,
     )
 
     private fun buildOrder(

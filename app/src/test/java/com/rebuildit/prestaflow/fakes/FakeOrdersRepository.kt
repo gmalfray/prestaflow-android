@@ -29,6 +29,9 @@ class FakeOrdersRepository : OrdersRepository {
     /** Liste des jeux de statusIds reçus lors de chaque appel à [refresh]. */
     val refreshStatusIdsCalls = mutableListOf<Set<Int>>()
 
+    /** Liste des termes de recherche (`search`) reçus lors de chaque appel à [refresh]. */
+    val refreshSearchCalls = mutableListOf<String?>()
+
     /** Retourne [hasMore] sur le prochain appel à [refresh]. */
     var hasMoreOnRefresh = false
 
@@ -72,9 +75,11 @@ class FakeOrdersRepository : OrdersRepository {
         dateTo: String?,
         offset: Int,
         limit: Int,
+        search: String?,
     ): Boolean {
         refreshCalls += Pair(forceRemote, statusIds.firstOrNull())
         refreshStatusIdsCalls += statusIds
+        refreshSearchCalls += search
         if (shouldThrowOnRefresh) throw refreshException
         return hasMoreOnRefresh
     }

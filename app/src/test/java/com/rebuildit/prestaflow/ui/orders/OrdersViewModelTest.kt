@@ -152,6 +152,42 @@ class OrdersViewModelTest {
             )
         }
 
+    // ─── Recherche serveur ───────────────────────────────────────────────────
+
+    @Test
+    fun `onQueryChange declenche une recherche SERVEUR debouncee avec le terme`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeOrdersRepo.refreshSearchCalls.clear()
+
+            vm.onQueryChange("dupont")
+            advanceTimeBy(400) // dépasse le debounce de 300 ms
+            advanceUntilIdle()
+
+            assertTrue(
+                "La recherche 'dupont' doit être transmise au serveur (param search)",
+                fakeOrdersRepo.refreshSearchCalls.contains("dupont"),
+            )
+        }
+
+    @Test
+    fun `recherche serveur reussie n active pas le repli local`() =
+        runTest {
+            fakeOrdersRepo.shouldThrowOnRefresh = false
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onQueryChange("dupont")
+            advanceTimeBy(400)
+            advanceUntilIdle()
+
+            assertFalse(
+                "searchFallback doit rester faux quand la recherche serveur réussit",
+                vm.uiState.value.searchFallback,
+            )
+        }
+
     // ─── Filtre par défaut (résolution par ID PrestaShop stable) ─────────────
 
     @Test
@@ -695,7 +731,7 @@ class OrdersViewModelTest {
         }
 
     @Test
-    fun `visibleOrders filtre les commandes par nom de client apres onQueryChange`() =
+    fun `visibleOrders repli local filtre par nom quand la recherche serveur echoue`() =
         runTest {
             fakeOrdersRepo.setOrders(
                 listOf(
@@ -707,9 +743,13 @@ class OrdersViewModelTest {
             val vm = buildViewModel()
             advanceUntilIdle()
 
+            // La recherche serveur échoue (réseau KO) → repli local sur le cache déjà chargé.
+            fakeOrdersRepo.shouldThrowOnRefresh = true
             vm.onQueryChange("alice")
+            advanceTimeBy(400) // dépasse le debounce
             advanceUntilIdle()
 
+            assertTrue("Un échec serveur avec query active doit activer le repli", vm.uiState.value.searchFallback)
             val visible = vm.uiState.value.visibleOrders
             assertEquals(1, visible.size)
             assertEquals("REF001", visible.first().reference)

@@ -24,8 +24,10 @@ interface OrdersRepository {
      * @param dateTo Date de fin au format Y-m-d. Null = pas de filtre date.
      * @param offset Décalage pour la pagination (0 = première page, vide Room avant upsert).
      * @param limit Nombre de commandes demandées (défaut [DEFAULT_PAGE_SIZE]).
+     * @param search Terme de recherche serveur (référence + nom/prénom + email). Null = pas de recherche.
      * @return `true` si d'autres commandes sont probablement disponibles (la réponse était pleine).
      */
+    @Suppress("LongParameterList") // filtres commandes (statut/tri/dates/pagination/recherche) tous indépendants
     suspend fun refresh(
         forceRemote: Boolean = false,
         statusIds: Set<Int> = emptySet(),
@@ -34,6 +36,7 @@ interface OrdersRepository {
         dateTo: String? = null,
         offset: Int = 0,
         limit: Int = DEFAULT_PAGE_SIZE,
+        search: String? = null,
     ): Boolean
 
     companion object {
