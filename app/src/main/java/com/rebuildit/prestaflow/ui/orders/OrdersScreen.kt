@@ -698,7 +698,13 @@ private fun SwipeableOrderRow(
                         onSwipeAction(SwipeDirection.RIGHT)
                         false // snap back
                     }
-                    SwipeToDismissBoxValue.Settled -> false
+                    // IMPORTANT : doit rester `true`. Après un swipe vetoté (false ci-dessus),
+                    // AnchoredDraggableState tente de revenir à Settled — cette transition de
+                    // retour passe elle aussi par confirmValueChange. La renvoyer à `false` ici
+                    // vetoie le retour au repos : le drag state reste bloqué hors de tout ancrage
+                    // confirmé et n'accepte plus aucun nouveau geste ensuite (le swipe fonctionne
+                    // une fois puis se bloque définitivement sur la ligne).
+                    SwipeToDismissBoxValue.Settled -> true
                 }
             },
             positionalThreshold = { totalDistance -> totalDistance * 0.35f },

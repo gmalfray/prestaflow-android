@@ -264,11 +264,17 @@ private fun AuthenticatedShell(
     val useNavigationRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
     val currentRoute = navBackStackEntry?.destination?.route
     val isSettings = currentRoute == AppDestination.Settings.route
+    val isNotifCategories = currentRoute == AppDestination.NOTIF_CATEGORIES_ROUTE
     // Destination plein écran (flux focalisé façon scanner) : pas de chrome parent (TopAppBar
     // "Produits" + engrenage, bottom nav / rail) — l'écran gère lui-même son propre header et son
     // retour. Sans ce garde-fou, deux headers s'empilent (celui de l'onglet Produits + celui de
     // l'écran) et la nav du bas grignote la hauteur utile, poussant Valider/le récap hors écran.
     val isFullScreenRoute = currentRoute == AppDestination.STOCK_REPLENISH_ROUTE
+    // Réglages (et ses sous-écrans) est ouvert via l'engrenage, PAS un onglet de la barre du bas :
+    // c'est une destination de premier niveau. Sans ce garde-fou, la bottom bar / le rail restent
+    // affichés en dessous avec l'onglet d'origine (ex. Commandes) toujours visible, donnant
+    // l'impression que Réglages est imbriqué dans cet onglet au lieu d'être un écran indépendant.
+    val hideTabChrome = isFullScreenRoute || isSettings || isNotifCategories
     val settingsLabel = stringResource(R.string.destination_settings)
     val backLabel = stringResource(R.string.content_description_back)
 
@@ -310,7 +316,7 @@ private fun AuthenticatedShell(
             }
         },
         bottomBar = {
-            if (!useNavigationRail && !isFullScreenRoute) {
+            if (!useNavigationRail && !hideTabChrome) {
                 val navigationBarContainerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                 val navigationBarItemColors =
                     NavigationBarItemDefaults.colors(
@@ -372,7 +378,7 @@ private fun AuthenticatedShell(
                     .padding(innerPadding),
             color = MaterialTheme.colorScheme.background,
         ) {
-            if (useNavigationRail && !isFullScreenRoute) {
+            if (useNavigationRail && !hideTabChrome) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     // verticalScroll : en paysage / faible hauteur, les 5 onglets ne tiennent pas dans
                     // le rail — sans défilement le dernier (« Paniers ») est tronqué. Le scroll les rend
