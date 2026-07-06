@@ -11,10 +11,11 @@ import com.rebuildit.prestaflow.R
 /**
  * Centralise la création de tous les canaux de notification de PrestaFlow.
  *
- * Trois canaux métier :
+ * Quatre canaux métier :
  *  - [CHANNEL_SALES]          : ventes (son caisse — `cash_register.mp3`), importance HIGH.
  *  - [CHANNEL_ORDER_STATUS]   : changements de statut, son système par défaut, importance DEFAULT.
  *  - [CHANNEL_ORDER_SHIPPING] : mises à jour d'expédition, son système par défaut, importance DEFAULT.
+ *  - [CHANNEL_STOCK_LOW]      : alertes stock faible, son système par défaut, importance DEFAULT.
  *
  * Un canal filet de sécurité :
  *  - [CHANNEL_DEFAULT] : push background sans `channel_id` explicite, importance DEFAULT, son système.
@@ -30,6 +31,9 @@ object NotificationChannels {
 
     /** Canal mises à jour d'expédition — son système. */
     const val CHANNEL_ORDER_SHIPPING = "order_shipping"
+
+    /** Canal alertes stock faible — son système. */
+    const val CHANNEL_STOCK_LOW = "stock_low"
 
     /**
      * Canal par défaut (background fallback) — son système, sans caisse.
@@ -49,6 +53,7 @@ object NotificationChannels {
             "order.created" -> CHANNEL_SALES
             "order.status.changed" -> CHANNEL_ORDER_STATUS
             "order.shipping.updated" -> CHANNEL_ORDER_SHIPPING
+            "stock.low" -> CHANNEL_STOCK_LOW
             else -> CHANNEL_DEFAULT
         }
 
@@ -62,6 +67,7 @@ object NotificationChannels {
         ensureSalesChannel(context, manager)
         ensureOrderStatusChannel(context, manager)
         ensureOrderShippingChannel(context, manager)
+        ensureStockLowChannel(context, manager)
         ensureDefaultChannel(context, manager)
     }
 
@@ -122,6 +128,22 @@ object NotificationChannels {
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
                 description = context.getString(R.string.notif_channel_order_shipping_desc)
+            }
+        manager.createNotificationChannel(channel)
+    }
+
+    private fun ensureStockLowChannel(
+        context: Context,
+        manager: NotificationManager,
+    ) {
+        if (manager.getNotificationChannel(CHANNEL_STOCK_LOW) != null) return
+        val channel =
+            NotificationChannel(
+                CHANNEL_STOCK_LOW,
+                context.getString(R.string.notif_channel_stock_low_name),
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ).apply {
+                description = context.getString(R.string.notif_channel_stock_low_desc)
             }
         manager.createNotificationChannel(channel)
     }

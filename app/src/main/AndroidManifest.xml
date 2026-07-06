@@ -58,6 +58,16 @@
                     android:scheme="prestaflow"
                     android:host="orders" />
             </intent-filter>
+            <!-- Deep link pour les notifications "stock faible" (event = stock.low).
+                 La notification foreground (ContentIntent) envoie prestaflow://products/{id} ;
+                 le tap déclenche onNewIntent (singleTop) ou onCreate (cold start) dans MainActivity. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="prestaflow"
+                    android:host="products" />
+            </intent-filter>
         </activity>
 
         <service

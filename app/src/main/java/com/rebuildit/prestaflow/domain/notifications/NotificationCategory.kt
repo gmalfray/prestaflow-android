@@ -9,6 +9,7 @@ enum class NotificationCategory(val key: String) {
     ORDER_CREATED("order.created"),
     ORDER_STATUS_CHANGED("order.status.changed"),
     ORDER_SHIPPING_UPDATED("order.shipping.updated"),
+    STOCK_LOW("stock.low"),
     ;
 
     companion object {

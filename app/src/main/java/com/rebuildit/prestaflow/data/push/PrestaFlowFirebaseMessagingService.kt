@@ -55,6 +55,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
 
         val event = message.data["event"]
         val orderId = message.data["order_id"]?.toLongOrNull()
+        val productId = message.data["product_id"]?.toLongOrNull()
 
         // Rafraîchit la commande référencée par le push (si présente).
         if (orderId != null) {
@@ -74,7 +75,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
         val title = message.notification?.title ?: message.data["title"]
         val body = message.notification?.body ?: message.data["body"]
         if (title != null || body != null) {
-            showNotification(event = event, title = title, body = body, orderId = orderId)
+            showNotification(event = event, title = title, body = body, orderId = orderId, productId = productId)
         }
     }
 
@@ -90,6 +91,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
         title: String?,
         body: String?,
         orderId: Long?,
+        productId: Long? = null,
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) !=
@@ -119,13 +121,23 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
             builder.setDefaults(NotificationCompat.DEFAULT_SOUND)
         }
 
-        // Tap sur la notification → ouvre directement le détail de la commande (foreground uniquement ;
-        // les notifs background sont gérées par le système sans passer par onMessageReceived).
+        // Tap sur la notification → ouvre directement le détail de la commande ou de la fiche produit
+        // (foreground uniquement ; les notifs background sont gérées par le système sans passer par
+        // onMessageReceived). Un push commande référence order_id ; un push stock faible référence
+        // uniquement product_id.
         if (orderId != null) {
             builder.setContentIntent(buildOrderDeepLinkIntent(orderId))
+        } else if (productId != null) {
+            builder.setContentIntent(buildProductDeepLinkIntent(productId))
         }
 
-        val notificationId = orderId?.toInt() ?: (System.currentTimeMillis() and NOTIFICATION_ID_MASK).toInt()
+        // Les ID de commande et de produit partagent le même espace de valeurs côté boutique ; on
+        // négative l'ID produit pour éviter toute collision avec une notification de commande (les
+        // deux notifications tray restent alors indépendantes et remplaçables individuellement).
+        val notificationId =
+            orderId?.toInt()
+                ?: productId?.let { -it.toInt() }
+                ?: (System.currentTimeMillis() and NOTIFICATION_ID_MASK).toInt()
         NotificationManagerCompat.from(applicationContext).notify(notificationId, builder.build())
     }
 
@@ -145,6 +157,27 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
         return PendingIntent.getActivity(
             applicationContext,
             orderId.toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    /**
+     * Construit un [PendingIntent] qui ouvre [MainActivity] sur la fiche du produit [productId].
+     *
+     * L'URI `prestaflow://products/{productId}` est déclarée comme deep link dans
+     * [PrestaFlowNavGraph] et dans le manifeste. Utilisé pour les pushs "stock faible"
+     * (`event = stock.low`), qui référencent un produit et non une commande.
+     */
+    private fun buildProductDeepLinkIntent(productId: Long): PendingIntent {
+        val uri = Uri.parse("prestaflow://products/$productId")
+        val intent =
+            Intent(Intent.ACTION_VIEW, uri, applicationContext, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+        return PendingIntent.getActivity(
+            applicationContext,
+            -productId.toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
