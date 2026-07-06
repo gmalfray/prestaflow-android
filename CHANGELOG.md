@@ -4,6 +4,20 @@ Les versions suivent [Semantic Versioning](https://semver.org/) : `MAJEUR.MINEUR
 
 ---
 
+## [0.42.0] — 2026-07-06
+
+### Ajouts
+- **Alertes stock faible en push** : nouvelle catégorie de notification `Stock faible`
+  (`stock.low`), activée par défaut, avec son propre canal Android (`stock_low`, importance
+  par défaut, sans son caisse) et sa propre entrée dans l'écran des préférences de
+  notifications. Le titre et le corps du push (déjà localisés) proviennent du connecteur ;
+  l'app se contente de router l'affichage et le tap sur le canal/deep-link adéquat.
+- **Deep link fiche produit** : `prestaflow://products/{productId}` est désormais reconnu
+  (NavGraph + manifeste), au même titre que `prestaflow://orders/{orderId}`. Un tap sur une
+  notification de stock faible ouvre directement la fiche du produit concerné.
+
+---
+
 ## [0.40.0] — 2026-07-04
 
 ### Ajouts

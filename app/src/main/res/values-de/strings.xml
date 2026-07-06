@@ -7,6 +7,8 @@
     <string name="notif_channel_order_status_desc">Benachrichtigungen bei Aktualisierung des Bestellstatus</string>
     <string name="notif_channel_order_shipping_name">Versand</string>
     <string name="notif_channel_order_shipping_desc">Benachrichtigungen bei Aktualisierung der Sendungsverfolgung</string>
+    <string name="notif_channel_stock_low_name">Niedriger Lagerbestand</string>
+    <string name="notif_channel_stock_low_desc">Benachrichtigungen, wenn der Lagerbestand eines Produkts den Warnschwellenwert unterschreitet</string>
     <string name="notif_channel_default_name">Benachrichtigungen</string>
     <string name="notif_channel_default_desc">Allgemeine App-Benachrichtigungen</string>
     <string name="notif_sale_default_title">Neue Bestellung</string>
@@ -423,6 +425,7 @@
     <string name="notif_category_order_created">Neue Verkäufe</string>
     <string name="notif_category_order_status_changed">Statusänderungen</string>
     <string name="notif_category_order_shipping_updated">Versand</string>
+    <string name="notif_category_stock_low">Niedriger Lagerbestand</string>
     <string name="notif_categories_all_disabled_warning">Solange alle Kategorien deaktiviert sind, werden keine Benachrichtigungen empfangen.</string>
 
     <!-- Link von den Einstellungen -->

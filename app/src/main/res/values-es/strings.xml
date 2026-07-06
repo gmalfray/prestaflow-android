@@ -7,6 +7,8 @@
     <string name="notif_channel_order_status_desc">Notificaciones cuando se actualiza el estado de un pedido</string>
     <string name="notif_channel_order_shipping_name">Envíos</string>
     <string name="notif_channel_order_shipping_desc">Notificaciones cuando se actualiza el seguimiento de un pedido</string>
+    <string name="notif_channel_stock_low_name">Stock bajo</string>
+    <string name="notif_channel_stock_low_desc">Notificaciones cuando el stock de un producto baja del umbral de alerta</string>
     <string name="notif_channel_default_name">Alertas</string>
     <string name="notif_channel_default_desc">Notificaciones generales de la aplicación</string>
     <string name="notif_sale_default_title">Nuevo pedido</string>
@@ -423,6 +425,7 @@
     <string name="notif_category_order_created">Nuevas ventas</string>
     <string name="notif_category_order_status_changed">Cambios de estado</string>
     <string name="notif_category_order_shipping_updated">Envíos</string>
+    <string name="notif_category_stock_low">Stock bajo</string>
     <string name="notif_categories_all_disabled_warning">No se recibirá ninguna notificación mientras todas las categorías estén desactivadas.</string>
 
     <!-- Enlace desde ajustes -->

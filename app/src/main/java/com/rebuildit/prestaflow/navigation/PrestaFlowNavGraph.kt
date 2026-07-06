@@ -142,6 +142,10 @@ fun PrestaFlowNavGraph(
                 listOf(
                     navArgument("productId") { type = NavType.LongType },
                 ),
+            deepLinks =
+                listOf(
+                    navDeepLink { uriPattern = "prestaflow://products/{productId}" },
+                ),
         ) {
             ProductDetailRoute(
                 onBackClick = { navController.popBackStack() },
