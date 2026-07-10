@@ -641,7 +641,9 @@ private fun OrdersList(
  * Enveloppe une [OrderRow] avec un [SwipeToDismissBox] pour les commandes en « Paiement accepté ».
  * - Swipe GAUCHE (EndToStart) → « En cours de préparation »
  * - Swipe DROITE (StartToEnd) → « Terminé »
- * La ligne reprend toujours sa position (confirmValueChange = false) ; le callback déclenche l'action.
+ * La ligne reprend toujours sa position : le swipe est confirmé (pattern `reset()`), l'action
+ * métier est déclenchée dans un `LaunchedEffect`, puis l'état est ramené à Settled via
+ * `dismissState.reset()`. Cf. commentaire sur `dismissState` ci-dessous pour le détail.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList")
@@ -686,29 +688,30 @@ private fun SwipeableOrderRow(
     val leftActionColor = MaterialTheme.colorScheme.tertiary
     val rightActionColor = Color(0xFF2E7D32)
 
+    // Pattern « reset() » (et non veto/snap-back) : le swipe est toujours confirmé, ce qui laisse
+    // AnchoredDraggableState terminer proprement sa transition. L'action métier est déclenchée
+    // dans le LaunchedEffect ci-dessous, puis dismissState.reset() ramène la ligne à Settled.
+    // Contrairement au veto (confirmValueChange -> false), ce pattern ne laisse jamais l'état
+    // interne hors ancrage confirmé : il survit à la restauration de la composition après un
+    // aller-retour vers l'écran de détail (l'écran Commandes reste dans le back stack).
     val dismissState =
         rememberSwipeToDismissBoxState(
-            confirmValueChange = { value ->
-                when (value) {
-                    SwipeToDismissBoxValue.EndToStart -> {
-                        onSwipeAction(SwipeDirection.LEFT)
-                        false // snap back
-                    }
-                    SwipeToDismissBoxValue.StartToEnd -> {
-                        onSwipeAction(SwipeDirection.RIGHT)
-                        false // snap back
-                    }
-                    // IMPORTANT : doit rester `true`. Après un swipe vetoté (false ci-dessus),
-                    // AnchoredDraggableState tente de revenir à Settled — cette transition de
-                    // retour passe elle aussi par confirmValueChange. La renvoyer à `false` ici
-                    // vetoie le retour au repos : le drag state reste bloqué hors de tout ancrage
-                    // confirmé et n'accepte plus aucun nouveau geste ensuite (le swipe fonctionne
-                    // une fois puis se bloque définitivement sur la ligne).
-                    SwipeToDismissBoxValue.Settled -> true
-                }
-            },
-            positionalThreshold = { totalDistance -> totalDistance * 0.35f },
+            positionalThreshold = { totalDistance -> totalDistance * 0.25f },
         )
+
+    LaunchedEffect(dismissState.currentValue) {
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.EndToStart -> {
+                onSwipeAction(SwipeDirection.LEFT)
+                dismissState.reset()
+            }
+            SwipeToDismissBoxValue.StartToEnd -> {
+                onSwipeAction(SwipeDirection.RIGHT)
+                dismissState.reset()
+            }
+            SwipeToDismissBoxValue.Settled -> Unit
+        }
+    }
 
     SwipeToDismissBox(
         state = dismissState,
