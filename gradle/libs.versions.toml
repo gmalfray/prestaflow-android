@@ -32,7 +32,6 @@ securityCrypto = "1.1.0-alpha06"
 googleServices = "4.4.2"
 coroutinesPlayServices = "1.9.0"
 jacoco = "0.8.12"
-escposPrinter = "3.3.0"
 robolectric = "4.14.1"
 playServicesMlkitTextRecognition = "19.0.1"
 playServicesBase = "18.5.0"
@@ -85,9 +84,6 @@ timber-jdk = { module = "com.jakewharton.timber:timber-jdk18", version.ref = "ti
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutinesPlayServices" }
 androidx-compose-material3-windowsizeclass = { module = "androidx.compose.material3:material3-window-size-class" }
-
-# Impression thermique Bluetooth ESC/POS
-escpos-thermal-printer = { module = "com.github.DantSu:ESCPOS-ThermalPrinter-Android", version.ref = "escposPrinter" }
 
 # OCR étiquette (secours réappro stock) — variant Google Play Services (modèle livré par Play
 # Services, PAS embarqué dans l'APK, cf. core/ocr/MlKitLabelTextRecognizer : ~8 Mo au lieu de ~48 Mo

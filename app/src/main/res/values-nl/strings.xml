@@ -261,29 +261,12 @@
     <string name="order_detail_qty_label">Aantal: %1$d</string>
     <string name="order_detail_tracking_display">Tracking: %1$s</string>
     <string name="order_detail_print_invoice">Factuur afdrukken</string>
-    <string name="order_detail_print_shipping_label">Verzendlabel afdrukken</string>
-    <string name="order_detail_share_shipping_label">PDF van label delen</string>
-    <string name="order_detail_share_shipping_label_content_description">PDF van het verzendlabel delen</string>
+    <string name="order_detail_share_shipping_label">Verzendlabel afdrukken/delen</string>
+    <string name="order_detail_share_shipping_label_hint">Opent de PDF: afdrukken of verzenden</string>
+    <string name="order_detail_share_shipping_label_content_description">PDF van het verzendlabel afdrukken of delen</string>
     <string name="order_detail_share_chooser_title">Label delen</string>
     <string name="order_detail_generate_label">Label genereren</string>
     <string name="order_detail_generate_label_content_description">Colissimo-verzendlabel genereren</string>
-    <!-- Bluetooth thermische printer -->
-    <string name="order_detail_thermal_bt_disabled">Bluetooth is uitgeschakeld. Schakel het in om af te drukken.</string>
-    <string name="order_detail_thermal_bt_permission_denied">Bluetooth-toestemming vereist om verbinding te maken met de printer.</string>
-    <string name="order_detail_thermal_connecting">Verbinden met de printer…</string>
-    <!-- Instellingen — sectie thermische printer -->
-    <string name="settings_thermal_printer_label">Thermische printer</string>
-    <string name="settings_thermal_printer_none">Geen printer geselecteerd</string>
-    <string name="settings_thermal_printer_selected">Geselecteerd: %1$s (%2$s)</string>
-    <string name="settings_thermal_printer_choose">Een printer kiezen</string>
-    <string name="settings_thermal_printer_clear">Printer verwijderen</string>
-    <string name="settings_thermal_printer_dialog_title">Bluetooth-printers</string>
-    <string name="settings_thermal_printer_dialog_empty">Geen printer gevonden. Zorg dat hij aanstaat en in de buurt is, en scan opnieuw.</string>
-    <string name="settings_thermal_printer_dialog_cancel">Annuleren</string>
-    <string name="settings_thermal_printer_scanning">Printers in de buurt zoeken…</string>
-    <string name="settings_thermal_printer_scan_hint">Gekoppelde en in de buurt gedetecteerde apparaten.</string>
-    <string name="settings_thermal_printer_rescan">Opnieuw scannen</string>
-    <string name="settings_thermal_printer_hint">Zoek en selecteer je Munbyn- of andere ESC/POS-thermische printer (vooraf koppelen is niet nodig).</string>
 
     <!-- Dialoogvenster afdrukmodus kiezen -->
     <string name="print_mode_dialog_title">Afdrukmodus</string>
@@ -374,15 +357,11 @@
     <string name="order_detail_invoice_unavailable">Voor deze bestelling is geen factuur beschikbaar.</string>
     <string name="order_detail_shipping_label_unavailable">Geen verzendlabel beschikbaar voor deze bestelling.</string>
     <string name="order_detail_label_generated">Label succesvol gegenereerd</string>
-    <string name="order_detail_thermal_print_success">Label afgedrukt op de thermische printer.</string>
 
     <!-- Instellingen — bevestiging winkel verwijderen -->
     <string name="settings_shops_remove_confirm_title">Winkel verwijderen?</string>
     <string name="settings_shops_remove_confirm_message">Hierdoor word je afgemeld bij de winkel %1$s.</string>
     <string name="settings_shops_remove_confirm_action">Verwijderen</string>
-
-    <!-- Instellingen — Bluetooth-toestemming geweigerd -->
-    <string name="settings_thermal_printer_bt_permission_denied">Bluetooth-toestemming vereist om een printer te kiezen. Sta dit toe in de systeeminstellingen.</string>
 
     <!-- Instellingen — sectie Bestellingen swipen -->
     <string name="settings_swipe_label">Bestellingen swipen</string>

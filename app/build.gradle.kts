@@ -26,8 +26,8 @@ android {
         applicationId = "com.rebuildit.prestaflow"
         minSdk = 26
         targetSdk = 36
-        versionCode = 74
-        versionName = "0.42.1"
+        versionCode = 75
+        versionName = "0.42.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -435,9 +435,6 @@ dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation(libs.play.services.mlkit.text.recognition)
     implementation(libs.play.services.base)
-
-    // Impression thermique Bluetooth ESC/POS — MUNBYN ITPP941B et imprimantes 4×6 compatibles
-    implementation(libs.escpos.thermal.printer)
 
     kaptTest(libs.androidx.room.compiler)
     kaptAndroidTest(libs.androidx.room.compiler)

@@ -261,29 +261,12 @@
     <string name="order_detail_qty_label">Anz.: %1$d</string>
     <string name="order_detail_tracking_display">Sendungsverfolgung: %1$s</string>
     <string name="order_detail_print_invoice">Rechnung drucken</string>
-    <string name="order_detail_print_shipping_label">Versandetikett drucken</string>
-    <string name="order_detail_share_shipping_label">Etiketten-PDF teilen</string>
-    <string name="order_detail_share_shipping_label_content_description">PDF des Versandetiketts teilen</string>
+    <string name="order_detail_share_shipping_label">Versandetikett drucken/teilen</string>
+    <string name="order_detail_share_shipping_label_hint">Öffnet die PDF: drucke sie oder sende sie</string>
+    <string name="order_detail_share_shipping_label_content_description">PDF des Versandetiketts drucken oder teilen</string>
     <string name="order_detail_share_chooser_title">Etikett teilen</string>
     <string name="order_detail_generate_label">Etikett erstellen</string>
     <string name="order_detail_generate_label_content_description">Colissimo-Versandetikett erstellen</string>
-    <!-- Bluetooth-Thermodrucker -->
-    <string name="order_detail_thermal_bt_disabled">Bluetooth ist deaktiviert. Bitte aktiviere es zum Drucken.</string>
-    <string name="order_detail_thermal_bt_permission_denied">Bluetooth-Berechtigung erforderlich, um sich mit dem Drucker zu verbinden.</string>
-    <string name="order_detail_thermal_connecting">Verbindung zum Drucker wird hergestellt…</string>
-    <!-- Einstellungen — Abschnitt Thermodrucker -->
-    <string name="settings_thermal_printer_label">Thermodrucker</string>
-    <string name="settings_thermal_printer_none">Kein Drucker ausgewählt</string>
-    <string name="settings_thermal_printer_selected">Ausgewählt: %1$s (%2$s)</string>
-    <string name="settings_thermal_printer_choose">Drucker auswählen</string>
-    <string name="settings_thermal_printer_clear">Drucker entfernen</string>
-    <string name="settings_thermal_printer_dialog_title">Bluetooth-Drucker</string>
-    <string name="settings_thermal_printer_dialog_empty">Kein Drucker gefunden. Stelle sicher, dass er eingeschaltet und in der Nähe ist, und starte die Suche erneut.</string>
-    <string name="settings_thermal_printer_dialog_cancel">Abbrechen</string>
-    <string name="settings_thermal_printer_scanning">Nach Druckern in der Nähe wird gesucht…</string>
-    <string name="settings_thermal_printer_scan_hint">Gekoppelte und in der Nähe erkannte Geräte.</string>
-    <string name="settings_thermal_printer_rescan">Erneut suchen</string>
-    <string name="settings_thermal_printer_hint">Suche und wähle deinen Munbyn- oder anderen ESC/POS-Thermodrucker (keine vorherige Kopplung erforderlich).</string>
 
     <!-- Dialog zur Wahl des Druckmodus -->
     <string name="print_mode_dialog_title">Druckmodus</string>
@@ -374,15 +357,11 @@
     <string name="order_detail_invoice_unavailable">Für diese Bestellung ist keine Rechnung verfügbar.</string>
     <string name="order_detail_shipping_label_unavailable">Für diese Bestellung ist kein Versandetikett verfügbar.</string>
     <string name="order_detail_label_generated">Etikett erfolgreich erstellt</string>
-    <string name="order_detail_thermal_print_success">Etikett auf dem Thermodrucker gedruckt.</string>
 
     <!-- Einstellungen — Bestätigung Shop entfernen -->
     <string name="settings_shops_remove_confirm_title">Shop entfernen?</string>
     <string name="settings_shops_remove_confirm_message">Dadurch wirst du vom Shop %1$s abgemeldet.</string>
     <string name="settings_shops_remove_confirm_action">Entfernen</string>
-
-    <!-- Einstellungen — Bluetooth-Berechtigung verweigert -->
-    <string name="settings_thermal_printer_bt_permission_denied">Bluetooth-Berechtigung erforderlich, um einen Drucker auszuwählen. Bitte in den Systemeinstellungen erlauben.</string>
 
     <!-- Einstellungen — Abschnitt Bestellungen wischen -->
     <string name="settings_swipe_label">Bestellungen wischen</string>
