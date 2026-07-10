@@ -26,7 +26,10 @@ import com.rebuildit.prestaflow.ui.products.ProductsRoute
 import com.rebuildit.prestaflow.ui.products.StockReplenishRoute
 import com.rebuildit.prestaflow.ui.settings.SettingsRoute
 
-@Suppress("LongMethod") // NavGraph centralise toutes les routes de l'app, longueur inhérente
+// NavGraph centralise toutes les routes de l'app (longueur inhérente) + ses deux callbacks
+// "OpenedWithPeriod" (Commandes et Clients, cf. commentaires ci-dessous) qui poussent le nombre de
+// paramètres au-delà du seuil detekt par défaut.
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 fun PrestaFlowNavGraph(
     onLogout: () -> Unit,
@@ -38,6 +41,10 @@ fun PrestaFlowNavGraph(
     // fraîche (sans période) au lieu de restaurer celle-ci via `restoreState` — cf. commentaire détaillé
     // sur le flag ordersEnteredWithPeriod dans MainActivity.kt.
     onOrdersOpenedWithPeriod: () -> Unit = {},
+    // Même rôle que onOrdersOpenedWithPeriod, pour la tuile KPI "Nouveaux clients" du dashboard qui
+    // ouvre Clients avec un filtre de période — cf. commentaire détaillé sur le flag
+    // clientsEnteredWithPeriod dans MainActivity.kt.
+    onClientsOpenedWithPeriod: () -> Unit = {},
 ) {
     val isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
 
@@ -65,6 +72,7 @@ fun PrestaFlowNavGraph(
                     }
                 },
                 onClientsClick = { createdFrom ->
+                    onClientsOpenedWithPeriod()
                     // Le KPI "Nouveaux clients" navigue toujours vers une entrée Clients fraîche
                     // avec filter=new. On purge d'abord toute entrée Clients présente dans le
                     // back-stack (active ou sauvegardée via saveState) pour garantir qu'un nouveau

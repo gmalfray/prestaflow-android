@@ -251,6 +251,15 @@ private fun AuthenticatedShell(
     // Commandes fraîche (sans période) au prochain clic sur l'onglet — cf. usage ci-dessous.
     var ordersEnteredWithPeriod by rememberSaveable { mutableStateOf(false) }
 
+    // Même correctif que ordersEnteredWithPeriod ci-dessus, pour la tuile KPI "Nouveaux clients" du
+    // dashboard qui ouvre Clients avec un filtre de période (route "clients?filter=new&created_from=...").
+    // Sans ce flag, un clic ultérieur sur l'onglet "Clients" restaure via `restoreState` cette même
+    // entrée filtrée (même pattern de route paramétrée) au lieu d'une entrée fraîche : le filtre
+    // "Nouveaux clients" reste collé et la puce ✕/re-tap sur la carte KPI ne peut jamais s'en
+    // débarrasser durablement (le `LaunchedEffect(filterArg)` de ClientsRoute le réapplique à chaque
+    // ré-entrée sur l'onglet, tant que l'argument de navigation "filter" reste "new").
+    var clientsEnteredWithPeriod by rememberSaveable { mutableStateOf(false) }
+
     // Navigation vers le détail commande depuis une notification push.
     // Déclenché à chaque changement de pendingOrderId (non-null uniquement).
     // popUpTo assure un back stack propre : Dashboard → détail commande (retour arrière → Dashboard).
@@ -313,6 +322,16 @@ private fun AuthenticatedShell(
                 ordersEnteredWithPeriod = false
                 navController.navigate(AppDestination.Orders.route) {
                     popUpTo(AppDestination.Orders.route) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+            destination == AppDestination.Clients && clientsEnteredWithPeriod -> {
+                // Cf. commentaire sur clientsEnteredWithPeriod : force une entrée Clients fraîche
+                // (sans restoreState) au lieu de risquer de restaurer l'entrée filtrée par période
+                // ouverte depuis la tuile "Nouveaux clients" du dashboard.
+                clientsEnteredWithPeriod = false
+                navController.navigate(AppDestination.Clients.route) {
+                    popUpTo(AppDestination.Clients.route) { inclusive = true }
                     launchSingleTop = true
                 }
             }
@@ -457,6 +476,7 @@ private fun AuthenticatedShell(
                     windowSizeClass = windowSizeClass,
                     modifier = Modifier.fillMaxSize(),
                     onOrdersOpenedWithPeriod = { ordersEnteredWithPeriod = true },
+                    onClientsOpenedWithPeriod = { clientsEnteredWithPeriod = true },
                 )
             }
         }

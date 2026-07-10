@@ -9,7 +9,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -80,6 +81,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -119,6 +121,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
@@ -654,35 +657,59 @@ private const val SWIPE_SETTLE_ANIM_MS = 200
 
 /**
  * Enveloppe une [OrderRow] avec un geste de swipe horizontal pour les commandes en « Paiement
- * accepté » — implémentation déterministe via `pointerInput` + [detectHorizontalDragGestures],
- * PAS `SwipeToDismissBox` (retiré : sur device réel, `SwipeToDismissBox`/`AnchoredDraggableState`
- * — material3 1.3.1 — perd trop souvent la course contre le `combinedClickable` de [OrderRow] et
- * le scroll vertical du `LazyColumn` parent. Sa reconnaissance interne (seuil positionnel +
- * vélocité) ne consomme le geste qu'une fois la transition « dragging » effectivement engagée côté
- * état, ce qui peut laisser passer un swipe rapide (doigt réel, contrairement à un swipe lent de
- * test) comme un simple tap. Deux correctifs précédents portant uniquement sur la state machine
- * (`Settled` -> `true`, puis pattern `reset()`) n'ont pas résolu le problème car il se situe au
- * niveau de la RECONNAISSANCE DU GESTE, pas de l'état.
+ * accepté ». Implémentation via un **détecteur de geste unique et déterministe**
+ * (`pointerInput` + `awaitEachGesture`), PAS deux détecteurs concurrents (l'ancienne version posait
+ * `detectHorizontalDragGestures` sur ce `Box` ET laissait `combinedClickable` sur [OrderRow] :
+ * sur device réel, un swipe **lent** fonctionnait car le tap de l'enfant se laissait le temps
+ * d'observer la consommation du parent, mais un **flick rapide** était capté comme un tap — le
+ * détecteur de tap de [OrderRow] voit l'évènement de relâchement (up) avant que le parent n'ait pu
+ * clairement établir/consommer suffisamment de deltas de drag, et un tap-detector standard
+ * (`detectTapGestures`/`clickable`) traite tout up non explicitement annulé comme un tap, quelle
+ * que soit la distance parcourue avant. `SwipeToDismissBox`/`AnchoredDraggableState` (material3
+ * 1.3.1) avait le même défaut, en pire : sa reconnaissance interne (seuil + vélocité) ne consomme
+ * le geste qu'une fois la transition « dragging » effectivement engagée côté état.
  *
- * Ici, `detectHorizontalDragGestures` utilise en interne `awaitHorizontalTouchSlopOrCancellation`
- * (le même mécanisme bas niveau que `Modifier.draggable`, cf. doc officielle Compose
- * "drag-swipe-fling") : dès qu'un déplacement horizontal dominant franchit le seuil, `change
- * .consume()` est appelé EXPLICITEMENT sur ce `PointerInputChange` partagé. Cette consommation
- * immédiate fait céder à la fois :
- * - le scroll vertical ambiant du `LazyColumn` (son propre détecteur de scroll observe
- *   `change.isConsumed` et cède le geste) ;
- * - le détecteur de tap du contenu enfant ([OrderRow], `combinedClickable`), qui s'auto-annule dès
- *   qu'un ancêtre consomme un déplacement significatif pendant la fenêtre down→up (contrat standard
- *   `detectTapGestures`/`clickable`).
- * Ce pointerInput est posé sur le `Box` ANCÊTRE direct de [OrderRow] (pas un enfant du même niveau)
- * pour bénéficier de cet ordre d'arbitrage.
+ * Le vrai correctif n'est pas dans la state machine : c'est de ne PLUS avoir deux détecteurs qui se
+ * courent après. Un seul `awaitEachGesture` ici tranche tap / appui-long / swipe **avant** que
+ * quiconque d'autre ne voie l'évènement de relâchement — [OrderRow] est rendu sans
+ * `combinedClickable` dans ce chemin (`enableClick = false`), donc il n'existe plus de second
+ * détecteur susceptible de gagner la course. Déroulé :
+ * 1. `awaitFirstDown` capture le doigt.
+ * 2. Phase 1 (bornée par `viewConfiguration.longPressTimeoutMillis` via le `withTimeoutOrNull`
+ *    natif d'`AwaitPointerEventScope`) : à chaque évènement, on accumule le déplacement horizontal
+ *    et vertical depuis le down.
+ *    - Un `up` avant tout verdict → **tap** (`onClick`), quelle que soit la vitesse : un flick
+ *      rapide qui reste sous `touchSlop` est un vrai tap, pas un swipe raté.
+ *    - Dès que le déplacement horizontal dépasse `touchSlop` ET domine le vertical → **swipe** :
+ *      `change.consume()` (fait céder le scroll du `LazyColumn`) puis bascule en phase 2. C'est
+ *      justement ce qui manquait : un flick rapide qui parcourt une vraie distance horizontale
+ *      avant l'up est détecté ICI, sur le même évènement de mouvement, AVANT que l'up ne puisse
+ *      jamais être examiné comme un tap — il n'y a plus de race, la décision est prise en amont.
+ *    - Dès que le déplacement vertical dépasse `touchSlop` ET domine l'horizontal → on **abandonne**
+ *      sans consommer, pour laisser le scroll vertical ambiant du `LazyColumn` prendre le relai.
+ *    - Le timeout s'écoule sans verdict (doigt immobile) → **appui long** (`onLongPress`, mode
+ *      sélection), puis on consomme jusqu'au relâchement.
+ * 3. Phase 2 (swipe engagé) : suit le doigt (met à jour [offsetX]) jusqu'au relâchement, puis
+ *    calcule si le seuil de 25 % de la largeur est franchi pour déclencher [onSwipeAction] (sinon
+ *    anime un retour à 0).
  *
  * La position affichée ([offsetX], un simple [Animatable] `remember`é, PAS `rememberSaveable`)
  * repart toujours de 0f à chaque composition fraîche — y compris après un aller-retour vers l'écran
  * de détail (l'écran Commandes reste dans le back stack, `SwipeableOrderRow` est disposé/recomposé) :
  * aucun état de drag partiel ne peut donc jamais rester « collé ».
  */
-@Suppress("LongParameterList", "LongMethod")
+private sealed interface PreDragOutcome {
+    /** Relâchement (up) observé avant tout verdict de drag → tap simple. */
+    data object Tap : PreDragOutcome
+
+    /** Seuil horizontal franchi et dominant → bascule en suivi de swipe (phase 2). */
+    data object DragStarted : PreDragOutcome
+
+    /** Seuil vertical franchi et dominant → geste abandonné au profit du scroll du LazyColumn. */
+    data object VerticalWin : PreDragOutcome
+}
+
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "LoopWithTooManyJumpStatements")
 @Composable
 private fun SwipeableOrderRow(
     order: Order,
@@ -733,33 +760,98 @@ private fun SwipeableOrderRow(
             Modifier
                 .fillMaxWidth()
                 .onSizeChanged { size -> rowWidthPx = size.width.toFloat() }
-                .pointerInput(Unit) {
-                    detectHorizontalDragGestures(
-                        onDragEnd = {
-                            val threshold = rowWidthPx * SWIPE_DISMISS_THRESHOLD_FRACTION
-                            val committedDirection =
-                                when {
-                                    rowWidthPx <= 0f -> null
-                                    offsetX.value <= -threshold -> SwipeDirection.LEFT
-                                    offsetX.value >= threshold -> SwipeDirection.RIGHT
-                                    else -> null
+                .pointerInput(order.id) {
+                    awaitEachGesture {
+                        val touchSlop = viewConfiguration.touchSlop
+                        val down = awaitFirstDown(requireUnconsumed = false)
+
+                        var horizontalDrag = 0f
+                        var verticalDrag = 0f
+
+                        // Phase 1 : course tap / appui-long / démarrage de drag, bornée par le
+                        // délai d'appui long. Cf. KDoc de SwipeableOrderRow pour le détail complet
+                        // de l'arbitrage — c'est ICI, sur un déplacement encore en cours, que le
+                        // swipe est reconnu, avant que quiconque n'examine jamais l'up comme un tap.
+                        val preDragOutcome =
+                            withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull { it.id == down.id } ?: continue
+
+                                    if (!change.pressed) {
+                                        change.consume()
+                                        return@withTimeoutOrNull PreDragOutcome.Tap
+                                    }
+
+                                    val delta = change.positionChange()
+                                    horizontalDrag += delta.x
+                                    verticalDrag += delta.y
+                                    val absHorizontal = abs(horizontalDrag)
+                                    val absVertical = abs(verticalDrag)
+
+                                    when {
+                                        absHorizontal > touchSlop && absHorizontal > absVertical -> {
+                                            change.consume()
+                                            return@withTimeoutOrNull PreDragOutcome.DragStarted
+                                        }
+                                        absVertical > touchSlop && absVertical >= absHorizontal -> {
+                                            return@withTimeoutOrNull PreDragOutcome.VerticalWin
+                                        }
+                                        else -> {
+                                            // Sous le seuil dans les deux sens : encore indéterminé,
+                                            // on continue d'observer (candidat tap/appui-long/swipe).
+                                        }
+                                    }
                                 }
-                            scope.launch { offsetX.animateTo(0f, tween(SWIPE_SETTLE_ANIM_MS)) }
-                            // Déclenché APRÈS avoir lancé l'animation de retour (non bloquant) : la
-                            // fenêtre d'annulation métier (SwipeUndoBar) démarre immédiatement, sans
-                            // attendre la fin de l'anim visuelle de règlement de la ligne.
-                            committedDirection?.let(onSwipeAction)
-                        },
-                        onDragCancel = {
-                            scope.launch { offsetX.animateTo(0f, tween(SWIPE_SETTLE_ANIM_MS)) }
-                        },
-                    ) { change, dragAmount ->
-                        // Consommation explicite dès le premier delta horizontal reconnu : fait
-                        // céder le scroll vertical du LazyColumn ET le tap de OrderRow. Cf. doc de
-                        // fonction ci-dessus.
-                        change.consume()
-                        val newOffset = (offsetX.value + dragAmount).coerceIn(-rowWidthPx, rowWidthPx)
-                        scope.launch { offsetX.snapTo(newOffset) }
+                            }
+
+                        when (preDragOutcome) {
+                            PreDragOutcome.Tap -> onClick()
+                            // Scroll vertical : on n'a rien consommé, le LazyColumn prend le relai.
+                            PreDragOutcome.VerticalWin -> Unit
+                            PreDragOutcome.DragStarted -> {
+                                scope.launch {
+                                    offsetX.snapTo(horizontalDrag.coerceIn(-rowWidthPx, rowWidthPx))
+                                }
+                                var releasedWhileDragging = false
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                    change.consume()
+                                    if (!change.pressed) {
+                                        releasedWhileDragging = true
+                                        break
+                                    }
+                                    val delta = change.positionChange()
+                                    val newOffset = (offsetX.value + delta.x).coerceIn(-rowWidthPx, rowWidthPx)
+                                    scope.launch { offsetX.snapTo(newOffset) }
+                                }
+
+                                val threshold = rowWidthPx * SWIPE_DISMISS_THRESHOLD_FRACTION
+                                val committedDirection =
+                                    when {
+                                        !releasedWhileDragging || rowWidthPx <= 0f -> null
+                                        offsetX.value <= -threshold -> SwipeDirection.LEFT
+                                        offsetX.value >= threshold -> SwipeDirection.RIGHT
+                                        else -> null
+                                    }
+                                scope.launch { offsetX.animateTo(0f, tween(SWIPE_SETTLE_ANIM_MS)) }
+                                // Déclenché APRÈS avoir lancé l'animation de retour (non bloquant) : la
+                                // fenêtre d'annulation métier (SwipeUndoBar) démarre immédiatement, sans
+                                // attendre la fin de l'anim visuelle de règlement de la ligne.
+                                committedDirection?.let(onSwipeAction)
+                            }
+                            // Timeout écoulé sans verdict (doigt resté quasi immobile) → appui long.
+                            null -> {
+                                onLongPress()
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                    change.consume()
+                                    if (!change.pressed) break
+                                }
+                            }
+                        }
                     }
                 },
     ) {
@@ -782,6 +874,7 @@ private fun SwipeableOrderRow(
                 onClick = onClick,
                 onLongPress = onLongPress,
                 availableStatuses = availableStatuses,
+                enableClick = false,
             )
         }
     }
@@ -941,9 +1034,14 @@ private fun SelectionActionBar(
 /**
  * Ligne de commande — design Stitch : avatar initiales, nom + référence,
  * badge statut coloré, montant aligné à droite.
+ *
+ * [enableClick] : `false` dans le chemin swipable ([SwipeableOrderRow]), où le tap/appui-long est
+ * déjà entièrement arbitré par le `pointerInput` unique de l'ancêtre — poser aussi un
+ * `combinedClickable` ici recréerait exactement le second détecteur concurrent à l'origine du bug
+ * du flick capté comme un tap.
  */
 @OptIn(ExperimentalFoundationApi::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun OrderRow(
     order: Order,
@@ -953,6 +1051,7 @@ private fun OrderRow(
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     availableStatuses: List<OrderStatusFilter> = emptyList(),
+    enableClick: Boolean = true,
 ) {
     val amountText =
         remember(order.totalPaid, order.currency) {
@@ -980,7 +1079,7 @@ private fun OrderRow(
                 .fillMaxWidth()
                 .alpha(rowAlpha)
                 .then(
-                    if (isSelectable) {
+                    if (isSelectable && enableClick) {
                         Modifier.combinedClickable(
                             onClickLabel =
                                 if (selectionMode) {
