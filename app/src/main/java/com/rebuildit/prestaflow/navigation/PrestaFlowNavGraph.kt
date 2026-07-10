@@ -33,6 +33,11 @@ fun PrestaFlowNavGraph(
     windowSizeClass: WindowSizeClass,
     navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier,
+    // Notifie le shell (AuthenticatedShell) qu'une entrée Commandes filtrée par période vient d'être
+    // poussée, afin qu'un futur clic sur l'onglet "Commandes" de la barre du bas force une entrée
+    // fraîche (sans période) au lieu de restaurer celle-ci via `restoreState` — cf. commentaire détaillé
+    // sur le flag ordersEnteredWithPeriod dans MainActivity.kt.
+    onOrdersOpenedWithPeriod: () -> Unit = {},
 ) {
     val isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
 
@@ -49,7 +54,15 @@ fun PrestaFlowNavGraph(
                     }
                 },
                 onOrdersClick = { period ->
-                    navController.navigate("${AppDestination.Orders.route}?period=${period.queryValue}")
+                    onOrdersOpenedWithPeriod()
+                    // Purge d'abord toute entrée Commandes existante (active ou sauvegardée via
+                    // saveState) avant de pousser l'entrée filtrée : même pattern que le KPI
+                    // "Nouveaux clients" ci-dessous, pour garantir un ViewModel frais avec la bonne
+                    // période même si l'utilisateur avait déjà visité l'onglet Commandes ou une autre
+                    // tuile du dashboard juste avant.
+                    navController.navigate("${AppDestination.Orders.route}?period=${period.queryValue}") {
+                        popUpTo(AppDestination.Orders.route) { inclusive = true }
+                    }
                 },
                 onClientsClick = { createdFrom ->
                     // Le KPI "Nouveaux clients" navigue toujours vers une entrée Clients fraîche
