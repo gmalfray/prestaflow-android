@@ -1,21 +1,26 @@
 package com.rebuildit.prestaflow.ui.orders
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -55,26 +60,27 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -82,6 +88,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -109,8 +116,10 @@ import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlin.math.roundToInt
 
 @Composable
 fun OrdersRoute(
@@ -637,16 +646,43 @@ private fun OrdersList(
 
 // ─── Ligne commande avec swipe ────────────────────────────────────────────────
 
+/** Fraction de la largeur de la ligne à partir de laquelle un relâchement déclenche l'action swipe. */
+private const val SWIPE_DISMISS_THRESHOLD_FRACTION = 0.25f
+
+/** Durée (ms) de l'animation de retour/règlement de la ligne après relâchement du doigt. */
+private const val SWIPE_SETTLE_ANIM_MS = 200
+
 /**
- * Enveloppe une [OrderRow] avec un [SwipeToDismissBox] pour les commandes en « Paiement accepté ».
- * - Swipe GAUCHE (EndToStart) → « En cours de préparation »
- * - Swipe DROITE (StartToEnd) → « Terminé »
- * La ligne reprend toujours sa position : le swipe est confirmé (pattern `reset()`), l'action
- * métier est déclenchée dans un `LaunchedEffect`, puis l'état est ramené à Settled via
- * `dismissState.reset()`. Cf. commentaire sur `dismissState` ci-dessous pour le détail.
+ * Enveloppe une [OrderRow] avec un geste de swipe horizontal pour les commandes en « Paiement
+ * accepté » — implémentation déterministe via `pointerInput` + [detectHorizontalDragGestures],
+ * PAS `SwipeToDismissBox` (retiré : sur device réel, `SwipeToDismissBox`/`AnchoredDraggableState`
+ * — material3 1.3.1 — perd trop souvent la course contre le `combinedClickable` de [OrderRow] et
+ * le scroll vertical du `LazyColumn` parent. Sa reconnaissance interne (seuil positionnel +
+ * vélocité) ne consomme le geste qu'une fois la transition « dragging » effectivement engagée côté
+ * état, ce qui peut laisser passer un swipe rapide (doigt réel, contrairement à un swipe lent de
+ * test) comme un simple tap. Deux correctifs précédents portant uniquement sur la state machine
+ * (`Settled` -> `true`, puis pattern `reset()`) n'ont pas résolu le problème car il se situe au
+ * niveau de la RECONNAISSANCE DU GESTE, pas de l'état.
+ *
+ * Ici, `detectHorizontalDragGestures` utilise en interne `awaitHorizontalTouchSlopOrCancellation`
+ * (le même mécanisme bas niveau que `Modifier.draggable`, cf. doc officielle Compose
+ * "drag-swipe-fling") : dès qu'un déplacement horizontal dominant franchit le seuil, `change
+ * .consume()` est appelé EXPLICITEMENT sur ce `PointerInputChange` partagé. Cette consommation
+ * immédiate fait céder à la fois :
+ * - le scroll vertical ambiant du `LazyColumn` (son propre détecteur de scroll observe
+ *   `change.isConsumed` et cède le geste) ;
+ * - le détecteur de tap du contenu enfant ([OrderRow], `combinedClickable`), qui s'auto-annule dès
+ *   qu'un ancêtre consomme un déplacement significatif pendant la fenêtre down→up (contrat standard
+ *   `detectTapGestures`/`clickable`).
+ * Ce pointerInput est posé sur le `Box` ANCÊTRE direct de [OrderRow] (pas un enfant du même niveau)
+ * pour bénéficier de cet ordre d'arbitrage.
+ *
+ * La position affichée ([offsetX], un simple [Animatable] `remember`é, PAS `rememberSaveable`)
+ * repart toujours de 0f à chaque composition fraîche — y compris après un aller-retour vers l'écran
+ * de détail (l'écran Commandes reste dans le back stack, `SwipeableOrderRow` est disposé/recomposé) :
+ * aucun état de drag partiel ne peut donc jamais rester « collé ».
  */
-@OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun SwipeableOrderRow(
     order: Order,
@@ -688,92 +724,123 @@ private fun SwipeableOrderRow(
     val leftActionColor = MaterialTheme.colorScheme.tertiary
     val rightActionColor = Color(0xFF2E7D32)
 
-    // Pattern « reset() » (et non veto/snap-back) : le swipe est toujours confirmé, ce qui laisse
-    // AnchoredDraggableState terminer proprement sa transition. L'action métier est déclenchée
-    // dans le LaunchedEffect ci-dessous, puis dismissState.reset() ramène la ligne à Settled.
-    // Contrairement au veto (confirmValueChange -> false), ce pattern ne laisse jamais l'état
-    // interne hors ancrage confirmé : il survit à la restauration de la composition après un
-    // aller-retour vers l'écran de détail (l'écran Commandes reste dans le back stack).
-    val dismissState =
-        rememberSwipeToDismissBoxState(
-            positionalThreshold = { totalDistance -> totalDistance * 0.25f },
-        )
+    val offsetX = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    var rowWidthPx by remember { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(dismissState.currentValue) {
-        when (dismissState.currentValue) {
-            SwipeToDismissBoxValue.EndToStart -> {
-                onSwipeAction(SwipeDirection.LEFT)
-                dismissState.reset()
-            }
-            SwipeToDismissBoxValue.StartToEnd -> {
-                onSwipeAction(SwipeDirection.RIGHT)
-                dismissState.reset()
-            }
-            SwipeToDismissBoxValue.Settled -> Unit
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .onSizeChanged { size -> rowWidthPx = size.width.toFloat() }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            val threshold = rowWidthPx * SWIPE_DISMISS_THRESHOLD_FRACTION
+                            val committedDirection =
+                                when {
+                                    rowWidthPx <= 0f -> null
+                                    offsetX.value <= -threshold -> SwipeDirection.LEFT
+                                    offsetX.value >= threshold -> SwipeDirection.RIGHT
+                                    else -> null
+                                }
+                            scope.launch { offsetX.animateTo(0f, tween(SWIPE_SETTLE_ANIM_MS)) }
+                            // Déclenché APRÈS avoir lancé l'animation de retour (non bloquant) : la
+                            // fenêtre d'annulation métier (SwipeUndoBar) démarre immédiatement, sans
+                            // attendre la fin de l'anim visuelle de règlement de la ligne.
+                            committedDirection?.let(onSwipeAction)
+                        },
+                        onDragCancel = {
+                            scope.launch { offsetX.animateTo(0f, tween(SWIPE_SETTLE_ANIM_MS)) }
+                        },
+                    ) { change, dragAmount ->
+                        // Consommation explicite dès le premier delta horizontal reconnu : fait
+                        // céder le scroll vertical du LazyColumn ET le tap de OrderRow. Cf. doc de
+                        // fonction ci-dessus.
+                        change.consume()
+                        val newOffset = (offsetX.value + dragAmount).coerceIn(-rowWidthPx, rowWidthPx)
+                        scope.launch { offsetX.snapTo(newOffset) }
+                    }
+                },
+    ) {
+        SwipeActionBackground(
+            offsetXPx = offsetX.value,
+            leftActionColor = leftActionColor,
+            rightActionColor = rightActionColor,
+        )
+        Box(
+            modifier =
+                Modifier.offset {
+                    IntOffset(offsetX.value.roundToInt(), 0)
+                },
+        ) {
+            OrderRow(
+                order = order,
+                dateFormatter = dateFormatter,
+                selectionMode = selectionMode,
+                isSelected = isSelected,
+                onClick = onClick,
+                onLongPress = onLongPress,
+                availableStatuses = availableStatuses,
+            )
         }
     }
+}
 
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
-            val targetValue = dismissState.targetValue
-            val bgColor =
-                when (targetValue) {
-                    SwipeToDismissBoxValue.EndToStart -> leftActionColor
-                    SwipeToDismissBoxValue.StartToEnd -> rightActionColor
-                    SwipeToDismissBoxValue.Settled -> Color.Transparent
-                }
-            val isLeftSwipe = targetValue == SwipeToDismissBoxValue.EndToStart
-            val isRightSwipe = targetValue == SwipeToDismissBoxValue.StartToEnd
-            val swipeIcon = if (isLeftSwipe) Icons.Outlined.ArrowUpward else Icons.Outlined.Done
-            val swipeLabel =
-                when {
-                    isLeftSwipe -> stringResource(R.string.orders_swipe_left_label)
-                    isRightSwipe -> stringResource(R.string.orders_swipe_right_label)
-                    else -> ""
-                }
-            val swipeAlign = if (isRightSwipe) Alignment.CenterStart else Alignment.CenterEnd
-            val onBgColor = contrastTextColor(bgColor)
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(bgColor)
-                        .padding(horizontal = Dimensions.spacingL),
-                contentAlignment = swipeAlign,
-            ) {
-                if (isLeftSwipe || isRightSwipe) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
-                    ) {
-                        Icon(
-                            imageVector = swipeIcon,
-                            contentDescription = null,
-                            tint = onBgColor,
-                            modifier = Modifier.size(Dimensions.iconSizeSmall),
-                        )
-                        Text(
-                            text = swipeLabel,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = onBgColor,
-                        )
-                    }
-                }
-            }
-        },
-        enableDismissFromStartToEnd = true,
-        enableDismissFromEndToStart = true,
+/**
+ * Fond coloré + icône/label révélé derrière [OrderRow] pendant le drag, selon le sens du swipe.
+ * Extension de [BoxScope] : `matchParentSize()` a besoin de ce receiver pour se caler sur la taille
+ * du `Box` ancêtre (déterminée par [OrderRow], l'autre enfant de ce même `Box`).
+ */
+@Composable
+private fun BoxScope.SwipeActionBackground(
+    offsetXPx: Float,
+    leftActionColor: Color,
+    rightActionColor: Color,
+) {
+    val isLeftSwipe = offsetXPx < 0f
+    val isRightSwipe = offsetXPx > 0f
+    val bgColor =
+        when {
+            isLeftSwipe -> leftActionColor
+            isRightSwipe -> rightActionColor
+            else -> Color.Transparent
+        }
+    val swipeIcon = if (isLeftSwipe) Icons.Outlined.ArrowUpward else Icons.Outlined.Done
+    val swipeLabel =
+        when {
+            isLeftSwipe -> stringResource(R.string.orders_swipe_left_label)
+            isRightSwipe -> stringResource(R.string.orders_swipe_right_label)
+            else -> ""
+        }
+    val swipeAlign = if (isRightSwipe) Alignment.CenterStart else Alignment.CenterEnd
+    val onBgColor = contrastTextColor(bgColor)
+    Box(
+        modifier =
+            Modifier
+                .matchParentSize()
+                .background(bgColor)
+                .padding(horizontal = Dimensions.spacingL),
+        contentAlignment = swipeAlign,
     ) {
-        OrderRow(
-            order = order,
-            dateFormatter = dateFormatter,
-            selectionMode = selectionMode,
-            isSelected = isSelected,
-            onClick = onClick,
-            onLongPress = onLongPress,
-            availableStatuses = availableStatuses,
-        )
+        if (isLeftSwipe || isRightSwipe) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+            ) {
+                Icon(
+                    imageVector = swipeIcon,
+                    contentDescription = null,
+                    tint = onBgColor,
+                    modifier = Modifier.size(Dimensions.iconSizeSmall),
+                )
+                Text(
+                    text = swipeLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = onBgColor,
+                )
+            }
+        }
     }
 }
 

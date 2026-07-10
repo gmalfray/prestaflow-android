@@ -241,6 +241,16 @@ private fun AuthenticatedShell(
 
     var currentTitle by remember { mutableStateOf(R.string.app_name) }
 
+    // Vrai juste après l'ouverture de Commandes depuis une tuile du dashboard (filtre de période).
+    // Compose Navigation restaure une entrée de back-stack SAUVEGARDÉE (saveState/restoreState) en
+    // se basant sur la DESTINATION ("orders?period={period}"), pas sur les arguments demandés : un
+    // clic ultérieur sur l'onglet "Commandes" (route "orders", sans période) peut donc restaurer
+    // cette même entrée filtrée au lieu d'en créer une neuve — le filtre de période dashboard reste
+    // "collé" et la puce ✕ ne peut jamais s'en débarrasser durablement (elle réapparaît à chaque
+    // retour sur l'onglet). Ce flag permet à `navigateToTab` de forcer, une seule fois, une entrée
+    // Commandes fraîche (sans période) au prochain clic sur l'onglet — cf. usage ci-dessous.
+    var ordersEnteredWithPeriod by rememberSaveable { mutableStateOf(false) }
+
     // Navigation vers le détail commande depuis une notification push.
     // Déclenché à chaque changement de pendingOrderId (non-null uniquement).
     // popUpTo assure un back stack propre : Dashboard → détail commande (retour arrière → Dashboard).
@@ -277,6 +287,46 @@ private fun AuthenticatedShell(
     val hideTabChrome = isFullScreenRoute || isSettings || isNotifCategories
     val settingsLabel = stringResource(R.string.destination_settings)
     val backLabel = stringResource(R.string.content_description_back)
+
+    // Navigation partagée par la barre du bas (compact) ET le rail (medium/expanded) : évite de
+    // dupliquer deux fois la même logique (et le même correctif) dans les deux blocs `onItemClick`.
+    fun navigateToTab(destination: AppDestination) {
+        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        when {
+            destination == AppDestination.Dashboard -> {
+                // Dashboard = destination de départ : on dépile vers elle (popBackStack)
+                // plutôt que de naviguer en avant. navigate(startDest){ launchSingleTop }
+                // peut être traité comme no-op quand Dashboard est déjà au sommet
+                // du back stack après popUpTo, rendant le retour au Dashboard impossible.
+                navController.popBackStack(
+                    route = AppDestination.Dashboard.route,
+                    inclusive = false,
+                    saveState = true,
+                )
+            }
+            destination == AppDestination.Orders && ordersEnteredWithPeriod -> {
+                // Cf. commentaire sur ordersEnteredWithPeriod : on force une entrée Commandes
+                // fraîche (sans restoreState) au lieu de risquer de restaurer l'entrée filtrée par
+                // période ouverte depuis le dashboard. Une fois consommé, le flag repasse à false :
+                // les visites suivantes de l'onglet redeviennent des restaurations normales (tri,
+                // recherche, filtre de statut préservés).
+                ordersEnteredWithPeriod = false
+                navController.navigate(AppDestination.Orders.route) {
+                    popUpTo(AppDestination.Orders.route) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+            else -> {
+                navController.navigate(destination.route) {
+                    popUpTo(navController.graph.startDestinationId) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -332,26 +382,7 @@ private fun AuthenticatedShell(
                         val label = stringResource(id = destination.labelRes)
                         val onItemClick = {
                             if (!selected) {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                if (destination == AppDestination.Dashboard) {
-                                    // Dashboard = destination de départ : on dépile vers elle (popBackStack)
-                                    // plutôt que de naviguer en avant. navigate(startDest){ launchSingleTop }
-                                    // peut être traité comme no-op quand Dashboard est déjà au sommet
-                                    // du back stack après popUpTo, rendant le retour au Dashboard impossible.
-                                    navController.popBackStack(
-                                        route = AppDestination.Dashboard.route,
-                                        inclusive = false,
-                                        saveState = true,
-                                    )
-                                } else {
-                                    navController.navigate(destination.route) {
-                                        popUpTo(navController.graph.startDestinationId) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
+                                navigateToTab(destination)
                             }
                         }
                         NavigationBarItem(
@@ -394,26 +425,7 @@ private fun AuthenticatedShell(
                             val label = stringResource(id = destination.labelRes)
                             val onItemClick = {
                                 if (!selected) {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    if (destination == AppDestination.Dashboard) {
-                                        // Dashboard = destination de départ : on dépile vers elle (popBackStack)
-                                        // plutôt que de naviguer en avant. navigate(startDest){ launchSingleTop }
-                                        // peut être traité comme no-op quand Dashboard est déjà au sommet
-                                        // du back stack après popUpTo, rendant le retour au Dashboard impossible.
-                                        navController.popBackStack(
-                                            route = AppDestination.Dashboard.route,
-                                            inclusive = false,
-                                            saveState = true,
-                                        )
-                                    } else {
-                                        navController.navigate(destination.route) {
-                                            popUpTo(navController.graph.startDestinationId) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
+                                    navigateToTab(destination)
                                 }
                             }
                             NavigationRailItem(
@@ -444,6 +456,7 @@ private fun AuthenticatedShell(
                     onLogout = onLogout,
                     windowSizeClass = windowSizeClass,
                     modifier = Modifier.fillMaxSize(),
+                    onOrdersOpenedWithPeriod = { ordersEnteredWithPeriod = true },
                 )
             }
         }
