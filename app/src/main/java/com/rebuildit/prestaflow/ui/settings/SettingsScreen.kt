@@ -1,13 +1,10 @@
 package com.rebuildit.prestaflow.ui.settings
 
-import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,7 +28,6 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.ExitToApp
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Print
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -84,7 +80,6 @@ import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.language.AppLanguage
-import com.rebuildit.prestaflow.domain.printer.model.SavedPrinterDevice
 import com.rebuildit.prestaflow.domain.products.model.DEFAULT_QUICK_ADD_AMOUNTS
 import com.rebuildit.prestaflow.domain.products.model.MAX_QUICK_ADD_BUTTONS
 import com.rebuildit.prestaflow.domain.products.model.MIN_QUICK_ADD_BUTTONS
@@ -98,7 +93,7 @@ import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import com.rebuildit.prestaflow.ui.theme.ThemeViewModel
 import com.rebuildit.prestaflow.ui.theme.displayNameRes
 
-// Écran Réglages : un ViewModel Hilt par section (thème, boutiques, dashboard, imprimante, swipe, réappro)
+// Écran Réglages : un ViewModel Hilt par section (thème, boutiques, dashboard, swipe, réappro)
 @Suppress("LongParameterList", "LongMethod")
 @Composable
 fun SettingsRoute(
@@ -107,7 +102,6 @@ fun SettingsRoute(
     themeViewModel: ThemeViewModel = hiltViewModel(),
     shopsViewModel: ShopsViewModel = hiltViewModel(),
     dashboardPrefsViewModel: DashboardPrefsViewModel = hiltViewModel(),
-    thermalPrinterViewModel: ThermalPrinterViewModel = hiltViewModel(),
     swipePrefsViewModel: SwipePrefsViewModel = hiltViewModel(),
     stockReplenishPrefsViewModel: StockReplenishPrefsViewModel = hiltViewModel(),
     languageViewModel: LanguageViewModel = hiltViewModel(),
@@ -117,7 +111,6 @@ fun SettingsRoute(
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     val addState by shopsViewModel.addState.collectAsStateWithLifecycle()
     val defaultPeriod by dashboardPrefsViewModel.defaultPeriod.collectAsStateWithLifecycle()
-    val savedPrinterDevice by thermalPrinterViewModel.savedDevice.collectAsStateWithLifecycle()
     val swipePrefsState by swipePrefsViewModel.uiState.collectAsStateWithLifecycle()
     val stockReplenishQuickAddAmounts by stockReplenishPrefsViewModel.quickAddAmounts.collectAsStateWithLifecycle()
     val stockReplenishSoundOnScan by stockReplenishPrefsViewModel.soundOnScan.collectAsStateWithLifecycle()
@@ -160,9 +153,6 @@ fun SettingsRoute(
         },
         dashboardDefaultPeriod = defaultPeriod,
         onDashboardDefaultPeriodSelected = dashboardPrefsViewModel::setDefaultPeriod,
-        savedPrinterDevice = savedPrinterDevice,
-        onSelectPrinterDevice = thermalPrinterViewModel::selectDevice,
-        onClearPrinterDevice = thermalPrinterViewModel::clearDevice,
         swipePrefsState = swipePrefsState,
         onSwipeEnabledChanged = swipePrefsViewModel::setSwipeEnabled,
         onSwipeSourceStatusSelected = swipePrefsViewModel::setSwipeSourceStatusId,
@@ -199,9 +189,6 @@ fun SettingsScreen(
     onAddShopScanQr: () -> Unit = {},
     dashboardDefaultPeriod: DashboardPeriod = DashboardPeriod.WEEK,
     onDashboardDefaultPeriodSelected: (DashboardPeriod) -> Unit = {},
-    savedPrinterDevice: SavedPrinterDevice? = null,
-    onSelectPrinterDevice: (SavedPrinterDevice) -> Unit = {},
-    onClearPrinterDevice: () -> Unit = {},
     swipePrefsState: SwipePrefsUiState = SwipePrefsUiState(),
     onSwipeEnabledChanged: (Boolean) -> Unit = {},
     onSwipeSourceStatusSelected: (Int?) -> Unit = {},
@@ -359,16 +346,7 @@ fun SettingsScreen(
             )
         }
 
-        // Section IMPRIMANTE THERMIQUE — sélection Bluetooth ESC/POS
         val context = LocalContext.current
-        SettingsSection(label = stringResource(R.string.settings_thermal_printer_label)) {
-            ThermalPrinterSection(
-                context = context,
-                savedDevice = savedPrinterDevice,
-                onDeviceSelected = onSelectPrinterDevice,
-                onClear = onClearPrinterDevice,
-            )
-        }
 
         // Section SWIPE COMMANDES — config source + cibles gauche/droite
         SettingsSection(label = stringResource(R.string.settings_swipe_label)) {
@@ -896,246 +874,6 @@ private fun DashboardDefaultPeriodSelector(
             }
         }
     }
-}
-
-// ─── Imprimante thermique Bluetooth ──────────────────────────────────────────
-
-/**
- * Section de sélection d'imprimante thermique Bluetooth dans les Réglages.
- *
- * Liste les appareils Bluetooth **appairés** ([android.bluetooth.BluetoothAdapter.bondedDevices])
- * dans un dialogue Material 3. La liste est rechargée à chaque ouverture du dialogue, après
- * avoir demandé/vérifié la permission [android.Manifest.permission.BLUETOOTH_CONNECT] (API 31+).
- *
- * Correction : la version précédente lisait bondedDevices dans `remember {}` (une seule fois
- * à la composition, sans vérifier la permission runtime) → SecurityException silencieuse → liste
- * vide sur Android 12+. La permission est désormais demandée explicitement via le launcher
- * ActivityResult avant d'accéder à bondedDevices.
- */
-@Suppress("LongMethod")
-@Composable
-private fun ThermalPrinterSection(
-    context: Context,
-    savedDevice: SavedPrinterDevice?,
-    onDeviceSelected: (SavedPrinterDevice) -> Unit,
-    onClear: () -> Unit,
-) {
-    var showDialog by remember { mutableStateOf(false) }
-    var showBtPermissionDenied by remember { mutableStateOf(false) }
-    // Découverte Bluetooth (appairés + scan), à la manière de l'app constructeur :
-    // pas besoin d'appairer l'imprimante au préalable dans les réglages Android.
-    val scan = rememberBluetoothDeviceScan(context)
-
-    // Demande les permissions Bluetooth runtime (SCAN + CONNECT, API 31+), puis lance le scan
-    val btPermissionLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestMultiplePermissions(),
-        ) { results ->
-            if (BT_SCAN_PERMISSIONS.all { results[it] == true }) {
-                showBtPermissionDenied = false
-                scan.start()
-                showDialog = true
-            } else {
-                // P1-c : afficher un message si la permission est refusée
-                showBtPermissionDenied = true
-            }
-        }
-
-    // Texte descriptif de l'imprimante sélectionnée
-    val deviceLabel =
-        if (savedDevice != null) {
-            stringResource(R.string.settings_thermal_printer_selected, savedDevice.name, savedDevice.address)
-        } else {
-            stringResource(R.string.settings_thermal_printer_none)
-        }
-
-    Text(
-        text = deviceLabel,
-        style = MaterialTheme.typography.bodyMedium,
-        color =
-            if (savedDevice != null) {
-                MaterialTheme.colorScheme.onSurface
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-    )
-
-    Text(
-        text = stringResource(R.string.settings_thermal_printer_hint),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-
-    // P1-c : feedback permission refusée
-    if (showBtPermissionDenied) {
-        Text(
-            text = stringResource(R.string.settings_thermal_printer_bt_permission_denied),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(top = Dimensions.spacingXs),
-        )
-    }
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
-    ) {
-        OutlinedButton(
-            onClick = {
-                showBtPermissionDenied = false
-                if (hasBtScanPermissions(context)) {
-                    scan.start()
-                    showDialog = true
-                } else {
-                    btPermissionLauncher.launch(BT_SCAN_PERMISSIONS)
-                }
-            },
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(50),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Print,
-                contentDescription = null,
-                modifier = Modifier.padding(end = Dimensions.spacingS),
-            )
-            Text(
-                text = stringResource(R.string.settings_thermal_printer_choose),
-                style = MaterialTheme.typography.titleSmall,
-            )
-        }
-        if (savedDevice != null) {
-            IconButton(onClick = onClear) {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = stringResource(R.string.settings_thermal_printer_clear),
-                    tint = MaterialTheme.colorScheme.error,
-                )
-            }
-        }
-    }
-
-    if (showDialog) {
-        BluetoothDevicePickerDialog(
-            devices = scan.devices,
-            isScanning = scan.isScanning,
-            onRescan = scan.start,
-            onDeviceSelected = { device ->
-                showDialog = false
-                @Suppress("MissingPermission")
-                onDeviceSelected(SavedPrinterDevice(address = device.address, name = device.name ?: device.address))
-            },
-            onDismiss = { showDialog = false },
-        )
-    }
-}
-
-/**
- * Permissions Bluetooth runtime nécessaires à la **découverte** d'imprimantes (API 31+) :
- * BLUETOOTH_SCAN pour `startDiscovery`, BLUETOOTH_CONNECT pour lire le nom et se connecter.
- */
-private val BT_SCAN_PERMISSIONS =
-    arrayOf(
-        android.Manifest.permission.BLUETOOTH_SCAN,
-        android.Manifest.permission.BLUETOOTH_CONNECT,
-    )
-
-/** Vrai si toutes les [BT_SCAN_PERMISSIONS] sont accordées. Toujours vrai sur API < 31. */
-private fun hasBtScanPermissions(context: Context): Boolean {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
-    return BT_SCAN_PERMISSIONS.all {
-        context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
-    }
-}
-
-/**
- * Dialogue de sélection d'imprimante : liste fusionnée des appareils Bluetooth appairés **et**
- * découverts par le scan ([isScanning] indique un scan en cours). [onRescan] relance la découverte.
- */
-@Suppress("LongMethod")
-@Composable
-private fun BluetoothDevicePickerDialog(
-    devices: List<BluetoothDevice>,
-    isScanning: Boolean,
-    onRescan: () -> Unit,
-    onDeviceSelected: (BluetoothDevice) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-        title = { Text(stringResource(R.string.settings_thermal_printer_dialog_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs)) {
-                // Bandeau d'état du scan (recherche en cours / relance)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
-                ) {
-                    if (isScanning) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(Dimensions.iconSizeSmall),
-                            strokeWidth = 2.dp,
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_thermal_printer_scanning),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f),
-                        )
-                    } else {
-                        Text(
-                            text = stringResource(R.string.settings_thermal_printer_scan_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(onClick = onRescan) {
-                            Text(stringResource(R.string.settings_thermal_printer_rescan))
-                        }
-                    }
-                }
-
-                if (devices.isEmpty() && !isScanning) {
-                    Text(
-                        text = stringResource(R.string.settings_thermal_printer_dialog_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    devices.forEach { device ->
-                        @Suppress("MissingPermission")
-                        val deviceName = device.name ?: device.address
-                        TextButton(
-                            onClick = { onDeviceSelected(device) },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.Start,
-                            ) {
-                                Text(
-                                    text = deviceName,
-                                    style = MaterialTheme.typography.titleSmall,
-                                )
-                                Text(
-                                    text = device.address,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.settings_thermal_printer_dialog_cancel))
-            }
-        },
-    )
 }
 
 // ─── Section swipe commandes ─────────────────────────────────────────────────

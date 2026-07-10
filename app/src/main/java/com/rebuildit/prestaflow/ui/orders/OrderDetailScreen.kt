@@ -26,7 +26,6 @@ import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Print
 import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -52,7 +51,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,13 +80,11 @@ import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.orders.components.StatusPickerDialog
-import com.rebuildit.prestaflow.ui.settings.ThermalPrinterViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
-import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-// Route : câblage des callbacks d'impression (facture/bordereau/thermique) + gestion des permissions
+// Route : câblage des callbacks d'impression facture + partage PDF du bordereau
 @Suppress("LongMethod")
 @Composable
 fun OrderDetailRoute(
@@ -96,85 +92,12 @@ fun OrderDetailRoute(
     onProductClick: (Long) -> Unit = {},
     onClientClick: (Long) -> Unit = {},
     viewModel: OrderDetailViewModel = hiltViewModel(),
-    thermalViewModel: ThermalPrinterViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val actionState by viewModel.actionState.collectAsStateWithLifecycle()
     val availableStatuses by viewModel.availableStatuses.collectAsStateWithLifecycle()
-    val savedDevice by thermalViewModel.savedDevice.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
-    val scope = rememberCoroutineScope()
     var pendingPrintOrder by remember { mutableStateOf<Order?>(null) }
-    // Commande en attente d'impression thermique, le temps d'obtenir les permissions Bluetooth
-    var pendingThermalOrder by remember { mutableStateOf<Order?>(null) }
-
-    // Lance l'impression thermique du bordereau (permissions déjà vérifiées en amont)
-    val startThermalPrint: (Order, String) -> Unit = { order, macAddress ->
-        viewModel.fetchShippingLabelPdf { pdfBytes ->
-            viewModel.reportFeedback(
-                message = com.rebuildit.prestaflow.core.ui.UiText.Dynamic(context.getString(R.string.order_detail_thermal_connecting)),
-            )
-            scope.launch {
-                viewModel.printOnThermalPrinter(
-                    context = context,
-                    pdfBytes = pdfBytes,
-                    macAddress = macAddress,
-                    reference = order.reference,
-                )
-            }
-        }
-    }
-
-    // Permissions Bluetooth (API 31+) — la lib ESC/POS appelle cancelDiscovery() qui exige
-    // BLUETOOTH_SCAN en plus de BLUETOOTH_CONNECT. On les demande ensemble, puis on relance
-    // l'impression de la commande mise en attente une fois tout accordé.
-    val btPermissionLauncher =
-        rememberLauncherForActivityResult(
-            contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
-        ) { results ->
-            val order = pendingThermalOrder
-            pendingThermalOrder = null
-            val allGranted = BT_RUNTIME_PERMISSIONS.all { results[it] == true }
-            val device = savedDevice
-            if (allGranted && order != null && device != null) {
-                startThermalPrint(order, device.address)
-            } else if (!allGranted) {
-                viewModel.reportFeedback(
-                    error = com.rebuildit.prestaflow.core.ui.UiText.FromResources(R.string.order_detail_thermal_bt_permission_denied),
-                )
-            }
-        }
-
-    // Impression du bordereau : route automatiquement vers l'imprimante thermique si une est
-    // configurée, sinon vers l'impression système (PrintManager / PDF).
-    val printShippingLabel: (Order) -> Unit = { order ->
-        val device = savedDevice
-        if (device == null) {
-            viewModel.fetchShippingLabelPdf { pdfBytes ->
-                InvoicePrinter.print(
-                    context = context,
-                    pdfBytesList = listOf(pdfBytes),
-                    jobName = "Bordereau ${order.reference}",
-                    mode = PrintMode.ONE_PER_PAGE,
-                )
-            }
-        } else {
-            when {
-                !isBluetooth(context) ->
-                    viewModel.reportFeedback(
-                        error =
-                            com.rebuildit.prestaflow.core.ui.UiText.Dynamic(
-                                context.getString(R.string.order_detail_thermal_bt_disabled),
-                            ),
-                    )
-                !hasBtPermissions(context) -> {
-                    pendingThermalOrder = order
-                    btPermissionLauncher.launch(BT_RUNTIME_PERMISSIONS)
-                }
-                else -> startThermalPrint(order, device.address)
-            }
-        }
-    }
 
     if (pendingPrintOrder != null) {
         val order = pendingPrintOrder!!
@@ -205,7 +128,6 @@ fun OrderDetailRoute(
         onUpdateTracking = viewModel::updateTracking,
         onConsumeFeedback = viewModel::consumeActionFeedback,
         onPrintInvoice = { order -> pendingPrintOrder = order },
-        onPrintShippingLabel = printShippingLabel,
         onShareShippingLabel = { order ->
             viewModel.fetchShippingLabelPdf { pdfBytes ->
                 shareShippingLabelPdf(context, pdfBytes, order.reference)
@@ -216,19 +138,8 @@ fun OrderDetailRoute(
 }
 
 /**
- * Permissions Bluetooth runtime requises (API 31+) pour se connecter et imprimer sur
- * l'imprimante thermique. [android.Manifest.permission.BLUETOOTH_SCAN] est nécessaire car
- * la bibliothèque ESC/POS appelle `BluetoothAdapter.cancelDiscovery()` lors de la connexion.
- */
-private val BT_RUNTIME_PERMISSIONS =
-    arrayOf(
-        android.Manifest.permission.BLUETOOTH_CONNECT,
-        android.Manifest.permission.BLUETOOTH_SCAN,
-    )
-
-/**
  * Écrit les octets PDF dans le répertoire cache, puis déclenche un Intent de partage
- * via [FileProvider] (ouvre le sélecteur d'apps : Munbyn Print, lecteur PDF, e-mail…).
+ * via [FileProvider] (ouvre le sélecteur d'apps : imprimer, lecteur PDF, e-mail…).
  */
 private fun shareShippingLabelPdf(
     context: android.content.Context,
@@ -254,23 +165,6 @@ private fun shareShippingLabelPdf(
     context.startActivity(chooser)
 }
 
-/** Retourne vrai si le Bluetooth est disponible et activé sur l'appareil. */
-private fun isBluetooth(context: android.content.Context): Boolean {
-    val bm = context.getSystemService(android.content.Context.BLUETOOTH_SERVICE) as? android.bluetooth.BluetoothManager
-    return bm?.adapter?.isEnabled == true
-}
-
-/**
- * Retourne vrai si toutes les permissions Bluetooth runtime ([BT_RUNTIME_PERMISSIONS]) sont
- * accordées. Sur API < 31, ces permissions n'existent pas — retourne toujours vrai.
- */
-private fun hasBtPermissions(context: android.content.Context): Boolean {
-    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) return true
-    return BT_RUNTIME_PERMISSIONS.all {
-        context.checkSelfPermission(it) == android.content.pm.PackageManager.PERMISSION_GRANTED
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 // Composable écran : paramètres = callbacks requis, longueur inhérente à la mise en page Compose
 @Suppress("LongParameterList", "LongMethod")
@@ -286,7 +180,6 @@ fun OrderDetailScreen(
     onUpdateTracking: (String) -> Unit = {},
     onConsumeFeedback: () -> Unit = {},
     onPrintInvoice: (Order) -> Unit = {},
-    onPrintShippingLabel: (Order) -> Unit = {},
     onShareShippingLabel: (Order) -> Unit = {},
     onGenerateLabel: () -> Unit = {},
 ) {
@@ -370,7 +263,6 @@ fun OrderDetailScreen(
                         onUpdateStatus = onUpdateStatus,
                         onUpdateTracking = onUpdateTracking,
                         onPrintInvoice = { onPrintInvoice(state.order) },
-                        onPrintShippingLabel = { onPrintShippingLabel(state.order) },
                         onShareShippingLabel = { onShareShippingLabel(state.order) },
                         onGenerateLabel = onGenerateLabel,
                     )
@@ -393,7 +285,6 @@ fun OrderDetailContent(
     onUpdateStatus: (String) -> Unit = {},
     onUpdateTracking: (String) -> Unit = {},
     onPrintInvoice: () -> Unit = {},
-    onPrintShippingLabel: () -> Unit = {},
     onShareShippingLabel: () -> Unit = {},
     onGenerateLabel: () -> Unit = {},
 ) {
@@ -674,26 +565,11 @@ fun OrderDetailContent(
             }
         }
 
-        // Boutons bordereau — visibles uniquement si has_shipping_label
+        // Bouton bordereau — visible uniquement si has_shipping_label. Ouvre la feuille de
+        // partage Android sur le PDF du bordereau : l'utilisateur choisit "Imprimer" ou une app
+        // (visionneuse PDF, e-mail…). Pas d'impression thermique directe (retirée — résultats
+        // décevants sur imprimantes ESC/POS bas coût, cf. historique).
         if (order.hasShippingLabel) {
-            // Impression du bordereau : route vers l'imprimante thermique si configurée,
-            // sinon vers l'impression système (PrintManager / PDF). Décision dans la Route.
-            OutlinedButton(
-                onClick = onPrintShippingLabel,
-                enabled = !actionInProgress,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(50),
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.LocalShipping,
-                    contentDescription = null,
-                    modifier = Modifier.size(Dimensions.iconSizeSmall),
-                )
-                Spacer(modifier = Modifier.size(Dimensions.spacingS))
-                Text(stringResource(R.string.order_detail_print_shipping_label))
-            }
-
-            // Partage du PDF (ouvrir avec Munbyn Print, visionneuse PDF, etc.)
             val shareDesc = stringResource(R.string.order_detail_share_shipping_label_content_description)
             OutlinedButton(
                 onClick = onShareShippingLabel,
@@ -705,13 +581,19 @@ fun OrderDetailContent(
                 shape = RoundedCornerShape(50),
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Share,
+                    imageVector = Icons.Outlined.Print,
                     contentDescription = null,
                     modifier = Modifier.size(Dimensions.iconSizeSmall),
                 )
                 Spacer(modifier = Modifier.size(Dimensions.spacingS))
                 Text(stringResource(R.string.order_detail_share_shipping_label))
             }
+            Text(
+                text = stringResource(R.string.order_detail_share_shipping_label_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = Dimensions.spacingS, top = Dimensions.spacingXs),
+            )
         }
     }
 }

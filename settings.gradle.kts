@@ -11,8 +11,6 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // Bibliothèque DantSu ESCPOS-ThermalPrinter-Android (impression thermique Bluetooth)
-        maven { url = uri("https://jitpack.io") }
     }
 }
 

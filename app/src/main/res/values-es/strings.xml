@@ -261,29 +261,12 @@
     <string name="order_detail_qty_label">Cant.: %1$d</string>
     <string name="order_detail_tracking_display">Seguimiento: %1$s</string>
     <string name="order_detail_print_invoice">Imprimir factura</string>
-    <string name="order_detail_print_shipping_label">Imprimir etiqueta de envío</string>
-    <string name="order_detail_share_shipping_label">Compartir PDF de la etiqueta</string>
-    <string name="order_detail_share_shipping_label_content_description">Compartir PDF de la etiqueta de envío</string>
+    <string name="order_detail_share_shipping_label">Imprimir / compartir la etiqueta</string>
+    <string name="order_detail_share_shipping_label_hint">Abre el PDF: imprímelo o envíalo</string>
+    <string name="order_detail_share_shipping_label_content_description">Imprimir o compartir el PDF de la etiqueta de envío</string>
     <string name="order_detail_share_chooser_title">Compartir etiqueta</string>
     <string name="order_detail_generate_label">Generar etiqueta</string>
     <string name="order_detail_generate_label_content_description">Generar etiqueta de envío Colissimo</string>
-    <!-- Impresora térmica Bluetooth -->
-    <string name="order_detail_thermal_bt_disabled">El Bluetooth está desactivado. Actívalo para imprimir.</string>
-    <string name="order_detail_thermal_bt_permission_denied">Se requiere permiso de Bluetooth para conectar con la impresora.</string>
-    <string name="order_detail_thermal_connecting">Conectando con la impresora…</string>
-    <!-- Ajustes — sección impresora térmica -->
-    <string name="settings_thermal_printer_label">Impresora térmica</string>
-    <string name="settings_thermal_printer_none">Ninguna impresora seleccionada</string>
-    <string name="settings_thermal_printer_selected">Seleccionada: %1$s (%2$s)</string>
-    <string name="settings_thermal_printer_choose">Elegir una impresora</string>
-    <string name="settings_thermal_printer_clear">Quitar la impresora</string>
-    <string name="settings_thermal_printer_dialog_title">Impresoras Bluetooth</string>
-    <string name="settings_thermal_printer_dialog_empty">No se ha encontrado ninguna impresora. Comprueba que esté encendida y cerca, y vuelve a buscar.</string>
-    <string name="settings_thermal_printer_dialog_cancel">Cancelar</string>
-    <string name="settings_thermal_printer_scanning">Buscando impresoras cercanas…</string>
-    <string name="settings_thermal_printer_scan_hint">Dispositivos emparejados y detectados cerca.</string>
-    <string name="settings_thermal_printer_rescan">Volver a buscar</string>
-    <string name="settings_thermal_printer_hint">Busca y selecciona tu impresora térmica Munbyn u otra compatible ESC/POS (no es necesario emparejarla antes).</string>
 
     <!-- Diálogo de elección del modo de impresión -->
     <string name="print_mode_dialog_title">Modo de impresión</string>
@@ -374,15 +357,11 @@
     <string name="order_detail_invoice_unavailable">Este pedido no tiene factura disponible.</string>
     <string name="order_detail_shipping_label_unavailable">No hay etiqueta de envío disponible para este pedido.</string>
     <string name="order_detail_label_generated">Etiqueta generada correctamente</string>
-    <string name="order_detail_thermal_print_success">Etiqueta impresa en la impresora térmica.</string>
 
     <!-- Ajustes — confirmación de eliminación de tienda -->
     <string name="settings_shops_remove_confirm_title">¿Eliminar la tienda?</string>
     <string name="settings_shops_remove_confirm_message">Esto te desconectará de la tienda %1$s.</string>
     <string name="settings_shops_remove_confirm_action">Eliminar</string>
-
-    <!-- Ajustes — permiso de Bluetooth denegado -->
-    <string name="settings_thermal_printer_bt_permission_denied">Se requiere permiso de Bluetooth para elegir una impresora. Autorízalo en los ajustes del sistema.</string>
 
     <!-- Ajustes — sección Deslizar pedidos -->
     <string name="settings_swipe_label">Deslizar pedidos</string>
