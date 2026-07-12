@@ -48,7 +48,6 @@ import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.clients.model.Client
 import com.rebuildit.prestaflow.ui.components.AvatarInitials
-import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
 import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.SearchField
@@ -115,14 +114,14 @@ fun ClientsScreen(
     val errorMessage = state.error?.asString()
 
     when {
+        // Chargement initial (aucun client encore chargé, ni en cache) : rien d'utile à montrer dans
+        // l'en-tête (stats pas encore connues) → plein écran, comme avant.
         state.isLoading && state.clients.isEmpty() -> LoadingState(modifier)
-        state.clients.isEmpty() ->
-            EmptyState(
-                message = stringResource(R.string.clients_list_empty),
-                modifier = modifier,
-                errorMessage = errorMessage,
-                onRefresh = onRefresh,
-            )
+        // Liste chargée mais VIDE (0 résultat, ex. filtre "Nouveaux clients" sans nouveau client sur la
+        // période) : NE PAS remplacer tout l'écran par [EmptyState] — ça faisait disparaître les cartes
+        // KPI, la puce boutique, le titre de section et la recherche (régression constatée sur device).
+        // [ClientList] gère ce cas en interne (cf. son `if (clients.isEmpty())`) en ne remplaçant QUE la
+        // zone liste, l'en-tête restant toujours visible.
         else ->
             ClientList(
                 modifier = modifier,
@@ -244,8 +243,18 @@ private fun ClientList(
 
                     if (clients.isEmpty()) {
                         item {
+                            // Message contextuel : recherche sans résultat, période filtrée sans
+                            // nouveau client, ou liste générique vide — l'en-tête (KPI, puce
+                            // boutique, recherche) reste toujours visible au-dessus (cf. commentaire
+                            // ClientsScreen ci-dessus).
+                            val emptyMessage =
+                                when {
+                                    query.isNotBlank() -> stringResource(R.string.list_no_results, query)
+                                    listMode == ClientListMode.NEW -> stringResource(R.string.clients_list_empty_period)
+                                    else -> stringResource(R.string.clients_list_empty)
+                                }
                             Text(
-                                text = stringResource(R.string.list_no_results, query),
+                                text = emptyMessage,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = Dimensions.spacingM),

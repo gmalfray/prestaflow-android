@@ -185,6 +185,7 @@
     <string name="stock_replenish_session_recap_exit_action">OK</string>
 
     <string name="clients_list_empty">Nog geen klanten.</string>
+    <string name="clients_list_empty_period">Geen klanten in deze periode.</string>
     <string name="clients_orders_count">%1$d bestellingen</string>
     <string name="clients_list_section_title">Beste klanten</string>
     <string name="clients_list_section_all">Alle klanten</string>
@@ -369,7 +370,7 @@
     <string name="settings_swipe_source_status">Actief op</string>
     <string name="settings_swipe_left_status">Swipe ← (links)</string>
     <string name="settings_swipe_right_status">Swipe → (rechts)</string>
-    <string name="settings_swipe_status_default">Standaard (op naam)</string>
+    <string name="settings_swipe_status_default">Standaard</string>
     <string name="settings_swipe_no_statuses">Statussen laden…</string>
     <string name="settings_swipe_statuses_error">Statussen konden niet worden geladen</string>
     <string name="settings_swipe_statuses_retry">Opnieuw proberen</string>
