@@ -100,6 +100,7 @@ import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -107,6 +108,7 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -396,7 +398,7 @@ private fun DashboardContent(
                     totalText = turnoverText,
                     currentTurnover = snapshot.turnover,
                     previousTurnover = snapshot.previousTurnover,
-                    // En mode plage libre, on n'affiche pas le comparatif "vs période précédente"
+                    // En mode plage libre, on n'affiche pas le comparatif "vs même période l'an dernier"
                     selectedPeriod = if (customRange == null) selectedPeriod else null,
                     onExpandClick = { showFullscreenChart = true },
                 )
@@ -918,7 +920,7 @@ private fun DashboardChartCard(
     currentTurnover: Double,
     previousTurnover: Double?,
     /**
-     * Null en mode plage libre : le comparatif "vs période précédente" n'est alors pas affiché.
+     * Null en mode plage libre : le comparatif "vs même période l'an dernier" n'est alors pas affiché.
      */
     selectedPeriod: DashboardPeriod?,
     /** Ouvre le graphique en plein écran (volet 3). Ignoré si [points] est vide. */
@@ -954,7 +956,7 @@ private fun DashboardChartCard(
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
-                    // Comparatif vs période précédente — masqué en mode plage libre
+                    // Comparatif vs même période l'an dernier (N-1) — masqué en mode plage libre
                     if (previousTurnover != null && selectedPeriod != null) {
                         val delta =
                             if (previousTurnover > 0.0) {
@@ -1700,7 +1702,7 @@ internal fun formatXAxisLabel(raw: String): String =
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Retourne le string resource correspondant au libellé "vs période précédente" selon la période active. */
+/** Retourne le string resource correspondant au libellé "vs même période l'an dernier" selon la période active. */
 @StringRes
 private fun periodComparisonLabelRes(period: DashboardPeriod): Int =
     when (period) {
@@ -1714,7 +1716,7 @@ private fun periodComparisonLabelRes(period: DashboardPeriod): Int =
 // ─── Calcul de tendance KPI (fonctions pures, testables) ──────────────────────
 
 /**
- * Variation en % entre [current] et [previous] (ex : CA vs période précédente).
+ * Variation en % entre [current] et [previous] (ex : CA vs même période l'an dernier, N-1).
  *
  * Retourne `null` (badge masqué) si :
  * - [isCustomRange] est vrai — pas de "précédent" comparable en plage libre ;
@@ -1755,10 +1757,11 @@ internal fun kpiTrendPercentFromSeries(
 
 /**
  * Borne `created_from` (yyyy-MM-dd) du drill-down "Nouveaux clients", alignée sur la période
- * affichée par le dashboard — mêmes bornes que le connecteur (`DashboardService::resolvePeriodRange`) :
- * today / -6 j / -29 j / -3 mois / 1er janvier. En plage libre, la date de début choisie.
- * Toutes les périodes se terminant « maintenant », `created_from` seul suffit à faire correspondre
- * la liste Clients au compteur du KPI (pas besoin de `created_to`).
+ * civile affichée par le dashboard — mêmes bornes que le connecteur
+ * (`DashboardService::resolvePeriodRange` v1.15.0) : aujourd'hui / lundi de la semaine en cours
+ * (ISO) / 1ᵉʳ du mois en cours / 1ᵉʳ jour du trimestre civil en cours / 1ᵉʳ janvier. En plage
+ * libre, la date de début choisie. Toutes les périodes se terminant « maintenant », `created_from`
+ * seul suffit à faire correspondre la liste Clients au compteur du KPI (pas besoin de `created_to`).
  */
 private fun newCustomersCreatedFrom(
     period: DashboardPeriod,
@@ -1769,9 +1772,9 @@ private fun newCustomersCreatedFrom(
     val from =
         when (period) {
             DashboardPeriod.TODAY -> today
-            DashboardPeriod.WEEK -> today.minusDays(6)
-            DashboardPeriod.MONTH -> today.minusDays(29)
-            DashboardPeriod.QUARTER -> today.minusMonths(3)
+            DashboardPeriod.WEEK -> today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            DashboardPeriod.MONTH -> today.withDayOfMonth(1)
+            DashboardPeriod.QUARTER -> today.withMonth((today.monthValue - 1) / 3 * 3 + 1).withDayOfMonth(1)
             DashboardPeriod.YEAR -> today.withDayOfYear(1)
         }
     return from.format(DateTimeFormatter.ISO_LOCAL_DATE)
@@ -1785,7 +1788,7 @@ private data class KpiItem(
     val icon: ImageVector,
     /** Callback de navigation. Null = carte non cliquable. */
     val onClick: (() -> Unit)? = null,
-    /** Variation en % (signée) vs période précédente / 1ʳᵉ moitié de la série. Null = badge masqué. */
+    /** Variation en % (signée) vs même période l'an dernier (CA) / 1ʳᵉ moitié de la série (autres KPI). Null = badge masqué. */
     val trendPercent: Double? = null,
     /** Série pour la mini-sparkline. Peut être vide/trop courte/plate — géré par [KpiSparkline]. */
     val sparklineValues: List<Float> = emptyList(),

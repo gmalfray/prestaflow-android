@@ -52,16 +52,16 @@
     <string name="dashboard_chart_title_turnover">Omzet</string>
     <string name="dashboard_chart_empty">Geen grafiekgegevens voor de geselecteerde periode.</string>
     <string name="dashboard_chart_total_period">Totaal periode</string>
-    <string name="dashboard_chart_vs_yesterday">vs gisteren</string>
-    <string name="dashboard_chart_vs_prev_week">vs vorige 7 dagen</string>
-    <string name="dashboard_chart_vs_prev_month">vs vorige 30 dagen</string>
-    <string name="dashboard_chart_vs_prev_quarter">vs vorig kwartaal</string>
-    <string name="dashboard_chart_vs_prev_year">vs vorig jaar</string>
+    <string name="dashboard_chart_vs_yesterday">vs zelfde dag vorig jaar</string>
+    <string name="dashboard_chart_vs_prev_week">vs zelfde week vorig jaar</string>
+    <string name="dashboard_chart_vs_prev_month">vs zelfde maand vorig jaar</string>
+    <string name="dashboard_chart_vs_prev_quarter">vs zelfde kwartaal vorig jaar</string>
+    <string name="dashboard_chart_vs_prev_year">vs zelfde periode vorig jaar</string>
     <string name="dashboard_period_today">Vandaag</string>
-    <string name="dashboard_period_week">7 dagen</string>
-    <string name="dashboard_period_month">30 dagen</string>
-    <string name="dashboard_period_quarter">Kwartaal</string>
-    <string name="dashboard_period_year">Jaar</string>
+    <string name="dashboard_period_week">Deze week</string>
+    <string name="dashboard_period_month">Deze maand</string>
+    <string name="dashboard_period_quarter">Dit kwartaal</string>
+    <string name="dashboard_period_year">Dit jaar</string>
     <string name="dashboard_period_custom">Aangepast</string>
     <!-- Args: 1=startdatum, 2=einddatum -->
     <string name="dashboard_date_picker_title">Periode selecteren</string>
@@ -338,6 +338,10 @@
     <!-- Filterchip periode (vanaf dashboard) -->
     <string name="orders_period_chip">Periode: %1$s</string>
     <string name="orders_period_chip_clear">Periodefilter wissen</string>
+    <!-- Labels van het periodefilter voor bestellingen (voortschrijdend venster, los van de kalenderperiodes van het dashboard) -->
+    <string name="orders_period_last_7_days">Laatste 7 dagen</string>
+    <string name="orders_period_last_30_days">Laatste 30 dagen</string>
+    <string name="orders_period_last_3_months">Laatste 3 maanden</string>
 
     <!-- Klanten: actieve filter deactiveren -->
     <string name="clients_filter_dismiss">Filter deactiveren</string>

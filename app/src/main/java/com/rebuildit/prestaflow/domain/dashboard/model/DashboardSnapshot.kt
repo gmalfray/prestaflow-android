@@ -8,6 +8,6 @@ data class DashboardSnapshot(
     val productsCount: Int,
     val chart: List<DashboardChartPoint>,
     val lastUpdatedIso: String,
-    /** CA de la période précédente (même durée, décalée). Null si le connecteur ne le fournit pas encore. */
+    /** CA de la même période, un an plus tôt (comparaison N-1). Null si le connecteur ne le fournit pas encore. */
     val previousTurnover: Double? = null,
 )
