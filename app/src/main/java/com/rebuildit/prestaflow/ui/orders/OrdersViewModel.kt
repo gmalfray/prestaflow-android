@@ -75,16 +75,46 @@ private val DEFAULT_STATUS_IDS = listOf(2, 3, 4, 9)
  */
 private val DEFAULT_VISIBLE_CHIP_IDS = listOf(3, 4, 9)
 
-/** Nombre maximum de chips de statut dans la barre de filtres (hors chip « Toutes »). */
+/** Nombre maximum de chips de statut dans la barre de filtres. */
 internal const val MAX_VISIBLE_STATUS_CHIPS = 3
 
 // IDs de statut PrestaShop utilisés comme défauts du swipe quand rien n'est configuré. Par ID
 // (stable, indépendant de la langue) : le repli historique par nom FR cassait dès que les statuts
 // étaient affichés dans une autre langue (contenu localisé serveur via Accept-Language).
 internal const val SWIPE_DEFAULT_SOURCE_ID = 2 // Paiement accepté
-private const val SWIPE_DEFAULT_LEFT_TARGET_ID = 3 // En cours de préparation
-private const val SWIPE_DEFAULT_RIGHT_TARGET_ID = 9 // Terminée
-private const val SWIPE_DEFAULT_RIGHT_FALLBACK_ID = 5 // Livré
+internal const val SWIPE_DEFAULT_LEFT_TARGET_ID = 3 // En cours de préparation
+internal const val SWIPE_DEFAULT_RIGHT_TARGET_ID = 9 // Terminée
+internal const val SWIPE_DEFAULT_RIGHT_FALLBACK_ID = 5 // Livré
+
+/**
+ * Résout le statut cible en fonction de la direction et de la config swipe.
+ *
+ * - Si un ID est configuré et trouvé dans [statuses] → utilise cet ID.
+ * - Sinon (null ou ID introuvable) → défaut par ID PrestaShop stable (gauche = En préparation,
+ *   droite = Terminée avec repli Livré) — indépendant de la langue d'affichage des statuts.
+ *
+ * Fonction top-level (pas une méthode de [OrdersViewModel]) pour être appelable depuis
+ * [OrdersScreen][com.rebuildit.prestaflow.ui.orders.OrdersScreen] côté `Composable`
+ * (`SwipeableOrderRow`), qui n'a pas d'instance de ViewModel : sert à teinter le fond d'action
+ * révélé pendant le drag avec la couleur réelle du statut cible plutôt qu'une couleur fixe.
+ */
+internal fun resolveSwipeTargetStatus(
+    config: SwipeConfig,
+    statuses: List<OrderStatusFilter>,
+    direction: SwipeDirection,
+) = when (direction) {
+    SwipeDirection.LEFT -> {
+        val configuredId = config.leftTargetStatusId
+        statuses.firstOrNull { it.id == (configuredId ?: SWIPE_DEFAULT_LEFT_TARGET_ID) }
+            ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_LEFT_TARGET_ID }
+    }
+    SwipeDirection.RIGHT -> {
+        val configuredId = config.rightTargetStatusId
+        statuses.firstOrNull { it.id == (configuredId ?: SWIPE_DEFAULT_RIGHT_TARGET_ID) }
+            ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_RIGHT_TARGET_ID }
+            ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_RIGHT_FALLBACK_ID }
+    }
+}
 
 /**
  * Résout les IDs de statuts pré-sélectionnés par défaut, par intersection de [DEFAULT_STATUS_IDS]
@@ -234,7 +264,10 @@ class OrdersViewModel
          * multi-statuts (ex. le défaut « à traiter » 2/3/4/9, cf. [DEFAULT_STATUS_IDS]) : le mental
          * model d'un chip « raccourci » est « montre-moi CE statut », pas « ajoute/retire ce statut
          * d'un ensemble ». Re-tap sur l'UNIQUE statut déjà sélectionné → désélectionne (retour à
-         * « Toutes »). [statusId] `null` (chip « Toutes ») réinitialise le filtre.
+         * l'état par défaut, rien de sélectionné = toutes les commandes affichées ; pas de chip
+         * « Toutes » dédié dans la barre, ce re-tap en est le seul chemin). [statusId] `null`
+         * réinitialise le filtre de la même façon (utilisé par l'appel programmatique, ex. bouton
+         * de réinitialisation affiché quand un filtre actif ne donne aucun résultat).
          *
          * RÉGRESSION v0.41.2 (fixée ici) : le tap avait été rendu « indépendamment toggleable »
          * (ajoute/retire du filtre courant, commit 0f932c6) pour permettre de retirer un statut du
@@ -405,27 +438,18 @@ class OrdersViewModel
         /**
          * Résout le statut cible en fonction de la direction et de la config swipe.
          *
-         * - Si un ID est configuré et trouvé dans [statuses] → utilise cet ID.
-         * - Sinon (null ou ID introuvable) → défaut par ID PrestaShop stable (gauche = En préparation,
-         *   droite = Terminée avec repli Livré) — indépendant de la langue d'affichage des statuts.
+         * Délègue à [resolveSwipeTargetStatus] (fonction top-level, testée séparément) : cette
+         * méthode d'instance ne reste ici que pour ne pas casser la signature `vm.resolveTargetStatus(...)`
+         * déjà verrouillée par les tests existants. [OrdersScreen][com.rebuildit.prestaflow.ui.orders.OrdersScreen]
+         * appelle directement la fonction top-level (pas de ViewModel disponible côté `Composable` privé
+         * `SwipeableOrderRow`) pour teinter le fond d'action révélé pendant le drag avec la couleur du
+         * statut cible réel.
          */
         internal fun resolveTargetStatus(
             config: SwipeConfig,
             statuses: List<com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter>,
             direction: SwipeDirection,
-        ) = when (direction) {
-            SwipeDirection.LEFT -> {
-                val configuredId = config.leftTargetStatusId
-                statuses.firstOrNull { it.id == (configuredId ?: SWIPE_DEFAULT_LEFT_TARGET_ID) }
-                    ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_LEFT_TARGET_ID }
-            }
-            SwipeDirection.RIGHT -> {
-                val configuredId = config.rightTargetStatusId
-                statuses.firstOrNull { it.id == (configuredId ?: SWIPE_DEFAULT_RIGHT_TARGET_ID) }
-                    ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_RIGHT_TARGET_ID }
-                    ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_RIGHT_FALLBACK_ID }
-            }
-        }
+        ) = resolveSwipeTargetStatus(config, statuses, direction)
 
         /**
          * Résout si une commande avec le statut [orderStatus] est éligible au swipe,

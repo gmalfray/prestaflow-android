@@ -294,7 +294,6 @@
     <string name="status_picker_confirm">Applica</string>
     <string name="status_picker_cancel">Annulla</string>
     <!-- Filtri stato ordini -->
-    <string name="orders_filter_all">Tutti</string>
     <string name="orders_filter_configure">Filtra e personalizza gli stati</string>
     <string name="orders_filter_empty">Nessun ordine con questo stato.</string>
     <string name="orders_filter_reset">Ripristina filtri</string>
