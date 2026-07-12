@@ -294,7 +294,6 @@
     <string name="status_picker_confirm">Appliquer</string>
     <string name="status_picker_cancel">Annuler</string>
     <!-- Filtres statuts commandes -->
-    <string name="orders_filter_all">Toutes</string>
     <string name="orders_filter_configure">Filtrer et personnaliser les statuts</string>
     <string name="orders_filter_empty">Aucune commande pour ce statut.</string>
     <string name="orders_filter_reset">Réinitialiser les filtres</string>

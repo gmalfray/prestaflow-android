@@ -2,7 +2,9 @@ package com.rebuildit.prestaflow.ui.orders
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -532,7 +534,6 @@ private fun OrdersList(
                                     statuses = filteredStatuses,
                                     selectedStatusIds = selectedStatusIds,
                                     onStatusToggle = { id -> onStatusFilterSelected(id) },
-                                    onClearFilter = { onStatusFilterSelected(null) },
                                     onConfigureClick = { showStatusPrefsSheet = true },
                                     // Vrai si un filtre porte sur un statut absent des chips (filtré via le menu)
                                     hasHiddenActiveFilter =
@@ -652,8 +653,15 @@ private fun OrdersList(
 /** Fraction de la largeur de la ligne à partir de laquelle un relâchement déclenche l'action swipe. */
 private const val SWIPE_DISMISS_THRESHOLD_FRACTION = 0.25f
 
-/** Durée (ms) de l'animation de retour/règlement de la ligne après relâchement du doigt. */
-private const val SWIPE_SETTLE_ANIM_MS = 200
+/**
+ * Spec d'animation de retour/règlement de la ligne après relâchement du doigt — un `spring` plutôt
+ * qu'un `tween` linéaire pour retrouver le ressenti « rebond » que `SwipeToDismissBox` donnait
+ * gratuitement (cf. KDoc de [SwipeableOrderRow]). Se joue aussi bien quand le swipe est annulé
+ * (retour à 0 pur) que quand il est commité (retour à 0 après lecture du seuil, l'action métier
+ * étant déclenchée en parallèle, non bloquée par cette animation).
+ */
+private val swipeSettleAnimSpec: AnimationSpec<Float> =
+    spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)
 
 /**
  * Enveloppe une [OrderRow] avec un geste de swipe horizontal pour les commandes en « Paiement
@@ -748,8 +756,24 @@ private fun SwipeableOrderRow(
         return
     }
 
-    val leftActionColor = MaterialTheme.colorScheme.tertiary
-    val rightActionColor = Color(0xFF2E7D32)
+    // Couleur du fond révélé pendant le drag : idéalement la teinte du statut cible réel (celui
+    // vers lequel le swipe bascule la commande), résolue via la même logique que
+    // OrdersViewModel.onSwipeAction (config swipe → ID configuré, sinon défaut par ID PrestaShop
+    // stable). Repli sur une couleur fixe si le statut cible est introuvable ou sans couleur.
+    val leftTargetStatus =
+        remember(swipeConfig, availableStatuses) {
+            resolveSwipeTargetStatus(swipeConfig, availableStatuses, SwipeDirection.LEFT)
+        }
+    val rightTargetStatus =
+        remember(swipeConfig, availableStatuses) {
+            resolveSwipeTargetStatus(swipeConfig, availableStatuses, SwipeDirection.RIGHT)
+        }
+    val leftActionColor =
+        remember(leftTargetStatus) { leftTargetStatus?.color?.let(::parseHexColor) }
+            ?: MaterialTheme.colorScheme.tertiary
+    val rightActionColor =
+        remember(rightTargetStatus) { rightTargetStatus?.color?.let(::parseHexColor) }
+            ?: Color(0xFF2E7D32)
 
     val offsetX = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
@@ -835,7 +859,7 @@ private fun SwipeableOrderRow(
                                         offsetX.value >= threshold -> SwipeDirection.RIGHT
                                         else -> null
                                     }
-                                scope.launch { offsetX.animateTo(0f, tween(SWIPE_SETTLE_ANIM_MS)) }
+                                scope.launch { offsetX.animateTo(0f, swipeSettleAnimSpec) }
                                 // Déclenché APRÈS avoir lancé l'animation de retour (non bloquant) : la
                                 // fenêtre d'annulation métier (SwipeUndoBar) démarre immédiatement, sans
                                 // attendre la fin de l'anim visuelle de règlement de la ligne.
@@ -1208,12 +1232,15 @@ private fun PeriodFilterChip(
 /**
  * Ligne horizontale scrollable de chips de raccourcis (sélection EXCLUSIVE) + bouton de tri + ⚙.
  *
- * - Chip « Toutes » : sélectionné quand [selectedStatusIds] est vide → appelle [onClearFilter]
+ * Pas de chip « Toutes » (retiré, doublon avec le re-tap) : **rien de sélectionné = toutes les
+ * commandes affichées** est l'état par défaut de [selectedStatusIds] (ensemble vide).
  * - Chaque chip de statut : sélection exclusive → appelle [onStatusToggle] avec l'ID, qui ISOLE ce
  *   statut (n'affiche QUE lui), y compris s'il faisait déjà partie du filtre par défaut multi-statuts
  *   (cf. KDoc de [OrdersViewModel.onStatusFilterSelected]). Re-tap sur l'unique statut déjà
- *   sélectionné → désélectionne (retour à « Toutes »). Le vrai multi-statuts (plusieurs à la fois)
- *   se fait via le menu ⚙ « Filtrer par statut » (checkboxes dédiées), pas ces chips.
+ *   sélectionné → désélectionne (retour à « toutes affichées », seul moyen de tout réafficher
+ *   depuis cette barre).
+ *   Le vrai multi-statuts (plusieurs à la fois) se fait via le menu ⚙ « Filtrer par statut »
+ *   (checkboxes dédiées), pas ces chips.
  * - Bouton tri (Sort icon) : ouvre un menu déroulant avec les options de tri
  * - Bouton ⚙ : ouvre le menu « Filtrer par statut » + « Raccourcis ». Un point apparaît dessus
  *   quand [hasHiddenActiveFilter] est vrai (filtre actif sur un statut absent des chips).
@@ -1223,7 +1250,6 @@ private fun StatusFilterBar(
     statuses: List<OrderStatusFilter>,
     selectedStatusIds: Set<Int>,
     onStatusToggle: (Int) -> Unit,
-    onClearFilter: () -> Unit,
     onConfigureClick: () -> Unit,
     selectedSort: OrderSort,
     onSortChanged: (OrderSort) -> Unit,
@@ -1289,12 +1315,6 @@ private fun StatusFilterBar(
                     .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
         ) {
-            // Chip « Toutes » — actif quand aucun statut n'est sélectionné
-            FilterChip(
-                selected = selectedStatusIds.isEmpty(),
-                onClick = onClearFilter,
-                label = { Text(stringResource(R.string.orders_filter_all)) },
-            )
             statuses.forEach { status ->
                 val chipDescription = stringResource(R.string.orders_filter_chip_description, status.name)
                 val shortLabelResId = remember(status.id) { statusShortLabelResId(status.id) }

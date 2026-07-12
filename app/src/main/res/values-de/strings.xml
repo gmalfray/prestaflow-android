@@ -294,7 +294,6 @@
     <string name="status_picker_confirm">Anwenden</string>
     <string name="status_picker_cancel">Abbrechen</string>
     <!-- Statusfilter für Bestellungen -->
-    <string name="orders_filter_all">Alle</string>
     <string name="orders_filter_configure">Status filtern und anpassen</string>
     <string name="orders_filter_empty">Keine Bestellungen mit diesem Status.</string>
     <string name="orders_filter_reset">Filter zurücksetzen</string>
