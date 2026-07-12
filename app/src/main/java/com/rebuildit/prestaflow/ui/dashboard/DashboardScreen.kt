@@ -100,6 +100,7 @@ import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -107,6 +108,7 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -1755,10 +1757,11 @@ internal fun kpiTrendPercentFromSeries(
 
 /**
  * Borne `created_from` (yyyy-MM-dd) du drill-down "Nouveaux clients", alignée sur la période
- * affichée par le dashboard — mêmes bornes que le connecteur (`DashboardService::resolvePeriodRange`) :
- * today / -6 j / -29 j / -3 mois / 1er janvier. En plage libre, la date de début choisie.
- * Toutes les périodes se terminant « maintenant », `created_from` seul suffit à faire correspondre
- * la liste Clients au compteur du KPI (pas besoin de `created_to`).
+ * civile affichée par le dashboard — mêmes bornes que le connecteur
+ * (`DashboardService::resolvePeriodRange` v1.15.0) : aujourd'hui / lundi de la semaine en cours
+ * (ISO) / 1ᵉʳ du mois en cours / 1ᵉʳ jour du trimestre civil en cours / 1ᵉʳ janvier. En plage
+ * libre, la date de début choisie. Toutes les périodes se terminant « maintenant », `created_from`
+ * seul suffit à faire correspondre la liste Clients au compteur du KPI (pas besoin de `created_to`).
  */
 private fun newCustomersCreatedFrom(
     period: DashboardPeriod,
@@ -1769,9 +1772,9 @@ private fun newCustomersCreatedFrom(
     val from =
         when (period) {
             DashboardPeriod.TODAY -> today
-            DashboardPeriod.WEEK -> today.minusDays(6)
-            DashboardPeriod.MONTH -> today.minusDays(29)
-            DashboardPeriod.QUARTER -> today.minusMonths(3)
+            DashboardPeriod.WEEK -> today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            DashboardPeriod.MONTH -> today.withDayOfMonth(1)
+            DashboardPeriod.QUARTER -> today.withMonth((today.monthValue - 1) / 3 * 3 + 1).withDayOfMonth(1)
             DashboardPeriod.YEAR -> today.withDayOfYear(1)
         }
     return from.format(DateTimeFormatter.ISO_LOCAL_DATE)
