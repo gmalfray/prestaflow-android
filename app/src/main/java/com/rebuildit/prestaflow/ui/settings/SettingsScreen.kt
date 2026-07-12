@@ -93,7 +93,7 @@ import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import com.rebuildit.prestaflow.ui.theme.ThemeViewModel
 import com.rebuildit.prestaflow.ui.theme.displayNameRes
 
-// Écran Réglages : un ViewModel Hilt par section (thème, boutiques, dashboard, swipe, réappro)
+// Écran Réglages : un ViewModel Hilt par section (thème, boutiques, dashboard, réappro)
 @Suppress("LongParameterList", "LongMethod")
 @Composable
 fun SettingsRoute(
@@ -102,7 +102,6 @@ fun SettingsRoute(
     themeViewModel: ThemeViewModel = hiltViewModel(),
     shopsViewModel: ShopsViewModel = hiltViewModel(),
     dashboardPrefsViewModel: DashboardPrefsViewModel = hiltViewModel(),
-    swipePrefsViewModel: SwipePrefsViewModel = hiltViewModel(),
     stockReplenishPrefsViewModel: StockReplenishPrefsViewModel = hiltViewModel(),
     languageViewModel: LanguageViewModel = hiltViewModel(),
 ) {
@@ -111,7 +110,6 @@ fun SettingsRoute(
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     val addState by shopsViewModel.addState.collectAsStateWithLifecycle()
     val defaultPeriod by dashboardPrefsViewModel.defaultPeriod.collectAsStateWithLifecycle()
-    val swipePrefsState by swipePrefsViewModel.uiState.collectAsStateWithLifecycle()
     val stockReplenishQuickAddAmounts by stockReplenishPrefsViewModel.quickAddAmounts.collectAsStateWithLifecycle()
     val stockReplenishSoundOnScan by stockReplenishPrefsViewModel.soundOnScan.collectAsStateWithLifecycle()
 
@@ -153,12 +151,6 @@ fun SettingsRoute(
         },
         dashboardDefaultPeriod = defaultPeriod,
         onDashboardDefaultPeriodSelected = dashboardPrefsViewModel::setDefaultPeriod,
-        swipePrefsState = swipePrefsState,
-        onSwipeEnabledChanged = swipePrefsViewModel::setSwipeEnabled,
-        onSwipeSourceStatusSelected = swipePrefsViewModel::setSwipeSourceStatusId,
-        onSwipeLeftStatusSelected = swipePrefsViewModel::setSwipeLeftTargetStatusId,
-        onSwipeRightStatusSelected = swipePrefsViewModel::setSwipeRightTargetStatusId,
-        onRetryStatuses = swipePrefsViewModel::loadStatuses,
         stockReplenishQuickAddAmounts = stockReplenishQuickAddAmounts,
         onStockReplenishQuickAddAmountsChanged = stockReplenishPrefsViewModel::setQuickAddAmounts,
         stockReplenishSoundOnScan = stockReplenishSoundOnScan,
@@ -168,7 +160,7 @@ fun SettingsRoute(
     )
 }
 
-@Suppress("LongMethod", "LongParameterList") // Écran Réglages : thème + boutiques + notifs + logout + imprimante + swipe
+@Suppress("LongMethod", "LongParameterList") // Écran Réglages : thème + boutiques + notifs + logout + imprimante
 @Composable
 fun SettingsScreen(
     settings: ThemeSettings,
@@ -189,12 +181,6 @@ fun SettingsScreen(
     onAddShopScanQr: () -> Unit = {},
     dashboardDefaultPeriod: DashboardPeriod = DashboardPeriod.WEEK,
     onDashboardDefaultPeriodSelected: (DashboardPeriod) -> Unit = {},
-    swipePrefsState: SwipePrefsUiState = SwipePrefsUiState(),
-    onSwipeEnabledChanged: (Boolean) -> Unit = {},
-    onSwipeSourceStatusSelected: (Int?) -> Unit = {},
-    onSwipeLeftStatusSelected: (Int?) -> Unit = {},
-    onSwipeRightStatusSelected: (Int?) -> Unit = {},
-    onRetryStatuses: () -> Unit = {},
     stockReplenishQuickAddAmounts: List<Int> = DEFAULT_QUICK_ADD_AMOUNTS,
     onStockReplenishQuickAddAmountsChanged: (List<Int>) -> Unit = {},
     stockReplenishSoundOnScan: Boolean = true,
@@ -347,18 +333,6 @@ fun SettingsScreen(
         }
 
         val context = LocalContext.current
-
-        // Section SWIPE COMMANDES — config source + cibles gauche/droite
-        SettingsSection(label = stringResource(R.string.settings_swipe_label)) {
-            SwipeCommandsSection(
-                state = swipePrefsState,
-                onSwipeEnabledChanged = onSwipeEnabledChanged,
-                onSwipeSourceStatusSelected = onSwipeSourceStatusSelected,
-                onSwipeLeftStatusSelected = onSwipeLeftStatusSelected,
-                onSwipeRightStatusSelected = onSwipeRightStatusSelected,
-                onRetryStatuses = onRetryStatuses,
-            )
-        }
 
         // Section RÉAPPRO STOCK — boutons rapides configurables (Lot 2) + son au scan (Lot 3)
         SettingsSection(label = stringResource(R.string.settings_stock_replenish_label)) {
@@ -876,190 +850,6 @@ private fun DashboardDefaultPeriodSelector(
     }
 }
 
-// ─── Section swipe commandes ─────────────────────────────────────────────────
-
-/**
- * Section de configuration du swipe dans les Réglages.
- *
- * - Switch « Activer le swipe »
- * - 3 dropdowns (source, gauche, droite) peuplés depuis [SwipePrefsUiState.availableStatuses].
- * - Quand le switch est off, les dropdowns sont désactivés.
- * - Si la liste des statuts est vide (chargement ou erreur), les dropdowns affichent un état neutre.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongParameterList")
-@Composable
-private fun SwipeCommandsSection(
-    state: SwipePrefsUiState,
-    onSwipeEnabledChanged: (Boolean) -> Unit,
-    onSwipeSourceStatusSelected: (Int?) -> Unit,
-    onSwipeLeftStatusSelected: (Int?) -> Unit,
-    onSwipeRightStatusSelected: (Int?) -> Unit,
-    onRetryStatuses: () -> Unit,
-) {
-    // Ligne Switch
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = stringResource(R.string.settings_swipe_enabled),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        androidx.compose.material3.Switch(
-            checked = state.swipeEnabled,
-            onCheckedChange = onSwipeEnabledChanged,
-        )
-    }
-
-    // Les 3 dropdowns ne sont actifs que si le swipe est activé
-    val enabled = state.swipeEnabled
-    val statuses = state.availableStatuses
-    // Texte affiché quand la liste est vide : distingue chargement vs erreur (au lieu d'un
-    // « Chargement… » figé même quand le chargement a échoué).
-    val emptyPlaceholder =
-        if (state.statusesError) {
-            stringResource(R.string.settings_swipe_statuses_error)
-        } else {
-            stringResource(R.string.settings_swipe_no_statuses)
-        }
-
-    SwipeStatusDropdown(
-        label = stringResource(R.string.settings_swipe_source_status),
-        selectedId = state.swipeSourceStatusId,
-        statuses = statuses,
-        enabled = enabled,
-        emptyPlaceholder = emptyPlaceholder,
-        onSelected = onSwipeSourceStatusSelected,
-    )
-    SwipeStatusDropdown(
-        label = stringResource(R.string.settings_swipe_left_status),
-        selectedId = state.swipeLeftTargetStatusId,
-        statuses = statuses,
-        enabled = enabled,
-        emptyPlaceholder = emptyPlaceholder,
-        onSelected = onSwipeLeftStatusSelected,
-    )
-    SwipeStatusDropdown(
-        label = stringResource(R.string.settings_swipe_right_status),
-        selectedId = state.swipeRightTargetStatusId,
-        statuses = statuses,
-        enabled = enabled,
-        emptyPlaceholder = emptyPlaceholder,
-        onSelected = onSwipeRightStatusSelected,
-    )
-
-    // Bannière d'erreur + Réessayer quand le chargement des statuts a échoué.
-    if (state.statusesError && !state.isLoadingStatuses) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = stringResource(R.string.settings_swipe_statuses_error),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = onRetryStatuses) {
-                Text(stringResource(R.string.settings_swipe_statuses_retry))
-            }
-        }
-    }
-}
-
-/**
- * Dropdown Material 3 pour sélectionner un statut (ou laisser le défaut).
- *
- * L'option [null] représente « Défaut » : résolution par ID PrestaShop stable (constantes
- * `SWIPE_DEFAULT_SOURCE_ID` / `SWIPE_DEFAULT_LEFT_TARGET_ID` / `SWIPE_DEFAULT_RIGHT_TARGET_ID` /
- * `SWIPE_DEFAULT_RIGHT_FALLBACK_ID` dans `OrdersViewModel.kt`), pas par nom — indépendant de la
- * langue d'affichage des statuts.
- * Si [statuses] est vide, affiche un état neutre (chargement).
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SwipeStatusDropdown(
-    label: String,
-    selectedId: Int?,
-    statuses: List<com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter>,
-    enabled: Boolean,
-    emptyPlaceholder: String,
-    onSelected: (Int?) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val selectedName =
-        if (selectedId == null || statuses.isEmpty()) {
-            stringResource(R.string.settings_swipe_status_default)
-        } else {
-            statuses.firstOrNull { it.id == selectedId }?.name
-                ?: stringResource(R.string.settings_swipe_status_default)
-        }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded && enabled && statuses.isNotEmpty(),
-        onExpandedChange = { if (enabled && statuses.isNotEmpty()) expanded = it },
-    ) {
-        OutlinedTextField(
-            value = if (statuses.isEmpty() && enabled) emptyPlaceholder else selectedName,
-            onValueChange = {},
-            readOnly = true,
-            singleLine = true,
-            enabled = enabled && statuses.isNotEmpty(),
-            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-            trailingIcon = {
-                if (statuses.isNotEmpty()) {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded && enabled)
-                }
-            },
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier =
-                Modifier
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                    .fillMaxWidth(),
-        )
-        if (statuses.isNotEmpty()) {
-            ExposedDropdownMenu(
-                expanded = expanded && enabled,
-                onDismissRequest = { expanded = false },
-            ) {
-                // Option « Défaut »
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            stringResource(R.string.settings_swipe_status_default),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    },
-                    onClick = {
-                        onSelected(null)
-                        expanded = false
-                    },
-                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                )
-                statuses.forEach { status ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(status.name, style = MaterialTheme.typography.bodyMedium)
-                        },
-                        onClick = {
-                            onSelected(status.id)
-                            expanded = false
-                        },
-                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                    )
-                }
-            }
-        }
-    }
-}
-
 // ─── Section réappro stock — boutons rapides configurables (Lot 2) ──────────
 
 /** Incrément suggéré au-dessus du plus grand bouton existant, quand on ajoute un nouveau bouton. */
@@ -1078,7 +868,7 @@ private const val SUGGESTED_QUICK_ADD_STEP = 5
  * commité via [onAmountsChanged] que lorsque TOUTES les valeurs affichées sont des entiers > 0
  * valides (évite de committer un état partiel/vide pendant la frappe).
  */
-@Suppress("LongMethod") // Liste éditable (champ + suppression) + bouton d'ajout, même style que SwipeCommandsSection
+@Suppress("LongMethod") // Liste éditable (champ + suppression) + bouton d'ajout
 @Composable
 private fun StockReplenishQuickAddSection(
     amounts: List<Int>,

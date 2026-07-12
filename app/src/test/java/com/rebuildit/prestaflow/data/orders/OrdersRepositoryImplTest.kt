@@ -223,7 +223,7 @@ class OrdersRepositoryImplTest {
             assertEquals(51, byId[50L]?.position)
         }
 
-    // ─── updateOrderStatus : retry offline en cas d'échec (FIX swipe silencieux) ─
+    // ─── updateOrderStatus : retry offline en cas d'échec (échec silencieux) ────
 
     @Test(expected = RuntimeException::class)
     fun `updateOrderStatus propage toujours l erreur d origine`() =
