@@ -52,16 +52,16 @@
     <string name="dashboard_chart_title_turnover">Faturação</string>
     <string name="dashboard_chart_empty">Sem dados de gráfico para o período selecionado.</string>
     <string name="dashboard_chart_total_period">Total do período</string>
-    <string name="dashboard_chart_vs_yesterday">vs ontem</string>
-    <string name="dashboard_chart_vs_prev_week">vs 7 dias anteriores</string>
-    <string name="dashboard_chart_vs_prev_month">vs 30 dias anteriores</string>
-    <string name="dashboard_chart_vs_prev_quarter">vs trimestre anterior</string>
-    <string name="dashboard_chart_vs_prev_year">vs ano anterior</string>
+    <string name="dashboard_chart_vs_yesterday">vs mesmo dia do ano passado</string>
+    <string name="dashboard_chart_vs_prev_week">vs mesma semana do ano passado</string>
+    <string name="dashboard_chart_vs_prev_month">vs mesmo mês do ano passado</string>
+    <string name="dashboard_chart_vs_prev_quarter">vs mesmo trimestre do ano passado</string>
+    <string name="dashboard_chart_vs_prev_year">vs mesmo período do ano passado</string>
     <string name="dashboard_period_today">Hoje</string>
-    <string name="dashboard_period_week">7 dias</string>
-    <string name="dashboard_period_month">30 dias</string>
-    <string name="dashboard_period_quarter">Trimestre</string>
-    <string name="dashboard_period_year">Ano</string>
+    <string name="dashboard_period_week">Esta semana</string>
+    <string name="dashboard_period_month">Este mês</string>
+    <string name="dashboard_period_quarter">Este trimestre</string>
+    <string name="dashboard_period_year">Este ano</string>
     <string name="dashboard_period_custom">Personalizado</string>
     <!-- Args: 1=data início, 2=data fim -->
     <string name="dashboard_date_picker_title">Selecionar um intervalo</string>
@@ -338,6 +338,10 @@
     <!-- Chip de filtro de período (a partir do dashboard) -->
     <string name="orders_period_chip">Período: %1$s</string>
     <string name="orders_period_chip_clear">Limpar filtro de período</string>
+    <!-- Rótulos do filtro de período dos pedidos (janela móvel, independente dos períodos civis do dashboard) -->
+    <string name="orders_period_last_7_days">Últimos 7 dias</string>
+    <string name="orders_period_last_30_days">Últimos 30 dias</string>
+    <string name="orders_period_last_3_months">Últimos 3 meses</string>
 
     <!-- Clientes: desativação do filtro ativo -->
     <string name="clients_filter_dismiss">Desativar filtro</string>

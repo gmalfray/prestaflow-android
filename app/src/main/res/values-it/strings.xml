@@ -52,16 +52,16 @@
     <string name="dashboard_chart_title_turnover">Fatturato</string>
     <string name="dashboard_chart_empty">Nessun dato grafico per il periodo selezionato.</string>
     <string name="dashboard_chart_total_period">Totale periodo</string>
-    <string name="dashboard_chart_vs_yesterday">vs ieri</string>
-    <string name="dashboard_chart_vs_prev_week">vs 7 giorni precedenti</string>
-    <string name="dashboard_chart_vs_prev_month">vs 30 giorni precedenti</string>
-    <string name="dashboard_chart_vs_prev_quarter">vs trimestre precedente</string>
-    <string name="dashboard_chart_vs_prev_year">vs anno precedente</string>
+    <string name="dashboard_chart_vs_yesterday">vs stesso giorno dell\'anno scorso</string>
+    <string name="dashboard_chart_vs_prev_week">vs stessa settimana dell\'anno scorso</string>
+    <string name="dashboard_chart_vs_prev_month">vs stesso mese dell\'anno scorso</string>
+    <string name="dashboard_chart_vs_prev_quarter">vs stesso trimestre dell\'anno scorso</string>
+    <string name="dashboard_chart_vs_prev_year">vs stesso periodo dell\'anno scorso</string>
     <string name="dashboard_period_today">Oggi</string>
-    <string name="dashboard_period_week">7 giorni</string>
-    <string name="dashboard_period_month">30 giorni</string>
-    <string name="dashboard_period_quarter">Trimestre</string>
-    <string name="dashboard_period_year">Anno</string>
+    <string name="dashboard_period_week">Questa settimana</string>
+    <string name="dashboard_period_month">Questo mese</string>
+    <string name="dashboard_period_quarter">Questo trimestre</string>
+    <string name="dashboard_period_year">Quest\'anno</string>
     <string name="dashboard_period_custom">Personalizzato</string>
     <!-- Argomenti: 1=data inizio, 2=data fine -->
     <string name="dashboard_date_picker_title">Seleziona un intervallo</string>
@@ -338,6 +338,10 @@
     <!-- Chip filtro periodo (dalla dashboard) -->
     <string name="orders_period_chip">Periodo: %1$s</string>
     <string name="orders_period_chip_clear">Cancella filtro periodo</string>
+    <!-- Etichette del filtro periodo degli ordini (finestra mobile, indipendente dai periodi civili della dashboard) -->
+    <string name="orders_period_last_7_days">Ultimi 7 giorni</string>
+    <string name="orders_period_last_30_days">Ultimi 30 giorni</string>
+    <string name="orders_period_last_3_months">Ultimi 3 mesi</string>
 
     <!-- Clienti: disattivazione del filtro attivo -->
     <string name="clients_filter_dismiss">Disattiva filtro</string>

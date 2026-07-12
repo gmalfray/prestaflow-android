@@ -52,16 +52,16 @@
     <string name="dashboard_chart_title_turnover">Umsatz</string>
     <string name="dashboard_chart_empty">Keine Diagrammdaten für den ausgewählten Zeitraum.</string>
     <string name="dashboard_chart_total_period">Gesamt Zeitraum</string>
-    <string name="dashboard_chart_vs_yesterday">vs. gestern</string>
-    <string name="dashboard_chart_vs_prev_week">vs. letzte 7 Tage</string>
-    <string name="dashboard_chart_vs_prev_month">vs. letzte 30 Tage</string>
-    <string name="dashboard_chart_vs_prev_quarter">vs. Vorquartal</string>
-    <string name="dashboard_chart_vs_prev_year">vs. Vorjahr</string>
+    <string name="dashboard_chart_vs_yesterday">vs. gleicher Tag letztes Jahr</string>
+    <string name="dashboard_chart_vs_prev_week">vs. gleiche Woche letztes Jahr</string>
+    <string name="dashboard_chart_vs_prev_month">vs. gleicher Monat letztes Jahr</string>
+    <string name="dashboard_chart_vs_prev_quarter">vs. gleiches Quartal letztes Jahr</string>
+    <string name="dashboard_chart_vs_prev_year">vs. gleicher Zeitraum letztes Jahr</string>
     <string name="dashboard_period_today">Heute</string>
-    <string name="dashboard_period_week">7 Tage</string>
-    <string name="dashboard_period_month">30 Tage</string>
-    <string name="dashboard_period_quarter">Quartal</string>
-    <string name="dashboard_period_year">Jahr</string>
+    <string name="dashboard_period_week">Diese Woche</string>
+    <string name="dashboard_period_month">Dieser Monat</string>
+    <string name="dashboard_period_quarter">Dieses Quartal</string>
+    <string name="dashboard_period_year">Dieses Jahr</string>
     <string name="dashboard_period_custom">Benutzerdefiniert</string>
     <!-- Args: 1=Startdatum, 2=Enddatum -->
     <string name="dashboard_date_picker_title">Zeitraum auswählen</string>
@@ -338,6 +338,10 @@
     <!-- Zeitraum-Filterchip (vom Dashboard) -->
     <string name="orders_period_chip">Zeitraum: %1$s</string>
     <string name="orders_period_chip_clear">Zeitraumfilter löschen</string>
+    <!-- Beschriftungen des Bestellungs-Zeitraumfilters (gleitendes Fenster, unabhängig von den Kalenderperioden des Dashboards) -->
+    <string name="orders_period_last_7_days">Letzte 7 Tage</string>
+    <string name="orders_period_last_30_days">Letzte 30 Tage</string>
+    <string name="orders_period_last_3_months">Letzte 3 Monate</string>
 
     <!-- Kunden: Deaktivierung des aktiven Filters -->
     <string name="clients_filter_dismiss">Filter deaktivieren</string>

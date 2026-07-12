@@ -396,7 +396,7 @@ private fun DashboardContent(
                     totalText = turnoverText,
                     currentTurnover = snapshot.turnover,
                     previousTurnover = snapshot.previousTurnover,
-                    // En mode plage libre, on n'affiche pas le comparatif "vs période précédente"
+                    // En mode plage libre, on n'affiche pas le comparatif "vs même période l'an dernier"
                     selectedPeriod = if (customRange == null) selectedPeriod else null,
                     onExpandClick = { showFullscreenChart = true },
                 )
@@ -918,7 +918,7 @@ private fun DashboardChartCard(
     currentTurnover: Double,
     previousTurnover: Double?,
     /**
-     * Null en mode plage libre : le comparatif "vs période précédente" n'est alors pas affiché.
+     * Null en mode plage libre : le comparatif "vs même période l'an dernier" n'est alors pas affiché.
      */
     selectedPeriod: DashboardPeriod?,
     /** Ouvre le graphique en plein écran (volet 3). Ignoré si [points] est vide. */
@@ -954,7 +954,7 @@ private fun DashboardChartCard(
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
-                    // Comparatif vs période précédente — masqué en mode plage libre
+                    // Comparatif vs même période l'an dernier (N-1) — masqué en mode plage libre
                     if (previousTurnover != null && selectedPeriod != null) {
                         val delta =
                             if (previousTurnover > 0.0) {
@@ -1700,7 +1700,7 @@ internal fun formatXAxisLabel(raw: String): String =
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Retourne le string resource correspondant au libellé "vs période précédente" selon la période active. */
+/** Retourne le string resource correspondant au libellé "vs même période l'an dernier" selon la période active. */
 @StringRes
 private fun periodComparisonLabelRes(period: DashboardPeriod): Int =
     when (period) {
@@ -1714,7 +1714,7 @@ private fun periodComparisonLabelRes(period: DashboardPeriod): Int =
 // ─── Calcul de tendance KPI (fonctions pures, testables) ──────────────────────
 
 /**
- * Variation en % entre [current] et [previous] (ex : CA vs période précédente).
+ * Variation en % entre [current] et [previous] (ex : CA vs même période l'an dernier, N-1).
  *
  * Retourne `null` (badge masqué) si :
  * - [isCustomRange] est vrai — pas de "précédent" comparable en plage libre ;
@@ -1785,7 +1785,7 @@ private data class KpiItem(
     val icon: ImageVector,
     /** Callback de navigation. Null = carte non cliquable. */
     val onClick: (() -> Unit)? = null,
-    /** Variation en % (signée) vs période précédente / 1ʳᵉ moitié de la série. Null = badge masqué. */
+    /** Variation en % (signée) vs même période l'an dernier (CA) / 1ʳᵉ moitié de la série (autres KPI). Null = badge masqué. */
     val trendPercent: Double? = null,
     /** Série pour la mini-sparkline. Peut être vide/trop courte/plate — géré par [KpiSparkline]. */
     val sparklineValues: List<Float> = emptyList(),

@@ -52,16 +52,16 @@
     <string name="dashboard_chart_title_turnover">Turnover trend</string>
     <string name="dashboard_chart_empty">No chart data for the selected period.</string>
     <string name="dashboard_chart_total_period">Total period</string>
-    <string name="dashboard_chart_vs_yesterday">vs yesterday</string>
-    <string name="dashboard_chart_vs_prev_week">vs prev. 7 days</string>
-    <string name="dashboard_chart_vs_prev_month">vs prev. 30 days</string>
-    <string name="dashboard_chart_vs_prev_quarter">vs prev. quarter</string>
-    <string name="dashboard_chart_vs_prev_year">vs prev. year</string>
+    <string name="dashboard_chart_vs_yesterday">vs same day last year</string>
+    <string name="dashboard_chart_vs_prev_week">vs same week last year</string>
+    <string name="dashboard_chart_vs_prev_month">vs same month last year</string>
+    <string name="dashboard_chart_vs_prev_quarter">vs same quarter last year</string>
+    <string name="dashboard_chart_vs_prev_year">vs same period last year</string>
     <string name="dashboard_period_today">Today</string>
-    <string name="dashboard_period_week">7 days</string>
-    <string name="dashboard_period_month">30 days</string>
-    <string name="dashboard_period_quarter">Quarter</string>
-    <string name="dashboard_period_year">Year</string>
+    <string name="dashboard_period_week">This week</string>
+    <string name="dashboard_period_month">This month</string>
+    <string name="dashboard_period_quarter">This quarter</string>
+    <string name="dashboard_period_year">This year</string>
     <string name="dashboard_period_custom">Custom</string>
     <!-- Args: 1=date début, 2=date fin -->
     <string name="dashboard_date_picker_title">Select date range</string>
@@ -339,6 +339,10 @@
     <!-- Chip de filtre période (depuis dashboard) -->
     <string name="orders_period_chip">Period: %1$s</string>
     <string name="orders_period_chip_clear">Clear period filter</string>
+    <!-- Orders period filter labels (rolling window, independent from the dashboard's calendar periods) -->
+    <string name="orders_period_last_7_days">Last 7 days</string>
+    <string name="orders_period_last_30_days">Last 30 days</string>
+    <string name="orders_period_last_3_months">Last 3 months</string>
 
     <!-- Clients : désactivation du filtre actif -->
     <string name="clients_filter_dismiss">Deactivate filter</string>

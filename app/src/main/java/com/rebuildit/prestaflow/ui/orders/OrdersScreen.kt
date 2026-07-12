@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.orders
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -97,7 +98,6 @@ import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.components.parseHexColor
-import com.rebuildit.prestaflow.ui.dashboard.labelRes
 import com.rebuildit.prestaflow.ui.orders.components.StatusPickerDialog
 import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
@@ -770,7 +770,7 @@ private fun rememberDateFormatter(): DateTimeFormatter =
 
 /**
  * Chip dismissible affiché quand un filtre de période dashboard est actif.
- * Libellé = libellé de la période (ex. "7 days") ; croix = efface le filtre.
+ * Libellé = libellé de la période (ex. "Last 7 days") ; croix = efface le filtre.
  */
 @Composable
 private fun PeriodFilterChip(
@@ -781,7 +781,7 @@ private fun PeriodFilterChip(
     FilterChip(
         selected = true,
         onClick = onClear,
-        label = { Text(stringResource(R.string.orders_period_chip, stringResource(period.labelRes()))) },
+        label = { Text(stringResource(R.string.orders_period_chip, stringResource(period.ordersFilterLabelRes()))) },
         trailingIcon = {
             Icon(
                 imageVector = Icons.Outlined.Close,
@@ -792,6 +792,25 @@ private fun PeriodFilterChip(
         modifier = modifier,
     )
 }
+
+/**
+ * Libellé du chip de filtre période des commandes.
+ *
+ * Distinct de [com.rebuildit.prestaflow.ui.dashboard.labelRes] : ce filtre applique une fenêtre
+ * glissante ([toDateRange]) et non les périodes civiles du dashboard (semaine/mois/trimestre en
+ * cours) — le libellé doit donc rester explicite ("7 derniers jours") plutôt que d'emprunter les
+ * intitulés civils ("Cette semaine") qui décriraient une plage différente de celle réellement
+ * filtrée.
+ */
+@StringRes
+private fun DashboardPeriod.ordersFilterLabelRes(): Int =
+    when (this) {
+        DashboardPeriod.TODAY -> R.string.dashboard_period_today
+        DashboardPeriod.WEEK -> R.string.orders_period_last_7_days
+        DashboardPeriod.MONTH -> R.string.orders_period_last_30_days
+        DashboardPeriod.QUARTER -> R.string.orders_period_last_3_months
+        DashboardPeriod.YEAR -> R.string.dashboard_period_year
+    }
 
 // ─── Barre de filtres par statut + tri ────────────────────────────────────────
 
