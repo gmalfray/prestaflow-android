@@ -178,6 +178,7 @@
     <string name="stock_replenish_add_content_description">Add quantity</string>
     <string name="stock_replenish_quantity_placeholder">Quantity</string>
     <string name="stock_replenish_pending_label">%1$s: %2$s pending</string>
+    <string name="stock_replenish_undo_countdown">Cancel (%1$ds)</string>
     <string name="stock_replenish_queue_added_content_description">Added to the pending queue</string>
     <string name="stock_replenish_session_recap">%1$d item(s) · +%2$d in stock</string>
     <string name="stock_replenish_session_recap_exit_title">Session summary</string>
@@ -345,13 +346,6 @@
     <!-- Pagination commandes -->
     <string name="orders_load_more">Load more</string>
 
-    <!-- Swipe statut commande -->
-    <string name="orders_swipe_pending">Order %1$s → %2$s</string>
-    <!-- Cancel button with a live seconds countdown before the change is actually sent (e.g. "Cancel (8s)"). -->
-    <string name="orders_swipe_undo_countdown">Cancel (%1$ds)</string>
-    <string name="orders_swipe_left_label">In preparation</string>
-    <string name="orders_swipe_right_label">Done</string>
-
     <!-- OrderDetail — messages d'action (externalisés pour i18n) -->
     <string name="order_detail_status_updated">Status updated</string>
     <string name="order_detail_tracking_updated">Tracking updated</string>
@@ -363,17 +357,6 @@
     <string name="settings_shops_remove_confirm_title">Remove shop?</string>
     <string name="settings_shops_remove_confirm_message">This will log you out of the shop %1$s.</string>
     <string name="settings_shops_remove_confirm_action">Remove</string>
-
-    <!-- Settings — section Swipe commandes -->
-    <string name="settings_swipe_label">Order Swipe</string>
-    <string name="settings_swipe_enabled">Enable swipe</string>
-    <string name="settings_swipe_source_status">Swipe active on</string>
-    <string name="settings_swipe_left_status">Swipe ← (left)</string>
-    <string name="settings_swipe_right_status">Swipe → (right)</string>
-    <string name="settings_swipe_status_default">Default</string>
-    <string name="settings_swipe_no_statuses">Loading statuses…</string>
-    <string name="settings_swipe_statuses_error">Couldn\'t load statuses</string>
-    <string name="settings_swipe_statuses_retry">Retry</string>
 
     <!-- Settings — section Réappro stock (boutons rapides configurables) -->
     <string name="settings_stock_replenish_label">Stock replenishment quick buttons</string>

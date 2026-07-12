@@ -178,6 +178,7 @@
     <string name="stock_replenish_add_content_description">Menge hinzufügen</string>
     <string name="stock_replenish_quantity_placeholder">Menge</string>
     <string name="stock_replenish_pending_label">%1$s: %2$s ausstehend</string>
+    <string name="stock_replenish_undo_countdown">Abbrechen (%1$d s)</string>
     <string name="stock_replenish_queue_added_content_description">Zur Warteschlange hinzugefügt</string>
     <string name="stock_replenish_session_recap">%1$d Artikel · +%2$d im Bestand</string>
     <string name="stock_replenish_session_recap_exit_title">Sitzungsübersicht</string>
@@ -344,13 +345,6 @@
     <!-- Seitenweise Laden von Bestellungen -->
     <string name="orders_load_more">Mehr laden</string>
 
-    <!-- Status per Wisch ändern -->
-    <string name="orders_swipe_pending">Bestellung %1$s → %2$s</string>
-    <!-- Abbrechen-Button mit Sekunden-Countdown vor dem tatsächlichen Versand (z. B. „Abbrechen (8 s)“). -->
-    <string name="orders_swipe_undo_countdown">Abbrechen (%1$d s)</string>
-    <string name="orders_swipe_left_label">In Vorbereitung</string>
-    <string name="orders_swipe_right_label">Erledigt</string>
-
     <!-- Bestelldetails — Aktionsmeldungen (für i18n ausgelagert) -->
     <string name="order_detail_status_updated">Status aktualisiert</string>
     <string name="order_detail_tracking_updated">Sendungsverfolgung aktualisiert</string>
@@ -362,17 +356,6 @@
     <string name="settings_shops_remove_confirm_title">Shop entfernen?</string>
     <string name="settings_shops_remove_confirm_message">Dadurch wirst du vom Shop %1$s abgemeldet.</string>
     <string name="settings_shops_remove_confirm_action">Entfernen</string>
-
-    <!-- Einstellungen — Abschnitt Bestellungen wischen -->
-    <string name="settings_swipe_label">Bestellungen wischen</string>
-    <string name="settings_swipe_enabled">Wischen aktivieren</string>
-    <string name="settings_swipe_source_status">Aktiv bei</string>
-    <string name="settings_swipe_left_status">Wischen ← (links)</string>
-    <string name="settings_swipe_right_status">Wischen → (rechts)</string>
-    <string name="settings_swipe_status_default">Standard</string>
-    <string name="settings_swipe_no_statuses">Status werden geladen…</string>
-    <string name="settings_swipe_statuses_error">Status konnten nicht geladen werden</string>
-    <string name="settings_swipe_statuses_retry">Erneut versuchen</string>
 
     <!-- Einstellungen — Abschnitt Warenauffüllung (konfigurierbare Schnellbuttons) -->
     <string name="settings_stock_replenish_label">Schnellbuttons Warenauffüllung</string>

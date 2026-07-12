@@ -1052,13 +1052,12 @@ private fun TypedQuantityRow(
     }
 }
 
-// ─── Barre d'annulation d'une écriture en attente (pattern swipe commandes) ────
+// ─── Barre d'annulation d'une écriture en attente ──────────────────────────────
 
 /**
  * Barre d'annulation d'une écriture de stock en attente, avec décompte vivant des secondes
- * restantes avant l'envoi effectif — même pattern visuel que `SwipeUndoBar` (commandes), mais
- * plusieurs peuvent coexister ici (réappro en série : valider réarme le scanner immédiatement, cf.
- * KDoc [StockReplenishViewModel.onValidate]).
+ * restantes avant l'envoi effectif — plusieurs peuvent coexister ici (réappro en série : valider
+ * réarme le scanner immédiatement, cf. KDoc [StockReplenishViewModel.onValidate]).
  */
 @Composable
 private fun PendingWriteBar(
@@ -1105,7 +1104,7 @@ private fun PendingWriteBar(
             )
             TextButton(onClick = onCancel) {
                 Text(
-                    text = stringResource(R.string.orders_swipe_undo_countdown, remainingSeconds),
+                    text = stringResource(R.string.stock_replenish_undo_countdown, remainingSeconds),
                     color = MaterialTheme.colorScheme.inversePrimary,
                     style = MaterialTheme.typography.labelLarge,
                 )

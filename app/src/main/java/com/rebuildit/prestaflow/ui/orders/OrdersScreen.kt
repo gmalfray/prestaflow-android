@@ -1,29 +1,21 @@
 package com.rebuildit.prestaflow.ui.orders
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,7 +30,6 @@ import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Print
@@ -71,20 +62,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -92,7 +77,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -110,7 +94,6 @@ import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
 import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
-import com.rebuildit.prestaflow.ui.components.contrastTextColor
 import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.components.parseHexColor
@@ -119,12 +102,8 @@ import com.rebuildit.prestaflow.ui.orders.components.StatusPickerDialog
 import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 @Composable
 fun OrdersRoute(
@@ -210,96 +189,12 @@ fun OrdersRoute(
             onBulkChangeStatus = { showBulkStatusDialog = true },
             onSortChanged = viewModel::onSortChanged,
             onLoadMore = viewModel::loadMore,
-            onSwipeAction = viewModel::onSwipeAction,
-            swipeConfig = uiState.swipeConfig,
             onClearPeriodFilter = viewModel::clearPeriodFilter,
         )
-        // Barre d'annulation swipe (avec décompte vivant) + snackbars classiques, empilées en bas
-        // pour ne jamais se chevaucher. La barre swipe n'utilise PAS le SnackbarHostState : ce
-        // dernier ne permet pas de mettre à jour le texte d'un snackbar déjà affiché, incompatible
-        // avec un décompte de secondes qui doit se rafraîchir chaque seconde.
-        Column(
+        SnackbarHost(
+            hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter),
-            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
-        ) {
-            uiState.pendingSwipeAction?.let { action ->
-                SwipeUndoBar(
-                    action = action,
-                    onCancel = viewModel::cancelSwipeAction,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Dimensions.screenEdgeMargin),
-                )
-            }
-            SnackbarHost(hostState = snackbarHostState)
-        }
-    }
-}
-
-/**
- * Barre d'annulation du swipe de changement de statut — remplace l'ancien Snackbar à durée
- * indéfinie par un composant dédié entièrement piloté par l'état Compose, seule façon d'afficher
- * un décompte vivant des secondes restantes avant l'envoi effectif (l'API Snackbar ne permet pas
- * de mettre à jour le texte d'un snackbar déjà affiché).
- *
- * Le décompte redémarre à [SWIPE_UNDO_DELAY_MS] / 1000 secondes à chaque nouvelle [action] (chaque
- * swipe annule et remplace le précédent côté ViewModel) et disparaît dès que [action] devient null
- * (annulation via le bouton, ou envoi effectif une fois le délai écoulé).
- */
-@Composable
-private fun SwipeUndoBar(
-    action: PendingSwipeAction,
-    onCancel: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val totalSeconds = (SWIPE_UNDO_DELAY_MS / 1_000L).toInt()
-    var remainingSeconds by remember(action) { mutableIntStateOf(totalSeconds) }
-
-    // Décompte affiché : purement visuel, resynchronisé à chaque nouvelle action. L'envoi effectif
-    // reste piloté côté ViewModel par son propre delay(SWIPE_UNDO_DELAY_MS), indépendant de ce timer UI.
-    LaunchedEffect(action) {
-        for (secondsLeft in totalSeconds - 1 downTo 0) {
-            delay(1_000L)
-            remainingSeconds = secondsLeft
-        }
-    }
-
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-        color = MaterialTheme.colorScheme.inverseSurface,
-        contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-        tonalElevation = 6.dp,
-    ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Dimensions.spacingM, vertical = Dimensions.spacingS),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text =
-                    stringResource(
-                        R.string.orders_swipe_pending,
-                        action.orderReference,
-                        action.targetStatusName,
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = onCancel) {
-                Text(
-                    text = stringResource(R.string.orders_swipe_undo_countdown, remainingSeconds),
-                    color = MaterialTheme.colorScheme.inversePrimary,
-                    style = MaterialTheme.typography.labelLarge,
-                )
-            }
-        }
+        )
     }
 }
 
@@ -323,8 +218,6 @@ fun OrdersScreen(
     onVisibleStatusIdsChanged: (Set<Int>) -> Unit = {},
     onSortChanged: (OrderSort) -> Unit = {},
     onLoadMore: () -> Unit = {},
-    onSwipeAction: (Long, String, SwipeDirection) -> Unit = { _, _, _ -> },
-    swipeConfig: SwipeConfig = SwipeConfig(),
     onClearPeriodFilter: () -> Unit = {},
 ) {
     val errorMessage = uiState.error?.asString()
@@ -373,8 +266,6 @@ fun OrdersScreen(
                 hasMore = uiState.hasMore,
                 isLoadingMore = uiState.isLoadingMore,
                 onLoadMore = onLoadMore,
-                onSwipeAction = onSwipeAction,
-                swipeConfig = swipeConfig,
                 activePeriod = uiState.activePeriod,
                 onClearPeriodFilter = onClearPeriodFilter,
             )
@@ -417,8 +308,6 @@ private fun OrdersList(
     hasMore: Boolean = false,
     isLoadingMore: Boolean = false,
     onLoadMore: () -> Unit = {},
-    onSwipeAction: (Long, String, SwipeDirection) -> Unit = { _, _, _ -> },
-    swipeConfig: SwipeConfig = SwipeConfig(),
     activePeriod: DashboardPeriod? = null,
     onClearPeriodFilter: () -> Unit = {},
 ) {
@@ -579,7 +468,7 @@ private fun OrdersList(
                             }
                         }
                     } else {
-                        // Carte conteneur groupée — chaque ligne peut être swipée
+                        // Carte conteneur groupée — chaque ligne est simplement cliquable
                         item {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -593,18 +482,14 @@ private fun OrdersList(
                                 Column {
                                     orders.forEachIndexed { index, order ->
                                         key(order.id) {
-                                            SwipeableOrderRow(
+                                            OrderRow(
                                                 order = order,
                                                 dateFormatter = dateFormatter,
                                                 selectionMode = selectionMode,
                                                 isSelected = order.id in selectedOrderIds,
                                                 onClick = { onOrderClick(order.id) },
                                                 onLongPress = { onOrderLongPress(order.id) },
-                                                onSwipeAction = { direction ->
-                                                    onSwipeAction(order.id, order.reference, direction)
-                                                },
                                                 availableStatuses = availableStatuses,
-                                                swipeConfig = swipeConfig,
                                             )
                                         }
                                         if (index < orders.lastIndex) {
@@ -643,319 +528,6 @@ private fun OrdersList(
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-// ─── Ligne commande avec swipe ────────────────────────────────────────────────
-
-/** Fraction de la largeur de la ligne à partir de laquelle un relâchement déclenche l'action swipe. */
-private const val SWIPE_DISMISS_THRESHOLD_FRACTION = 0.25f
-
-/**
- * Spec d'animation de retour/règlement de la ligne après relâchement du doigt — un `spring` plutôt
- * qu'un `tween` linéaire pour retrouver le ressenti « rebond » que `SwipeToDismissBox` donnait
- * gratuitement (cf. KDoc de [SwipeableOrderRow]). Se joue aussi bien quand le swipe est annulé
- * (retour à 0 pur) que quand il est commité (retour à 0 après lecture du seuil, l'action métier
- * étant déclenchée en parallèle, non bloquée par cette animation).
- */
-private val swipeSettleAnimSpec: AnimationSpec<Float> =
-    spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)
-
-/**
- * Enveloppe une [OrderRow] avec un geste de swipe horizontal pour les commandes en « Paiement
- * accepté ». Implémentation via un **détecteur de geste unique et déterministe**
- * (`pointerInput` + `awaitEachGesture`), PAS deux détecteurs concurrents (l'ancienne version posait
- * `detectHorizontalDragGestures` sur ce `Box` ET laissait `combinedClickable` sur [OrderRow] :
- * sur device réel, un swipe **lent** fonctionnait car le tap de l'enfant se laissait le temps
- * d'observer la consommation du parent, mais un **flick rapide** était capté comme un tap — le
- * détecteur de tap de [OrderRow] voit l'évènement de relâchement (up) avant que le parent n'ait pu
- * clairement établir/consommer suffisamment de deltas de drag, et un tap-detector standard
- * (`detectTapGestures`/`clickable`) traite tout up non explicitement annulé comme un tap, quelle
- * que soit la distance parcourue avant. `SwipeToDismissBox`/`AnchoredDraggableState` (material3
- * 1.3.1) avait le même défaut, en pire : sa reconnaissance interne (seuil + vélocité) ne consomme
- * le geste qu'une fois la transition « dragging » effectivement engagée côté état.
- *
- * Le vrai correctif n'est pas dans la state machine : c'est de ne PLUS avoir deux détecteurs qui se
- * courent après. Un seul `awaitEachGesture` ici tranche tap / appui-long / swipe **avant** que
- * quiconque d'autre ne voie l'évènement de relâchement — [OrderRow] est rendu sans
- * `combinedClickable` dans ce chemin (`enableClick = false`), donc il n'existe plus de second
- * détecteur susceptible de gagner la course. Déroulé :
- * 1. `awaitFirstDown` capture le doigt.
- * 2. Phase 1 (bornée par `viewConfiguration.longPressTimeoutMillis` via le `withTimeoutOrNull`
- *    natif d'`AwaitPointerEventScope`) : à chaque évènement, on accumule le déplacement horizontal
- *    et vertical depuis le down.
- *    - Un `up` avant tout verdict → **tap** (`onClick`), quelle que soit la vitesse : un flick
- *      rapide qui reste sous `touchSlop` est un vrai tap, pas un swipe raté.
- *    - Dès que le déplacement horizontal dépasse `touchSlop` ET domine le vertical → **swipe** :
- *      `change.consume()` (fait céder le scroll du `LazyColumn`) puis bascule en phase 2. C'est
- *      justement ce qui manquait : un flick rapide qui parcourt une vraie distance horizontale
- *      avant l'up est détecté ICI, sur le même évènement de mouvement, AVANT que l'up ne puisse
- *      jamais être examiné comme un tap — il n'y a plus de race, la décision est prise en amont.
- *    - Dès que le déplacement vertical dépasse `touchSlop` ET domine l'horizontal → on **abandonne**
- *      sans consommer, pour laisser le scroll vertical ambiant du `LazyColumn` prendre le relai.
- *    - Le timeout s'écoule sans verdict (doigt immobile) → **appui long** (`onLongPress`, mode
- *      sélection), puis on consomme jusqu'au relâchement.
- * 3. Phase 2 (swipe engagé) : suit le doigt (met à jour [offsetX]) jusqu'au relâchement, puis
- *    calcule si le seuil de 25 % de la largeur est franchi pour déclencher [onSwipeAction] (sinon
- *    anime un retour à 0).
- *
- * La position affichée ([offsetX], un simple [Animatable] `remember`é, PAS `rememberSaveable`)
- * repart toujours de 0f à chaque composition fraîche — y compris après un aller-retour vers l'écran
- * de détail (l'écran Commandes reste dans le back stack, `SwipeableOrderRow` est disposé/recomposé) :
- * aucun état de drag partiel ne peut donc jamais rester « collé ».
- */
-private sealed interface PreDragOutcome {
-    /** Relâchement (up) observé avant tout verdict de drag → tap simple. */
-    data object Tap : PreDragOutcome
-
-    /** Seuil horizontal franchi et dominant → bascule en suivi de swipe (phase 2). */
-    data object DragStarted : PreDragOutcome
-
-    /** Seuil vertical franchi et dominant → geste abandonné au profit du scroll du LazyColumn. */
-    data object VerticalWin : PreDragOutcome
-}
-
-@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "LoopWithTooManyJumpStatements")
-@Composable
-private fun SwipeableOrderRow(
-    order: Order,
-    dateFormatter: DateTimeFormatter,
-    selectionMode: Boolean,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    onLongPress: () -> Unit,
-    onSwipeAction: (SwipeDirection) -> Unit,
-    availableStatuses: List<OrderStatusFilter>,
-    swipeConfig: SwipeConfig = SwipeConfig(),
-) {
-    // Le swipe est actif uniquement si le statut de la commande correspond à la source configurée.
-    // Par défaut (aucun ID configuré) : Paiement accepté (id PrestaShop stable), par ID plutôt que
-    // par nom FR — robuste quelle que soit la langue d'affichage des statuts.
-    val isSwipeSource =
-        remember(order.currentStateId, swipeConfig, availableStatuses) {
-            if (!swipeConfig.enabled) {
-                false
-            } else {
-                order.currentStateId == (swipeConfig.sourceStatusId ?: SWIPE_DEFAULT_SOURCE_ID)
-            }
-        }
-
-    if (!isSwipeSource || selectionMode) {
-        // Hors contexte swipe : simple ligne
-        OrderRow(
-            order = order,
-            dateFormatter = dateFormatter,
-            selectionMode = selectionMode,
-            isSelected = isSelected,
-            onClick = onClick,
-            onLongPress = onLongPress,
-            availableStatuses = availableStatuses,
-        )
-        return
-    }
-
-    // Couleur du fond révélé pendant le drag : idéalement la teinte du statut cible réel (celui
-    // vers lequel le swipe bascule la commande), résolue via la même logique que
-    // OrdersViewModel.onSwipeAction (config swipe → ID configuré, sinon défaut par ID PrestaShop
-    // stable). Repli sur une couleur fixe si le statut cible est introuvable ou sans couleur.
-    val leftTargetStatus =
-        remember(swipeConfig, availableStatuses) {
-            resolveSwipeTargetStatus(swipeConfig, availableStatuses, SwipeDirection.LEFT)
-        }
-    val rightTargetStatus =
-        remember(swipeConfig, availableStatuses) {
-            resolveSwipeTargetStatus(swipeConfig, availableStatuses, SwipeDirection.RIGHT)
-        }
-    val leftActionColor =
-        remember(leftTargetStatus) { leftTargetStatus?.color?.let(::parseHexColor) }
-            ?: MaterialTheme.colorScheme.tertiary
-    val rightActionColor =
-        remember(rightTargetStatus) { rightTargetStatus?.color?.let(::parseHexColor) }
-            ?: Color(0xFF2E7D32)
-
-    val offsetX = remember { Animatable(0f) }
-    val scope = rememberCoroutineScope()
-    var rowWidthPx by remember { mutableFloatStateOf(0f) }
-
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .onSizeChanged { size -> rowWidthPx = size.width.toFloat() }
-                .pointerInput(order.id) {
-                    awaitEachGesture {
-                        val touchSlop = viewConfiguration.touchSlop
-                        val down = awaitFirstDown(requireUnconsumed = false)
-
-                        var horizontalDrag = 0f
-                        var verticalDrag = 0f
-
-                        // Phase 1 : course tap / appui-long / démarrage de drag, bornée par le
-                        // délai d'appui long. Cf. KDoc de SwipeableOrderRow pour le détail complet
-                        // de l'arbitrage — c'est ICI, sur un déplacement encore en cours, que le
-                        // swipe est reconnu, avant que quiconque n'examine jamais l'up comme un tap.
-                        val preDragOutcome =
-                            withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                                while (true) {
-                                    val event = awaitPointerEvent()
-                                    val change = event.changes.firstOrNull { it.id == down.id } ?: continue
-
-                                    if (!change.pressed) {
-                                        change.consume()
-                                        return@withTimeoutOrNull PreDragOutcome.Tap
-                                    }
-
-                                    val delta = change.positionChange()
-                                    horizontalDrag += delta.x
-                                    verticalDrag += delta.y
-                                    val absHorizontal = abs(horizontalDrag)
-                                    val absVertical = abs(verticalDrag)
-
-                                    when {
-                                        absHorizontal > touchSlop && absHorizontal > absVertical -> {
-                                            change.consume()
-                                            return@withTimeoutOrNull PreDragOutcome.DragStarted
-                                        }
-                                        absVertical > touchSlop && absVertical >= absHorizontal -> {
-                                            return@withTimeoutOrNull PreDragOutcome.VerticalWin
-                                        }
-                                        else -> {
-                                            // Sous le seuil dans les deux sens : encore indéterminé,
-                                            // on continue d'observer (candidat tap/appui-long/swipe).
-                                        }
-                                    }
-                                }
-                            }
-
-                        when (preDragOutcome) {
-                            PreDragOutcome.Tap -> onClick()
-                            // Scroll vertical : on n'a rien consommé, le LazyColumn prend le relai.
-                            PreDragOutcome.VerticalWin -> Unit
-                            PreDragOutcome.DragStarted -> {
-                                scope.launch {
-                                    offsetX.snapTo(horizontalDrag.coerceIn(-rowWidthPx, rowWidthPx))
-                                }
-                                var releasedWhileDragging = false
-                                while (true) {
-                                    val event = awaitPointerEvent()
-                                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                                    change.consume()
-                                    if (!change.pressed) {
-                                        releasedWhileDragging = true
-                                        break
-                                    }
-                                    val delta = change.positionChange()
-                                    val newOffset = (offsetX.value + delta.x).coerceIn(-rowWidthPx, rowWidthPx)
-                                    scope.launch { offsetX.snapTo(newOffset) }
-                                }
-
-                                val threshold = rowWidthPx * SWIPE_DISMISS_THRESHOLD_FRACTION
-                                val committedDirection =
-                                    when {
-                                        !releasedWhileDragging || rowWidthPx <= 0f -> null
-                                        offsetX.value <= -threshold -> SwipeDirection.LEFT
-                                        offsetX.value >= threshold -> SwipeDirection.RIGHT
-                                        else -> null
-                                    }
-                                scope.launch { offsetX.animateTo(0f, swipeSettleAnimSpec) }
-                                // Déclenché APRÈS avoir lancé l'animation de retour (non bloquant) : la
-                                // fenêtre d'annulation métier (SwipeUndoBar) démarre immédiatement, sans
-                                // attendre la fin de l'anim visuelle de règlement de la ligne.
-                                committedDirection?.let(onSwipeAction)
-                            }
-                            // Timeout écoulé sans verdict (doigt resté quasi immobile) → appui long.
-                            null -> {
-                                onLongPress()
-                                while (true) {
-                                    val event = awaitPointerEvent()
-                                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                                    change.consume()
-                                    if (!change.pressed) break
-                                }
-                            }
-                        }
-                    }
-                },
-    ) {
-        SwipeActionBackground(
-            offsetXPx = offsetX.value,
-            leftActionColor = leftActionColor,
-            rightActionColor = rightActionColor,
-        )
-        Box(
-            modifier =
-                Modifier.offset {
-                    IntOffset(offsetX.value.roundToInt(), 0)
-                },
-        ) {
-            OrderRow(
-                order = order,
-                dateFormatter = dateFormatter,
-                selectionMode = selectionMode,
-                isSelected = isSelected,
-                onClick = onClick,
-                onLongPress = onLongPress,
-                availableStatuses = availableStatuses,
-                enableClick = false,
-            )
-        }
-    }
-}
-
-/**
- * Fond coloré + icône/label révélé derrière [OrderRow] pendant le drag, selon le sens du swipe.
- * Extension de [BoxScope] : `matchParentSize()` a besoin de ce receiver pour se caler sur la taille
- * du `Box` ancêtre (déterminée par [OrderRow], l'autre enfant de ce même `Box`).
- */
-@Composable
-private fun BoxScope.SwipeActionBackground(
-    offsetXPx: Float,
-    leftActionColor: Color,
-    rightActionColor: Color,
-) {
-    val isLeftSwipe = offsetXPx < 0f
-    val isRightSwipe = offsetXPx > 0f
-    val bgColor =
-        when {
-            isLeftSwipe -> leftActionColor
-            isRightSwipe -> rightActionColor
-            else -> Color.Transparent
-        }
-    val swipeIcon = if (isLeftSwipe) Icons.Outlined.ArrowUpward else Icons.Outlined.Done
-    val swipeLabel =
-        when {
-            isLeftSwipe -> stringResource(R.string.orders_swipe_left_label)
-            isRightSwipe -> stringResource(R.string.orders_swipe_right_label)
-            else -> ""
-        }
-    val swipeAlign = if (isRightSwipe) Alignment.CenterStart else Alignment.CenterEnd
-    val onBgColor = contrastTextColor(bgColor)
-    Box(
-        modifier =
-            Modifier
-                .matchParentSize()
-                .background(bgColor)
-                .padding(horizontal = Dimensions.spacingL),
-        contentAlignment = swipeAlign,
-    ) {
-        if (isLeftSwipe || isRightSwipe) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
-            ) {
-                Icon(
-                    imageVector = swipeIcon,
-                    contentDescription = null,
-                    tint = onBgColor,
-                    modifier = Modifier.size(Dimensions.iconSizeSmall),
-                )
-                Text(
-                    text = swipeLabel,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = onBgColor,
-                )
             }
         }
     }
@@ -1058,11 +630,6 @@ private fun SelectionActionBar(
 /**
  * Ligne de commande — design Stitch : avatar initiales, nom + référence,
  * badge statut coloré, montant aligné à droite.
- *
- * [enableClick] : `false` dans le chemin swipable ([SwipeableOrderRow]), où le tap/appui-long est
- * déjà entièrement arbitré par le `pointerInput` unique de l'ancêtre — poser aussi un
- * `combinedClickable` ici recréerait exactement le second détecteur concurrent à l'origine du bug
- * du flick capté comme un tap.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Suppress("LongParameterList", "LongMethod")
@@ -1075,7 +642,6 @@ private fun OrderRow(
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     availableStatuses: List<OrderStatusFilter> = emptyList(),
-    enableClick: Boolean = true,
 ) {
     val amountText =
         remember(order.totalPaid, order.currency) {
@@ -1103,7 +669,7 @@ private fun OrderRow(
                 .fillMaxWidth()
                 .alpha(rowAlpha)
                 .then(
-                    if (isSelectable && enableClick) {
+                    if (isSelectable) {
                         Modifier.combinedClickable(
                             onClickLabel =
                                 if (selectionMode) {

@@ -178,6 +178,7 @@
     <string name="stock_replenish_add_content_description">Aggiungi quantità</string>
     <string name="stock_replenish_quantity_placeholder">Quantità</string>
     <string name="stock_replenish_pending_label">%1$s: %2$s in sospeso</string>
+    <string name="stock_replenish_undo_countdown">Annulla (%1$d s)</string>
     <string name="stock_replenish_queue_added_content_description">Aggiunto alla coda in sospeso</string>
     <string name="stock_replenish_session_recap">%1$d articolo/i · +%2$d in scorta</string>
     <string name="stock_replenish_session_recap_exit_title">Riepilogo sessione</string>
@@ -344,13 +345,6 @@
     <!-- Paginazione ordini -->
     <string name="orders_load_more">Carica altri</string>
 
-    <!-- Swipe stato ordine -->
-    <string name="orders_swipe_pending">Ordine %1$s → %2$s</string>
-    <!-- Pulsante Annulla con conto alla rovescia in secondi prima dell\'invio effettivo (es.: "Annulla (8 s)"). -->
-    <string name="orders_swipe_undo_countdown">Annulla (%1$d s)</string>
-    <string name="orders_swipe_left_label">In preparazione</string>
-    <string name="orders_swipe_right_label">Completato</string>
-
     <!-- Dettaglio ordine — messaggi di azione (esternalizzati per i18n) -->
     <string name="order_detail_status_updated">Stato aggiornato</string>
     <string name="order_detail_tracking_updated">Tracciamento aggiornato</string>
@@ -362,17 +356,6 @@
     <string name="settings_shops_remove_confirm_title">Rimuovere il negozio?</string>
     <string name="settings_shops_remove_confirm_message">Verrai disconnesso dal negozio %1$s.</string>
     <string name="settings_shops_remove_confirm_action">Rimuovi</string>
-
-    <!-- Impostazioni — sezione Swipe ordini -->
-    <string name="settings_swipe_label">Swipe ordini</string>
-    <string name="settings_swipe_enabled">Attiva lo swipe</string>
-    <string name="settings_swipe_source_status">Attivo su</string>
-    <string name="settings_swipe_left_status">Swipe ← (sinistra)</string>
-    <string name="settings_swipe_right_status">Swipe → (destra)</string>
-    <string name="settings_swipe_status_default">Predefinito</string>
-    <string name="settings_swipe_no_statuses">Caricamento stati…</string>
-    <string name="settings_swipe_statuses_error">Impossibile caricare gli stati</string>
-    <string name="settings_swipe_statuses_retry">Riprova</string>
 
     <!-- Impostazioni — sezione Rifornimento scorte (pulsanti rapidi configurabili) -->
     <string name="settings_stock_replenish_label">Pulsanti rapidi rifornimento</string>

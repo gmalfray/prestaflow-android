@@ -14,8 +14,6 @@ import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,27 +27,6 @@ import timber.log.Timber
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
-
-/**
- * Durée (ms) de la fenêtre « Annuler » avant envoi effectif du changement de statut après un swipe.
- * Non-private : réutilisée par [OrdersScreen][com.rebuildit.prestaflow.ui.orders.OrdersScreen]
- * (côté UI) pour faire tourner le décompte visible en secondes, en cohérence avec ce délai réel.
- */
-internal const val SWIPE_UNDO_DELAY_MS = 10_000L
-
-/**
- * Configuration du swipe telle qu'exposée dans l'UiState.
- *
- * Les ids [sourceStatusId], [leftTargetStatusId] et [rightTargetStatusId] proviennent
- * des préférences utilisateur. Quand ils sont null, la résolution se fait par nom
- * (comportement historique). Cette résolution est effectuée dans [OrdersViewModel.onSwipeAction].
- */
-data class SwipeConfig(
-    val enabled: Boolean = true,
-    val sourceStatusId: Int? = null,
-    val leftTargetStatusId: Int? = null,
-    val rightTargetStatusId: Int? = null,
-)
 
 /** Taille de page par défaut pour la pagination. */
 private const val PAGE_SIZE = OrdersRepository.DEFAULT_PAGE_SIZE
@@ -78,44 +55,6 @@ private val DEFAULT_VISIBLE_CHIP_IDS = listOf(3, 4, 9)
 /** Nombre maximum de chips de statut dans la barre de filtres. */
 internal const val MAX_VISIBLE_STATUS_CHIPS = 3
 
-// IDs de statut PrestaShop utilisés comme défauts du swipe quand rien n'est configuré. Par ID
-// (stable, indépendant de la langue) : le repli historique par nom FR cassait dès que les statuts
-// étaient affichés dans une autre langue (contenu localisé serveur via Accept-Language).
-internal const val SWIPE_DEFAULT_SOURCE_ID = 2 // Paiement accepté
-internal const val SWIPE_DEFAULT_LEFT_TARGET_ID = 3 // En cours de préparation
-internal const val SWIPE_DEFAULT_RIGHT_TARGET_ID = 9 // Terminée
-internal const val SWIPE_DEFAULT_RIGHT_FALLBACK_ID = 5 // Livré
-
-/**
- * Résout le statut cible en fonction de la direction et de la config swipe.
- *
- * - Si un ID est configuré et trouvé dans [statuses] → utilise cet ID.
- * - Sinon (null ou ID introuvable) → défaut par ID PrestaShop stable (gauche = En préparation,
- *   droite = Terminée avec repli Livré) — indépendant de la langue d'affichage des statuts.
- *
- * Fonction top-level (pas une méthode de [OrdersViewModel]) pour être appelable depuis
- * [OrdersScreen][com.rebuildit.prestaflow.ui.orders.OrdersScreen] côté `Composable`
- * (`SwipeableOrderRow`), qui n'a pas d'instance de ViewModel : sert à teinter le fond d'action
- * révélé pendant le drag avec la couleur réelle du statut cible plutôt qu'une couleur fixe.
- */
-internal fun resolveSwipeTargetStatus(
-    config: SwipeConfig,
-    statuses: List<OrderStatusFilter>,
-    direction: SwipeDirection,
-) = when (direction) {
-    SwipeDirection.LEFT -> {
-        val configuredId = config.leftTargetStatusId
-        statuses.firstOrNull { it.id == (configuredId ?: SWIPE_DEFAULT_LEFT_TARGET_ID) }
-            ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_LEFT_TARGET_ID }
-    }
-    SwipeDirection.RIGHT -> {
-        val configuredId = config.rightTargetStatusId
-        statuses.firstOrNull { it.id == (configuredId ?: SWIPE_DEFAULT_RIGHT_TARGET_ID) }
-            ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_RIGHT_TARGET_ID }
-            ?: statuses.firstOrNull { it.id == SWIPE_DEFAULT_RIGHT_FALLBACK_ID }
-    }
-}
-
 /**
  * Résout les IDs de statuts pré-sélectionnés par défaut, par intersection de [DEFAULT_STATUS_IDS]
  * avec les statuts réellement disponibles dans la boutique. Ensemble vide si aucun (fallback = tous).
@@ -140,9 +79,6 @@ internal fun resolveDefaultVisibleChips(availableStatuses: List<OrderStatusFilte
     return matched.ifEmpty { availableStatuses.take(MAX_VISIBLE_STATUS_CHIPS) }
 }
 
-/** Sens du swipe sur une ligne de commande. */
-enum class SwipeDirection { LEFT, RIGHT }
-
 /** Ordre de tri exposé à l'API (`sort` param). */
 enum class OrderSort(val queryValue: String) {
     DATE_DESC("date_desc"),
@@ -152,16 +88,6 @@ enum class OrderSort(val queryValue: String) {
     STATUS("status"),
     REFERENCE("reference"),
 }
-
-/**
- * Action de changement de statut en attente d'exécution (délai d'annulation 5 s).
- */
-data class PendingSwipeAction(
-    val orderId: Long,
-    val orderReference: String,
-    val targetStatusId: Int,
-    val targetStatusName: String,
-)
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
@@ -186,13 +112,9 @@ class OrdersViewModel
             )
         val uiState: StateFlow<OrdersUiState> = _uiState.asStateFlow()
 
-        /** Job en cours pour le swipe avec délai d'annulation. */
-        private var pendingSwipeJob: Job? = null
-
         init {
             observeOrders()
             observeVisibleStatusIds()
-            observeSwipeConfig()
             initializeData()
             observeActiveShopSwitch()
             observeLanguageChange()
@@ -339,139 +261,6 @@ class OrdersViewModel
                     }
                 _uiState.update { it.copy(isLoadingMore = false, hasMore = hasMore) }
             }
-        }
-
-        // ─── Config swipe ──────────────────────────────────────────────────────
-
-        /** Observe les préférences de configuration du swipe et met à jour l'UiState. */
-        private fun observeSwipeConfig() {
-            viewModelScope.launch {
-                kotlinx.coroutines.flow.combine(
-                    ordersPreferencesRepository.swipeEnabled,
-                    ordersPreferencesRepository.swipeSourceStatusId,
-                    ordersPreferencesRepository.swipeLeftTargetStatusId,
-                    ordersPreferencesRepository.swipeRightTargetStatusId,
-                ) { enabled, sourceId, leftId, rightId ->
-                    SwipeConfig(
-                        enabled = enabled,
-                        sourceStatusId = sourceId,
-                        leftTargetStatusId = leftId,
-                        rightTargetStatusId = rightId,
-                    )
-                }.collect { config ->
-                    _uiState.update { it.copy(swipeConfig = config) }
-                }
-            }
-        }
-
-        // ─── Swipe avec délai d'annulation ───────────────────────────────────
-
-        /**
-         * Déclenche un changement de statut via swipe sur une commande.
-         *
-         * La résolution de la source/cibles se fait :
-         * - **Par ID** si configuré dans les préférences swipe.
-         * - **Par nom normalisé** (repli) si l'ID est null ou introuvable :
-         *   - Source : matcher "paiement accepte"
-         *   - Gauche  : matcher "preparation"
-         *   - Droite  : matcher "termin" puis "livr"
-         *
-         * L'appel API n'est envoyé qu'après [SWIPE_UNDO_DELAY_MS] ms. Si un autre swipe
-         * arrive avant, le précédent est annulé (sans envoi).
-         */
-        fun onSwipeAction(
-            orderId: Long,
-            orderReference: String,
-            direction: SwipeDirection,
-        ) {
-            val config = _uiState.value.swipeConfig
-            if (!config.enabled) return
-
-            val statuses = _uiState.value.availableStatuses
-            val targetStatus =
-                resolveTargetStatus(config, statuses, direction) ?: run {
-                    Timber.d("Swipe ignoré : aucun statut cible trouvé pour direction=$direction")
-                    return
-                }
-
-            // Annule l'action précédente (sans appel API)
-            pendingSwipeJob?.cancel()
-
-            _uiState.update {
-                it.copy(
-                    pendingSwipeAction =
-                        PendingSwipeAction(
-                            orderId = orderId,
-                            orderReference = orderReference,
-                            targetStatusId = targetStatus.id,
-                            targetStatusName = targetStatus.name,
-                        ),
-                )
-            }
-
-            pendingSwipeJob =
-                viewModelScope.launch {
-                    delay(SWIPE_UNDO_DELAY_MS)
-                    // Fenêtre d'annulation écoulée → le changement devient effectif. On ferme la snackbar
-                    // « Annuler » AVANT l'appel réseau : passé ce point, plus aucun clic « Annuler »
-                    // trompeur (l'ancien code la laissait affichée pendant tout l'appel réseau, où
-                    // cliquer « Annuler » ne changeait plus rien — cause du « ça n'a pas annulé »).
-                    _uiState.update { it.copy(pendingSwipeAction = null) }
-                    runCatching {
-                        ordersRepository.updateOrderStatus(orderId, targetStatus.id.toString())
-                    }.onFailure { error ->
-                        Timber.w(error, "Swipe status update failed orderId=$orderId")
-                        // La fenêtre d'annulation est passée : l'utilisateur croit la commande
-                        // traitée. Un simple log serait silencieux — on DOIT le prévenir (canal
-                        // snackbar existant, déjà utilisé par bulkUpdateStatus) qu'aucun changement
-                        // n'est parti côté serveur pour cette commande.
-                        _uiState.update {
-                            it.copy(
-                                bulkSnackbar = "Échec de la mise à jour de $orderReference : la commande n'a pas été modifiée",
-                            )
-                        }
-                    }
-                    refresh(forceRemote = true, notifyOnError = false)
-                }
-        }
-
-        /**
-         * Résout le statut cible en fonction de la direction et de la config swipe.
-         *
-         * Délègue à [resolveSwipeTargetStatus] (fonction top-level, testée séparément) : cette
-         * méthode d'instance ne reste ici que pour ne pas casser la signature `vm.resolveTargetStatus(...)`
-         * déjà verrouillée par les tests existants. [OrdersScreen][com.rebuildit.prestaflow.ui.orders.OrdersScreen]
-         * appelle directement la fonction top-level (pas de ViewModel disponible côté `Composable` privé
-         * `SwipeableOrderRow`) pour teinter le fond d'action révélé pendant le drag avec la couleur du
-         * statut cible réel.
-         */
-        internal fun resolveTargetStatus(
-            config: SwipeConfig,
-            statuses: List<com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter>,
-            direction: SwipeDirection,
-        ) = resolveSwipeTargetStatus(config, statuses, direction)
-
-        /**
-         * Résout si une commande avec le statut [orderStatus] est éligible au swipe,
-         * selon la config source.
-         *
-         * - Si [SwipeConfig.sourceStatusId] est configuré → compare par ID.
-         * - Sinon → défaut par ID PrestaShop stable (Paiement accepté = 2), via [currentStateId] —
-         *   plus de matching par nom FR (cassé en langue étrangère).
-         */
-        internal fun isSwipeSource(
-            config: SwipeConfig,
-            currentStateId: Int,
-        ): Boolean {
-            if (!config.enabled) return false
-            return currentStateId == (config.sourceStatusId ?: SWIPE_DEFAULT_SOURCE_ID)
-        }
-
-        /** Annule l'action de swipe en attente (sans envoi API). */
-        fun cancelSwipeAction() {
-            pendingSwipeJob?.cancel()
-            pendingSwipeJob = null
-            _uiState.update { it.copy(pendingSwipeAction = null) }
         }
 
         // ─── Préférence de statuts visibles ──────────────────────────────────
@@ -835,10 +624,6 @@ data class OrdersUiState(
     val hasMore: Boolean = false,
     /** Vrai pendant le chargement d'une page supplémentaire (pagination). */
     val isLoadingMore: Boolean = false,
-    /** Action de swipe en attente (délai d'annulation). Null = aucune action en cours. */
-    val pendingSwipeAction: PendingSwipeAction? = null,
-    /** Configuration du swipe lue depuis les préférences persistées. */
-    val swipeConfig: SwipeConfig = SwipeConfig(),
 ) {
     /**
      * Statuts effectivement affichés dans la barre de filtres.

@@ -35,8 +35,7 @@ import javax.inject.Inject
 
 /**
  * Durée (ms) de la fenêtre « Annuler » avant l'envoi effectif d'un ajustement de stock, une fois
- * « Valider » tapé. Même pattern/valeur que [com.rebuildit.prestaflow.ui.orders.SWIPE_UNDO_DELAY_MS]
- * (décompte swipe commandes), réutilisé ici pour l'écran de réappro série.
+ * « Valider » tapé.
  */
 internal const val REPLENISH_UNDO_DELAY_MS = 10_000L
 
@@ -71,8 +70,7 @@ private const val MAX_LABEL_SUGGESTIONS = 8
  * Pilote l'écran « Ajout / réappro stock » (Lot 1) : scanner permanent → produit résolu → delta
  * accumulé via boutons rapides ([quickAddAmounts], configurables en préférences depuis le Lot 2 —
  * défaut [DEFAULT_QUICK_ADD_AMOUNTS] = +5/+10/+20) et saisie libre → écriture unique via
- * [onValidate], avec fenêtre d'annulation de [REPLENISH_UNDO_DELAY_MS] ms (même pattern que le swipe commandes,
- * cf. [com.rebuildit.prestaflow.ui.orders.OrdersViewModel.onSwipeAction]).
+ * [onValidate], avec fenêtre d'annulation de [REPLENISH_UNDO_DELAY_MS] ms.
  *
  * Remplace le flux historique "scan → fiche stock" ([ProductScanViewModel]) pour l'ajustement d'un
  * produit CONNU (EAN déjà associé). Le flux d'association d'un EAN INCONNU reste porté par
@@ -87,10 +85,9 @@ private const val MAX_LABEL_SUGGESTIONS = 8
  * Réappro en série : [onValidate] réarme IMMÉDIATEMENT le scanner (l'écriture réelle part en tâche
  * de fond après le délai d'annulation) — plusieurs écritures peuvent donc être en attente en
  * parallèle ([StockReplenishUiState.pendingWrites], chacune annulable indépendamment via
- * [onCancelPendingWrite]), contrairement au swipe commandes où une nouvelle action remplace la
- * précédente. Choix assumé : annuler une écriture en attente la retire simplement de la file (pas de
- * retour à un état éditable) — au delà de ce MVP, un flux plus riche (ré-ouvrir l'édition) relèverait
- * d'un lot ultérieur.
+ * [onCancelPendingWrite]). Choix assumé : annuler une écriture en attente la retire simplement de la
+ * file (pas de retour à un état éditable) — au delà de ce MVP, un flux plus riche (ré-ouvrir
+ * l'édition) relèverait d'un lot ultérieur.
  *
  * **Lot 3 (polish du scan en série)** :
  * - [scanFeedbackEvents] : événement one-shot consommé côté écran pour déclencher un retour

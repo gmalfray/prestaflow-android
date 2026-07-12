@@ -31,7 +31,7 @@ import org.junit.Test
 /**
  * Tests unitaires JVM du [StockReplenishViewModel] : écran « Ajout / réappro stock » (Lot 1) —
  * accumulation du delta (boutons rapides + saisie libre) et validation différée avec fenêtre
- * d'annulation (pattern swipe commandes, cf. [com.rebuildit.prestaflow.ui.orders.OrdersViewModel]).
+ * d'annulation.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class StockReplenishViewModelTest {
