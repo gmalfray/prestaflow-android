@@ -185,6 +185,7 @@
     <string name="stock_replenish_session_recap_exit_action">Aceptar</string>
 
     <string name="clients_list_empty">Todavía no hay clientes.</string>
+    <string name="clients_list_empty_period">Ningún cliente en este período.</string>
     <string name="clients_orders_count">%1$d pedidos</string>
     <string name="clients_list_section_title">Mejores clientes</string>
     <string name="clients_list_section_all">Todos los clientes</string>
@@ -369,7 +370,7 @@
     <string name="settings_swipe_source_status">Activo en</string>
     <string name="settings_swipe_left_status">Deslizar ← (izquierda)</string>
     <string name="settings_swipe_right_status">Deslizar → (derecha)</string>
-    <string name="settings_swipe_status_default">Predeterminado (por nombre)</string>
+    <string name="settings_swipe_status_default">Predeterminado</string>
     <string name="settings_swipe_no_statuses">Cargando estados…</string>
     <string name="settings_swipe_statuses_error">No se han podido cargar los estados</string>
     <string name="settings_swipe_statuses_retry">Reintentar</string>

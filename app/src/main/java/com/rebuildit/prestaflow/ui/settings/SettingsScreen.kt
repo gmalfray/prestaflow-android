@@ -975,9 +975,12 @@ private fun SwipeCommandsSection(
 }
 
 /**
- * Dropdown Material 3 pour sélectionner un statut (ou laisser le défaut par nom).
+ * Dropdown Material 3 pour sélectionner un statut (ou laisser le défaut).
  *
- * L'option [null] représente « Défaut (par nom) » — comportement historique.
+ * L'option [null] représente « Défaut » : résolution par ID PrestaShop stable (constantes
+ * `SWIPE_DEFAULT_SOURCE_ID` / `SWIPE_DEFAULT_LEFT_TARGET_ID` / `SWIPE_DEFAULT_RIGHT_TARGET_ID` /
+ * `SWIPE_DEFAULT_RIGHT_FALLBACK_ID` dans `OrdersViewModel.kt`), pas par nom — indépendant de la
+ * langue d'affichage des statuts.
  * Si [statuses] est vide, affiche un état neutre (chargement).
  */
 @OptIn(ExperimentalMaterial3Api::class)

@@ -114,7 +114,7 @@ class OrdersViewModelTest {
         }
 
     @Test
-    fun `taper un 2e chip l ajoute a la selection - multi statuts`() =
+    fun `taper un 2e chip REMPLACE la selection - isolation exclusive`() =
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
@@ -124,31 +124,48 @@ class OrdersViewModelTest {
             vm.onStatusFilterSelected(statusId = 4)
             advanceUntilIdle()
 
-            // Chaque chip est indépendamment toggleable : le 2e tap AJOUTE (multi-statuts).
-            assertEquals(setOf(2, 4), vm.uiState.value.selectedStatusIds)
+            // Chip = raccourci EXCLUSIF : le 2e tap ISOLE sur 4, ne s'ajoute pas à 2 (pas de
+            // multi-statuts via les chips — cf. onStatusFiltersReplaced pour le vrai multi-statuts).
+            assertEquals(setOf(4), vm.uiState.value.selectedStatusIds)
         }
 
     @Test
-    fun `taper un statut deja actif le retire meme parmi plusieurs - retrait des defauts`() =
+    fun `selectionner un statut deja actif dans le filtre par defaut ISOLE dessus - ne l exclut pas`() =
         runTest {
+            // RÉGRESSION (v0.42.5) : le filtre par défaut "à traiter" pré-sélectionne plusieurs
+            // statuts (2/3/4/9) sans que l'utilisateur les ait tapés. Taper un chip qui en fait déjà
+            // partie (ex. "Prépa"=3) doit ISOLER dessus (ne montrer QUE ce statut), PAS le retirer du
+            // filtre — sinon sélectionner un statut fait disparaître exactement ses commandes,
+            // l'inverse de l'effet attendu ("bug de l'exclude au lieu de l'include").
+            fakeOrdersRepo.orderStatuses =
+                listOf(
+                    OrderStatusFilter(2, "Paiement accepté", "#00FF00"),
+                    OrderStatusFilter(3, "En cours de préparation", "#0000FF"),
+                    OrderStatusFilter(4, "Expédié", "#FFA500"),
+                    OrderStatusFilter(9, "Terminée", "#888888"),
+                )
             val vm = buildViewModel()
             advanceUntilIdle()
+            assertEquals(
+                "Précondition : le défaut « à traiter » doit être actif avant le tap",
+                setOf(2, 3, 4, 9),
+                vm.uiState.value.selectedStatusIds,
+            )
+            fakeOrdersRepo.refreshCalls.clear()
 
-            // Sélection multi (comme le filtre par défaut) : 2, 4, 5 actifs.
-            vm.onStatusFilterSelected(statusId = 2)
-            vm.onStatusFilterSelected(statusId = 4)
-            vm.onStatusFilterSelected(statusId = 5)
-            advanceUntilIdle()
-            assertEquals(setOf(2, 4, 5), vm.uiState.value.selectedStatusIds)
-
-            // Taper 4 (déjà actif) doit le RETIRER sans toucher aux autres.
-            vm.onStatusFilterSelected(statusId = 4)
+            vm.onStatusFilterSelected(statusId = 3)
             advanceUntilIdle()
 
             assertEquals(
-                "Un statut actif tapé doit être retiré, les autres conservés",
-                setOf(2, 5),
+                "Taper 'Prépa' (déjà actif par défaut) doit ISOLER dessus (montrer QUE ce statut)",
+                setOf(3),
                 vm.uiState.value.selectedStatusIds,
+            )
+            val lastCall = fakeOrdersRepo.refreshCalls.lastOrNull()
+            assertEquals(
+                "Le refresh serveur doit filtrer uniquement sur le statut isolé",
+                3,
+                lastCall?.second,
             )
         }
 

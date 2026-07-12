@@ -249,6 +249,15 @@ private fun AuthenticatedShell(
     // "collé" et la puce ✕ ne peut jamais s'en débarrasser durablement (elle réapparaît à chaque
     // retour sur l'onglet). Ce flag permet à `navigateToTab` de forcer, une seule fois, une entrée
     // Commandes fraîche (sans période) au prochain clic sur l'onglet — cf. usage ci-dessous.
+    //
+    // RÉGRESSION v0.42.5 (fixée ici) : la branche qui consomme ce flag faisait
+    // `popUpTo(AppDestination.Orders.route)` au lieu de `popUpTo(graph.startDestinationId)` comme la
+    // branche standard ci-dessous et comme le pattern officiel Android pour la navigation multi-onglets
+    // (cf. developer.android.com/guide/navigation/navigation-multi-back-stack). Cette frontière
+    // `popUpTo` différente casse la cohérence du bookkeeping interne saveState/restoreState de
+    // Compose Navigation (qui suppose une frontière commune pour tous les changements d'onglet) :
+    // un onglet peut alors restaurer l'entrée sauvegardée d'UN AUTRE onglet. D'où la régression :
+    // taper "Commandes" après un passage par Clients(filtré) pouvait atterrir sur Clients.
     var ordersEnteredWithPeriod by rememberSaveable { mutableStateOf(false) }
 
     // Même correctif que ordersEnteredWithPeriod ci-dessus, pour la tuile KPI "Nouveaux clients" du
@@ -319,19 +328,24 @@ private fun AuthenticatedShell(
                 // période ouverte depuis le dashboard. Une fois consommé, le flag repasse à false :
                 // les visites suivantes de l'onglet redeviennent des restaurations normales (tri,
                 // recherche, filtre de statut préservés).
+                // IMPORTANT : même frontière popUpTo que la branche standard ci-dessous
+                // (graph.startDestinationId, pas la route propre de l'onglet) — cf. commentaire sur
+                // ordersEnteredWithPeriod : une frontière différente d'un onglet à l'autre corrompt le
+                // bookkeeping saveState/restoreState partagé et peut faire restaurer l'onglet d'à côté.
                 ordersEnteredWithPeriod = false
                 navController.navigate(AppDestination.Orders.route) {
-                    popUpTo(AppDestination.Orders.route) { inclusive = true }
+                    popUpTo(navController.graph.startDestinationId) { saveState = true }
                     launchSingleTop = true
                 }
             }
             destination == AppDestination.Clients && clientsEnteredWithPeriod -> {
                 // Cf. commentaire sur clientsEnteredWithPeriod : force une entrée Clients fraîche
                 // (sans restoreState) au lieu de risquer de restaurer l'entrée filtrée par période
-                // ouverte depuis la tuile "Nouveaux clients" du dashboard.
+                // ouverte depuis la tuile "Nouveaux clients" du dashboard. Même frontière popUpTo que
+                // la branche standard (cf. remarque IMPORTANT ci-dessus, identique pour Clients).
                 clientsEnteredWithPeriod = false
                 navController.navigate(AppDestination.Clients.route) {
-                    popUpTo(AppDestination.Clients.route) { inclusive = true }
+                    popUpTo(navController.graph.startDestinationId) { saveState = true }
                     launchSingleTop = true
                 }
             }

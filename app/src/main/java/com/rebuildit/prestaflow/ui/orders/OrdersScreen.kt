@@ -1206,10 +1206,14 @@ private fun PeriodFilterChip(
 // ─── Barre de filtres par statut + tri ────────────────────────────────────────
 
 /**
- * Ligne horizontale scrollable de chips multi-sélection + bouton de tri + bouton ⚙.
+ * Ligne horizontale scrollable de chips de raccourcis (sélection EXCLUSIVE) + bouton de tri + ⚙.
  *
  * - Chip « Toutes » : sélectionné quand [selectedStatusIds] est vide → appelle [onClearFilter]
- * - Chaque chip de statut : indépendamment toggleable → appelle [onStatusToggle] avec l'ID
+ * - Chaque chip de statut : sélection exclusive → appelle [onStatusToggle] avec l'ID, qui ISOLE ce
+ *   statut (n'affiche QUE lui), y compris s'il faisait déjà partie du filtre par défaut multi-statuts
+ *   (cf. KDoc de [OrdersViewModel.onStatusFilterSelected]). Re-tap sur l'unique statut déjà
+ *   sélectionné → désélectionne (retour à « Toutes »). Le vrai multi-statuts (plusieurs à la fois)
+ *   se fait via le menu ⚙ « Filtrer par statut » (checkboxes dédiées), pas ces chips.
  * - Bouton tri (Sort icon) : ouvre un menu déroulant avec les options de tri
  * - Bouton ⚙ : ouvre le menu « Filtrer par statut » + « Raccourcis ». Un point apparaît dessus
  *   quand [hasHiddenActiveFilter] est vrai (filtre actif sur un statut absent des chips).

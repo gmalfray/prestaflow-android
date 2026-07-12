@@ -228,12 +228,22 @@ class OrdersViewModel
         // ─── Filtre multi-statuts ─────────────────────────────────────────────
 
         /**
-         * Bascule le statut [statusId] dans / hors du filtre actif puis recharge la liste.
+         * Sélectionne [statusId] en **exclusif** (raccourci = isoler ce statut) puis recharge la liste.
          *
-         * Chaque chip est **indépendamment toggleable** : taper un statut inactif l'ajoute au filtre,
-         * taper un statut actif le retire — y compris les statuts sélectionnés par défaut. Le filtre
-         * peut donc porter sur plusieurs statuts simultanément (cohérent avec l'affichage multi-chips
-         * de la barre). [statusId] `null` (chip « Toutes ») réinitialise le filtre.
+         * Taper un chip affiche SEULEMENT ce statut — y compris s'il faisait déjà partie d'un filtre
+         * multi-statuts (ex. le défaut « à traiter » 2/3/4/9, cf. [DEFAULT_STATUS_IDS]) : le mental
+         * model d'un chip « raccourci » est « montre-moi CE statut », pas « ajoute/retire ce statut
+         * d'un ensemble ». Re-tap sur l'UNIQUE statut déjà sélectionné → désélectionne (retour à
+         * « Toutes »). [statusId] `null` (chip « Toutes ») réinitialise le filtre.
+         *
+         * RÉGRESSION v0.41.2 (fixée ici) : le tap avait été rendu « indépendamment toggleable »
+         * (ajoute/retire du filtre courant, commit 0f932c6) pour permettre de retirer un statut du
+         * filtre par défaut multi-statuts. Mais comme ce défaut sélectionne déjà plusieurs statuts
+         * SANS que l'utilisateur les ait tapés, taper un chip qui en fait déjà partie (ex. « Prépa »)
+         * le RETIRAIT (exclude) au lieu d'isoler dessus (include) : sélectionner un statut faisait
+         * disparaître exactement les commandes de ce statut, l'inverse de l'effet attendu. Le vrai
+         * multi-statuts reste possible via le menu « Filtrer par statut » ([onStatusFiltersReplaced]),
+         * qui pose l'ensemble complet en une fois (checkboxes dédiées, mécanisme séparé des chips).
          */
         fun onStatusFilterSelected(statusId: Int?) {
             _uiState.update { current ->
@@ -241,10 +251,10 @@ class OrdersViewModel
                     when {
                         // "Toutes" → aucun filtre.
                         statusId == null -> emptySet()
-                        // Chip déjà actif → on le retire (désélection indépendante, défaut compris).
-                        statusId in current.selectedStatusIds -> current.selectedStatusIds - statusId
-                        // Sinon → on l'ajoute à la sélection (multi-statuts).
-                        else -> current.selectedStatusIds + statusId
+                        // Re-tap sur l'unique statut déjà sélectionné → désélectionne (retour à "Toutes").
+                        current.selectedStatusIds == setOf(statusId) -> emptySet()
+                        // Sinon → sélection EXCLUSIVE : n'affiche QUE ce statut.
+                        else -> setOf(statusId)
                     }
                 current.copy(selectedStatusIds = newSelection)
             }

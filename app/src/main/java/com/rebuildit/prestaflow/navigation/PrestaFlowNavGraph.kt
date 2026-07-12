@@ -67,8 +67,13 @@ fun PrestaFlowNavGraph(
                     // "Nouveaux clients" ci-dessous, pour garantir un ViewModel frais avec la bonne
                     // période même si l'utilisateur avait déjà visité l'onglet Commandes ou une autre
                     // tuile du dashboard juste avant.
+                    // IMPORTANT : popUpTo(startDestinationId), PAS popUpTo(route propre) — cf.
+                    // commentaire "IMPORTANT" sur ordersEnteredWithPeriod dans MainActivity.kt. Une
+                    // frontière popUpTo différente de celle utilisée par les onglets de la barre du
+                    // bas corrompt le bookkeeping saveState/restoreState partagé entre onglets
+                    // (régression v0.42.5 : Commandes pouvait atterrir sur Clients).
                     navController.navigate("${AppDestination.Orders.route}?period=${period.queryValue}") {
-                        popUpTo(AppDestination.Orders.route) { inclusive = true }
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
                     }
                 },
                 onClientsClick = { createdFrom ->
@@ -79,9 +84,11 @@ fun PrestaFlowNavGraph(
                     // ViewModel est créé — le filtre est ainsi toujours appliqué même si
                     // l'utilisateur avait déjà visité l'onglet Clients.
                     // created_from = début de la période du dashboard → la liste correspond au KPI.
+                    // IMPORTANT : même frontière popUpTo(startDestinationId) que onOrdersClick
+                    // ci-dessus — cf. remarque IMPORTANT associée.
                     val createdFromArg = createdFrom?.let { "&created_from=$it" } ?: ""
                     navController.navigate("${AppDestination.Clients.route}?filter=new$createdFromArg") {
-                        popUpTo(AppDestination.Clients.route) { inclusive = true }
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
                     }
                 },
             )

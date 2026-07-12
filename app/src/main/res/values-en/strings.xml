@@ -185,6 +185,7 @@
     <string name="stock_replenish_session_recap_exit_action">OK</string>
 
     <string name="clients_list_empty">No customers yet.</string>
+    <string name="clients_list_empty_period">No customers in this period.</string>
     <string name="clients_orders_count">%1$d orders</string>
     <string name="clients_list_section_title">Top customers</string>
     <string name="clients_list_section_all">All customers</string>
@@ -370,7 +371,7 @@
     <string name="settings_swipe_source_status">Swipe active on</string>
     <string name="settings_swipe_left_status">Swipe ← (left)</string>
     <string name="settings_swipe_right_status">Swipe → (right)</string>
-    <string name="settings_swipe_status_default">Default (by name)</string>
+    <string name="settings_swipe_status_default">Default</string>
     <string name="settings_swipe_no_statuses">Loading statuses…</string>
     <string name="settings_swipe_statuses_error">Couldn\'t load statuses</string>
     <string name="settings_swipe_statuses_retry">Retry</string>
