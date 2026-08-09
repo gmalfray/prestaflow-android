@@ -116,11 +116,11 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
                 // Son explicite pour Android < 8 (sur 8+ c'est le canal qui décide).
                 .setSound(NotificationChannels.cashRegisterSoundUri(applicationContext))
         } else if (channelId == NotificationChannels.CHANNEL_PAYMENT_ERROR) {
-            // Panne d'encaissement : priorité haute, mais son système (pas la caisse, qui
-            // signifie « vente encaissée » — l'inverse du message).
+            // Panne d'encaissement : priorité haute et son dédié — surtout pas la caisse, qui
+            // signifie « vente encaissée », l'inverse du message.
             builder
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setDefaults(NotificationCompat.DEFAULT_SOUND)
+                .setSound(NotificationChannels.paymentAlertSoundUri(applicationContext))
         } else {
             builder.setPriority(NotificationCompat.PRIORITY_DEFAULT)
             // Son système par défaut pour Android < 8.
