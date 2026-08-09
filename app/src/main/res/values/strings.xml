@@ -9,6 +9,8 @@
     <string name="notif_channel_order_shipping_desc">Notifications lors de la mise à jour du suivi d\'une commande</string>
     <string name="notif_channel_stock_low_name">Stock faible</string>
     <string name="notif_channel_stock_low_desc">Notifications quand le stock d\'un produit passe sous le seuil d\'alerte</string>
+    <string name="notif_channel_payment_error_name">Paiement en panne</string>
+    <string name="notif_channel_payment_error_desc">Alerte quand la boutique ne peut plus encaisser (tunnel de paiement en erreur)</string>
     <string name="notif_channel_default_name">Alertes</string>
     <string name="notif_channel_default_desc">Notifications générales de l\'application</string>
     <string name="notif_sale_default_title">Nouvelle commande</string>
@@ -392,6 +394,7 @@
     <string name="notif_category_order_status_changed">Changements de statut</string>
     <string name="notif_category_order_shipping_updated">Expéditions</string>
     <string name="notif_category_stock_low">Stock faible</string>
+    <string name="notif_category_payment_error">Paiement en panne</string>
     <string name="notif_categories_all_disabled_warning">Aucune notification ne sera reçue tant que toutes les catégories sont désactivées.</string>
 
     <!-- Lien depuis les réglages -->

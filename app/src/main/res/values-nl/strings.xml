@@ -9,6 +9,8 @@
     <string name="notif_channel_order_shipping_desc">Meldingen wanneer de tracking van een bestelling wordt bijgewerkt</string>
     <string name="notif_channel_stock_low_name">Lage voorraad</string>
     <string name="notif_channel_stock_low_desc">Meldingen wanneer de voorraad van een product onder de waarschuwingsdrempel daalt</string>
+    <string name="notif_channel_payment_error_name">Betalingsstoring</string>
+    <string name="notif_channel_payment_error_desc">Waarschuwing wanneer de winkel geen betalingen meer kan ontvangen (afrekenen mislukt)</string>
     <string name="notif_channel_default_name">Meldingen</string>
     <string name="notif_channel_default_desc">Algemene app-meldingen</string>
     <string name="notif_sale_default_title">Nieuwe bestelling</string>
@@ -392,6 +394,7 @@
     <string name="notif_category_order_status_changed">Statuswijzigingen</string>
     <string name="notif_category_order_shipping_updated">Verzendingen</string>
     <string name="notif_category_stock_low">Lage voorraad</string>
+    <string name="notif_category_payment_error">Betalingsstoring</string>
     <string name="notif_categories_all_disabled_warning">Er wordt geen melding ontvangen zolang alle categorieën uitgeschakeld zijn.</string>
 
     <!-- Link vanuit instellingen -->

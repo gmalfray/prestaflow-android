@@ -182,6 +182,7 @@ private fun NotificationCategory.labelRes(): Int =
         NotificationCategory.ORDER_STATUS_CHANGED -> R.string.notif_category_order_status_changed
         NotificationCategory.ORDER_SHIPPING_UPDATED -> R.string.notif_category_order_shipping_updated
         NotificationCategory.STOCK_LOW -> R.string.notif_category_stock_low
+        NotificationCategory.PAYMENT_ERROR -> R.string.notif_category_payment_error
     }
 
 // ─── Previews ────────────────────────────────────────────────────────────────

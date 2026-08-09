@@ -4,6 +4,23 @@ Les versions suivent [Semantic Versioning](https://semver.org/) : `MAJEUR.MINEUR
 
 ---
 
+## [0.43.0] — 2026-08-09
+
+### Ajouts
+- **Alerte « paiement en panne » en push** : nouvelle catégorie de notification
+  (`shop.payment.error`), activée par défaut, avec son canal Android dédié (`payment_error`,
+  importance haute, vibration en double pulsation) et **son propre son** — deux notes
+  descendantes, volontairement à l'opposé de la caisse enregistreuse des ventes, qui
+  signifierait l'inverse du message. Son généré par `tools/sounds/make_payment_alert.py`,
+  versionné pour rester reproductible.
+  L'événement n'est pas émis par le connecteur mais par la surveillance côté serveur
+  (`watch-payments.sh` du dépôt `pensebonheur`) : le module ne voit pas les échecs du
+  prestataire de paiement, seul son journal les connaît.
+  Né de la panne du 07→09/08 sur pensebonheur.fr, où le tunnel de paiement est resté bloqué
+  40 h sans que rien ne remonte.
+
+---
+
 ## [0.42.0] — 2026-07-06
 
 ### Ajouts
