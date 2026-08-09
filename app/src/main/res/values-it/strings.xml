@@ -9,6 +9,8 @@
     <string name="notif_channel_order_shipping_desc">Notifiche quando il tracciamento di un ordine viene aggiornato</string>
     <string name="notif_channel_stock_low_name">Scorte basse</string>
     <string name="notif_channel_stock_low_desc">Notifiche quando la scorta di un prodotto scende sotto la soglia di allerta</string>
+    <string name="notif_channel_payment_error_name">Pagamenti fuori servizio</string>
+    <string name="notif_channel_payment_error_desc">Avviso quando il negozio non può più incassare (checkout in errore)</string>
     <string name="notif_channel_default_name">Avvisi</string>
     <string name="notif_channel_default_desc">Notifiche generali dell\'app</string>
     <string name="notif_sale_default_title">Nuovo ordine</string>
@@ -392,6 +394,7 @@
     <string name="notif_category_order_status_changed">Cambi di stato</string>
     <string name="notif_category_order_shipping_updated">Spedizioni</string>
     <string name="notif_category_stock_low">Scorte basse</string>
+    <string name="notif_category_payment_error">Pagamenti fuori servizio</string>
     <string name="notif_categories_all_disabled_warning">Non verrà ricevuta alcuna notifica finché tutte le categorie sono disattivate.</string>
 
     <!-- Link dalle impostazioni -->

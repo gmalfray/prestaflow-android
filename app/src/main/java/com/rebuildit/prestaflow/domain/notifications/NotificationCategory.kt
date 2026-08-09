@@ -10,6 +10,13 @@ enum class NotificationCategory(val key: String) {
     ORDER_STATUS_CHANGED("order.status.changed"),
     ORDER_SHIPPING_UPDATED("order.shipping.updated"),
     STOCK_LOW("stock.low"),
+
+    /**
+     * Panne du tunnel de paiement de la boutique. Émise par la surveillance côté serveur
+     * (script `watch-payments.sh`), pas par le module : le module ne voit pas les échecs
+     * du prestataire de paiement, seul son journal les connaît.
+     */
+    PAYMENT_ERROR("shop.payment.error"),
     ;
 
     companion object {

@@ -36,6 +36,12 @@ object NotificationChannels {
     const val CHANNEL_STOCK_LOW = "stock_low"
 
     /**
+     * Canal panne de paiement — importance HAUTE : la boutique ne peut plus encaisser,
+     * ça doit sortir de la poche même noyé dans les autres notifications.
+     */
+    const val CHANNEL_PAYMENT_ERROR = "payment_error"
+
+    /**
      * Canal par défaut (background fallback) — son système, sans caisse.
      * Utilisé comme `default_notification_channel_id` dans le manifeste.
      */
@@ -54,6 +60,7 @@ object NotificationChannels {
             "order.status.changed" -> CHANNEL_ORDER_STATUS
             "order.shipping.updated" -> CHANNEL_ORDER_SHIPPING
             "stock.low" -> CHANNEL_STOCK_LOW
+            "shop.payment.error" -> CHANNEL_PAYMENT_ERROR
             else -> CHANNEL_DEFAULT
         }
 
@@ -68,6 +75,7 @@ object NotificationChannels {
         ensureOrderStatusChannel(context, manager)
         ensureOrderShippingChannel(context, manager)
         ensureStockLowChannel(context, manager)
+        ensurePaymentErrorChannel(context, manager)
         ensureDefaultChannel(context, manager)
     }
 
@@ -144,6 +152,23 @@ object NotificationChannels {
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
                 description = context.getString(R.string.notif_channel_stock_low_desc)
+            }
+        manager.createNotificationChannel(channel)
+    }
+
+    private fun ensurePaymentErrorChannel(
+        context: Context,
+        manager: NotificationManager,
+    ) {
+        if (manager.getNotificationChannel(CHANNEL_PAYMENT_ERROR) != null) return
+        val channel =
+            NotificationChannel(
+                CHANNEL_PAYMENT_ERROR,
+                context.getString(R.string.notif_channel_payment_error_name),
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = context.getString(R.string.notif_channel_payment_error_desc)
+                enableVibration(true)
             }
         manager.createNotificationChannel(channel)
     }
