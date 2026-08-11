@@ -13,11 +13,18 @@ import com.rebuildit.prestaflow.fakes.FakePrestaFlowApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.Protocol
+import okhttp3.Request
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import retrofit2.HttpException
+import retrofit2.Response
+import okhttp3.Response as OkHttpResponse
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReviewsRepositoryImplTest {
@@ -114,6 +121,63 @@ class ReviewsRepositoryImplTest {
 
             assertEquals("Merci !", review.reply)
         }
+
+    // ─── Traduction des erreurs 409/422 (audit api-contract-guardian) ─────────
+
+    @Test
+    fun `publish sur 409 expose le message reviews_unavailable du connecteur`() =
+        runTest {
+            fakeApi.publishReviewException = buildHttpException(409, """{"error":"reviews_unavailable","message":"Module désinstallé"}""")
+
+            val error = runCatching { repository.publish(812L) }.exceptionOrNull()
+
+            assertTrue(error?.message?.contains("Module désinstallé") == true)
+        }
+
+    @Test
+    fun `publish sur 409 sans body retombe sur un message par defaut`() =
+        runTest {
+            fakeApi.publishReviewException = buildHttpException(409, "")
+
+            val error = runCatching { repository.publish(812L) }.exceptionOrNull()
+
+            assertTrue(error?.message?.contains("disponible") == true)
+        }
+
+    @Test
+    fun `trash sur 422 expose un message explicite sur le motif`() =
+        runTest {
+            fakeApi.trashReviewException = buildHttpException(422, """{"error":"invalid_rejection_reason"}""")
+
+            val error = runCatching { repository.trash(812L, "Motif suffisamment long pour passer la validation locale") }.exceptionOrNull()
+
+            assertTrue(error?.message?.contains("Motif") == true || error?.message?.contains("motif") == true)
+        }
+
+    @Test
+    fun `reply sur une erreur HTTP non geree conserve l exception d origine`() =
+        runTest {
+            fakeApi.replyReviewException = buildHttpException(500, "")
+
+            val error = runCatching { repository.reply(812L, "Merci !") }.exceptionOrNull()
+
+            assertTrue(error is HttpException)
+        }
+
+    private fun buildHttpException(
+        code: Int,
+        body: String,
+    ): HttpException {
+        val rawResponse =
+            OkHttpResponse.Builder()
+                .request(Request.Builder().url("https://shop.test/module/rebuildconnector/api/reviews/812/publish").build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(code)
+                .message("Error")
+                .build()
+        val retrofitResponse = Response.error<Any>(body.toResponseBody("application/json".toMediaTypeOrNull()), rawResponse)
+        return HttpException(retrofitResponse)
+    }
 
     private fun buildReviewDto(
         id: Long,

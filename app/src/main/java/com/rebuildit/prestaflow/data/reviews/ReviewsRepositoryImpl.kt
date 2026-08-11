@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.data.reviews
 
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
+import com.rebuildit.prestaflow.data.remote.dto.ApiErrorBodyDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewReplyRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashRequestDto
 import com.rebuildit.prestaflow.data.reviews.mapper.toDomain
@@ -12,9 +13,17 @@ import com.rebuildit.prestaflow.domain.reviews.model.ReviewTrashResult
 import com.rebuildit.prestaflow.domain.reviews.model.ReviewsPage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import retrofit2.HttpException
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/** Instance Json réutilisée pour parser les body d'erreur du connecteur. */
+private val errorBodyJson = Json { ignoreUnknownKeys = true }
+
+private const val HTTP_CONFLICT = 409
+private const val HTTP_UNPROCESSABLE_ENTITY = 422
 
 @Singleton
 class ReviewsRepositoryImpl
@@ -31,8 +40,7 @@ class ReviewsRepositoryImpl
             withContext(ioDispatcher) {
                 val response =
                     runCatching { api.getReviews(limit = limit, offset = offset) }.getOrElse { error ->
-                        Timber.w(networkErrorMapper.map(error).toString())
-                        throw error
+                        throw translateError(error)
                     }
                 val pagination = response.pagination
                 ReviewsPage(
@@ -45,10 +53,7 @@ class ReviewsRepositoryImpl
         override suspend fun publish(reviewId: Long): Review =
             withContext(ioDispatcher) {
                 runCatching { api.publishReview(reviewId) }
-                    .getOrElse { error ->
-                        Timber.w(networkErrorMapper.map(error).toString())
-                        throw error
-                    }
+                    .getOrElse { error -> throw translateError(error) }
                     .review
                     .toDomain()
             }
@@ -67,10 +72,7 @@ class ReviewsRepositoryImpl
                 val response =
                     runCatching {
                         api.trashReview(reviewId, ReviewTrashRequestDto(reason = reason.trim()))
-                    }.getOrElse { error ->
-                        Timber.w(networkErrorMapper.map(error).toString())
-                        throw error
-                    }
+                    }.getOrElse { error -> throw translateError(error) }
                 ReviewTrashResult(
                     review = response.review.toDomain(),
                     authorNotified = response.authorNotified,
@@ -85,9 +87,38 @@ class ReviewsRepositoryImpl
             withContext(ioDispatcher) {
                 runCatching {
                     api.replyReview(reviewId, ReviewReplyRequestDto(reply = reply))
-                }.getOrElse { error ->
-                    Timber.w(networkErrorMapper.map(error).toString())
-                    throw error
-                }.review.toDomain()
+                }.getOrElse { error -> throw translateError(error) }.review.toDomain()
             }
+
+        /**
+         * Traduit les erreurs propres au contrat Avis en message lisible, AVANT de déléguer au
+         * [NetworkErrorMapper] générique (qui ne connaît pas `409 reviews_unavailable` ni
+         * `422 invalid_rejection_reason` — cf. audit api-contract-guardian). Un `409` est
+         * plausible en usage réel : le module `rbreviews` peut être désinstallé entre la lecture
+         * des capacités (§ [com.rebuildit.prestaflow.domain.capabilities.CapabilitiesRepository])
+         * et le geste de modération lui-même.
+         */
+        private fun translateError(error: Throwable): Throwable {
+            Timber.w(networkErrorMapper.map(error).toString())
+            if (error !is HttpException) return error
+            val bodyMessage =
+                runCatching {
+                    error.response()?.errorBody()?.string()
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { errorBodyJson.decodeFromString<ApiErrorBodyDto>(it) }
+                }.getOrNull()
+            return when (error.code()) {
+                HTTP_CONFLICT ->
+                    RuntimeException(
+                        bodyMessage?.message ?: "Le module Avis n'est plus disponible sur cette boutique",
+                        error,
+                    )
+                HTTP_UNPROCESSABLE_ENTITY ->
+                    RuntimeException(
+                        bodyMessage?.message ?: "Motif de rejet refusé par le serveur (10 caractères minimum)",
+                        error,
+                    )
+                else -> error
+            }
+        }
     }

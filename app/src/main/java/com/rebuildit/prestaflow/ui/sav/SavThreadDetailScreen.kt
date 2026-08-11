@@ -318,10 +318,14 @@ private fun SavReplyConfirmDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.sav_thread_reply_confirm_title)) },
         text = {
+            // Le connecteur émet TOUJOURS `customer.email` (chaîne vide si le fil n'a pas
+            // d'adresse, jamais null) — tester la nullité seule afficherait « envoyé à  » avec
+            // une adresse vide, alors que le connecteur répondrait `email_sent: false`. Cf.
+            // SavService::formatThreadRow().
             Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS)) {
                 Text(
                     text =
-                        if (customerEmail != null) {
+                        if (!customerEmail.isNullOrBlank()) {
                             stringResource(R.string.sav_thread_reply_confirm_recipient, customerEmail)
                         } else {
                             stringResource(R.string.sav_thread_reply_confirm_recipient_unknown)

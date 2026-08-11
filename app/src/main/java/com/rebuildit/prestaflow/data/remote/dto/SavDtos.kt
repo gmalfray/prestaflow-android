@@ -20,7 +20,12 @@ data class SavThreadDto(
     /** Un des 4 statuts natifs (`open`/`pending1`/`pending2`/`closed`). */
     @SerialName("status") val status: String = "",
     @SerialName("unread") val unread: Boolean = false,
-    /** Null si le fil n'est rattaché à aucun client PrestaShop (ex. contact anonyme). */
+    /**
+     * ⚠️ Le connecteur émet TOUJOURS cet objet, même pour un contact anonyme : c'est
+     * `customer.id`/`customer.name` qui valent alors `null` (jamais l'objet entier). Nullable ici
+     * uniquement par tolérance/rétrocompat — ne pas s'appuyer sur `customer == null` pour détecter
+     * un fil anonyme.
+     */
     @SerialName("customer") val customer: SavCustomerDto? = null,
     /** Null si le fil n'est rattaché à aucune commande. */
     @SerialName("order") val order: SavOrderDto? = null,
@@ -33,6 +38,11 @@ data class SavThreadDto(
 data class SavCustomerDto(
     @SerialName("id") val id: Long? = null,
     @SerialName("name") val name: String? = null,
+    /**
+     * ⚠️ Chaîne VIDE (jamais `null`) quand le fil n'a pas d'adresse exploitable — le connecteur
+     * caste en `(string)` (`SavService::formatThreadRow()`). Toujours tester `isNotBlank()`, jamais
+     * `!= null` : c'est cette adresse qui décide de `email_sent` sur `POST /sav/{id}/reply`.
+     */
     @SerialName("email") val email: String? = null,
 )
 

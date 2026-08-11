@@ -14,6 +14,16 @@ data class ReviewListResponseDto(
     @SerialName("pagination") val pagination: PaginationDto? = null,
 )
 
+/**
+ * ⚠️ **Schéma volontairement plus large que `GET /reviews`.** La liste de modération
+ * (`RbReviewsBridge::formatPendingRow()`) N'ÉMET PAS `validated`, `deleted`, `reply` ni
+ * `rejection_reason` — seules les réponses d'action (`publish`/`trash`/`reply`,
+ * `formatReviewRow()`) les portent. Les valeurs par défaut ci-dessous (`false`/`false`/`null`)
+ * sont donc ce que voit l'app en liste, et elles sont exactes par construction (la file ne
+ * contient que `validated = 0 AND deleted = 0`). Un seul DTO plutôt que deux : ne jamais rendre
+ * ces quatre champs non-nullables sans défaut, sinon la liste casse à la désérialisation.
+ * `product` et `author` sont eux toujours émis (objets), nullables ici par simple tolérance.
+ */
 @Serializable
 data class ReviewDto(
     @SerialName("id") val id: Long,
