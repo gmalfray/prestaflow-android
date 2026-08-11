@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.rebuildit.prestaflow.domain.auth.model.AuthToken
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
+import com.rebuildit.prestaflow.domain.capabilities.model.ShopCapabilities
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -33,6 +34,9 @@ class ShopConnectionStore
             val expiresAt: Long? = null,
             val scopes: List<String> = emptyList(),
             val apiKey: String = "",
+            // Absent des connexions persistées avant cette version : la valeur par défaut
+            // (sav seul) s'applique tant qu'un refresh de CapabilitiesRepository n'a pas eu lieu.
+            val capabilities: ShopCapabilities = ShopCapabilities(),
         )
 
         fun read(): List<ShopConnection> {
@@ -48,6 +52,21 @@ class ShopConnectionStore
             sharedPreferences.edit {
                 putString(KEY_CONNECTIONS, json.encodeToString(stored))
             }
+        }
+
+        /**
+         * Met à jour les capacités d'UNE boutique persistée (no-op si [shopId] est inconnu —
+         * ex. boutique supprimée entre-temps). Utilisé par
+         * [com.rebuildit.prestaflow.domain.capabilities.CapabilitiesRepository] après un
+         * rafraîchissement réussi.
+         */
+        fun updateCapabilities(
+            shopId: String,
+            capabilities: ShopCapabilities,
+        ) {
+            val current = read()
+            if (current.none { it.id == shopId }) return
+            write(current.map { if (it.id == shopId) it.copy(capabilities = capabilities) else it })
         }
 
         fun getActiveId(): String? = sharedPreferences.getString(KEY_ACTIVE_ID, null)
@@ -72,6 +91,7 @@ class ShopConnectionStore
                 label = label,
                 token = AuthToken(value = token, expiresAtEpochMillis = expiresAt, scopes = scopes),
                 apiKey = apiKey,
+                capabilities = capabilities,
             )
 
         private fun ShopConnection.toStored() =
@@ -83,6 +103,7 @@ class ShopConnectionStore
                 expiresAt = token.expiresAtEpochMillis,
                 scopes = token.scopes,
                 apiKey = apiKey,
+                capabilities = capabilities,
             )
 
         private companion object {

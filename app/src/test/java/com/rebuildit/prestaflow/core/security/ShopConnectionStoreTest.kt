@@ -2,8 +2,10 @@ package com.rebuildit.prestaflow.core.security
 
 import com.rebuildit.prestaflow.domain.auth.model.AuthToken
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
+import com.rebuildit.prestaflow.domain.capabilities.model.ShopCapabilities
 import com.rebuildit.prestaflow.fakes.FakeSharedPreferences
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -172,6 +174,74 @@ class ShopConnectionStoreTest {
 
         assertTrue(store.read().isEmpty())
         assertNull(store.getActiveId())
+    }
+
+    // ─── Capacités par boutique (cf. CapabilitiesRepository) ──────────────────
+
+    @Test
+    fun `les capacites d une connexion sont preservees apres round-trip`() {
+        val connection =
+            buildConnection("https://shop.test", "Boutique")
+                .copy(capabilities = ShopCapabilities(sav = true, reviews = true, shippingLabels = true))
+
+        store.write(listOf(connection))
+
+        val result = store.read().first()
+        assertTrue(result.capabilities.sav)
+        assertTrue(result.capabilities.reviews)
+        assertTrue(result.capabilities.shippingLabels)
+    }
+
+    @Test
+    fun `une connexion sans capacites explicites retombe sur sav seul par defaut`() {
+        store.write(listOf(buildConnection("https://shop.test", "Boutique")))
+
+        val result = store.read().first()
+        assertEquals(ShopCapabilities(), result.capabilities)
+    }
+
+    @Test
+    fun `une connexion persistee AVANT l ajout du champ capabilities se lit sans erreur`() {
+        // JSON tel qu'il pouvait exister avant l'ajout du champ "capabilities" (rétrocompat).
+        val legacyJson =
+            """[{"id":"https://shop.test","shopUrl":"https://shop.test",""" +
+                """"label":"Boutique","token":"tok"}]"""
+        prefs.edit().putString("shop_connections", legacyJson).apply()
+
+        val result = store.read()
+
+        assertEquals(1, result.size)
+        assertEquals(
+            "Une connexion pré-capacités doit retomber sur la valeur par défaut (sav seul)",
+            ShopCapabilities(),
+            result[0].capabilities,
+        )
+    }
+
+    @Test
+    fun `updateCapabilities met a jour uniquement la boutique visee`() {
+        val conn1 = buildConnection("https://shop1.test", "Boutique 1")
+        val conn2 = buildConnection("https://shop2.test", "Boutique 2")
+        store.write(listOf(conn1, conn2))
+
+        store.updateCapabilities("https://shop1.test", ShopCapabilities(sav = true, reviews = true))
+
+        val result = store.read().associateBy { it.id }
+        assertTrue(result.getValue("https://shop1.test").capabilities.reviews)
+        assertFalse(
+            "La boutique non visée ne doit pas être affectée",
+            result.getValue("https://shop2.test").capabilities.reviews,
+        )
+    }
+
+    @Test
+    fun `updateCapabilities est un no-op si la boutique est inconnue`() {
+        store.write(listOf(buildConnection("https://shop.test", "Boutique")))
+
+        store.updateCapabilities("https://boutique-inconnue.test", ShopCapabilities(reviews = true))
+
+        assertEquals(1, store.read().size)
+        assertFalse(store.read().first().capabilities.reviews)
     }
 
     // ─── Résilience au JSON corrompu ──────────────────────────────────────────

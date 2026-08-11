@@ -18,6 +18,7 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderStatusesResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductUpdateRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.ShopCapabilitiesDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
 import okhttp3.MultipartBody
 import okhttp3.ResponseBody
@@ -39,6 +40,15 @@ interface PrestaFlowApi {
     suspend fun login(
         @Body request: AuthRequestDto,
     ): AuthResponseDto
+
+    /**
+     * Capacités de la boutique active (module d'avis installé ? …) — DISTINCT des scopes du JWT,
+     * cf. [com.rebuildit.prestaflow.domain.capabilities.model.ShopCapabilities]. Vérifié à chaud :
+     * pas mis en cache côté connecteur, une désinstallation de module doit se refléter au prochain
+     * appel.
+     */
+    @GET("connector/capabilities")
+    suspend fun getCapabilities(): ShopCapabilitiesDto
 
     @GET("orders/statuses")
     suspend fun getOrderStatuses(): OrderStatusesResponseDto

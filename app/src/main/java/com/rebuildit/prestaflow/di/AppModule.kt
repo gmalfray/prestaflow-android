@@ -26,6 +26,7 @@ import com.rebuildit.prestaflow.core.security.TokenStorage
 import com.rebuildit.prestaflow.data.auth.AuthRepositoryImpl
 import com.rebuildit.prestaflow.data.auth.LoginApiClient
 import com.rebuildit.prestaflow.data.auth.LoginApiClientContract
+import com.rebuildit.prestaflow.data.capabilities.CapabilitiesRepositoryImpl
 import com.rebuildit.prestaflow.data.carts.CartsRepositoryImpl
 import com.rebuildit.prestaflow.data.clients.ClientsRepositoryImpl
 import com.rebuildit.prestaflow.data.dashboard.DashboardPreferencesRepositoryImpl
@@ -52,10 +53,12 @@ import com.rebuildit.prestaflow.data.remote.interceptor.AcceptLanguageIntercepto
 import com.rebuildit.prestaflow.data.remote.interceptor.AuthInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DefaultHeadersInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DynamicBaseUrlInterceptor
+import com.rebuildit.prestaflow.data.sav.SavRepositoryImpl
 import com.rebuildit.prestaflow.data.sync.SyncQueueRepositoryImpl
 import com.rebuildit.prestaflow.data.theme.ThemeRepositoryImpl
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
+import com.rebuildit.prestaflow.domain.capabilities.CapabilitiesRepository
 import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
@@ -67,6 +70,7 @@ import com.rebuildit.prestaflow.domain.orders.OrdersPreferencesRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.StockReplenishPreferencesRepository
+import com.rebuildit.prestaflow.domain.sav.SavRepository
 import com.rebuildit.prestaflow.domain.sync.SyncQueueRepository
 import com.rebuildit.prestaflow.domain.theme.ThemeRepository
 import dagger.Module
@@ -243,6 +247,14 @@ object AppModule {
     @Provides
     @Singleton
     fun provideClientsRepository(impl: ClientsRepositoryImpl): ClientsRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideCapabilitiesRepository(impl: CapabilitiesRepositoryImpl): CapabilitiesRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideSavRepository(impl: SavRepositoryImpl): SavRepository = impl
 
     @Provides
     @Singleton

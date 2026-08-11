@@ -23,6 +23,11 @@ class FakeAuthRepository : AuthRepository {
         _connections.value = connections
     }
 
+    /** Force une transition d'état — ex. simuler un changement de boutique active (nouveau token). */
+    fun emitAuthState(state: AuthState) {
+        _authState.value = state
+    }
+
     override suspend fun login(
         shopUrl: String,
         apiKey: String,

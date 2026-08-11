@@ -14,7 +14,7 @@ import androidx.navigation.navDeepLink
 import com.rebuildit.prestaflow.ui.carts.CartDetailRoute
 import com.rebuildit.prestaflow.ui.carts.CartsRoute
 import com.rebuildit.prestaflow.ui.clients.ClientDetailRoute
-import com.rebuildit.prestaflow.ui.clients.ClientsRoute
+import com.rebuildit.prestaflow.ui.clients.ClientsTabsRoute
 import com.rebuildit.prestaflow.ui.dashboard.DashboardRoute
 import com.rebuildit.prestaflow.ui.notifications.NotificationCategoriesRoute
 import com.rebuildit.prestaflow.ui.orders.OrderDetailRoute
@@ -212,7 +212,9 @@ fun PrestaFlowNavGraph(
                     },
                 ),
         ) {
-            ClientsRoute(
+            // Hôte de la sous-navigation Clients/SAV/Avis (cf. ClientsTabsScreen) : la liste
+            // clients elle-même reste le composable ClientsRoute existant, monté à l'intérieur.
+            ClientsTabsRoute(
                 onClientClick = { clientId ->
                     navController.navigate("${AppDestination.Clients.route}/$clientId")
                 },

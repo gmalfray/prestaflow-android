@@ -13,6 +13,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,10 +44,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
@@ -62,6 +67,7 @@ import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.domain.auth.AuthState
 import com.rebuildit.prestaflow.navigation.AppDestination
 import com.rebuildit.prestaflow.navigation.PrestaFlowNavGraph
+import com.rebuildit.prestaflow.navigation.formatBadgeCount
 import com.rebuildit.prestaflow.ui.auth.AuthRoute
 import com.rebuildit.prestaflow.ui.onboarding.ModuleInstallGuideRoute
 import com.rebuildit.prestaflow.ui.onboarding.OnboardingRoute
@@ -149,6 +155,7 @@ private fun PrestaFlowApp(
     PrestaFlowTheme(settings = themeState.settings) {
         val rootViewModel: RootViewModel = hiltViewModel()
         val authState by rootViewModel.authState.collectAsStateWithLifecycle()
+        val unreadSavCount by rootViewModel.unreadSavCount.collectAsStateWithLifecycle()
 
         when (authState) {
             AuthState.Loading -> LoadingScreen()
@@ -158,6 +165,7 @@ private fun PrestaFlowApp(
                     onLogout = rootViewModel::logout,
                     pendingOrderId = pendingOrderId,
                     onOrderIdConsumed = onOrderIdConsumed,
+                    unreadSavCount = unreadSavCount,
                 )
             AuthState.Unauthenticated -> UnauthenticatedFlow()
         }
@@ -224,6 +232,40 @@ private fun NavBarLabel(text: String) {
     }
 }
 
+/**
+ * Icône d'onglet de navigation, avec pastille optionnelle (ex. fils SAV non lus sur l'onglet
+ * Clients — cf. [unreadSavCount] dans [AuthenticatedShell]). `null`/vide → pas de pastille, jamais
+ * un badge "0" affiché (cf. [formatBadgeCount]). [badgeCount] alimente uniquement la description
+ * d'accessibilité de la pastille (ignoré si [badgeLabel] est `null`).
+ */
+@Composable
+private fun NavIconWithBadge(
+    icon: ImageVector,
+    contentDescription: String,
+    badgeLabel: String?,
+    badgeCount: Int = 0,
+) {
+    if (badgeLabel == null) {
+        Icon(imageVector = icon, contentDescription = contentDescription)
+        return
+    }
+    val badgeDescription = stringResource(R.string.clients_badge_unread_sav_content_description, badgeCount)
+    BadgedBox(
+        badge = {
+            Badge(
+                modifier =
+                    Modifier.semantics {
+                        this.contentDescription = badgeDescription
+                    },
+            ) {
+                Text(badgeLabel)
+            }
+        },
+    ) {
+        Icon(imageVector = icon, contentDescription = contentDescription)
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 // Shell responsive : BottomNavigation en compact, NavigationRail en medium/expanded, two-pane commandes en expanded
 // + masquage du chrome parent (topBar/bottomBar/rail) sur les destinations plein écran (réappro stock)
@@ -234,6 +276,9 @@ private fun AuthenticatedShell(
     onLogout: () -> Unit,
     pendingOrderId: Long? = null,
     onOrderIdConsumed: () -> Unit = {},
+    // Fils SAV non lus : pastille sur l'onglet Clients, compensation à la descente de niveau du
+    // SAV dans la nav (cf. étude rebuild-it/docs/app-avis-sav.md § "Contrepartie assumée").
+    unreadSavCount: Int = 0,
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -423,9 +468,16 @@ private fun AuthenticatedShell(
                             onClick = onItemClick,
                             label = { NavBarLabel(label) },
                             icon = {
-                                Icon(
-                                    imageVector = destination.icon,
+                                NavIconWithBadge(
+                                    icon = destination.icon,
                                     contentDescription = label,
+                                    badgeLabel =
+                                        if (destination == AppDestination.Clients) {
+                                            formatBadgeCount(unreadSavCount)
+                                        } else {
+                                            null
+                                        },
+                                    badgeCount = unreadSavCount,
                                 )
                             },
                             colors = navigationBarItemColors,
@@ -465,9 +517,16 @@ private fun AuthenticatedShell(
                                 selected = selected,
                                 onClick = onItemClick,
                                 icon = {
-                                    Icon(
-                                        imageVector = destination.icon,
+                                    NavIconWithBadge(
+                                        icon = destination.icon,
                                         contentDescription = label,
+                                        badgeLabel =
+                                            if (destination == AppDestination.Clients) {
+                                                formatBadgeCount(unreadSavCount)
+                                            } else {
+                                                null
+                                            },
+                                        badgeCount = unreadSavCount,
                                     )
                                 },
                                 label = { NavBarLabel(label) },

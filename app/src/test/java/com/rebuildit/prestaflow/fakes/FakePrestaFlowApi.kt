@@ -19,6 +19,7 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderStatusesResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductUpdateRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.ShopCapabilitiesDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
 import okhttp3.MultipartBody
 import okhttp3.ResponseBody
@@ -134,6 +135,21 @@ class FakePrestaFlowApi : PrestaFlowApi {
     override suspend fun unregisterDevice(token: String) = throw UnsupportedOperationException("Non utilisé dans ce test")
 
     override suspend fun login(request: AuthRequestDto): AuthResponseDto = throw UnsupportedOperationException("Non utilisé dans ce test")
+
+    /** Réponse renvoyée par [getCapabilities]. */
+    var capabilitiesResponse: ShopCapabilitiesDto = ShopCapabilitiesDto()
+
+    /** Si non null, [getCapabilities] lancera cette exception. */
+    var capabilitiesException: Throwable? = null
+
+    /** Nombre d'appels reçus par [getCapabilities]. */
+    var getCapabilitiesCallCount: Int = 0
+
+    override suspend fun getCapabilities(): ShopCapabilitiesDto {
+        getCapabilitiesCallCount++
+        capabilitiesException?.let { throw it }
+        return capabilitiesResponse
+    }
 
     override suspend fun getBaskets(abandonedSinceDays: Int?): CartListResponseDto =
         throw UnsupportedOperationException("Non utilisé dans ce test")
