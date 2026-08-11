@@ -53,6 +53,7 @@ import com.rebuildit.prestaflow.data.remote.interceptor.AcceptLanguageIntercepto
 import com.rebuildit.prestaflow.data.remote.interceptor.AuthInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DefaultHeadersInterceptor
 import com.rebuildit.prestaflow.data.remote.interceptor.DynamicBaseUrlInterceptor
+import com.rebuildit.prestaflow.data.reviews.ReviewsRepositoryImpl
 import com.rebuildit.prestaflow.data.sav.SavRepositoryImpl
 import com.rebuildit.prestaflow.data.sync.SyncQueueRepositoryImpl
 import com.rebuildit.prestaflow.data.theme.ThemeRepositoryImpl
@@ -70,6 +71,7 @@ import com.rebuildit.prestaflow.domain.orders.OrdersPreferencesRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.StockReplenishPreferencesRepository
+import com.rebuildit.prestaflow.domain.reviews.ReviewsRepository
 import com.rebuildit.prestaflow.domain.sav.SavRepository
 import com.rebuildit.prestaflow.domain.sync.SyncQueueRepository
 import com.rebuildit.prestaflow.domain.theme.ThemeRepository
@@ -255,6 +257,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSavRepository(impl: SavRepositoryImpl): SavRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideReviewsRepository(impl: ReviewsRepositoryImpl): ReviewsRepository = impl
 
     @Provides
     @Singleton

@@ -18,6 +18,17 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderStatusesResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ProductUpdateRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.ReviewListResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.ReviewPublishResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.ReviewReplyRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.ReviewReplyResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.SavReplyRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.SavReplyResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.SavStatusUpdateRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.SavThreadDetailResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.SavThreadListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ShopCapabilitiesDto
 import com.rebuildit.prestaflow.data.remote.dto.StockUpdateRequestDto
 import okhttp3.MultipartBody
@@ -221,4 +232,63 @@ interface PrestaFlowApi {
     suspend fun getBasketById(
         @Path("id") cartId: Int,
     ): CartDetailResponseDto
+
+    // ─── SAV natif (v1.18.0+, capacité toujours vraie) ───────────────────────
+
+    @GET("sav")
+    suspend fun getSavThreads(
+        @QueryMap filters: Map<String, @JvmSuppressWildcards String> = emptyMap(),
+    ): SavThreadListResponseDto
+
+    @GET("sav/{id}")
+    suspend fun getSavThread(
+        @Path("id") threadId: Long,
+    ): SavThreadDetailResponseDto
+
+    @PATCH("sav/{id}/status")
+    suspend fun updateSavThreadStatus(
+        @Path("id") threadId: Long,
+        @Body body: SavStatusUpdateRequestDto,
+    )
+
+    /**
+     * ⚠️ Envoie un VRAI e-mail à la cliente — l'appelant DOIT avoir obtenu une confirmation
+     * explicite avant cet appel, jamais après (cf.
+     * [com.rebuildit.prestaflow.domain.sav.SavRepository.replyToThread]).
+     */
+    @POST("sav/{id}/reply")
+    suspend fun replySavThread(
+        @Path("id") threadId: Long,
+        @Body body: SavReplyRequestDto,
+    ): SavReplyResponseDto
+
+    // ─── Avis (pont rbreviews, v1.18.0+, capacité "reviews") ─────────────────
+
+    @GET("reviews")
+    suspend fun getReviews(
+        @Query("limit") limit: Int? = null,
+        @Query("offset") offset: Int? = null,
+    ): ReviewListResponseDto
+
+    @POST("reviews/{id}/publish")
+    suspend fun publishReview(
+        @Path("id") reviewId: Long,
+    ): ReviewPublishResponseDto
+
+    /**
+     * ⚠️ Motif de rejet OBLIGATOIRE (≥10 caractères, 422 sinon) — envoie un e-mail à l'auteur
+     * (article L111-7-2). Vérifié côté app AVANT cet appel, cf.
+     * [com.rebuildit.prestaflow.domain.reviews.ReviewRejectionReason].
+     */
+    @POST("reviews/{id}/trash")
+    suspend fun trashReview(
+        @Path("id") reviewId: Long,
+        @Body body: ReviewTrashRequestDto,
+    ): ReviewTrashResponseDto
+
+    @POST("reviews/{id}/reply")
+    suspend fun replyReview(
+        @Path("id") reviewId: Long,
+        @Body body: ReviewReplyRequestDto,
+    ): ReviewReplyResponseDto
 }

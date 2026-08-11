@@ -63,6 +63,15 @@ class RootViewModelTest {
         }
 
     @Test
+    fun `un refresh du compteur SAV non lus est declenche des la construction si deja authentifie`() =
+        runTest(testDispatcher) {
+            buildViewModel()
+            advanceUntilIdle()
+
+            assertEquals(1, fakeSavRepo.refreshUnreadCountCallCount)
+        }
+
+    @Test
     fun `un changement de boutique active redeclenche un refresh des capacites`() =
         runTest(testDispatcher) {
             buildViewModel()
@@ -75,6 +84,7 @@ class RootViewModelTest {
             advanceUntilIdle()
 
             assertEquals(2, fakeCapabilitiesRepo.refreshCallCount)
+            assertEquals(2, fakeSavRepo.refreshUnreadCountCallCount)
         }
 
     @Test
@@ -85,6 +95,7 @@ class RootViewModelTest {
             advanceUntilIdle()
 
             assertEquals(0, fakeCapabilitiesRepo.refreshCallCount)
+            assertEquals(0, fakeSavRepo.refreshUnreadCountCallCount)
         }
 
     @Test

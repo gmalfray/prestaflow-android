@@ -24,6 +24,7 @@ import com.rebuildit.prestaflow.ui.products.ProductDetailRoute
 import com.rebuildit.prestaflow.ui.products.ProductEditRoute
 import com.rebuildit.prestaflow.ui.products.ProductsRoute
 import com.rebuildit.prestaflow.ui.products.StockReplenishRoute
+import com.rebuildit.prestaflow.ui.sav.SavThreadDetailRoute
 import com.rebuildit.prestaflow.ui.settings.SettingsRoute
 
 // NavGraph centralise toutes les routes de l'app (longueur inhérente) + ses deux callbacks
@@ -223,6 +224,20 @@ fun PrestaFlowNavGraph(
                         launchSingleTop = true
                     }
                 },
+                onSavThreadClick = { threadId ->
+                    navController.navigate("${AppDestination.SAV_THREAD_ROUTE}/$threadId")
+                },
+            )
+        }
+        composable(
+            route = "${AppDestination.SAV_THREAD_ROUTE}/{threadId}",
+            arguments =
+                listOf(
+                    navArgument("threadId") { type = NavType.LongType },
+                ),
+        ) {
+            SavThreadDetailRoute(
+                onBackClick = { navController.popBackStack() },
             )
         }
         composable(

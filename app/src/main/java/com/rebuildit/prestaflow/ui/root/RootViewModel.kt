@@ -47,6 +47,7 @@ class RootViewModel
             viewModelScope.launch {
                 authState.filterIsInstance<AuthState.Authenticated>().collect {
                     capabilitiesRepository.refresh()
+                    savRepository.refreshUnreadCount()
                 }
             }
         }
