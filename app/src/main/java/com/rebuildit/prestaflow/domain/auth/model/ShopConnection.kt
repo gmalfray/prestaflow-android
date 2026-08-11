@@ -1,5 +1,7 @@
 package com.rebuildit.prestaflow.domain.auth.model
 
+import com.rebuildit.prestaflow.domain.capabilities.model.ShopCapabilities
+
 /**
  * Une boutique PrestaShop connectée dans l'app (multi-boutiques).
  *
@@ -11,6 +13,10 @@ package com.rebuildit.prestaflow.domain.auth.model
  *   quand le jeton expire (TTL court côté module).
  * @param isActive Vrai pour la boutique actuellement sélectionnée (celle vers laquelle
  *   les requêtes sont routées).
+ * @param capabilities Dernières capacités connues de cette boutique (persistées pour éviter un
+ *   flash de sous-navigation au démarrage, rafraîchies à chaud par
+ *   [com.rebuildit.prestaflow.domain.capabilities.CapabilitiesRepository]). Distinct de
+ *   [token]/scopes — cf. [ShopCapabilities].
  */
 data class ShopConnection(
     val id: String,
@@ -19,4 +25,5 @@ data class ShopConnection(
     val token: AuthToken,
     val apiKey: String = "",
     val isActive: Boolean = false,
+    val capabilities: ShopCapabilities = ShopCapabilities(),
 )

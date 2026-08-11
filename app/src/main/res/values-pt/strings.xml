@@ -199,6 +199,17 @@
     <string name="clients_action_open">Abrir cliente</string>
     <string name="clients_load_more">Carregar mais</string>
 
+    <string name="clients_section_clients">Clientes</string>
+    <string name="clients_section_sav">Suporte</string>
+    <string name="clients_section_reviews">Avaliações</string>
+    <string name="clients_badge_unread_sav_content_description">%1$d tópicos de suporte não lidos</string>
+
+    <string name="sav_list_empty">Ainda não há nenhum tópico de suporte.</string>
+    <string name="sav_list_error_title">Não é possível exibir o suporte</string>
+
+    <string name="reviews_list_empty">Ainda não há avaliações para moderar.</string>
+    <string name="reviews_list_error_title">Não é possível exibir as avaliações</string>
+
     <string name="client_detail_title">Detalhes do cliente</string>
     <string name="client_stats_section">Estatísticas</string>
     <string name="client_total_spent_label">Total gasto</string>

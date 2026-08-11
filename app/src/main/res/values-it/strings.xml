@@ -199,6 +199,17 @@
     <string name="clients_action_open">Apri cliente</string>
     <string name="clients_load_more">Carica altri</string>
 
+    <string name="clients_section_clients">Clienti</string>
+    <string name="clients_section_sav">Assistenza</string>
+    <string name="clients_section_reviews">Recensioni</string>
+    <string name="clients_badge_unread_sav_content_description">%1$d richieste di assistenza non lette</string>
+
+    <string name="sav_list_empty">Nessuna richiesta di assistenza al momento.</string>
+    <string name="sav_list_error_title">Impossibile visualizzare l\'assistenza</string>
+
+    <string name="reviews_list_empty">Nessuna recensione da moderare al momento.</string>
+    <string name="reviews_list_error_title">Impossibile visualizzare le recensioni</string>
+
     <string name="client_detail_title">Dettagli cliente</string>
     <string name="client_stats_section">Statistiche</string>
     <string name="client_total_spent_label">Totale speso</string>

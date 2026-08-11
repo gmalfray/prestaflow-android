@@ -199,6 +199,17 @@
     <string name="clients_action_open">Abrir cliente</string>
     <string name="clients_load_more">Cargar más</string>
 
+    <string name="clients_section_clients">Clientes</string>
+    <string name="clients_section_sav">Soporte</string>
+    <string name="clients_section_reviews">Reseñas</string>
+    <string name="clients_badge_unread_sav_content_description">%1$d hilos de soporte sin leer</string>
+
+    <string name="sav_list_empty">Aún no hay ningún hilo de soporte.</string>
+    <string name="sav_list_error_title">No se puede mostrar el soporte</string>
+
+    <string name="reviews_list_empty">Aún no hay reseñas por moderar.</string>
+    <string name="reviews_list_error_title">No se pueden mostrar las reseñas</string>
+
     <string name="client_detail_title">Detalles del cliente</string>
     <string name="client_stats_section">Estadísticas</string>
     <string name="client_total_spent_label">Total gastado</string>

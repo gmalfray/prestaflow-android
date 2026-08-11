@@ -199,6 +199,17 @@
     <string name="clients_action_open">Klant openen</string>
     <string name="clients_load_more">Meer laden</string>
 
+    <string name="clients_section_clients">Klanten</string>
+    <string name="clients_section_sav">Klantenservice</string>
+    <string name="clients_section_reviews">Reviews</string>
+    <string name="clients_badge_unread_sav_content_description">%1$d ongelezen serviceverzoeken</string>
+
+    <string name="sav_list_empty">Nog geen serviceverzoeken.</string>
+    <string name="sav_list_error_title">Kan klantenservice niet weergeven</string>
+
+    <string name="reviews_list_empty">Nog geen te modereren reviews.</string>
+    <string name="reviews_list_error_title">Kan reviews niet weergeven</string>
+
     <string name="client_detail_title">Klantgegevens</string>
     <string name="client_stats_section">Statistieken</string>
     <string name="client_total_spent_label">Totaal uitgegeven</string>
