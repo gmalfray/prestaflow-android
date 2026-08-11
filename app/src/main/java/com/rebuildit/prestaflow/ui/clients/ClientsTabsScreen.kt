@@ -36,6 +36,7 @@ import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 fun ClientsTabsRoute(
     onClientClick: (Long) -> Unit = {},
     onAddShop: () -> Unit = {},
+    onSavThreadClick: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ClientsTabsViewModel = hiltViewModel(),
 ) {
@@ -51,7 +52,7 @@ fun ClientsTabsRoute(
                 modifier = contentModifier,
             )
         },
-        savContent = { contentModifier -> SavRoute(modifier = contentModifier) },
+        savContent = { contentModifier -> SavRoute(onThreadClick = onSavThreadClick, modifier = contentModifier) },
         reviewsContent = { contentModifier -> ReviewsRoute(modifier = contentModifier) },
     )
 }

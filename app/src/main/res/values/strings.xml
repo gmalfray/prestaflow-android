@@ -205,13 +205,69 @@
     <string name="clients_section_reviews">Avis</string>
     <string name="clients_badge_unread_sav_content_description">%1$d fils SAV non lus</string>
 
-    <!-- Écran SAV — squelette (pas de logique métier tant que le contrat connecteur n'est pas figé) -->
+    <!-- Écran SAV -->
     <string name="sav_list_empty">Aucun fil SAV pour l\’instant.</string>
     <string name="sav_list_error_title">Impossible d\’afficher le SAV</string>
+    <string name="sav_filter_all">Tous</string>
+    <string name="sav_filter_open">Ouverts</string>
+    <string name="sav_filter_awaiting_customer">Attente cliente</string>
+    <string name="sav_filter_awaiting_merchant">Attente marchand</string>
+    <string name="sav_filter_closed">Fermés</string>
+    <string name="sav_thread_unknown_customer">Contact inconnu</string>
+    <string name="sav_thread_order_reference">Commande %1$s</string>
+    <string name="sav_status_open">Ouvert</string>
+    <string name="sav_status_awaiting_customer">Attente cliente</string>
+    <string name="sav_status_awaiting_merchant">Attente marchand</string>
+    <string name="sav_status_closed">Fermé</string>
 
-    <!-- Écran Avis — squelette (masqué si le module d\'avis n\'est pas installé sur la boutique) -->
+    <!-- Fil SAV — détail -->
+    <string name="sav_thread_title">Fil SAV</string>
+    <string name="sav_thread_error">Impossible d\’afficher ce fil</string>
+    <string name="sav_thread_change_status_content_description">Changer le statut du fil</string>
+    <string name="sav_thread_reply_placeholder">Écrire une réponse…</string>
+    <string name="sav_thread_reply_send_content_description">Envoyer la réponse</string>
+    <string name="sav_thread_author_merchant">Vous</string>
+    <string name="sav_thread_author_customer">Cliente</string>
+    <string name="sav_thread_status_updated">Statut mis à jour</string>
+    <string name="sav_thread_reply_sent">Réponse envoyée par e-mail à la cliente</string>
+    <string name="sav_thread_reply_sent_no_email">Réponse enregistrée — e-mail non envoyé (adresse indisponible)</string>
+
+    <!-- Fil SAV — confirmation d\'envoi (⚠️ envoie un vrai e-mail) -->
+    <string name="sav_thread_reply_confirm_title">Envoyer cette réponse par e-mail ?</string>
+    <string name="sav_thread_reply_confirm_recipient">Un e-mail sera envoyé à %1$s</string>
+    <string name="sav_thread_reply_confirm_recipient_unknown">Aucune adresse e-mail connue pour ce fil — la réponse sera enregistrée sans envoi.</string>
+    <string name="sav_thread_reply_confirm_send">Envoyer</string>
+    <string name="sav_thread_reply_confirm_cancel">Annuler</string>
+
+    <!-- Fil SAV — changement de statut -->
+    <string name="sav_status_picker_title">Changer le statut</string>
+    <string name="sav_status_picker_confirm">Valider</string>
+    <string name="sav_status_picker_cancel">Annuler</string>
+
+    <!-- Écran Avis (masqué si le module d\'avis n\'est pas installé sur la boutique) -->
     <string name="reviews_list_empty">Aucun avis à modérer pour l\’instant.</string>
     <string name="reviews_list_error_title">Impossible d\’afficher les avis</string>
+    <string name="reviews_author_for_product">%1$s — %2$s</string>
+    <string name="reviews_existing_reply">Votre réponse : %1$s</string>
+    <string name="reviews_action_publish">Publier</string>
+    <string name="reviews_action_published">Avis publié</string>
+    <string name="reviews_action_trashed">Avis mis à la corbeille — auteur informé par e-mail</string>
+    <string name="reviews_action_trashed_no_email">Avis mis à la corbeille — e-mail non envoyé (adresse indisponible)</string>
+    <string name="reviews_action_replied">Réponse publiée</string>
+
+    <!-- Avis — mise à la corbeille (⚠️ motif obligatoire, article L111-7-2, envoie un e-mail) -->
+    <string name="reviews_trash_dialog_title">Motif du rejet</string>
+    <string name="reviews_trash_dialog_hint">Obligatoire — la cliente recevra ce motif par e-mail (article L111-7-2 du code de la consommation).</string>
+    <string name="reviews_trash_dialog_placeholder">Ex. Contenu hors sujet, sans rapport avec le produit vendu.</string>
+    <string name="reviews_trash_dialog_char_count">%1$d / %2$d caractères minimum</string>
+    <string name="reviews_trash_dialog_confirm">Mettre à la corbeille</string>
+    <string name="reviews_trash_dialog_cancel">Annuler</string>
+
+    <!-- Avis — réponse publique -->
+    <string name="reviews_reply_dialog_title">Répondre publiquement</string>
+    <string name="reviews_reply_dialog_placeholder">Votre réponse, visible sous l\’avis sur la boutique…</string>
+    <string name="reviews_reply_dialog_confirm">Publier la réponse</string>
+    <string name="reviews_reply_dialog_cancel">Annuler</string>
 
     <string name="client_detail_title">Détails du client</string>
     <string name="client_stats_section">Statistiques</string>

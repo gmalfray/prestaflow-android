@@ -34,5 +34,12 @@ enum class AppDestination(
          * produit connu, cf. [com.rebuildit.prestaflow.ui.products.StockReplenishScreen]).
          */
         const val STOCK_REPLENISH_ROUTE = "products/replenish"
+
+        /**
+         * Route vers le détail d'un fil SAV — destination secondaire accessible depuis la section
+         * SAV de l'onglet [Clients] (cf. étude `rebuild-it/docs/app-avis-sav.md` § « Navigation »).
+         * Pas une entrée d'[AppDestination] : le SAV n'a pas sa propre place dans la barre du bas.
+         */
+        const val SAV_THREAD_ROUTE = "sav"
     }
 }
