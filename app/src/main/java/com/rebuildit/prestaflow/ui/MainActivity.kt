@@ -156,6 +156,7 @@ private fun PrestaFlowApp(
         val rootViewModel: RootViewModel = hiltViewModel()
         val authState by rootViewModel.authState.collectAsStateWithLifecycle()
         val clientsBadgeCount by rootViewModel.clientsBadgeCount.collectAsStateWithLifecycle()
+        val ordersBadgeCount by rootViewModel.ordersBadgeCount.collectAsStateWithLifecycle()
 
         when (authState) {
             AuthState.Loading -> LoadingScreen()
@@ -166,6 +167,7 @@ private fun PrestaFlowApp(
                     pendingOrderId = pendingOrderId,
                     onOrderIdConsumed = onOrderIdConsumed,
                     clientsBadgeCount = clientsBadgeCount,
+                    ordersBadgeCount = ordersBadgeCount,
                 )
             AuthState.Unauthenticated -> UnauthenticatedFlow()
         }
@@ -269,7 +271,7 @@ private fun NavIconWithBadge(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 // Shell responsive : BottomNavigation en compact, NavigationRail en medium/expanded, two-pane commandes en expanded
 // + masquage du chrome parent (topBar/bottomBar/rail) sur les destinations plein écran (réappro stock)
-@Suppress("LongMethod", "CyclomaticComplexMethod")
+@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
 @Composable
 private fun AuthenticatedShell(
     windowSizeClass: WindowSizeClass,
@@ -282,6 +284,11 @@ private fun AuthenticatedShell(
     // nav (cf. étude rebuild-it/docs/app-avis-sav.md § "Contrepartie assumée"). La répartition
     // SAV/Avis, elle, se lit sur les sous-onglets une fois dans Clients (cf. ClientsTabsScreen).
     clientsBadgeCount: Int = 0,
+    // Nombre de commandes de la boutique active non vues (repère par boutique + IDs vus
+    // individuellement via notification, cf. RootViewModel.ordersBadgeCount) : pastille sur
+    // l'onglet Commandes. Disparaît soit en consultant la liste (repère avancé au chargement
+    // réussi), soit en ouvrant chacune individuellement depuis une notification.
+    ordersBadgeCount: Int = 0,
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -322,7 +329,11 @@ private fun AuthenticatedShell(
     // popUpTo assure un back stack propre : Dashboard → détail commande (retour arrière → Dashboard).
     LaunchedEffect(pendingOrderId) {
         pendingOrderId?.let { orderId ->
-            navController.navigate("${AppDestination.Orders.route}/$orderId") {
+            // fromNotification=true : ce LaunchedEffect ne se déclenche QUE depuis une notification
+            // (extras FCM en arrière-plan, ou URI prestaflow://orders/{id} à chaud via onNewIntent —
+            // cf. commentaires sur pendingOrderId ci-dessus). Permet à OrderDetailViewModel de
+            // marquer SEULE cette commande comme vue sans avancer le repère de la pastille Commandes.
+            navController.navigate("${AppDestination.Orders.route}/$orderId?fromNotification=true") {
                 popUpTo(navController.graph.startDestinationId) { inclusive = false }
                 launchSingleTop = true
             }
@@ -358,6 +369,25 @@ private fun AuthenticatedShell(
     // Avis, pas seulement du SAV (cf. retour Greg).
     val clientsBadgeLabel = formatBadgeCount(clientsBadgeCount)
     val clientsBadgeDescription = stringResource(R.string.clients_badge_summary_content_description, clientsBadgeCount)
+    // Idem pour la pastille Commandes (barre du bas + rail).
+    val ordersBadgeLabel = formatBadgeCount(ordersBadgeCount)
+    val ordersBadgeDescription = stringResource(R.string.orders_badge_unseen_content_description, ordersBadgeCount)
+
+    // Résout la pastille (libellé + description) d'une destination d'onglet — factorisé pour rester
+    // identique aux deux points d'affichage (barre du bas + rail, cf. NavIconWithBadge ci-dessous).
+    fun badgeLabelFor(destination: AppDestination): String? =
+        when (destination) {
+            AppDestination.Clients -> clientsBadgeLabel
+            AppDestination.Orders -> ordersBadgeLabel
+            else -> null
+        }
+
+    fun badgeDescriptionFor(destination: AppDestination): String =
+        when (destination) {
+            AppDestination.Clients -> clientsBadgeDescription
+            AppDestination.Orders -> ordersBadgeDescription
+            else -> ""
+        }
 
     // Navigation partagée par la barre du bas (compact) ET le rail (medium/expanded) : évite de
     // dupliquer deux fois la même logique (et le même correctif) dans les deux blocs `onItemClick`.
@@ -479,13 +509,8 @@ private fun AuthenticatedShell(
                                 NavIconWithBadge(
                                     icon = destination.icon,
                                     contentDescription = label,
-                                    badgeLabel =
-                                        if (destination == AppDestination.Clients) {
-                                            clientsBadgeLabel
-                                        } else {
-                                            null
-                                        },
-                                    badgeDescription = clientsBadgeDescription,
+                                    badgeLabel = badgeLabelFor(destination),
+                                    badgeDescription = badgeDescriptionFor(destination),
                                 )
                             },
                             colors = navigationBarItemColors,
@@ -528,13 +553,8 @@ private fun AuthenticatedShell(
                                     NavIconWithBadge(
                                         icon = destination.icon,
                                         contentDescription = label,
-                                        badgeLabel =
-                                            if (destination == AppDestination.Clients) {
-                                                clientsBadgeLabel
-                                            } else {
-                                                null
-                                            },
-                                        badgeDescription = clientsBadgeDescription,
+                                        badgeLabel = badgeLabelFor(destination),
+                                        badgeDescription = badgeDescriptionFor(destination),
                                     )
                                 },
                                 label = { NavBarLabel(label) },

@@ -854,6 +854,51 @@ class OrdersViewModelTest {
             )
         }
 
+    // ─── Pastille "commandes non vues" : avancée du repère au chargement de la liste ─────────────
+
+    @Test
+    fun `un chargement reussi avance le repere jusqu au plus haut ID de la liste`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(6577L, "REF-6577"), buildOrder(6579L, "REF-6579"), buildOrder(6578L, "REF-6578")))
+
+            buildViewModel()
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(FakeAuthRepository.singleActiveConnection().id to 6579L),
+                fakePrefsRepo.markOrdersListSeenCalls,
+            )
+        }
+
+    @Test
+    fun `un chargement en echec n avance pas le repere`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(6579L, "REF-6579")))
+            fakeOrdersRepo.shouldThrowOnRefresh = true
+
+            buildViewModel()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un chargement en échec ne doit jamais faire avancer le repère (pastille effacée à tort)",
+                fakePrefsRepo.markOrdersListSeenCalls.isEmpty(),
+            )
+        }
+
+    @Test
+    fun `une liste vide chargee avec succes n avance pas le repere`() =
+        runTest {
+            fakeOrdersRepo.setOrders(emptyList())
+
+            buildViewModel()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Aucune commande à marquer comme vue : rien à avancer",
+                fakePrefsRepo.markOrdersListSeenCalls.isEmpty(),
+            )
+        }
+
     // ─── Builders ────────────────────────────────────────────────────────────
 
     private fun buildOrder(

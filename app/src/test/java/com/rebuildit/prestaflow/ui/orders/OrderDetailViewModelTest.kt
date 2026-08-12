@@ -5,7 +5,9 @@ import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderShipping
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
+import com.rebuildit.prestaflow.fakes.FakeAuthRepository
 import com.rebuildit.prestaflow.fakes.FakeLanguageRepository
+import com.rebuildit.prestaflow.fakes.FakeOrdersPreferencesRepository
 import com.rebuildit.prestaflow.fakes.FakeOrdersRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,12 +34,16 @@ class OrderDetailViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeOrdersRepo: FakeOrdersRepository
     private lateinit var fakeLanguageRepo: FakeLanguageRepository
+    private lateinit var fakePrefsRepo: FakeOrdersPreferencesRepository
+    private lateinit var fakeAuthRepo: FakeAuthRepository
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeOrdersRepo = FakeOrdersRepository()
         fakeLanguageRepo = FakeLanguageRepository()
+        fakePrefsRepo = FakeOrdersPreferencesRepository()
+        fakeAuthRepo = FakeAuthRepository()
     }
 
     @After
@@ -45,12 +51,20 @@ class OrderDetailViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun buildViewModel(orderId: Long = 1L): OrderDetailViewModel {
-        val savedState = androidx.lifecycle.SavedStateHandle(mapOf("orderId" to orderId))
+    private fun buildViewModel(
+        orderId: Long = 1L,
+        fromNotification: Boolean = false,
+    ): OrderDetailViewModel {
+        val savedState =
+            androidx.lifecycle.SavedStateHandle(
+                mapOf("orderId" to orderId, "fromNotification" to fromNotification),
+            )
         return OrderDetailViewModel(
             savedStateHandle = savedState,
             ordersRepository = fakeOrdersRepo,
             languageRepository = fakeLanguageRepo,
+            ordersPreferencesRepository = fakePrefsRepo,
+            authRepository = fakeAuthRepo,
         )
     }
 
@@ -350,6 +364,36 @@ class OrderDetailViewModelTest {
 
                 cancelAndIgnoreRemainingEvents()
             }
+        }
+
+    // ─── Pastille "commandes non vues" : marquage individuel depuis une notification ────────────
+
+    @Test
+    fun `ouverture depuis une notification marque uniquement cette commande comme vue`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(6579L)))
+
+            buildViewModel(orderId = 6579L, fromNotification = true)
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(FakeAuthRepository.singleActiveConnection().id to 6579L),
+                fakePrefsRepo.markOrderSeenCalls,
+            )
+        }
+
+    @Test
+    fun `ouverture normale hors notification ne marque aucune commande comme vue`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(6579L)))
+
+            buildViewModel(orderId = 6579L, fromNotification = false)
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un accès normal (liste, fiche client) ne doit pas marquer de vu individuel",
+                fakePrefsRepo.markOrderSeenCalls.isEmpty(),
+            )
         }
 
     // ─── Builders ─────────────────────────────────────────────────────────────

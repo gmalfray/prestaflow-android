@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.language.LanguageRepository
+import com.rebuildit.prestaflow.domain.orders.OrdersPreferencesRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
@@ -30,8 +32,18 @@ class OrderDetailViewModel
         savedStateHandle: SavedStateHandle,
         private val ordersRepository: OrdersRepository,
         private val languageRepository: LanguageRepository,
+        private val ordersPreferencesRepository: OrdersPreferencesRepository,
+        private val authRepository: AuthRepository,
     ) : ViewModel() {
         private val orderId: Long = checkNotNull(savedStateHandle["orderId"])
+
+        // Vrai quand cet écran a été ouvert via une notification (nav arg posé par MainActivity /
+        // PrestaFlowNavGraph, cf. le deep link "prestaflow://orders/{orderId}?fromNotification=true"
+        // et le fallback extras FCM), FAUX pour un accès depuis la liste ou une fiche client. Seul ce
+        // chemin doit marquer LA commande comme "vue individuellement" (cf. [markSeenIfFromNotification]) :
+        // ouvrir depuis la liste n'a pas besoin de le faire, la simple consultation de la liste ayant
+        // déjà avancé le repère (cf. OrdersViewModel.markCurrentListSeen).
+        private val fromNotification: Boolean = savedStateHandle["fromNotification"] ?: false
 
         val uiState: StateFlow<OrderDetailUiState> =
             ordersRepository.getOrder(orderId)
@@ -58,6 +70,21 @@ class OrderDetailViewModel
             loadOrderDetail()
             loadStatuses()
             observeLanguageChange()
+            markSeenIfFromNotification()
+        }
+
+        /**
+         * Marque CETTE seule commande comme vue si l'écran a été ouvert depuis une notification
+         * (cf. [fromNotification]) — n'avance PAS le repère "dernière commande vue" : si d'autres
+         * commandes plus anciennes sont encore non vues, elles doivent rester au compteur de la
+         * pastille (cf. Javadoc de [com.rebuildit.prestaflow.domain.orders.model.OrdersSeenState]).
+         */
+        private fun markSeenIfFromNotification() {
+            if (!fromNotification) return
+            viewModelScope.launch {
+                val shopId = authRepository.connections.value.firstOrNull { it.isActive }?.id ?: return@launch
+                ordersPreferencesRepository.markOrderSeen(shopId, orderId)
+            }
         }
 
         /** Recharge le détail de la commande depuis l'API (silencieux : le cache reste affiché). */

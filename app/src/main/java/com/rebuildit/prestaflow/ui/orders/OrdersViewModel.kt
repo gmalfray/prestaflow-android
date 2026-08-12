@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -550,8 +551,26 @@ class OrdersViewModel
                             searchFallback = false,
                         )
                     }
+                    markCurrentListSeen()
                 }
             }
+        }
+
+        /**
+         * Avance le repère "dernière commande vue" de la boutique active jusqu'au plus haut ID de
+         * la liste tout juste chargée — appelé UNIQUEMENT après un [refresh] réussi ([onFailure]
+         * n'appelle jamais cette fonction : un écran en erreur ou vide ne doit jamais faire
+         * disparaître la pastille sans que rien n'ait été vu).
+         *
+         * Lit [OrdersRepository.observeOrders] (cache Room déjà à jour à ce point, `refresh` a
+         * suspendu jusqu'à l'upsert) plutôt que `_uiState.value.orders`, qui peut ne pas encore
+         * refléter le résultat de CE refresh précis (le collecteur [observeOrders] tourne dans sa
+         * propre coroutine) — aucun appel réseau supplémentaire, uniquement une lecture locale.
+         */
+        private suspend fun markCurrentListSeen() {
+            val shopId = authRepository.connections.value.firstOrNull { it.isActive }?.id ?: return
+            val maxOrderId = ordersRepository.observeOrders().first().maxOfOrNull { it.id } ?: return
+            ordersPreferencesRepository.markOrdersListSeen(shopId, maxOrderId)
         }
     }
 

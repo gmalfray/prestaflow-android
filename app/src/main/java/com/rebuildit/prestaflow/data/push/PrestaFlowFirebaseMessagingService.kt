@@ -150,12 +150,16 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
     /**
      * Construit un [PendingIntent] qui ouvre [MainActivity] sur le détail de la commande [orderId].
      *
-     * L'URI `prestaflow://orders/{orderId}` est déclarée comme deep link dans [PrestaFlowNavGraph]
-     * et dans le manifeste. Le flag [Intent.FLAG_ACTIVITY_SINGLE_TOP] garantit que si l'Activity
-     * est déjà active, `onNewIntent` est appelé plutôt qu'une nouvelle instance.
+     * L'URI `prestaflow://orders/{orderId}?fromNotification=true` est déclarée comme deep link dans
+     * [PrestaFlowNavGraph] et dans le manifeste (la partie query n'affecte pas le matching du
+     * manifeste, qui ne filtre que scheme/host). Le flag `fromNotification=true` permet à
+     * `OrderDetailViewModel` de marquer SEULE cette commande comme vue sans avancer le repère de la
+     * pastille (cf. son Javadoc) — toute ouverture via ce PendingIntent vient forcément d'une
+     * notification. Le flag [Intent.FLAG_ACTIVITY_SINGLE_TOP] garantit que si l'Activity est déjà
+     * active, `onNewIntent` est appelé plutôt qu'une nouvelle instance.
      */
     private fun buildOrderDeepLinkIntent(orderId: Long): PendingIntent {
-        val uri = Uri.parse("prestaflow://orders/$orderId")
+        val uri = Uri.parse("prestaflow://orders/$orderId?fromNotification=true")
         val intent =
             Intent(Intent.ACTION_VIEW, uri, applicationContext, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
