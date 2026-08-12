@@ -52,11 +52,14 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun refreshActiveToken(): Boolean = true
 
     companion object {
-        fun fakeToken(expired: Boolean = false): AuthToken =
+        fun fakeToken(
+            expired: Boolean = false,
+            scopes: List<String> = listOf("orders", "products", "customers"),
+        ): AuthToken =
             AuthToken(
                 value = "fake-token",
                 expiresAtEpochMillis = if (expired) 1L else Long.MAX_VALUE,
-                scopes = listOf("orders", "products", "customers"),
+                scopes = scopes,
             )
 
         fun singleActiveConnection(id: String = "https://shop.test"): ShopConnection =

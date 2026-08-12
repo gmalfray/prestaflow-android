@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.AuthState
+import com.rebuildit.prestaflow.domain.auth.model.AuthScopes
+import com.rebuildit.prestaflow.domain.auth.scopes
 import com.rebuildit.prestaflow.domain.capabilities.CapabilitiesRepository
 import com.rebuildit.prestaflow.domain.reviews.ReviewsRepository
 import com.rebuildit.prestaflow.domain.sav.SavRepository
@@ -29,11 +31,13 @@ class RootViewModel
 
         /**
          * Pastille de l'onglet Clients (chrome du shell, cf. [com.rebuildit.prestaflow.ui.MainActivity]) :
-         * somme des fils SAV non lus et des avis en attente de modération — la part avis n'est
-         * comptée que si la boutique active porte la capacité `reviews` (module `rbreviews`
-         * installé), sinon un avis resterait invisible depuis l'extérieur de l'onglet alors que le
-         * connecteur ne l'expose même pas. Compensation à la descente de niveau du SAV (et des
-         * Avis) dans la nav, cf. étude `rebuild-it/docs/app-avis-sav.md`.
+         * somme des fils SAV non lus et des avis en attente de modération. Chaque part n'est
+         * comptée que si les DEUX conditions de [com.rebuildit.prestaflow.ui.clients.ClientsSection.visibleSections]
+         * sont réunies — capacité de la boutique ET scope du jeton (`sav.read` / `reviews.moderate`)
+         * — capacité ≠ droit, cf. étude `rebuild-it/docs/app-avis-sav.md` § « Capacité ≠ droit » et
+         * le défaut vécu par Greg (pastille SAV visible sans le scope, 403 à l'ouverture). Sinon la
+         * pastille du shell annoncerait un total dont une partie serait invisible ou inaccessible
+         * depuis l'extérieur de l'onglet.
          *
          * [SharingStarted.Eagerly] (pas `WhileSubscribed`) : la pastille du shell doit refléter le
          * compte dès l'affichage, sans attendre qu'un premier collecteur Compose s'abonne.
@@ -43,8 +47,12 @@ class RootViewModel
                 savRepository.unreadThreadCount,
                 reviewsRepository.pendingReviewCount,
                 capabilitiesRepository.capabilities,
-            ) { unreadSav, pendingReviews, capabilities ->
-                unreadSav + if (capabilities.reviews) pendingReviews else 0
+                authState,
+            ) { unreadSav, pendingReviews, capabilities, auth ->
+                val scopes = auth.scopes
+                val savCount = if (AuthScopes.SAV_READ in scopes) unreadSav else 0
+                val reviewsCount = if (capabilities.reviews && AuthScopes.REVIEWS_MODERATE in scopes) pendingReviews else 0
+                savCount + reviewsCount
             }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.Eagerly,
@@ -57,12 +65,17 @@ class RootViewModel
             // branche Authenticated se redéclenche avec une nouvelle valeur) — cf. étude § « une
             // boutique peut désinstaller le module sans que l'app le sache ».
             viewModelScope.launch {
-                authState.filterIsInstance<AuthState.Authenticated>().collect {
+                authState.filterIsInstance<AuthState.Authenticated>().collect { authenticated ->
                     val capabilities = capabilitiesRepository.refresh()
-                    savRepository.refreshUnreadCount()
-                    // Jamais d'appel `GET /reviews` sur une boutique sans le module rbreviews : le
-                    // connecteur répondrait 409 (cf. Javadoc de refreshPendingCount).
-                    if (capabilities.reviews) {
+                    val scopes = authenticated.token.scopes.toSet()
+                    // Jamais d'appel `GET /sav` sans le scope sav.read : le connecteur répondrait
+                    // 403 (cf. défaut remonté par Greg — capacité toujours vraie ≠ droit du jeton).
+                    if (AuthScopes.SAV_READ in scopes) {
+                        savRepository.refreshUnreadCount()
+                    }
+                    // Jamais d'appel `GET /reviews` sur une boutique sans le module rbreviews (409)
+                    // NI sans le scope reviews.moderate (403) — cf. Javadoc de refreshPendingCount.
+                    if (capabilities.reviews && AuthScopes.REVIEWS_MODERATE in scopes) {
                         reviewsRepository.refreshPendingCount()
                     }
                 }

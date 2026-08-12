@@ -22,6 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
+import com.rebuildit.prestaflow.domain.auth.model.AuthScopes
 import com.rebuildit.prestaflow.domain.capabilities.model.ShopCapabilities
 import com.rebuildit.prestaflow.navigation.formatBadgeCount
 import com.rebuildit.prestaflow.ui.reviews.ReviewsRoute
@@ -30,9 +31,10 @@ import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 
 /**
  * Hôte de la destination [com.rebuildit.prestaflow.navigation.AppDestination.Clients] :
- * sous-navigation Clients/SAV/Avis calculée à partir des capacités de la boutique active — cf.
- * étude `rebuild-it/docs/app-avis-sav.md`. `AppDestination` reste un enum à 6 entrées ; c'est
- * uniquement CETTE sous-navigation qui varie.
+ * sous-navigation Clients/SAV/Avis calculée à partir des capacités de la boutique active ET des
+ * scopes du jeton actif — cf. [ClientsSection.visibleSections] et étude
+ * `rebuild-it/docs/app-avis-sav.md`. `AppDestination` reste un enum à 6 entrées ; c'est uniquement
+ * CETTE sous-navigation qui varie.
  *
  * [ClientsRoute] (liste clients existante) est monté tel quel dans la section [ClientsSection.CLIENTS]
  * : il continue de lire ses arguments de navigation (`filter`, `created_from`) via le
@@ -47,11 +49,13 @@ fun ClientsTabsRoute(
     viewModel: ClientsTabsViewModel = hiltViewModel(),
 ) {
     val capabilities by viewModel.capabilities.collectAsStateWithLifecycle()
+    val scopes by viewModel.scopes.collectAsStateWithLifecycle()
     val unreadSavCount by viewModel.unreadSavCount.collectAsStateWithLifecycle(initialValue = 0)
     val pendingReviewCount by viewModel.pendingReviewCount.collectAsStateWithLifecycle(initialValue = 0)
 
     ClientsTabsScreen(
         capabilities = capabilities,
+        scopes = scopes,
         unreadSavCount = unreadSavCount,
         pendingReviewCount = pendingReviewCount,
         modifier = modifier,
@@ -72,6 +76,10 @@ fun ClientsTabsRoute(
 fun ClientsTabsScreen(
     capabilities: ShopCapabilities,
     modifier: Modifier = Modifier,
+    // Scopes du jeton actif — défaut STRICT (aucun droit) plutôt que permissif : SAV et Avis ne
+    // doivent apparaître que si l'appelant prouve explicitement le droit, jamais par défaut (cf.
+    // ClientsSection.visibleSections § « capacité ≠ droit »).
+    scopes: Set<String> = emptySet(),
     // Répartition du chiffre agrégé de la pastille du shell (cf.
     // com.rebuildit.prestaflow.ui.root.RootViewModel.clientsBadgeCount) sur les sous-onglets
     // concernés : dès l'entrée dans l'onglet, on doit voir SANS naviguer si la pastille du shell
@@ -83,19 +91,28 @@ fun ClientsTabsScreen(
     savContent: @Composable (Modifier) -> Unit = {},
     reviewsContent: @Composable (Modifier) -> Unit = {},
 ) {
-    val sections = ClientsSection.visibleSections(capabilities)
+    val sections = ClientsSection.visibleSections(capabilities, scopes)
+
+    // Ni la capacité SAV native ni un scope par défaut ne garantissent plus une 2ᵉ section : un
+    // jeton sans sav.read ET sans reviews.moderate ne laisse que Clients. Dans ce cas, pas de
+    // TabRow à une seule entrée (chrome inutile, ex. pastille dupliquée sans rien à départager) —
+    // rendu direct de la liste clients, comme avant l'introduction des sous-onglets.
+    if (sections.size <= 1) {
+        clientsContent(modifier.fillMaxSize())
+        return
+    }
+
     var selected by rememberSaveable { mutableStateOf(ClientsSection.CLIENTS) }
 
-    // Filet de sécurité : si la section affichée disparaît (capacité repassée à false pendant que
-    // l'utilisateur y était, ex. désinstallation du module en cours de session), on retombe sur
-    // Clients plutôt que de garder un onglet fantôme sélectionné.
+    // Filet de sécurité : si la section affichée disparaît (capacité/scope repassé en défaveur
+    // pendant que l'utilisateur y était, ex. désinstallation du module ou changement de boutique
+    // en cours de session), on retombe sur Clients plutôt que de garder un onglet fantôme
+    // sélectionné.
     LaunchedEffect(sections) {
         if (selected !in sections) selected = ClientsSection.CLIENTS
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Toujours au moins 2 sections (Clients + SAV, natif) : la barre d'onglets est donc
-        // toujours pertinente — seule la 3ᵉ section (Avis) apparaît ou non selon la capacité.
         val selectedIndex = sections.indexOf(selected).coerceAtLeast(0)
         TabRow(selectedTabIndex = selectedIndex) {
             sections.forEach { section ->
@@ -178,12 +195,17 @@ private fun ClientsTabLabel(
 
 // ─── Previews ─────────────────────────────────────────────────────────────────
 
+private val bothScopes = setOf(AuthScopes.SAV_READ, AuthScopes.REVIEWS_MODERATE)
+
 @Preview(showBackground = true, name = "Clients — SAV natif seul (pas de module avis)")
 @Composable
 @Suppress("UnusedPrivateMember")
 private fun PreviewClientsTabsSavOnly() {
     PrestaFlowTheme {
-        ClientsTabsScreen(capabilities = ShopCapabilities(sav = true, reviews = false))
+        ClientsTabsScreen(
+            capabilities = ShopCapabilities(sav = true, reviews = false),
+            scopes = setOf(AuthScopes.SAV_READ),
+        )
     }
 }
 
@@ -192,7 +214,10 @@ private fun PreviewClientsTabsSavOnly() {
 @Suppress("UnusedPrivateMember")
 private fun PreviewClientsTabsWithReviews() {
     PrestaFlowTheme {
-        ClientsTabsScreen(capabilities = ShopCapabilities(sav = true, reviews = true))
+        ClientsTabsScreen(
+            capabilities = ShopCapabilities(sav = true, reviews = true),
+            scopes = bothScopes,
+        )
     }
 }
 
@@ -203,6 +228,7 @@ private fun PreviewClientsTabsWithBadges() {
     PrestaFlowTheme {
         ClientsTabsScreen(
             capabilities = ShopCapabilities(sav = true, reviews = true),
+            scopes = bothScopes,
             unreadSavCount = 88,
             pendingReviewCount = 3,
         )
@@ -216,8 +242,34 @@ private fun PreviewClientsTabsWithCappedBadge() {
     PrestaFlowTheme {
         ClientsTabsScreen(
             capabilities = ShopCapabilities(sav = true, reviews = true),
+            scopes = bothScopes,
             unreadSavCount = 137,
             pendingReviewCount = 0,
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Clients — sans droit SAV (cas vécu par Greg : jeton sans sav.read)")
+@Composable
+@Suppress("UnusedPrivateMember")
+private fun PreviewClientsTabsWithoutSavScope() {
+    PrestaFlowTheme {
+        ClientsTabsScreen(
+            capabilities = ShopCapabilities(sav = true, reviews = true),
+            scopes = setOf(AuthScopes.REVIEWS_MODERATE),
+            pendingReviewCount = 3,
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Clients — aucun scope secondaire : pas de TabRow, liste directe")
+@Composable
+@Suppress("UnusedPrivateMember")
+private fun PreviewClientsTabsNoScopes() {
+    PrestaFlowTheme {
+        ClientsTabsScreen(
+            capabilities = ShopCapabilities(sav = true, reviews = true),
+            scopes = emptySet(),
         )
     }
 }
