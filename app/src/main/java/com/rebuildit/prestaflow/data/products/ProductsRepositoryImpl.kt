@@ -314,6 +314,61 @@ class ProductsRepositoryImpl
             }
         }
 
+        override suspend fun adjustStock(
+            productId: Long,
+            delta: Int,
+            warehouseId: Long?,
+            reason: String?,
+            combinationId: Long?,
+        ) {
+            withContext(ioDispatcher) {
+                val now = java.time.Instant.now().toString()
+                val normalizedWarehouseId = warehouseId ?: StockAvailabilityEntity.NO_WAREHOUSE_ID
+
+                // Mise à jour optimiste LOCALE, même garde que updateStock (cf. son commentaire) —
+                // ICI on incrémente la quantité en cache plutôt que de l'écraser, cohérent avec le
+                // mode relatif.
+                if (combinationId == null) {
+                    productDao.getById(productId)?.let { existing ->
+                        val currentStock = json.decodeFromString<ProductStock>(existing.stockJson)
+                        val updatedStock = currentStock.copy(quantity = currentStock.quantity + delta, updatedAt = now)
+                        productDao.upsertProduct(
+                            existing.copy(
+                                stockJson = json.encodeToString(updatedStock),
+                                updatedAt = now,
+                            ),
+                        )
+                        stockAvailabilityDao.upsertAll(
+                            listOf(
+                                StockAvailabilityEntity(
+                                    productId = productId,
+                                    warehouseId = normalizedWarehouseId,
+                                    quantity = updatedStock.quantity,
+                                    updatedAtIso = now,
+                                ),
+                            ),
+                        )
+                    }
+                }
+
+                val request =
+                    StockUpdateRequestDto(
+                        delta = delta,
+                        warehouseId = warehouseId,
+                        reason = reason,
+                        combinationId = combinationId,
+                    )
+                // Pas d'enfilement offline ici (contrairement à updateStock) : le journal de réappro
+                // (ReplenishSessionRepository) sert DÉJÀ de file rejouable pour cette écriture — la
+                // ligne reste en attente côté journal en cas d'échec, l'utilisateur la revalide
+                // explicitement. Enfiler en plus créerait un double envoi au retour du réseau.
+                // L'exception est donc PROPAGÉE (pas de runCatching ici) pour que l'appelant sache
+                // que CETTE ligne précise a échoué.
+                api.updateProductStock(productId, request)
+                Timber.d("Stock adjusted (delta=$delta) for product $productId")
+            }
+        }
+
         /**
          * Récupère toutes les pages de produits depuis l'API.
          * @return Paire (liste complète des produits, total réel selon filtres/recherche).

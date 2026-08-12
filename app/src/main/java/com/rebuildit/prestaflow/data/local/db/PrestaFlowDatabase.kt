@@ -7,12 +7,14 @@ import com.rebuildit.prestaflow.data.local.dao.DashboardDao
 import com.rebuildit.prestaflow.data.local.dao.OrderDao
 import com.rebuildit.prestaflow.data.local.dao.PendingSyncDao
 import com.rebuildit.prestaflow.data.local.dao.ProductDao
+import com.rebuildit.prestaflow.data.local.dao.ReplenishLogDao
 import com.rebuildit.prestaflow.data.local.dao.StockAvailabilityDao
 import com.rebuildit.prestaflow.data.local.entity.ClientEntity
 import com.rebuildit.prestaflow.data.local.entity.DashboardMetricEntity
 import com.rebuildit.prestaflow.data.local.entity.OrderEntity
 import com.rebuildit.prestaflow.data.local.entity.PendingSyncEntity
 import com.rebuildit.prestaflow.data.local.entity.ProductEntity
+import com.rebuildit.prestaflow.data.local.entity.ReplenishLogEntryEntity
 import com.rebuildit.prestaflow.data.local.entity.StockAvailabilityEntity
 
 @Database(
@@ -23,8 +25,9 @@ import com.rebuildit.prestaflow.data.local.entity.StockAvailabilityEntity
         PendingSyncEntity::class,
         StockAvailabilityEntity::class,
         ClientEntity::class,
+        ReplenishLogEntryEntity::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = true,
 )
 abstract class PrestaFlowDatabase : RoomDatabase() {
@@ -39,4 +42,6 @@ abstract class PrestaFlowDatabase : RoomDatabase() {
     abstract fun stockAvailabilityDao(): StockAvailabilityDao
 
     abstract fun clientDao(): ClientDao
+
+    abstract fun replenishLogDao(): ReplenishLogDao
 }

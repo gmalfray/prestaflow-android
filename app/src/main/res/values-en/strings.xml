@@ -181,11 +181,15 @@
     <string name="stock_replenish_add_content_description">Add quantity</string>
     <string name="stock_replenish_quantity_placeholder">Quantity</string>
     <string name="stock_replenish_pending_label">%1$s: %2$s pending</string>
-    <string name="stock_replenish_undo_countdown">Cancel (%1$ds)</string>
+    <string name="stock_replenish_cancel_action">Cancel</string>
+    <string name="stock_replenish_submit_session_action">Finish session</string>
+    <string name="stock_replenish_submit_success">%1$d item(s) sent successfully.</string>
+    <string name="stock_replenish_submit_partial">%1$d sent, %2$d failed — resubmit to retry.</string>
+    <string name="stock_replenish_submit_all_failed">Failed to send the %1$d item(s) in the log.</string>
     <string name="stock_replenish_queue_added_content_description">Added to the pending queue</string>
-    <string name="stock_replenish_session_recap">%1$d item(s) · +%2$d in stock</string>
+    <string name="stock_replenish_session_recap">%1$d item(s) · +%2$d pending</string>
     <string name="stock_replenish_session_recap_exit_title">Session summary</string>
-    <string name="stock_replenish_session_recap_exit_message">%1$d item(s) restocked, +%2$d units.</string>
+    <string name="stock_replenish_session_recap_exit_message">%1$d item(s) pending, +%2$d units not yet sent.</string>
     <string name="stock_replenish_session_recap_exit_action">OK</string>
 
     <string name="clients_list_empty">No customers yet.</string>

@@ -182,11 +182,15 @@
     <string name="stock_replenish_add_content_description">Ajouter la quantité</string>
     <string name="stock_replenish_quantity_placeholder">Quantité</string>
     <string name="stock_replenish_pending_label">%1$s : %2$s en attente</string>
-    <string name="stock_replenish_undo_countdown">Annuler (%1$d s)</string>
+    <string name="stock_replenish_cancel_action">Annuler</string>
+    <string name="stock_replenish_submit_session_action">Terminer la session</string>
+    <string name="stock_replenish_submit_success">%1$d article(s) envoyé(s) avec succès.</string>
+    <string name="stock_replenish_submit_partial">%1$d envoyé(s), %2$d en échec — resoumettez pour réessayer.</string>
+    <string name="stock_replenish_submit_all_failed">Échec de l\'envoi des %1$d article(s) du journal.</string>
     <string name="stock_replenish_queue_added_content_description">Ajouté à la file d\'attente</string>
-    <string name="stock_replenish_session_recap">%1$d article(s) · +%2$d en stock</string>
+    <string name="stock_replenish_session_recap">%1$d article(s) · +%2$d en attente</string>
     <string name="stock_replenish_session_recap_exit_title">Récap de la session</string>
-    <string name="stock_replenish_session_recap_exit_message">%1$d article(s) réapprovisionné(s), +%2$d unités.</string>
+    <string name="stock_replenish_session_recap_exit_message">%1$d article(s) en attente d\'envoi, +%2$d unités non validées.</string>
     <string name="stock_replenish_session_recap_exit_action">OK</string>
 
     <string name="clients_list_empty">Aucun client pour l\’instant.</string>

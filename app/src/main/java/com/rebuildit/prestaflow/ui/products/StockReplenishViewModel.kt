@@ -3,22 +3,24 @@ package com.rebuildit.prestaflow.ui.products
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ocr.LabelReferenceParser
 import com.rebuildit.prestaflow.core.ocr.LabelTextRecognizer
 import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
+import com.rebuildit.prestaflow.domain.products.ReplenishSessionRepository
 import com.rebuildit.prestaflow.domain.products.StockReplenishPreferencesRepository
 import com.rebuildit.prestaflow.domain.products.model.Combination
 import com.rebuildit.prestaflow.domain.products.model.DEFAULT_QUICK_ADD_AMOUNTS
 import com.rebuildit.prestaflow.domain.products.model.Product
+import com.rebuildit.prestaflow.domain.products.model.ReplenishLogEntry
+import com.rebuildit.prestaflow.domain.products.model.ReplenishSessionRecap
 import com.rebuildit.prestaflow.domain.products.model.toMatchedCombination
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -26,18 +28,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import javax.inject.Inject
-
-/**
- * Durée (ms) de la fenêtre « Annuler » avant l'envoi effectif d'un ajustement de stock, une fois
- * « Valider » tapé.
- */
-internal const val REPLENISH_UNDO_DELAY_MS = 10_000L
 
 /** Seuil à partir duquel un choix explicite de déclinaison est nécessaire (cf. [ProductScanViewModel]). */
 private const val COMBINATION_CHOICE_THRESHOLD = 2
@@ -67,10 +64,10 @@ private const val MAX_LABEL_SEARCH_TOKENS = 4
 private const val MAX_LABEL_SUGGESTIONS = 8
 
 /**
- * Pilote l'écran « Ajout / réappro stock » (Lot 1) : scanner permanent → produit résolu → delta
- * accumulé via boutons rapides ([quickAddAmounts], configurables en préférences depuis le Lot 2 —
- * défaut [DEFAULT_QUICK_ADD_AMOUNTS] = +5/+10/+20) et saisie libre → écriture unique via
- * [onValidate], avec fenêtre d'annulation de [REPLENISH_UNDO_DELAY_MS] ms.
+ * Pilote l'écran « Ajout / réappro stock » : scanner permanent → produit résolu → delta accumulé via
+ * boutons rapides ([quickAddAmounts], configurables en préférences — défaut [DEFAULT_QUICK_ADD_AMOUNTS]
+ * = +5/+10/+20) et saisie libre → [onValidate] journalise l'ajustement ([logEntries], persistant via
+ * [replenishSessionRepository]) → [onSubmitSession] envoie tout le journal au serveur.
  *
  * Remplace le flux historique "scan → fiche stock" ([ProductScanViewModel]) pour l'ajustement d'un
  * produit CONNU (EAN déjà associé). Le flux d'association d'un EAN INCONNU reste porté par
@@ -82,12 +79,31 @@ private const val MAX_LABEL_SUGGESTIONS = 8
  * une précisément expose [StockReplenishUiState.combinationChoices] ([onSelectCombination] pour
  * trancher) ; une combinaison déjà matchée ou un produit à 0/1 déclinaison résout directement.
  *
- * Réappro en série : [onValidate] réarme IMMÉDIATEMENT le scanner (l'écriture réelle part en tâche
- * de fond après le délai d'annulation) — plusieurs écritures peuvent donc être en attente en
- * parallèle ([StockReplenishUiState.pendingWrites], chacune annulable indépendamment via
- * [onCancelPendingWrite]). Choix assumé : annuler une écriture en attente la retire simplement de la
- * file (pas de retour à un état éditable) — au delà de ce MVP, un flux plus riche (ré-ouvrir
- * l'édition) relèverait d'un lot ultérieur.
+ * **Journal de session (pas d'écriture avant validation définitive)** : [onValidate] ne fait
+ * QU'ajouter l'ajustement accumulé au journal ([ReplenishLogEntry], via
+ * [ReplenishSessionRepository.addOrMerge]) et réarme IMMÉDIATEMENT le scanner — AUCUN appel réseau
+ * n'a lieu à ce stade. Rescanner le même produit (même cible : productId/combinationId/warehouseId)
+ * fusionne dans la ligne existante (delta additionné) au lieu de créer une seconde ligne : c'est ce
+ * qui règle le défaut historique (un scan sur deux perdu en rescannant le même produit avant l'envoi,
+ * quand l'API n'écrivait qu'une quantité absolue calculée sur un stock relu pas encore à jour).
+ * [onRemoveLogEntry] retire une ligne du journal — aucun appel réseau, ne peut pas échouer, à tout
+ * moment (pas de fenêtre de temps limitée). Le journal est PERSISTANT (Room, via
+ * [replenishSessionRepository]) : il survit à la fermeture de l'écran ou au processus tué en
+ * arrière-plan.
+ *
+ * **Validation définitive du journal** ([onSubmitSession]) : envoie chaque ligne du journal via
+ * [ProductsRepository.adjustStock] (incrément SIGNÉ, PAS une quantité absolue — une session dure
+ * plusieurs minutes, la boutique peut vendre le produit entre-temps ; une écriture absolue
+ * écraserait cette vente). Lot séquentiel, tolérant à l'échec PARTIEL : chaque ligne réussie est
+ * immédiatement retirée du journal (ne repart jamais en double au réessai), chaque ligne en échec y
+ * reste ([StockReplenishUiState.submitErrors] indexé par [ReplenishLogEntry.id]) — un nouvel appel à
+ * [onSubmitSession] (l'utilisateur retape « Terminer la session ») ne retente donc QUE les lignes
+ * encore en échec. [StockReplenishUiState.submitResultMessage] résume le résultat (tout envoyé /
+ * partiel / tout en échec), consommé une fois affiché.
+ *
+ * [logEntries]/[sessionRecap] : StateFlows dérivés du journal (comme [quickAddAmounts]/[soundOnScan]),
+ * pas de compteur séparé à maintenir en synchronisation manuellement — [sessionRecap] EST le journal
+ * (nombre de lignes + somme des deltas), il se recalcule tout seul à mesure que le journal change.
  *
  * **Lot 3 (polish du scan en série)** :
  * - [scanFeedbackEvents] : événement one-shot consommé côté écran pour déclencher un retour
@@ -97,13 +113,6 @@ private const val MAX_LABEL_SUGGESTIONS = 8
  *   parmi plusieurs produits), PAS sur code introuvable ni sur erreur réseau. Un doublon immédiat du
  *   même code (cf. [DUPLICATE_SCAN_WINDOW_MS]) est filtré en amont dans [onBarcodeScanned] : ni
  *   lookup, ni feedback.
- * - [StockReplenishUiState.sessionRecap] : compteur courant (nb d'articles + unités) des ajustements
- *   *réellement* validés de la session — incrémenté de façon optimiste dès [onValidate] (l'utilisateur
- *   a tapé « Valider », l'écriture est engagée), décrémenté si annulé via [onCancelPendingWrite]
- *   pendant la fenêtre, et décrémenté également si l'écriture différée échoue en tâche de fond (le
- *   stock n'a alors pas réellement changé, cf. message d'erreur existant). Traverse les resets
- *   d'état complet d'[onValidate]/[onSkip] (qui reconstruisent un [StockReplenishUiState] neuf pour
- *   repartir sur l'article suivant) : explicitement recopié à chaque fois.
  * - [StockReplenishUiState.queueAddedTick] : compteur incrémenté à chaque [onValidate] réussi,
  *   consommé côté écran pour déclencher une confirmation visuelle discrète (coche qui apparaît
  *   brièvement) sans dépendre d'un `Boolean` qui ne changerait pas d'une validation à l'autre si
@@ -137,6 +146,7 @@ class StockReplenishViewModel
     @Inject
     constructor(
         private val productsRepository: ProductsRepository,
+        private val replenishSessionRepository: ReplenishSessionRepository,
         private val networkErrorMapper: NetworkErrorMapper,
         private val labelTextRecognizer: LabelTextRecognizer,
         stockReplenishPreferencesRepository: StockReplenishPreferencesRepository,
@@ -166,14 +176,21 @@ class StockReplenishViewModel
                     initialValue = true,
                 )
 
+        /** Journal persistant de la session en cours (cf. KDoc classe) — affiché tel quel par l'écran. */
+        val logEntries: StateFlow<List<ReplenishLogEntry>> =
+            replenishSessionRepository.observeEntries()
+                .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = emptyList())
+
+        /** Récap dérivé de [logEntries] (cf. KDoc classe) — pas d'état séparé à garder synchronisé. */
+        val sessionRecap: StateFlow<ReplenishSessionRecap> =
+            logEntries
+                .map { ReplenishSessionRecap.from(it) }
+                .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = ReplenishSessionRecap())
+
         private val _scanFeedbackEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
         /** Événement one-shot : un scan vient d'aboutir à un résultat exploitable (cf. KDoc classe). */
         val scanFeedbackEvents: SharedFlow<Unit> = _scanFeedbackEvents.asSharedFlow()
-
-        /** Jobs des écritures en attente (fenêtre d'annulation), indexés par [PendingStockWrite.id]. */
-        private val pendingJobs = mutableMapOf<String, Job>()
-        private var pendingSeq = 0L
 
         /** Dédup des doublons immédiats de scan (cf. [DUPLICATE_SCAN_WINDOW_MS]). */
         private var lastScanCode: String? = null
@@ -365,123 +382,120 @@ class StockReplenishViewModel
             _uiState.update { it.copy(delta = 0) }
         }
 
-        /** Passe au suivant sans valider d'ajustement pour l'article affiché (aucune écriture). */
+        /** Passe au suivant sans journaliser d'ajustement pour l'article affiché. */
         fun onSkip() {
-            _uiState.update {
-                StockReplenishUiState(
-                    pendingWrites = it.pendingWrites,
-                    sessionRecap = it.sessionRecap,
-                    queueAddedTick = it.queueAddedTick,
-                )
-            }
+            _uiState.update { resetScanState(it) }
         }
 
         fun clearError() {
             _uiState.update { it.copy(error = null) }
         }
 
-        // ─── Validation (écriture différée avec fenêtre d'annulation) ───────
+        // ─── Journalisation (aucune écriture avant validation définitive) ───
 
         /**
-         * Valide l'ajustement accumulé : réarme IMMÉDIATEMENT le scanner (retour à l'état de scan,
-         * pour enchaîner sur l'article suivant) et programme l'écriture réelle après
-         * [REPLENISH_UNDO_DELAY_MS] ms, annulable entre-temps via [onCancelPendingWrite].
+         * Journalise l'ajustement accumulé (cf. KDoc classe, section journal) et réarme IMMÉDIATEMENT
+         * le scanner pour enchaîner sur l'article suivant — AUCUN appel réseau ici. Fusionne avec une
+         * ligne existante visant la MÊME cible (cf. [ReplenishSessionRepository.addOrMerge]).
          */
         fun onValidate() {
             val state = _uiState.value
             val product = state.product ?: return
-            if (state.delta == 0) return
+            val delta = state.delta
+            if (delta == 0) return
 
-            val pending =
-                PendingStockWrite(
-                    id = "write-${pendingSeq++}",
+            val productName =
+                product.matchedCombination?.let { "${product.name} — ${it.name}" } ?: product.name
+
+            viewModelScope.launch {
+                replenishSessionRepository.addOrMerge(
                     productId = product.id,
                     combinationId = product.matchedCombination?.id,
                     warehouseId = product.stock.warehouseId,
-                    productName =
-                        product.matchedCombination?.let { "${product.name} — ${it.name}" } ?: product.name,
-                    delta = state.delta,
-                    newQuantity = product.scannedQuantity + state.delta,
-                )
-
-            // Compteur de session incrémenté de façon optimiste dès la validation (cf. KDoc classe) :
-            // décrémenté si annulé pendant la fenêtre ou si l'écriture échoue en tâche de fond.
-            _uiState.update {
-                StockReplenishUiState(
-                    pendingWrites = it.pendingWrites + pending,
-                    sessionRecap = it.sessionRecap.plus(pending),
-                    queueAddedTick = it.queueAddedTick + 1,
+                    productName = productName,
+                    delta = delta,
                 )
             }
 
-            pendingJobs[pending.id] =
-                viewModelScope.launch {
-                    delay(REPLENISH_UNDO_DELAY_MS)
-                    _uiState.update { it.copy(pendingWrites = it.pendingWrites.filterNot { w -> w.id == pending.id }) }
-                    pendingJobs.remove(pending.id)
+            _uiState.update { resetScanState(it).copy(queueAddedTick = it.queueAddedTick + 1) }
+        }
+
+        /** Retire une ligne du journal (annulation) — aucun appel réseau, ne peut pas échouer. */
+        fun onRemoveLogEntry(id: Long) {
+            viewModelScope.launch { replenishSessionRepository.removeEntry(id) }
+            // Une ligne retirée n'est plus concernée par un échec de validation précédent.
+            _uiState.update { it.copy(submitErrors = it.submitErrors - id) }
+        }
+
+        /**
+         * Validation définitive : envoie chaque ligne du journal via [ProductsRepository.adjustStock]
+         * (incrément, cf. KDoc classe). Séquentiel, tolérant à l'échec PARTIEL — cf. KDoc classe pour
+         * la garantie de non-double-envoi/ré-essayabilité. No-op si une validation est déjà en cours
+         * ou si le journal est vide.
+         */
+        fun onSubmitSession() {
+            if (_uiState.value.isSubmittingSession) return
+
+            viewModelScope.launch {
+                val entries = replenishSessionRepository.getEntries()
+                if (entries.isEmpty()) return@launch
+
+                _uiState.update { it.copy(isSubmittingSession = true, submitErrors = emptyMap(), submitResultMessage = null) }
+
+                var successCount = 0
+                val failures = mutableMapOf<Long, UiText>()
+                for (entry in entries) {
                     runCatching {
-                        productsRepository.updateStock(
-                            productId = pending.productId,
-                            quantity = pending.newQuantity,
-                            warehouseId = pending.warehouseId,
-                            combinationId = pending.combinationId,
+                        productsRepository.adjustStock(
+                            productId = entry.productId,
+                            delta = entry.delta,
+                            warehouseId = entry.warehouseId,
+                            combinationId = entry.combinationId,
                         )
+                    }.onSuccess {
+                        // Retirée immédiatement : ne repart jamais en double si l'utilisateur relance
+                        // la validation après un échec sur une AUTRE ligne du même lot.
+                        replenishSessionRepository.removeEntry(entry.id)
+                        successCount++
                     }.onFailure { error ->
-                        Timber.w(error, "Failed to write stock replenishment for product %d", pending.productId)
-                        _uiState.update {
-                            it.copy(
-                                writeErrorMessage =
-                                    "Échec de la mise à jour de ${pending.productName} : " +
-                                        "le stock n'a pas été modifié",
-                                // L'écriture n'a réellement PAS eu lieu : retiré du récap de session.
-                                sessionRecap = it.sessionRecap.minus(pending),
-                            )
-                        }
+                        Timber.w(error, "Failed to submit replenish log entry for product %d", entry.productId)
+                        failures[entry.id] = networkErrorMapper.map(error)
                     }
                 }
-        }
 
-        /** Annule une écriture en attente (fenêtre des [REPLENISH_UNDO_DELAY_MS] ms) : aucun appel API. */
-        fun onCancelPendingWrite(id: String) {
-            pendingJobs.remove(id)?.cancel()
-            _uiState.update { current ->
-                val cancelled = current.pendingWrites.firstOrNull { it.id == id }
-                current.copy(
-                    pendingWrites = current.pendingWrites.filterNot { w -> w.id == id },
-                    sessionRecap = cancelled?.let { current.sessionRecap.minus(it) } ?: current.sessionRecap,
-                )
+                _uiState.update {
+                    it.copy(
+                        isSubmittingSession = false,
+                        submitErrors = failures,
+                        submitResultMessage = buildSubmitResultMessage(successCount, failures.size),
+                    )
+                }
             }
         }
 
-        fun consumeWriteError() {
-            _uiState.update { it.copy(writeErrorMessage = null) }
+        private fun buildSubmitResultMessage(
+            successCount: Int,
+            failureCount: Int,
+        ): UiText? =
+            when {
+                failureCount == 0 -> UiText.FromResources(R.string.stock_replenish_submit_success, listOf(successCount))
+                successCount == 0 -> UiText.FromResources(R.string.stock_replenish_submit_all_failed, listOf(failureCount))
+                else -> UiText.FromResources(R.string.stock_replenish_submit_partial, listOf(successCount, failureCount))
+            }
+
+        fun consumeSubmitResultMessage() {
+            _uiState.update { it.copy(submitResultMessage = null) }
         }
+
+        /** Réinitialise la partie "scan en cours" de l'état, en conservant le reste (cf. [onValidate]/[onSkip]). */
+        private fun resetScanState(state: StockReplenishUiState) =
+            StockReplenishUiState(
+                queueAddedTick = state.queueAddedTick,
+                isSubmittingSession = state.isSubmittingSession,
+                submitErrors = state.submitErrors,
+                submitResultMessage = state.submitResultMessage,
+            )
     }
-
-/** Écriture de stock en attente d'envoi (fenêtre d'annulation), cf. [StockReplenishViewModel.onValidate]. */
-data class PendingStockWrite(
-    val id: String,
-    val productId: Long,
-    val combinationId: Long?,
-    val warehouseId: Long?,
-    val productName: String,
-    val delta: Int,
-    val newQuantity: Int,
-)
-
-/**
- * Récap courant de la session de réappro (Lot 3) : nombre d'articles et somme des unités
- * *réellement* validées (cf. KDoc [StockReplenishViewModel]) — affiché en entête d'écran, et en
- * synthèse à la sortie si [articleCount] > 0.
- */
-data class ReplenishSessionRecap(
-    val articleCount: Int = 0,
-    val unitsCount: Int = 0,
-) {
-    operator fun plus(write: PendingStockWrite) = copy(articleCount = articleCount + 1, unitsCount = unitsCount + write.delta)
-
-    operator fun minus(write: PendingStockWrite) = copy(articleCount = articleCount - 1, unitsCount = unitsCount - write.delta)
-}
 
 data class StockReplenishUiState(
     val isLookupLoading: Boolean = false,
@@ -508,18 +522,18 @@ data class StockReplenishUiState(
      * Consommé côté écran pour pré-remplir [ProductScanViewModel.onKnownNotFoundWithSuggestions].
      */
     val labelSuggestions: List<Product> = emptyList(),
-    /** Delta accumulé (boutons rapides + saisie libre), pas encore écrit. */
+    /** Delta accumulé (boutons rapides + saisie libre), pas encore journalisé. */
     val delta: Int = 0,
     val quantityInput: String = "",
     val error: UiText? = null,
-    /** Écritures validées, en attente d'envoi (fenêtre d'annulation), potentiellement plusieurs en parallèle. */
-    val pendingWrites: List<PendingStockWrite> = emptyList(),
-    /** Message d'échec d'une écriture en tâche de fond (fenêtre d'annulation écoulée), à consommer. */
-    val writeErrorMessage: String? = null,
-    /** Récap courant de la session (Lot 3) — cf. [ReplenishSessionRecap]. */
-    val sessionRecap: ReplenishSessionRecap = ReplenishSessionRecap(),
     /** Incrémenté à chaque [StockReplenishViewModel.onValidate] réussi (Lot 3, confirmation visuelle). */
     val queueAddedTick: Int = 0,
+    /** Validation définitive du journal en cours (cf. [StockReplenishViewModel.onSubmitSession]). */
+    val isSubmittingSession: Boolean = false,
+    /** Lignes du journal en échec lors de la dernière validation, indexées par [ReplenishLogEntry.id]. */
+    val submitErrors: Map<Long, UiText> = emptyMap(),
+    /** Résumé (tout envoyé / partiel / tout en échec) de la dernière validation, à consommer une fois affiché. */
+    val submitResultMessage: UiText? = null,
 ) {
     /** Le scanner permanent doit être actif (caméra allumée) seulement dans cet état. */
     val isScannerActive: Boolean
@@ -527,7 +541,7 @@ data class StockReplenishUiState(
             !isLookupLoading && !isLabelSearchLoading && product == null && combinationChoices.isEmpty() &&
                 multipleResults.isEmpty() && !notFound
 
-    /** Stock résultant si le delta accumulé était validé maintenant. */
+    /** Stock résultant si le delta accumulé était journalisé maintenant. */
     val newQuantity: Int get() = (product?.scannedQuantity ?: 0) + delta
 
     val canValidate: Boolean get() = product != null && delta != 0

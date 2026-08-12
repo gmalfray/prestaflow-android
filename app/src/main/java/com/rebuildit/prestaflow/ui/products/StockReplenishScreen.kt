@@ -61,7 +61,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -93,11 +92,14 @@ import com.journeyapps.barcodescanner.BarcodeResult
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import com.journeyapps.barcodescanner.DefaultDecoderFactory
 import com.rebuildit.prestaflow.R
+import com.rebuildit.prestaflow.core.ui.UiText
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.products.model.Combination
 import com.rebuildit.prestaflow.domain.products.model.DEFAULT_QUICK_ADD_AMOUNTS
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
+import com.rebuildit.prestaflow.domain.products.model.ReplenishLogEntry
+import com.rebuildit.prestaflow.domain.products.model.ReplenishSessionRecap
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import kotlinx.coroutines.delay
@@ -140,6 +142,8 @@ fun StockReplenishRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val quickAddAmounts by viewModel.quickAddAmounts.collectAsStateWithLifecycle()
     val soundOnScan by viewModel.soundOnScan.collectAsStateWithLifecycle()
+    val logEntries by viewModel.logEntries.collectAsStateWithLifecycle()
+    val sessionRecap by viewModel.sessionRecap.collectAsStateWithLifecycle()
     val associationState by associationViewModel.uiState.collectAsStateWithLifecycle()
 
     // Code introuvable → délègue au flux d'association existant, sur le MÊME code. `onKnownNotFound`
@@ -186,6 +190,8 @@ fun StockReplenishRoute(
         modifier = modifier,
         state = state,
         quickAddAmounts = quickAddAmounts,
+        logEntries = logEntries,
+        sessionRecap = sessionRecap,
         onBackClick = onBackClick,
         onBarcodeScanned = viewModel::onBarcodeScanned,
         onSelectFromMultipleResults = viewModel::onSelectFromMultipleResults,
@@ -196,9 +202,10 @@ fun StockReplenishRoute(
         onResetDelta = viewModel::onResetDelta,
         onSkip = viewModel::onSkip,
         onValidate = viewModel::onValidate,
-        onCancelPendingWrite = viewModel::onCancelPendingWrite,
+        onRemoveLogEntry = viewModel::onRemoveLogEntry,
+        onSubmitSession = viewModel::onSubmitSession,
         onClearError = viewModel::clearError,
-        onConsumeWriteError = viewModel::consumeWriteError,
+        onConsumeSubmitResultMessage = viewModel::consumeSubmitResultMessage,
     )
 
     // Sous-flux d'association — affiché seulement tant qu'aucun produit n'est résolu (au-delà, le
@@ -228,13 +235,13 @@ fun StockReplenishRoute(
 }
 
 /**
- * Lot 3 : bandeau récap de session ([SessionRecapBanner]) visible dès qu'un article a été validé,
- * confirmation visuelle discrète à chaque ajout à la file ([queueAddedTick]), et récap de sortie
- * ([showExitRecap]) intercepté sur le retour (bouton ET geste système via [BackHandler]) tant que la
- * session contient au moins un article validé — cf. KDoc [StockReplenishViewModel].
+ * Lot 3 : bandeau récap de session ([SessionRecapBanner]) visible dès qu'une ligne figure au
+ * journal, confirmation visuelle discrète à chaque ajout ([queueAddedTick]), et récap de sortie
+ * ([showExitRecap]) intercepté sur le retour (bouton ET geste système via [BackHandler]) tant que le
+ * journal contient au moins une ligne PAS ENCORE validée — cf. KDoc [StockReplenishViewModel].
  */
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongParameterList", "LongMethod") // Écran orchestrant scan + accumulation + validation : callbacks distincts
+@Suppress("LongParameterList", "LongMethod") // Écran orchestrant scan + accumulation + journal + validation : callbacks distincts
 @Composable
 fun StockReplenishScreen(
     state: StockReplenishUiState,
@@ -242,6 +249,9 @@ fun StockReplenishScreen(
     modifier: Modifier = Modifier,
     /** Montants des boutons rapides — configurables en préférences (Lot 2), défaut +5/+10/+20. */
     quickAddAmounts: List<Int> = DEFAULT_QUICK_ADD_AMOUNTS,
+    /** Journal de session courant (cf. KDoc [StockReplenishViewModel]) — persistant, pas de fenêtre de temps. */
+    logEntries: List<ReplenishLogEntry> = emptyList(),
+    sessionRecap: ReplenishSessionRecap = ReplenishSessionRecap(),
     onBarcodeScanned: (String, () -> Bitmap?) -> Unit = { _, _ -> },
     onSelectFromMultipleResults: (Product) -> Unit = {},
     onSelectCombination: (Combination) -> Unit = {},
@@ -251,12 +261,14 @@ fun StockReplenishScreen(
     onResetDelta: () -> Unit = {},
     onSkip: () -> Unit = {},
     onValidate: () -> Unit = {},
-    onCancelPendingWrite: (String) -> Unit = {},
+    onRemoveLogEntry: (Long) -> Unit = {},
+    onSubmitSession: () -> Unit = {},
     onClearError: () -> Unit = {},
-    onConsumeWriteError: () -> Unit = {},
+    onConsumeSubmitResultMessage: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val errorMessage = state.error?.asString()
+    val submitResultMessage = state.submitResultMessage?.asString()
     val backDesc = stringResource(R.string.content_description_back)
     val context = LocalContext.current
     val reduceMotion = remember { isReduceMotionEnabled(context) }
@@ -267,10 +279,10 @@ fun StockReplenishScreen(
             onClearError()
         }
     }
-    LaunchedEffect(state.writeErrorMessage) {
-        state.writeErrorMessage?.let {
-            snackbarHostState.showSnackbar(it)
-            onConsumeWriteError()
+    LaunchedEffect(submitResultMessage) {
+        if (submitResultMessage != null) {
+            snackbarHostState.showSnackbar(submitResultMessage)
+            onConsumeSubmitResultMessage()
         }
     }
 
@@ -286,10 +298,11 @@ fun StockReplenishScreen(
         }
     }
 
-    // Récap de sortie (Lot 3) : intercepte le retour (bouton + geste système) tant qu'au moins un
-    // article a été réellement validé dans la session, pour l'afficher avant de quitter l'écran.
+    // Récap de sortie (Lot 3) : intercepte le retour (bouton + geste système) tant que le journal
+    // contient au moins une ligne PAS ENCORE envoyée, pour le rappeler avant de quitter l'écran — le
+    // journal est persistant (rien n'est perdu), mais rien n'est parti côté serveur non plus.
     var showExitRecap by remember { mutableStateOf(false) }
-    val hasSessionRecap = state.sessionRecap.articleCount > 0
+    val hasSessionRecap = sessionRecap.articleCount > 0
     val attemptExit = {
         if (hasSessionRecap) showExitRecap = true else onBackClick()
     }
@@ -297,7 +310,7 @@ fun StockReplenishScreen(
 
     if (showExitRecap) {
         SessionRecapExitDialog(
-            recap = state.sessionRecap,
+            recap = sessionRecap,
             onDismiss = {
                 showExitRecap = false
                 onBackClick()
@@ -333,7 +346,7 @@ fun StockReplenishScreen(
         //  3. Zone d'action épinglée (écritures en attente + boutons rapides/quantité/Valider) :
         //     toujours visible en bas, jamais coupée par la hauteur d'écran.
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            SessionRecapBanner(recap = state.sessionRecap)
+            SessionRecapBanner(recap = sessionRecap)
 
             ReplenishScrollableSection(
                 modifier = Modifier.weight(1f, fill = false).fillMaxWidth(),
@@ -346,21 +359,14 @@ fun StockReplenishScreen(
                 onResetDelta = onResetDelta,
             )
 
-            if (state.pendingWrites.isNotEmpty()) {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingXs),
-                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
-                ) {
-                    state.pendingWrites.forEach { pending ->
-                        PendingWriteBar(
-                            pending = pending,
-                            onCancel = { onCancelPendingWrite(pending.id) },
-                        )
-                    }
-                }
+            if (logEntries.isNotEmpty()) {
+                ReplenishLogSection(
+                    entries = logEntries,
+                    submitErrors = state.submitErrors,
+                    isSubmitting = state.isSubmittingSession,
+                    onRemoveEntry = onRemoveLogEntry,
+                    onSubmitSession = onSubmitSession,
+                )
             }
 
             if (state.product != null) {
@@ -444,15 +450,16 @@ private fun ReplenishScrollableSection(
     }
 }
 
-/** Hauteur de l'aperçu caméra sur écran de hauteur normale — 140dp (trop étriqué pour viser) → 188dp. */
-private val REPLENISH_CAMERA_HEIGHT = 188.dp
+/** Hauteur de l'aperçu caméra sur écran de hauteur normale — 188dp (encore trop juste pour viser) → 226dp (+20 %). */
+private val REPLENISH_CAMERA_HEIGHT = 226.dp
 
 /**
  * Hauteur repliée de l'aperçu caméra sur très petit écran (cf. [PreviewStockReplenishScreenSmallHeight],
  * 480dp) : sous [REPLENISH_COMPACT_SCREEN_HEIGHT_THRESHOLD_DP], la fiche produit scrollable a trop peu
- * de place restante pour respirer si la caméra garde sa pleine hauteur — reprend la taille précédente.
+ * de place restante pour respirer si la caméra garde sa pleine hauteur — reprend une taille réduite
+ * (140dp → 168dp, même +20 % que [REPLENISH_CAMERA_HEIGHT] pour rester cohérent).
  */
-private val REPLENISH_CAMERA_HEIGHT_COMPACT = 140.dp
+private val REPLENISH_CAMERA_HEIGHT_COMPACT = 168.dp
 
 /** Seuil de hauteur d'écran (dp) sous lequel [REPLENISH_CAMERA_HEIGHT_COMPACT] remplace [REPLENISH_CAMERA_HEIGHT]. */
 private const val REPLENISH_COMPACT_SCREEN_HEIGHT_THRESHOLD_DP = 600
@@ -1052,29 +1059,67 @@ private fun TypedQuantityRow(
     }
 }
 
-// ─── Barre d'annulation d'une écriture en attente ──────────────────────────────
+// ─── Journal de session (persistant, sans fenêtre de temps) ────────────────────
 
 /**
- * Barre d'annulation d'une écriture de stock en attente, avec décompte vivant des secondes
- * restantes avant l'envoi effectif — plusieurs peuvent coexister ici (réappro en série : valider
- * réarme le scanner immédiatement, cf. KDoc [StockReplenishViewModel.onValidate]).
+ * Section journal : liste des lignes en attente de validation définitive ([LogEntryRow]) + bouton
+ * « Terminer la session » ([onSubmitSession]) qui envoie tout le journal d'un coup (cf. KDoc
+ * [StockReplenishViewModel.onSubmitSession]). Une ligne en échec lors de la dernière validation
+ * ([submitErrors]) reste affichée avec son erreur — resoumettre ne retente QUE les lignes encore
+ * en échec (les lignes déjà réussies ont déjà disparu du journal).
  */
+@Suppress("LongParameterList")
 @Composable
-private fun PendingWriteBar(
-    pending: PendingStockWrite,
-    onCancel: () -> Unit,
+private fun ReplenishLogSection(
+    entries: List<ReplenishLogEntry>,
+    submitErrors: Map<Long, UiText>,
+    isSubmitting: Boolean,
+    onRemoveEntry: (Long) -> Unit,
+    onSubmitSession: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val totalSeconds = (REPLENISH_UNDO_DELAY_MS / 1_000L).toInt()
-    var remainingSeconds by remember(pending.id) { mutableIntStateOf(totalSeconds) }
-
-    LaunchedEffect(pending.id) {
-        for (secondsLeft in totalSeconds - 1 downTo 0) {
-            delay(1_000L)
-            remainingSeconds = secondsLeft
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingXs),
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+    ) {
+        entries.forEach { entry ->
+            LogEntryRow(
+                entry = entry,
+                errorMessage = submitErrors[entry.id]?.asString(),
+                enabled = !isSubmitting,
+                onRemove = { onRemoveEntry(entry.id) },
+            )
+        }
+        Button(
+            onClick = onSubmitSession,
+            enabled = !isSubmitting,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (isSubmitting) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Dimensions.iconSizeSmall),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Text(stringResource(R.string.stock_replenish_submit_session_action))
+            }
         }
     }
+}
 
+/** Une ligne du journal — fusionnée par cible (cf. KDoc [StockReplenishViewModel]), annulable à tout moment. */
+@Composable
+private fun LogEntryRow(
+    entry: ReplenishLogEntry,
+    errorMessage: String?,
+    enabled: Boolean,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimensions.cardCornerRadius),
@@ -1082,31 +1127,37 @@ private fun PendingWriteBar(
         contentColor = MaterialTheme.colorScheme.inverseOnSurface,
         tonalElevation = 6.dp,
     ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Dimensions.spacingM, vertical = Dimensions.spacingS),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text =
-                    stringResource(
-                        R.string.stock_replenish_pending_label,
-                        pending.productName,
-                        formatSignedDelta(pending.delta),
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = onCancel) {
+        Column(modifier = Modifier.padding(horizontal = Dimensions.spacingM, vertical = Dimensions.spacingS)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
-                    text = stringResource(R.string.stock_replenish_undo_countdown, remainingSeconds),
-                    color = MaterialTheme.colorScheme.inversePrimary,
-                    style = MaterialTheme.typography.labelLarge,
+                    text =
+                        stringResource(
+                            R.string.stock_replenish_pending_label,
+                            entry.productName,
+                            formatSignedDelta(entry.delta),
+                        ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onRemove, enabled = enabled) {
+                    Text(
+                        text = stringResource(R.string.stock_replenish_cancel_action),
+                        color = MaterialTheme.colorScheme.inversePrimary,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            }
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.errorContainer,
                 )
             }
         }
@@ -1163,7 +1214,7 @@ private fun PreviewReplenishActionBar() {
 
 /**
  * Vérification anti-régression « petit écran » : écran complet à hauteur réduite (480dp, plus bas
- * qu'un Pixel compact) avec récap de session + une écriture en attente + fiche produit — la zone
+ * qu'un Pixel compact) avec récap de session + une ligne de journal + fiche produit — la zone
  * d'action (dont le bouton Valider) doit rester entièrement visible, la fiche produit peut scroller.
  */
 @Preview(showBackground = true, heightDp = 480, name = "Réappro — écran complet, petite hauteur")
@@ -1171,46 +1222,42 @@ private fun PreviewReplenishActionBar() {
 private fun PreviewStockReplenishScreenSmallHeight() {
     PrestaFlowTheme {
         StockReplenishScreen(
-            state =
-                StockReplenishUiState(
-                    product = previewReplenishProduct(),
-                    delta = 15,
-                    sessionRecap = ReplenishSessionRecap(articleCount = 3, unitsCount = 42),
-                    pendingWrites =
-                        listOf(
-                            PendingStockWrite(
-                                id = "1",
-                                productId = 1L,
-                                combinationId = null,
-                                warehouseId = null,
-                                productName = "Pelote de laine — Coloris Bleu",
-                                delta = 15,
-                                newQuantity = 27,
-                            ),
-                        ),
-                ),
-            onBackClick = {},
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Réappro — écriture en attente")
-@Composable
-private fun PreviewPendingWriteBar() {
-    PrestaFlowTheme {
-        Surface {
-            PendingWriteBar(
-                pending =
-                    PendingStockWrite(
-                        id = "1",
+            state = StockReplenishUiState(product = previewReplenishProduct(), delta = 15),
+            logEntries =
+                listOf(
+                    ReplenishLogEntry(
+                        id = 1L,
                         productId = 1L,
                         combinationId = null,
                         warehouseId = null,
                         productName = "Pelote de laine — Coloris Bleu",
                         delta = 15,
-                        newQuantity = 27,
                     ),
-                onCancel = {},
+                ),
+            sessionRecap = ReplenishSessionRecap(articleCount = 3, unitsCount = 42),
+            onBackClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Réappro — ligne de journal")
+@Composable
+private fun PreviewLogEntryRow() {
+    PrestaFlowTheme {
+        Surface {
+            LogEntryRow(
+                entry =
+                    ReplenishLogEntry(
+                        id = 1L,
+                        productId = 1L,
+                        combinationId = null,
+                        warehouseId = null,
+                        productName = "Pelote de laine — Coloris Bleu",
+                        delta = 15,
+                    ),
+                errorMessage = null,
+                enabled = true,
+                onRemove = {},
                 modifier = Modifier.padding(Dimensions.screenEdgeMargin),
             )
         }

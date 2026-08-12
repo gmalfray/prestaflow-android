@@ -181,11 +181,15 @@
     <string name="stock_replenish_add_content_description">Aantal toevoegen</string>
     <string name="stock_replenish_quantity_placeholder">Aantal</string>
     <string name="stock_replenish_pending_label">%1$s: %2$s in behandeling</string>
-    <string name="stock_replenish_undo_countdown">Annuleren (%1$d s)</string>
+    <string name="stock_replenish_cancel_action">Annuleren</string>
+    <string name="stock_replenish_submit_session_action">Sessie afronden</string>
+    <string name="stock_replenish_submit_success">%1$d artikel(en) succesvol verzonden.</string>
+    <string name="stock_replenish_submit_partial">%1$d verzonden, %2$d mislukt — opnieuw indienen om te herproberen.</string>
+    <string name="stock_replenish_submit_all_failed">Verzenden van de %1$d artikel(en) in het logboek mislukt.</string>
     <string name="stock_replenish_queue_added_content_description">Toegevoegd aan de wachtrij</string>
-    <string name="stock_replenish_session_recap">%1$d artikel(en) · +%2$d op voorraad</string>
+    <string name="stock_replenish_session_recap">%1$d artikel(en) · +%2$d in behandeling</string>
     <string name="stock_replenish_session_recap_exit_title">Sessieoverzicht</string>
-    <string name="stock_replenish_session_recap_exit_message">%1$d artikel(en) aangevuld, +%2$d eenheden.</string>
+    <string name="stock_replenish_session_recap_exit_message">%1$d artikel(en) nog niet verzonden, +%2$d eenheden niet bevestigd.</string>
     <string name="stock_replenish_session_recap_exit_action">OK</string>
 
     <string name="clients_list_empty">Nog geen klanten.</string>
