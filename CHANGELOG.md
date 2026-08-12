@@ -4,6 +4,18 @@ Les versions suivent [Semantic Versioning](https://semver.org/) : `MAJEUR.MINEUR
 
 ---
 
+## [0.44.1] - 2026-08-12
+
+### Corrections
+- Dans la liste SAV, le point rouge marquait toutes les lignes. Elle s'appuyait sur `unread`, le
+  drapeau « non lu » de PrestaShop, qui n'est posé que lorsqu'un employé ouvre le fil dans la vue
+  back-office : une boutique qui traite son SAV par mail ne le pose jamais. En production, 449 fils
+  sur 481 le portent, fils clos et déjà répondus compris. Les lignes utilisent maintenant
+  `to_process`, la même notion que le compteur de l'onglet, donc le nombre annoncé correspond aux
+  lignes marquées.
+
+---
+
 ## [0.44.0] - 2026-08-12
 
 ### Ajouts
