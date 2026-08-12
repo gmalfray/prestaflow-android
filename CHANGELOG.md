@@ -4,6 +4,44 @@ Les versions suivent [Semantic Versioning](https://semver.org/) : `MAJEUR.MINEUR
 
 ---
 
+## [0.44.0] - 2026-08-12
+
+### Ajouts
+- SAV et Avis dans l'onglet Clients. Les fils de service après-vente et la modération des avis
+  se traitent depuis l'app : liste, détail, réponse, changement de statut, publication et mise
+  à la corbeille avec motif. Les deux sections n'apparaissent que si la boutique en est capable
+  et si le jeton porte la portée correspondante : une fonction absente ou interdite ne laisse
+  aucune trace dans l'interface, pas même une entrée désactivée.
+- Pastille sur l'onglet Commandes, pour les commandes arrivées depuis le dernier passage sur la
+  liste, mémorisée par boutique. Consulter la liste suffit à l'effacer, sans avoir à ouvrir
+  chaque commande. Ouvrir une commande depuis une notification l'efface aussi, mais pour elle
+  seule : les autres restent au compteur.
+- Réapprovisionnement par journal de session. Les scans alimentent un journal que rien n'écrit
+  avant la validation définitive : chaque ligne s'annule quand on veut, et deux scans du même
+  produit s'additionnent. Le journal survit à la fermeture de l'écran et à l'arrêt de l'app.
+  L'écriture finale part en incréments, ce qui préserve les ventes survenues pendant la session.
+  Demande le connecteur 1.21.0.
+
+### Corrections
+- Le compteur SAV annonçait 88 alors que rien n'attendait de réponse. Il comptait les fils
+  « non lus » au sens de PrestaShop, drapeau jamais posé quand le SAV est traité par mail. Il
+  compte désormais ce qui attend vraiment une réponse : fil non clos, dernier message venant de
+  la cliente, activité récente. Sur les mêmes données, 2 au lieu de 88.
+- Le réapprovisionnement perdait un carton sur deux quand on rescannait le même produit avant
+  la fin du délai d'écriture.
+- Les listes ne se rechargeaient qu'à la création de leur écran, lequel survit aux changements
+  d'onglet : il fallait tirer pour rafraîchir après chaque aller-retour. Commandes, Clients,
+  Produits, Paniers, SAV et Avis se rechargent maintenant au retour, au plus une fois par minute.
+- La pastille d'un sous-onglet recouvrait son propre libellé.
+- Le tableau de bord portait un bouton de rafraîchissement faisant doublon avec le tirer-pour-
+  rafraîchir.
+- La fenêtre de scan des codes-barres gagne 20 % de hauteur.
+
+### Divers
+- Documentation et textes de l'app repassés au skill humanizer, pour retirer le style LLM.
+
+---
+
 ## [0.43.0] - 2026-08-09
 
 ### Ajouts
