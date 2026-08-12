@@ -124,15 +124,26 @@ fun PrestaFlowNavGraph(
                 )
             }
         }
+        // "fromNotification" (défaut false) distingue une ouverture depuis une notification (marque
+        // SEULE cette commande comme vue, cf. OrderDetailViewModel.markSeenIfFromNotification) d'un
+        // accès normal depuis la liste ou une fiche client (la pastille se met déjà à jour en
+        // consultant la liste, cf. OrdersViewModel.markCurrentListSeen — pas besoin de marquage
+        // individuel dans ce cas).
         composable(
-            route = "${AppDestination.Orders.route}/{orderId}",
+            route = "${AppDestination.Orders.route}/{orderId}?fromNotification={fromNotification}",
             arguments =
                 listOf(
                     navArgument("orderId") { type = NavType.LongType },
+                    navArgument("fromNotification") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    },
                 ),
             deepLinks =
                 listOf(
-                    navDeepLink { uriPattern = "prestaflow://orders/{orderId}" },
+                    // Notre ContentIntent (notification foreground) porte déjà ?fromNotification=true,
+                    // cf. PrestaFlowFirebaseMessagingService.buildOrderDeepLinkIntent.
+                    navDeepLink { uriPattern = "prestaflow://orders/{orderId}?fromNotification={fromNotification}" },
                 ),
         ) {
             OrderDetailRoute(

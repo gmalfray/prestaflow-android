@@ -2,9 +2,14 @@ package com.rebuildit.prestaflow.ui.root
 
 import com.rebuildit.prestaflow.domain.auth.AuthState
 import com.rebuildit.prestaflow.domain.auth.model.AuthScopes
+import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.capabilities.model.ShopCapabilities
+import com.rebuildit.prestaflow.domain.orders.model.Order
+import com.rebuildit.prestaflow.domain.orders.model.OrdersSeenState
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
 import com.rebuildit.prestaflow.fakes.FakeCapabilitiesRepository
+import com.rebuildit.prestaflow.fakes.FakeOrdersPreferencesRepository
+import com.rebuildit.prestaflow.fakes.FakeOrdersRepository
 import com.rebuildit.prestaflow.fakes.FakeReviewsRepository
 import com.rebuildit.prestaflow.fakes.FakeSavRepository
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +51,8 @@ class RootViewModelTest {
     private lateinit var fakeCapabilitiesRepo: FakeCapabilitiesRepository
     private lateinit var fakeSavRepo: FakeSavRepository
     private lateinit var fakeReviewsRepo: FakeReviewsRepository
+    private lateinit var fakeOrdersRepo: FakeOrdersRepository
+    private lateinit var fakeOrdersPrefsRepo: FakeOrdersPreferencesRepository
 
     @Before
     fun setUp() {
@@ -54,6 +61,8 @@ class RootViewModelTest {
         fakeCapabilitiesRepo = FakeCapabilitiesRepository()
         fakeSavRepo = FakeSavRepository()
         fakeReviewsRepo = FakeReviewsRepository()
+        fakeOrdersRepo = FakeOrdersRepository()
+        fakeOrdersPrefsRepo = FakeOrdersPreferencesRepository()
     }
 
     @After
@@ -67,6 +76,20 @@ class RootViewModelTest {
             capabilitiesRepository = fakeCapabilitiesRepo,
             savRepository = fakeSavRepo,
             reviewsRepository = fakeReviewsRepo,
+            ordersRepository = fakeOrdersRepo,
+            ordersPreferencesRepository = fakeOrdersPrefsRepo,
+        )
+
+    private fun buildOrder(id: Long) =
+        Order(
+            id = id,
+            reference = "REF-$id",
+            status = "En préparation",
+            totalPaid = 49.99,
+            currency = "EUR",
+            customerName = "Client Test",
+            createdAtIso = "2024-01-01T00:00:00+00:00",
+            updatedAtIso = "2024-01-02T00:00:00+00:00",
         )
 
     /** Jeton portant les deux scopes secondaires — baseline des tests qui ne portent pas sur eux. */
@@ -224,5 +247,79 @@ class RootViewModelTest {
             advanceUntilIdle()
 
             assertEquals(0, viewModel.clientsBadgeCount.value)
+        }
+
+    // ─── ordersBadgeCount : pastille "commandes non vues" de l'onglet Commandes ───────────────
+
+    @Test
+    fun `ordersBadgeCount est nul quand aucune commande ne depasse le repere`() =
+        runTest(testDispatcher) {
+            val shopId = FakeAuthRepository.singleActiveConnection().id
+            fakeOrdersRepo.setOrders(listOf(buildOrder(6577L), buildOrder(6578L)))
+            fakeOrdersPrefsRepo.seedSeenState(shopId, OrdersSeenState(lastSeenOrderId = 6578L))
+
+            val viewModel = buildViewModel()
+            advanceUntilIdle()
+
+            assertEquals(0, viewModel.ordersBadgeCount.value)
+        }
+
+    @Test
+    fun `ordersBadgeCount compte toutes les commandes au dela du repere`() =
+        runTest(testDispatcher) {
+            val shopId = FakeAuthRepository.singleActiveConnection().id
+            fakeOrdersRepo.setOrders(listOf(buildOrder(6577L), buildOrder(6578L), buildOrder(6579L), buildOrder(6580L)))
+            fakeOrdersPrefsRepo.seedSeenState(shopId, OrdersSeenState(lastSeenOrderId = 6576L))
+
+            val viewModel = buildViewModel()
+            advanceUntilIdle()
+
+            assertEquals(4, viewModel.ordersBadgeCount.value)
+        }
+
+    @Test
+    fun `ordersBadgeCount exclut uniquement la commande ouverte individuellement depuis une notification`() =
+        runTest(testDispatcher) {
+            val shopId = FakeAuthRepository.singleActiveConnection().id
+            // 6577 et 6578 non vues, 6579 ouverte depuis une notification : cf. exemple Greg.
+            fakeOrdersRepo.setOrders(listOf(buildOrder(6577L), buildOrder(6578L), buildOrder(6579L)))
+            fakeOrdersPrefsRepo.seedSeenState(
+                shopId,
+                OrdersSeenState(lastSeenOrderId = 6576L, individuallySeenIds = setOf(6579L)),
+            )
+
+            val viewModel = buildViewModel()
+            advanceUntilIdle()
+
+            assertEquals(2, viewModel.ordersBadgeCount.value)
+        }
+
+    @Test
+    fun `changer de boutique active ne mélange pas les reperes`() =
+        runTest(testDispatcher) {
+            val shopA =
+                ShopConnection(
+                    id = "shop-a",
+                    shopUrl = "shop-a",
+                    label = "A",
+                    token = FakeAuthRepository.fakeToken(),
+                    isActive = true,
+                )
+            val shopB = shopA.copy(id = "shop-b", shopUrl = "shop-b", label = "B", isActive = false)
+            fakeAuthRepo.emitConnections(listOf(shopA, shopB))
+            // Même cache Room global (non scopé par boutique, cf. OrdersRepositoryImpl) : ce sont
+            // les repères par boutique qui doivent isoler le compte, pas la liste elle-même.
+            fakeOrdersRepo.setOrders(listOf(buildOrder(100L), buildOrder(200L)))
+            fakeOrdersPrefsRepo.seedSeenState("shop-a", OrdersSeenState(lastSeenOrderId = 200L)) // rien de nouveau pour A
+            fakeOrdersPrefsRepo.seedSeenState("shop-b", OrdersSeenState(lastSeenOrderId = 0L)) // tout nouveau pour B
+
+            val viewModel = buildViewModel()
+            advanceUntilIdle()
+            assertEquals("Boutique A : tout vu", 0, viewModel.ordersBadgeCount.value)
+
+            fakeAuthRepo.emitConnections(listOf(shopA.copy(isActive = false), shopB.copy(isActive = true)))
+            advanceUntilIdle()
+
+            assertEquals("Boutique B : rien vu, repère indépendant de A", 2, viewModel.ordersBadgeCount.value)
         }
 }

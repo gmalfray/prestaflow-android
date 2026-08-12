@@ -130,6 +130,7 @@
     <string name="orders_list_count">%1$d cargados</string>
     <string name="orders_action_open">Abrir pedido</string>
     <string name="orders_customer_unknown">Cliente desconocido</string>
+    <string name="orders_badge_unseen_content_description">%1$d pedidos no vistos</string>
     <string name="products_list_empty">No hay productos disponibles.</string>
     <string name="products_status_active">Activo</string>
     <string name="products_status_inactive">Inactivo</string>
