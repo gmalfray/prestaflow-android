@@ -1,9 +1,10 @@
 package com.rebuildit.prestaflow.ui.clients
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -14,11 +15,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
@@ -178,21 +181,28 @@ private fun ClientsTabLabel(
         Text(text = text, style = MaterialTheme.typography.labelLarge)
         return
     }
-    BadgedBox(
-        badge = {
-            Badge(
-                modifier =
-                    Modifier.semantics {
-                        this.contentDescription = badgeDescription ?: badgeLabel
-                    },
-            ) {
-                Text(badgeLabel)
-            }
-        },
+    // Pastille POSÉE À CÔTÉ du libellé, pas en superposition. Un `BadgedBox` ancre la pastille dans
+    // le coin haut-droit de son contenu : sur un libellé court comme « SAV », elle le recouvrait
+    // (retour Greg sur device). Une rangée coûte un peu de largeur, mais l'onglet Clients n'en
+    // compte que trois et les libellés sont courts, donc ça tient même en largeur de Galaxy A34.
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(TAB_BADGE_SPACING),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = text, style = MaterialTheme.typography.labelLarge)
+        Badge(
+            modifier =
+                Modifier.semantics {
+                    this.contentDescription = badgeDescription ?: badgeLabel
+                },
+        ) {
+            Text(badgeLabel)
+        }
     }
 }
+
+/** Écart entre le libellé d'un sous-onglet et sa pastille. */
+private val TAB_BADGE_SPACING = 6.dp
 
 // ─── Previews ─────────────────────────────────────────────────────────────────
 
