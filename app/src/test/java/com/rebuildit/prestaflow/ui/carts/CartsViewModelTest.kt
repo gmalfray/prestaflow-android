@@ -1,8 +1,11 @@
 package com.rebuildit.prestaflow.ui.carts
 
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard.Companion.MIN_INTERVAL_MS
 import com.rebuildit.prestaflow.domain.carts.model.CartSummary
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
 import com.rebuildit.prestaflow.fakes.FakeCartsRepository
+import com.rebuildit.prestaflow.fakes.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -35,12 +38,16 @@ class CartsViewModelTest {
 
     private lateinit var fakeCartsRepo: FakeCartsRepository
     private lateinit var fakeAuthRepo: FakeAuthRepository
+    private lateinit var fakeTimeProvider: FakeTimeProvider
+    private lateinit var resumeRefreshGuard: ScreenResumeRefreshGuard
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeCartsRepo = FakeCartsRepository()
         fakeAuthRepo = FakeAuthRepository()
+        fakeTimeProvider = FakeTimeProvider()
+        resumeRefreshGuard = ScreenResumeRefreshGuard(fakeTimeProvider)
     }
 
     @After
@@ -52,6 +59,7 @@ class CartsViewModelTest {
         CartsViewModel(
             cartsRepository = fakeCartsRepo,
             authRepository = fakeAuthRepo,
+            resumeRefreshGuard = resumeRefreshGuard,
         )
 
     private fun makeCart(
@@ -286,5 +294,89 @@ class CartsViewModelTest {
 
             assertNull(vm.uiState.value.error)
             assertEquals(1, vm.uiState.value.allCarts.size)
+        }
+
+    // ─── Rattrapage au retour sur l'écran (onScreenResumed) ─────────────────
+
+    @Test
+    fun `onScreenResumed declenche un refresh quand le delai minimal est depasse`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeCartsRepo.getCartsCallCount = 0
+
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un retour à l'écran après le délai minimal doit déclencher un refresh réseau",
+                fakeCartsRepo.getCartsCallCount > 0,
+            )
+        }
+
+    @Test
+    fun `onScreenResumed est ignore avant expiration du delai minimal`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeCartsRepo.getCartsCallCount = 0
+
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS - 1)
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals(
+                "Un aller-retour rapide entre onglets ne doit pas déclencher un second appel réseau",
+                0,
+                fakeCartsRepo.getCartsCallCount,
+            )
+        }
+
+    @Test
+    fun `onScreenResumed conserve la recherche et la pagination locales`() =
+        runTest {
+            fakeCartsRepo.cartsResult =
+                listOf(makeCart(1, customerName = "Alice Dupont"), makeCart(2, customerName = "Bob Martin"))
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            vm.onQueryChanged("alice")
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
+
+            // Le panier d'Alice reste présent côté serveur au retour (la recherche/pagination sont
+            // filtrées EN LOCAL depuis allCarts, cf. CartsUiState.carts) : recharger allCarts ne doit
+            // ni effacer ni contourner la recherche déjà saisie.
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals("alice", vm.uiState.value.query)
+            assertEquals(
+                "La recherche déjà saisie doit rester appliquée après le rafraîchissement de reprise",
+                1,
+                vm.uiState.value.carts.size,
+            )
+        }
+
+    @Test
+    fun `un refresh de reprise en echec conserve le cache existant`() =
+        runTest {
+            fakeCartsRepo.cartsResult = listOf(makeCart(1))
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
+            fakeCartsRepo.shouldThrow = true
+
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals(
+                "Un échec de rafraîchissement de reprise ne doit jamais vider le cache déjà affiché",
+                1,
+                vm.uiState.value.allCarts.size,
+            )
+            assertNull(
+                "Un échec de reprise est silencieux : pas de message d'erreur affiché",
+                vm.uiState.value.error,
+            )
         }
 }

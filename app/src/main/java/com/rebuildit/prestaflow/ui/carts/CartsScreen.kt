@@ -29,6 +29,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
@@ -58,6 +60,13 @@ fun CartsRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
+
+    // Rattrapage : recharge la liste quand l'écran redevient visible (retour d'un autre onglet),
+    // cf. KDoc de OrdersViewModel.onScreenResumed pour le throttle et le pourquoi.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.onScreenResumed()
+    }
+
     CartsScreen(
         modifier = modifier,
         state = state,

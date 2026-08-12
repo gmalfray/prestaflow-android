@@ -3,6 +3,7 @@ package com.rebuildit.prestaflow.ui.carts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.carts.model.CartSummary
@@ -60,6 +61,7 @@ class CartsViewModel
     constructor(
         private val cartsRepository: CartsRepository,
         private val authRepository: AuthRepository,
+        private val resumeRefreshGuard: ScreenResumeRefreshGuard,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(CartsUiState())
         val uiState: StateFlow<CartsUiState> = _uiState
@@ -69,8 +71,24 @@ class CartsViewModel
             observeActiveShopSwitch()
         }
 
-        fun onRefresh() {
-            _uiState.update { it.copy(isRefreshing = true, error = null) }
+        fun onRefresh() = refreshCarts(notifyOnError = true)
+
+        /**
+         * Rattrapage au retour sur l'écran Paniers (cf. KDoc de
+         * [com.rebuildit.prestaflow.ui.orders.OrdersViewModel.onScreenResumed] pour le contrat
+         * général implémenté par [resumeRefreshGuard]). La recherche et la pagination
+         * ([CartsUiState.query], [CartsUiState.displayedCount]) sont filtrées EN LOCAL depuis
+         * [CartsUiState.allCarts] (cf. [CartsUiState.carts]) : recharger [allCarts] les préserve
+         * automatiquement, sans rien à repasser en paramètre. Silencieux en cas d'échec.
+         */
+        fun onScreenResumed() {
+            val current = _uiState.value
+            if (!resumeRefreshGuard.shouldRefresh(isBusy = current.isLoading || current.isRefreshing)) return
+            refreshCarts(notifyOnError = false)
+        }
+
+        private fun refreshCarts(notifyOnError: Boolean) {
+            _uiState.update { it.copy(isRefreshing = true, error = if (notifyOnError) null else it.error) }
             viewModelScope.launch {
                 runCatching { cartsRepository.getCarts() }
                     .onSuccess { carts ->
@@ -80,12 +98,13 @@ class CartsViewModel
                                 isRefreshing = false,
                             )
                         }
+                        resumeRefreshGuard.markRefreshSucceeded()
                     }
                     .onFailure { error ->
                         _uiState.update {
                             it.copy(
                                 isRefreshing = false,
-                                error = UiText.Dynamic(error.message ?: "Unknown error"),
+                                error = if (notifyOnError) UiText.Dynamic(error.message ?: "Unknown error") else it.error,
                             )
                         }
                     }
@@ -134,6 +153,7 @@ class CartsViewModel
                                 isLoading = false,
                             )
                         }
+                        resumeRefreshGuard.markRefreshSucceeded()
                     }
                     .onFailure { error ->
                         _uiState.update {
