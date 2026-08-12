@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.core.util.TimeProvider
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.language.LanguageRepository
@@ -34,6 +35,16 @@ private const val PAGE_SIZE = OrdersRepository.DEFAULT_PAGE_SIZE
 
 /** Debounce (ms) avant de déclencher une recherche serveur sur changement de query. */
 private const val SEARCH_DEBOUNCE_MS = 300L
+
+/**
+ * Délai minimal (ms) entre deux rafraîchissements automatiques déclenchés par le retour à l'écran
+ * (cf. [OrdersViewModel.onScreenResumed]). 1 minute : assez court pour que les commandes reçues
+ * pendant qu'on était sur un autre onglet apparaissent vite en revenant, assez long pour qu'un
+ * aller-retour rapide entre deux onglets (quelques secondes, geste courant en navigation par
+ * onglets) ne déclenche pas un appel réseau à chaque fois. Le tirer-pour-rafraîchir manuel
+ * ([OrdersViewModel.onRefresh]) n'est jamais soumis à ce délai : c'est un geste explicite.
+ */
+internal const val AUTO_REFRESH_MIN_INTERVAL_MS = 60_000L
 
 /**
  * IDs de statut PrestaShop pré-sélectionnés par défaut à l'ouverture de l'écran (« commandes à
@@ -102,7 +113,15 @@ class OrdersViewModel
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
         private val languageRepository: LanguageRepository,
+        private val timeProvider: TimeProvider,
     ) : ViewModel() {
+        /**
+         * Horodatage ([TimeProvider.nowMillis]) du dernier [refresh] réussi, `null` tant qu'aucun
+         * n'a encore abouti. Sert uniquement de repère pour le throttle de [onScreenResumed] — n'est
+         * volontairement pas exposé dans [OrdersUiState] (bookkeeping interne, pas un état d'écran).
+         */
+        private var lastSuccessfulRefreshAtMs: Long? = null
+
         private val _uiState =
             MutableStateFlow(
                 OrdersUiState(
@@ -163,6 +182,34 @@ class OrdersViewModel
 
         fun onRefresh() {
             refresh(forceRemote = true, notifyOnError = true)
+        }
+
+        /**
+         * Appelée quand l'écran Commandes redevient visible au premier plan (retour d'un autre
+         * onglet, cf. [com.rebuildit.prestaflow.ui.orders.OrdersRoute]). Ce ViewModel est rattaché à
+         * l'entrée de pile Navigation Compose et survit donc aux changements d'onglet — sans ce
+         * rattrapage, `init` ne rejoue jamais et l'écran reste figé sur le cache Room jusqu'au
+         * prochain tirer-pour-rafraîchir manuel.
+         *
+         * Rafraîchit seulement si :
+         * - aucun chargement n'est déjà en cours ([OrdersUiState.isRefreshing]) — jamais deux
+         *   chargements simultanés ;
+         * - le dernier chargement réussi remonte à plus de [AUTO_REFRESH_MIN_INTERVAL_MS] — un
+         *   aller-retour rapide entre deux onglets ne déclenche pas un appel réseau à chaque fois.
+         *
+         * Contrairement à [onRefresh] (geste manuel explicite, toujours immédiat, jamais throttlé),
+         * c'est un rattrapage silencieux : `notifyOnError = false` pour ne jamais afficher d'erreur
+         * si le réseau est indisponible au moment du retour — l'écran garde alors simplement le
+         * cache existant, comme avant ce correctif. Réutilise les filtres/tri/période/recherche déjà
+         * en place ([refresh] les relit depuis [_uiState] courant), donc ne perd ni ne réinitialise
+         * rien de ce que l'utilisateur a déjà posé.
+         */
+        fun onScreenResumed() {
+            val current = _uiState.value
+            if (current.isRefreshing) return
+            val lastRefresh = lastSuccessfulRefreshAtMs
+            if (lastRefresh != null && timeProvider.nowMillis() - lastRefresh < AUTO_REFRESH_MIN_INTERVAL_MS) return
+            refresh(forceRemote = true, notifyOnError = false)
         }
 
         /**
@@ -551,6 +598,10 @@ class OrdersViewModel
                             searchFallback = false,
                         )
                     }
+                    // Repère du throttle de onScreenResumed — un échec ne l'avance JAMAIS (onFailure
+                    // ci-dessus ne touche pas à ce champ), pour ne pas geler le rattrapage automatique
+                    // sur un timestamp d'échec.
+                    lastSuccessfulRefreshAtMs = timeProvider.nowMillis()
                     markCurrentListSeen()
                 }
             }
