@@ -14,7 +14,7 @@
     <string name="notif_channel_default_name">Alertas</string>
     <string name="notif_channel_default_desc">Notificações gerais da aplicação</string>
     <string name="notif_sale_default_title">Novo pedido</string>
-    <!-- Sync worker — tarefa offline abandonada após uma resposta HTTP não reexecutável (400/422…) -->
+    <!-- Sync worker : tarefa offline abandonada após uma resposta HTTP não reexecutável (400/422…) -->
     <string name="sync_failure_notif_title">Falha na sincronização</string>
     <string name="sync_failure_notif_body">Não foi possível guardar uma alteração (%1$s) (HTTP %2$d). Abra a app para verificar.</string>
     <string name="action_retry">Tentar novamente</string>
@@ -75,7 +75,7 @@
     <string name="dashboard_chart_trend_rising">a subir</string>
     <string name="dashboard_chart_trend_falling">a descer</string>
     <string name="dashboard_chart_trend_stable">estável</string>
-    <!-- Dashboard — legenda e tooltip do gráfico -->
+    <!-- Dashboard : legenda e tooltip do gráfico -->
     <string name="dashboard_legend_orders">Pedidos</string>
     <string name="dashboard_legend_turnover">Faturação</string>
     <string name="dashboard_tooltip_orders">Ped.: %1$d</string>
@@ -84,10 +84,10 @@
     <string name="dashboard_greeting">Olá</string>
     <string name="dashboard_content_description_refresh">Atualizar o painel</string>
     <string name="dashboard_content_description_kpi_card">%1$s: %2$s</string>
-    <!-- Dashboard — indicador de tendência KPI. Arg: 1=percentagem formatada (ex.: "12,3%") -->
+    <!-- Dashboard : indicador de tendência KPI. Arg: 1=percentagem formatada (ex.: "12,3%") -->
     <string name="dashboard_kpi_trend_up">subiu %1$s</string>
     <string name="dashboard_kpi_trend_down">desceu %1$s</string>
-    <!-- Dashboard — gráfico em ecrã inteiro -->
+    <!-- Dashboard : gráfico em ecrã inteiro -->
     <string name="dashboard_chart_expand_content_description">Ver o gráfico em ecrã inteiro</string>
     <string name="dashboard_chart_fullscreen_close">Fechar</string>
 
@@ -228,10 +228,10 @@
     <string name="sav_thread_author_customer">Cliente</string>
     <string name="sav_thread_status_updated">Estado atualizado</string>
     <string name="sav_thread_reply_sent">Resposta enviada por e-mail à cliente</string>
-    <string name="sav_thread_reply_sent_no_email">Resposta guardada — e-mail não enviado (endereço indisponível)</string>
+    <string name="sav_thread_reply_sent_no_email">Resposta guardada, e-mail não enviado (endereço indisponível)</string>
     <string name="sav_thread_reply_confirm_title">Enviar esta resposta por e-mail?</string>
     <string name="sav_thread_reply_confirm_recipient">Um e-mail será enviado para %1$s</string>
-    <string name="sav_thread_reply_confirm_recipient_unknown">Nenhum endereço de e-mail conhecido para esta conversa — a resposta será guardada sem envio.</string>
+    <string name="sav_thread_reply_confirm_recipient_unknown">Nenhum endereço de e-mail conhecido para esta conversa. A resposta será guardada sem envio.</string>
     <string name="sav_thread_reply_confirm_send">Enviar</string>
     <string name="sav_thread_reply_confirm_cancel">Cancelar</string>
     <string name="sav_status_picker_title">Alterar estado</string>
@@ -240,15 +240,15 @@
 
     <string name="reviews_list_empty">Ainda não há avaliações para moderar.</string>
     <string name="reviews_list_error_title">Não é possível exibir as avaliações</string>
-    <string name="reviews_author_for_product">%1$s — %2$s</string>
+    <string name="reviews_author_for_product">%1$s · %2$s</string>
     <string name="reviews_existing_reply">A sua resposta: %1$s</string>
     <string name="reviews_action_publish">Publicar</string>
     <string name="reviews_action_published">Avaliação publicada</string>
-    <string name="reviews_action_trashed">Avaliação eliminada — autor informado por e-mail</string>
-    <string name="reviews_action_trashed_no_email">Avaliação eliminada — e-mail não enviado (endereço indisponível)</string>
+    <string name="reviews_action_trashed">Avaliação eliminada, autor informado por e-mail</string>
+    <string name="reviews_action_trashed_no_email">Avaliação eliminada, e-mail não enviado (endereço indisponível)</string>
     <string name="reviews_action_replied">Resposta publicada</string>
     <string name="reviews_trash_dialog_title">Motivo da rejeição</string>
-    <string name="reviews_trash_dialog_hint">Obrigatório — a cliente receberá este motivo por e-mail (artigo L111-7-2 do código do consumidor francês).</string>
+    <string name="reviews_trash_dialog_hint">Obrigatório: a cliente receberá este motivo por e-mail (artigo L111-7-2 do código do consumidor francês).</string>
     <string name="reviews_trash_dialog_placeholder">Ex. Conteúdo fora do tema, sem relação com o produto vendido.</string>
     <string name="reviews_trash_dialog_char_count">%1$d / %2$d caracteres no mínimo</string>
     <string name="reviews_trash_dialog_confirm">Mover para o lixo</string>
@@ -376,7 +376,7 @@
     <string name="orders_status_short_9">Concluído</string>
     <string name="orders_status_short_10">Transf.</string>
 
-    <!-- Menu de estados (bottom sheet): 2 secções — filtro (100% dos estados) + atalhos (barra, máx. N) -->
+    <!-- Menu de estados (bottom sheet): 2 secções, filtro (100% dos estados) + atalhos (barra, máx. N) -->
     <string name="orders_filter_prefs_title">Estados</string>
     <string name="orders_filter_prefs_section_filter">Filtrar por estado</string>
     <string name="orders_filter_prefs_section_filter_hint">Selecione quantos estados quiser para filtrar a lista</string>
@@ -410,19 +410,19 @@
     <!-- Paginação de pedidos -->
     <string name="orders_load_more">Carregar mais</string>
 
-    <!-- Detalhe do pedido — mensagens de ação (externalizadas para i18n) -->
+    <!-- Detalhe do pedido : mensagens de ação (externalizadas para i18n) -->
     <string name="order_detail_status_updated">Estado atualizado</string>
     <string name="order_detail_tracking_updated">Rastreio atualizado</string>
     <string name="order_detail_invoice_unavailable">Este pedido não tem fatura disponível.</string>
     <string name="order_detail_shipping_label_unavailable">Nenhuma etiqueta de envio disponível para este pedido.</string>
     <string name="order_detail_label_generated">Etiqueta gerada com sucesso</string>
 
-    <!-- Definições — confirmação de remoção de loja -->
+    <!-- Definições : confirmação de remoção de loja -->
     <string name="settings_shops_remove_confirm_title">Remover a loja?</string>
     <string name="settings_shops_remove_confirm_message">Isto irá desligá-lo da loja %1$s.</string>
     <string name="settings_shops_remove_confirm_action">Remover</string>
 
-    <!-- Definições — secção Reabastecimento de stock (botões rápidos configuráveis) -->
+    <!-- Definições : secção Reabastecimento de stock (botões rápidos configuráveis) -->
     <string name="settings_stock_replenish_label">Botões rápidos de reabastecimento</string>
     <string name="settings_stock_replenish_hint">Configure a quantidade adicionada por cada botão rápido no ecrã de reabastecimento de stock (1 a 5 botões).</string>
     <string name="settings_stock_replenish_amount_label">Botão %1$d</string>

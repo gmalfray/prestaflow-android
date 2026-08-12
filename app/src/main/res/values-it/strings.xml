@@ -14,7 +14,7 @@
     <string name="notif_channel_default_name">Avvisi</string>
     <string name="notif_channel_default_desc">Notifiche generali dell\'app</string>
     <string name="notif_sale_default_title">Nuovo ordine</string>
-    <!-- Sync worker — attività offline abbandonata dopo una risposta HTTP non ripetibile (400/422…) -->
+    <!-- Sync worker : attività offline abbandonata dopo una risposta HTTP non ripetibile (400/422…) -->
     <string name="sync_failure_notif_title">Sincronizzazione non riuscita</string>
     <string name="sync_failure_notif_body">Una modifica (%1$s) non è stata salvata (HTTP %2$d). Apri l\'app per verificare.</string>
     <string name="action_retry">Riprova</string>
@@ -75,7 +75,7 @@
     <string name="dashboard_chart_trend_rising">in aumento</string>
     <string name="dashboard_chart_trend_falling">in calo</string>
     <string name="dashboard_chart_trend_stable">stabile</string>
-    <!-- Dashboard — legenda e tooltip del grafico -->
+    <!-- Dashboard : legenda e tooltip del grafico -->
     <string name="dashboard_legend_orders">Ordini</string>
     <string name="dashboard_legend_turnover">Fatturato</string>
     <string name="dashboard_tooltip_orders">Ord.: %1$d</string>
@@ -84,10 +84,10 @@
     <string name="dashboard_greeting">Ciao</string>
     <string name="dashboard_content_description_refresh">Aggiorna la dashboard</string>
     <string name="dashboard_content_description_kpi_card">%1$s: %2$s</string>
-    <!-- Dashboard — badge di tendenza KPI. Arg: 1=percentuale formattata (es.: "12,3%") -->
+    <!-- Dashboard : badge di tendenza KPI. Arg: 1=percentuale formattata (es.: "12,3%") -->
     <string name="dashboard_kpi_trend_up">in crescita del %1$s</string>
     <string name="dashboard_kpi_trend_down">in calo del %1$s</string>
-    <!-- Dashboard — grafico a schermo intero -->
+    <!-- Dashboard : grafico a schermo intero -->
     <string name="dashboard_chart_expand_content_description">Visualizza il grafico a schermo intero</string>
     <string name="dashboard_chart_fullscreen_close">Chiudi</string>
 
@@ -228,10 +228,10 @@
     <string name="sav_thread_author_customer">Cliente</string>
     <string name="sav_thread_status_updated">Stato aggiornato</string>
     <string name="sav_thread_reply_sent">Risposta inviata via e-mail alla cliente</string>
-    <string name="sav_thread_reply_sent_no_email">Risposta salvata — e-mail non inviata (indirizzo non disponibile)</string>
+    <string name="sav_thread_reply_sent_no_email">Risposta salvata, e-mail non inviata (indirizzo non disponibile)</string>
     <string name="sav_thread_reply_confirm_title">Inviare questa risposta via e-mail?</string>
     <string name="sav_thread_reply_confirm_recipient">Verrà inviata un\'e-mail a %1$s</string>
-    <string name="sav_thread_reply_confirm_recipient_unknown">Nessun indirizzo e-mail noto per questo thread — la risposta verrà salvata senza invio.</string>
+    <string name="sav_thread_reply_confirm_recipient_unknown">Nessun indirizzo e-mail noto per questo thread. La risposta verrà salvata senza invio.</string>
     <string name="sav_thread_reply_confirm_send">Invia</string>
     <string name="sav_thread_reply_confirm_cancel">Annulla</string>
     <string name="sav_status_picker_title">Cambia stato</string>
@@ -240,15 +240,15 @@
 
     <string name="reviews_list_empty">Nessuna recensione da moderare al momento.</string>
     <string name="reviews_list_error_title">Impossibile visualizzare le recensioni</string>
-    <string name="reviews_author_for_product">%1$s — %2$s</string>
+    <string name="reviews_author_for_product">%1$s · %2$s</string>
     <string name="reviews_existing_reply">La tua risposta: %1$s</string>
     <string name="reviews_action_publish">Pubblica</string>
     <string name="reviews_action_published">Recensione pubblicata</string>
-    <string name="reviews_action_trashed">Recensione cestinata — autore informato via e-mail</string>
-    <string name="reviews_action_trashed_no_email">Recensione cestinata — e-mail non inviata (indirizzo non disponibile)</string>
+    <string name="reviews_action_trashed">Recensione cestinata, autore informato via e-mail</string>
+    <string name="reviews_action_trashed_no_email">Recensione cestinata, e-mail non inviata (indirizzo non disponibile)</string>
     <string name="reviews_action_replied">Risposta pubblicata</string>
     <string name="reviews_trash_dialog_title">Motivo del rifiuto</string>
-    <string name="reviews_trash_dialog_hint">Obbligatorio — la cliente riceverà questo motivo via e-mail (articolo L111-7-2 del codice del consumo francese).</string>
+    <string name="reviews_trash_dialog_hint">Obbligatorio: la cliente riceverà questo motivo via e-mail (articolo L111-7-2 del codice del consumo francese).</string>
     <string name="reviews_trash_dialog_placeholder">Es. Contenuto fuori tema, non pertinente al prodotto venduto.</string>
     <string name="reviews_trash_dialog_char_count">%1$d / %2$d caratteri minimo</string>
     <string name="reviews_trash_dialog_confirm">Sposta nel cestino</string>
@@ -376,7 +376,7 @@
     <string name="orders_status_short_9">Terminato</string>
     <string name="orders_status_short_10">Bonifico</string>
 
-    <!-- Menu stati (bottom sheet): 2 sezioni — filtro (100% degli stati) + scorciatoie (barra, max N) -->
+    <!-- Menu stati (bottom sheet): 2 sezioni, filtro (100% degli stati) + scorciatoie (barra, max N) -->
     <string name="orders_filter_prefs_title">Stati</string>
     <string name="orders_filter_prefs_section_filter">Filtra per stato</string>
     <string name="orders_filter_prefs_section_filter_hint">Seleziona quanti stati vuoi per filtrare l\'elenco</string>
@@ -410,19 +410,19 @@
     <!-- Paginazione ordini -->
     <string name="orders_load_more">Carica altri</string>
 
-    <!-- Dettaglio ordine — messaggi di azione (esternalizzati per i18n) -->
+    <!-- Dettaglio ordine : messaggi di azione (esternalizzati per i18n) -->
     <string name="order_detail_status_updated">Stato aggiornato</string>
     <string name="order_detail_tracking_updated">Tracciamento aggiornato</string>
     <string name="order_detail_invoice_unavailable">Nessuna fattura disponibile per questo ordine.</string>
     <string name="order_detail_shipping_label_unavailable">Nessuna etichetta di spedizione disponibile per questo ordine.</string>
     <string name="order_detail_label_generated">Etichetta generata con successo</string>
 
-    <!-- Impostazioni — conferma rimozione negozio -->
+    <!-- Impostazioni : conferma rimozione negozio -->
     <string name="settings_shops_remove_confirm_title">Rimuovere il negozio?</string>
     <string name="settings_shops_remove_confirm_message">Verrai disconnesso dal negozio %1$s.</string>
     <string name="settings_shops_remove_confirm_action">Rimuovi</string>
 
-    <!-- Impostazioni — sezione Rifornimento scorte (pulsanti rapidi configurabili) -->
+    <!-- Impostazioni : sezione Rifornimento scorte (pulsanti rapidi configurabili) -->
     <string name="settings_stock_replenish_label">Pulsanti rapidi rifornimento</string>
     <string name="settings_stock_replenish_hint">Configura la quantità aggiunta da ciascun pulsante rapido nella schermata di rifornimento scorte (da 1 a 5 pulsanti).</string>
     <string name="settings_stock_replenish_amount_label">Pulsante %1$d</string>
