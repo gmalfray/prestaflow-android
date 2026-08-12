@@ -14,8 +14,10 @@ class FakeCartsRepository : CartsRepository {
     var cartsResult: List<CartSummary> = emptyList()
     var shouldThrow: Boolean = false
     var cartDetailResult: CartDetail? = null
+    var getCartsCallCount = 0
 
     override suspend fun getCarts(abandonedSinceDays: Int): List<CartSummary> {
+        getCartsCallCount++
         if (shouldThrow) throw RuntimeException("Erreur réseau simulée")
         return cartsResult
     }

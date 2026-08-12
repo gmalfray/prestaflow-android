@@ -42,6 +42,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
@@ -82,6 +84,26 @@ fun ClientsRoute(
                 else -> null // null = pas de forçage (le mode TOP par défaut est géré par l'init du VM)
             }
         targetFilter?.let { viewModel.onNavigationFilter(it) }
+    }
+
+    // Rattrapage : recharge la liste au retour sur cet écran, cf. KDoc de
+    // OrdersViewModel.onScreenResumed pour le throttle et le pourquoi.
+    //
+    // DEUX déclencheurs nécessaires ici (contrairement à un écran nav top-level comme Commandes) :
+    // ClientsRoute est monté À L'INTÉRIEUR de ClientsTabsRoute, dont le sous-onglet actif
+    // (Clients/SAV/Avis) est un `when` Compose qui DÉMONTE le contenu des sous-onglets non
+    // sélectionnés (cf. ClientsTabsScreen). Si l'app revient au premier plan pendant qu'un AUTRE
+    // sous-onglet est affiché, ce composable n'est pas monté et ne peut PAS observer l'événement
+    // ON_RESUME sous-jacent — LifecycleEventEffect seul manquerait ce cas. LaunchedEffect(Unit)
+    // couvre le cas complémentaire : rattrape le retour sur CE sous-onglet lui-même (remontage),
+    // que l'app ait été backgroundée entre-temps ou non — le garde-fou du ViewModel (throttle 1
+    // min + anti-concurrence) absorbe les doubles déclenchements et les changements rapprochés de
+    // sous-onglet sans appel réseau superflu.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.onScreenResumed()
+    }
+    LaunchedEffect(Unit) {
+        viewModel.onScreenResumed()
     }
 
     ClientsScreen(

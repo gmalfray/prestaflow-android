@@ -1,10 +1,13 @@
 package com.rebuildit.prestaflow.ui.reviews
 
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard.Companion.MIN_INTERVAL_MS
 import com.rebuildit.prestaflow.domain.reviews.model.Review
 import com.rebuildit.prestaflow.domain.reviews.model.ReviewTrashResult
 import com.rebuildit.prestaflow.domain.reviews.model.ReviewsPage
 import com.rebuildit.prestaflow.fakes.FakeReviewsRepository
+import com.rebuildit.prestaflow.fakes.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -29,11 +32,15 @@ import org.junit.Test
 class ReviewsViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeRepo: FakeReviewsRepository
+    private lateinit var fakeTimeProvider: FakeTimeProvider
+    private lateinit var resumeRefreshGuard: ScreenResumeRefreshGuard
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeRepo = FakeReviewsRepository()
+        fakeTimeProvider = FakeTimeProvider()
+        resumeRefreshGuard = ScreenResumeRefreshGuard(fakeTimeProvider)
     }
 
     @After
@@ -41,7 +48,7 @@ class ReviewsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun buildViewModel() = ReviewsViewModel(fakeRepo, NetworkErrorMapper())
+    private fun buildViewModel() = ReviewsViewModel(fakeRepo, NetworkErrorMapper(), resumeRefreshGuard)
 
     @Test
     fun `charge la premiere page au demarrage`() =
@@ -205,6 +212,51 @@ class ReviewsViewModelTest {
 
             assertNull(vm.actionState.value.message)
             assertNull(vm.actionState.value.error)
+        }
+
+    // ─── Rattrapage au retour sur l'écran (onScreenResumed) ─────────────────
+
+    @Test
+    fun `onScreenResumed declenche un refresh de la liste ET du compteur apres le delai minimal`() =
+        runTest {
+            fakeRepo.fetchPendingReviewsResult = ReviewsPage(reviews = listOf(buildReview(812L)), hasNext = false, nextOffset = 0)
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeRepo.fetchPendingReviewsCallCount = 0
+            fakeRepo.refreshPendingCountCallCount = 0
+
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un retour à l'écran après le délai minimal doit recharger la liste",
+                fakeRepo.fetchPendingReviewsCallCount > 0,
+            )
+            assertTrue(
+                "Il doit AUSSI rafraîchir le compteur \"en attente\" (pastille du shell), sinon " +
+                    "liste et pastille peuvent se contredire",
+                fakeRepo.refreshPendingCountCallCount > 0,
+            )
+        }
+
+    @Test
+    fun `onScreenResumed est ignore avant expiration du delai minimal`() =
+        runTest {
+            fakeRepo.fetchPendingReviewsResult = ReviewsPage(reviews = emptyList(), hasNext = false, nextOffset = 0)
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeRepo.fetchPendingReviewsCallCount = 0
+
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS - 1)
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals(
+                "Un aller-retour rapide entre onglets ne doit pas déclencher un second appel réseau",
+                0,
+                fakeRepo.fetchPendingReviewsCallCount,
+            )
         }
 
     private fun buildReview(

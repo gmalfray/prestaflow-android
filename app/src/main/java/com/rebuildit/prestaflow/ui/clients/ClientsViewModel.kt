@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.clients.model.Client
@@ -50,6 +51,7 @@ class ClientsViewModel
         private val clientsRepository: ClientsRepository,
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
+        private val resumeRefreshGuard: ScreenResumeRefreshGuard,
     ) : ViewModel() {
         /**
          * Filtre initial transmis par la navigation (arg "filter").
@@ -107,6 +109,26 @@ class ClientsViewModel
                 fetchClientsForMode(mode = mode, query = query, resetPage = true, notifyOnError = true)
             } else {
                 refreshTopClientsAndStats(notifyOnError = true)
+            }
+        }
+
+        /**
+         * Rattrapage au retour sur l'écran Clients (cf. KDoc de
+         * [com.rebuildit.prestaflow.ui.orders.OrdersViewModel.onScreenResumed] pour le contrat
+         * général implémenté par [resumeRefreshGuard] — throttle 1 min + anti-concurrence). Réutilise
+         * EXACTEMENT la même logique que [onRefresh] (mode top-clients vs mode filtré/recherche en
+         * cours), donc conserve le mode actif, la query et la pagination déjà en place — juste
+         * silencieux en cas d'échec (`notifyOnError = false`), comme pour les autres écrans liste.
+         */
+        fun onScreenResumed() {
+            val current = _uiState.value
+            if (!resumeRefreshGuard.shouldRefresh(isBusy = current.isLoading || current.isRefreshing)) return
+            val mode = current.activeFilter
+            val query = current.query
+            if (query.isNotBlank() || mode != ClientFilter.TOP_CLIENTS) {
+                fetchClientsForMode(mode = mode, query = query, resetPage = true, notifyOnError = false)
+            } else {
+                refreshTopClientsAndStats(notifyOnError = false)
             }
         }
 
@@ -219,6 +241,7 @@ class ClientsViewModel
                                 stats = stats ?: current.stats,
                             )
                         }
+                        resumeRefreshGuard.markRefreshSucceeded()
                     }
                 } else {
                     // Navigation depuis le dashboard avec filtre (ex. "new") :
@@ -322,6 +345,7 @@ class ClientsViewModel
                         _uiState.update { current ->
                             current.copy(isRefreshing = false, error = null, stats = stats ?: current.stats)
                         }
+                        resumeRefreshGuard.markRefreshSucceeded()
                     }
                 }
         }
@@ -374,6 +398,10 @@ class ClientsViewModel
                                 error = null,
                             )
                         }
+                        // Repère du throttle de onScreenResumed : seul un rechargement COMPLET
+                        // (resetPage) compte comme "rafraîchissement réussi" — une page supplémentaire
+                        // (loadMore) ne remet pas le compteur à zéro, cf. ScreenResumeRefreshGuard.
+                        if (resetPage) resumeRefreshGuard.markRefreshSucceeded()
                     }.onFailure { error ->
                         Timber.w(error, "Échec du chargement des clients (mode=$mode, offset=$offset)")
                         _uiState.update { current ->

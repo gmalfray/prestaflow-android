@@ -2,12 +2,15 @@ package com.rebuildit.prestaflow.ui.clients
 
 import androidx.lifecycle.SavedStateHandle
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard.Companion.MIN_INTERVAL_MS
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.clients.model.Client
 import com.rebuildit.prestaflow.domain.clients.model.ClientStats
 import com.rebuildit.prestaflow.domain.clients.model.ClientsPage
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
 import com.rebuildit.prestaflow.fakes.FakeClientsRepository
+import com.rebuildit.prestaflow.fakes.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -44,12 +47,16 @@ class ClientsViewModelTest {
 
     private lateinit var fakeClientsRepo: FakeClientsRepository
     private lateinit var fakeAuthRepo: FakeAuthRepository
+    private lateinit var fakeTimeProvider: FakeTimeProvider
+    private lateinit var resumeRefreshGuard: ScreenResumeRefreshGuard
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeClientsRepo = FakeClientsRepository()
         fakeAuthRepo = FakeAuthRepository()
+        fakeTimeProvider = FakeTimeProvider()
+        resumeRefreshGuard = ScreenResumeRefreshGuard(fakeTimeProvider)
     }
 
     @After
@@ -72,6 +79,7 @@ class ClientsViewModelTest {
             clientsRepository = fakeClientsRepo,
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = fakeAuthRepo,
+            resumeRefreshGuard = resumeRefreshGuard,
         )
 
     // ─── Stats depuis l'API ──────────────────────────────────────────────────
@@ -697,6 +705,73 @@ class ClientsViewModelTest {
             val vm = buildViewModel(filterArg = null)
             advanceUntilIdle()
             assertNull(vm.navigationFilterFlow.value)
+        }
+
+    // ─── Rattrapage au retour sur l'écran (onScreenResumed) ─────────────────
+
+    @Test
+    fun `onScreenResumed en mode top clients declenche un refresh apres le delai minimal`() =
+        runTest {
+            // Peuple le flux Room observé (observeTopClients) : sans ça, isLoading reste vrai
+            // indéfiniment (aucun client émis) et le garde-fou considérerait l'écran comme
+            // perpétuellement occupé — cf. `stats total vient de fetchStats` pour le même besoin.
+            fakeClientsRepo.setClients(listOf(buildClient(1L)))
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeClientsRepo.refreshTopClientsCallCount = 0
+
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un retour à l'écran après le délai minimal doit rafraîchir les top clients",
+                fakeClientsRepo.refreshTopClientsCallCount > 0,
+            )
+        }
+
+    @Test
+    fun `onScreenResumed est ignore avant expiration du delai minimal`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeClientsRepo.refreshTopClientsCallCount = 0
+
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS - 1)
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals(
+                "Un aller-retour rapide entre onglets ne doit pas déclencher un second appel réseau",
+                0,
+                fakeClientsRepo.refreshTopClientsCallCount,
+            )
+        }
+
+    @Test
+    fun `onScreenResumed conserve le mode filtre et la recherche en cours`() =
+        runTest {
+            fakeClientsRepo.fetchClientsResult =
+                ClientsPage(clients = listOf(buildClient(1L)), hasNext = false, nextOffset = 1)
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            // Passe en mode ALL_CLIENTS avec une recherche active.
+            vm.onFilterChange(ClientFilter.ALL_CLIENTS)
+            advanceUntilIdle()
+            vm.onQueryChange("dupont")
+            advanceUntilIdle()
+            fakeClientsRepo.lastFetchClientsCall = null
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
+
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals(ClientFilter.ALL_CLIENTS, vm.uiState.value.activeFilter)
+            assertEquals(
+                "onScreenResumed doit relancer fetchClients avec la MÊME query que celle déjà saisie",
+                "dupont",
+                fakeClientsRepo.lastFetchClientsCall?.query,
+            )
         }
 
     // ─── Builders ────────────────────────────────────────────────────────────

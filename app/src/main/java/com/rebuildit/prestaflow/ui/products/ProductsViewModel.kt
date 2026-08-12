@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
 import com.rebuildit.prestaflow.domain.products.model.Product
@@ -33,6 +34,7 @@ class ProductsViewModel
         private val productsRepository: ProductsRepository,
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
+        private val resumeRefreshGuard: ScreenResumeRefreshGuard,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(ProductsUiState())
         val uiState: StateFlow<ProductsUiState> = _uiState.asStateFlow()
@@ -48,6 +50,21 @@ class ProductsViewModel
 
         fun onRefresh() {
             refresh(forceRemote = true, notifyOnError = true)
+            refreshLowStockCount()
+            refreshCatalogTotal()
+        }
+
+        /**
+         * Rattrapage au retour sur l'écran Produits (cf. KDoc de
+         * [com.rebuildit.prestaflow.ui.orders.OrdersViewModel.onScreenResumed] pour le contrat
+         * général implémenté par [resumeRefreshGuard]). Recharge la liste avec le filtre de stock et
+         * la recherche déjà en place ([refresh] les relit depuis [_uiState] courant), silencieux en
+         * cas d'échec. Rafraîchit aussi les 2 compteurs KPI (stock faible, total catalogue) pour
+         * qu'ils ne restent pas figés pendant que la liste, elle, se met à jour.
+         */
+        fun onScreenResumed() {
+            if (!resumeRefreshGuard.shouldRefresh(isBusy = _uiState.value.isRefreshing)) return
+            refresh(forceRemote = true, notifyOnError = false)
             refreshLowStockCount()
             refreshCatalogTotal()
         }
@@ -192,6 +209,7 @@ class ProductsViewModel
                                 totalCount = total ?: current.totalCount,
                             )
                         }
+                        resumeRefreshGuard.markRefreshSucceeded()
                     }
             }
         }
