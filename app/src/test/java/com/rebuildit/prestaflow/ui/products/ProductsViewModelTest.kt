@@ -1,12 +1,15 @@
 package com.rebuildit.prestaflow.ui.products
 
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard.Companion.MIN_INTERVAL_MS
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductImage
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.domain.products.model.StockFilter
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
 import com.rebuildit.prestaflow.fakes.FakeProductsRepository
+import com.rebuildit.prestaflow.fakes.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -35,12 +38,16 @@ class ProductsViewModelTest {
 
     private lateinit var fakeProductsRepo: FakeProductsRepository
     private lateinit var fakeAuthRepo: FakeAuthRepository
+    private lateinit var fakeTimeProvider: FakeTimeProvider
+    private lateinit var resumeRefreshGuard: ScreenResumeRefreshGuard
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeProductsRepo = FakeProductsRepository()
         fakeAuthRepo = FakeAuthRepository()
+        fakeTimeProvider = FakeTimeProvider()
+        resumeRefreshGuard = ScreenResumeRefreshGuard(fakeTimeProvider)
     }
 
     @After
@@ -53,6 +60,7 @@ class ProductsViewModelTest {
             productsRepository = fakeProductsRepo,
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = fakeAuthRepo,
+            resumeRefreshGuard = resumeRefreshGuard,
         )
 
     // ─── Total depuis l'API ──────────────────────────────────────────────────
@@ -302,6 +310,71 @@ class ProductsViewModelTest {
             assertTrue(
                 "L'état doit contenir une erreur après onRefresh() échoué",
                 vm.uiState.value.error != null,
+            )
+        }
+
+    // ─── Rattrapage au retour sur l'écran (onScreenResumed) ─────────────────
+
+    @Test
+    fun `onScreenResumed declenche un refresh quand le delai minimal est depasse`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeProductsRepo.refreshCalls.clear()
+
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un retour à l'écran après le délai minimal doit déclencher un refresh réseau",
+                fakeProductsRepo.refreshCalls.isNotEmpty(),
+            )
+        }
+
+    @Test
+    fun `onScreenResumed est ignore avant expiration du delai minimal`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeProductsRepo.refreshCalls.clear()
+
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS - 1)
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un aller-retour rapide entre onglets ne doit pas déclencher un second appel réseau",
+                fakeProductsRepo.refreshCalls.isEmpty(),
+            )
+        }
+
+    @Test
+    fun `onScreenResumed conserve le filtre de stock et la recherche en cours`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            vm.onStockFilterSelected(StockFilter.LOW_STOCK)
+            advanceUntilIdle()
+            vm.onQueryChange("vis")
+            advanceUntilIdle()
+            fakeProductsRepo.refreshCalls.clear()
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
+
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals(StockFilter.LOW_STOCK, vm.uiState.value.stockFilter)
+            val lastCall = fakeProductsRepo.refreshCalls.lastOrNull()
+            assertEquals(
+                "onScreenResumed doit relancer refresh avec LE MÊME filtre de stock",
+                StockFilter.LOW_STOCK.stockParam,
+                lastCall?.stockFilter,
+            )
+            assertEquals(
+                "onScreenResumed doit relancer refresh avec LA MÊME recherche",
+                "vis",
+                lastCall?.search,
             )
         }
 
