@@ -36,11 +36,13 @@ class FakeReviewsRepository(
 
     var fetchPendingReviewsResult: ReviewsPage = ReviewsPage(reviews = emptyList(), hasNext = false, nextOffset = 0)
     var shouldThrowOnFetch = false
+    var fetchPendingReviewsCallCount = 0
 
     override suspend fun fetchPendingReviews(
         limit: Int,
         offset: Int,
     ): ReviewsPage {
+        fetchPendingReviewsCallCount++
         if (shouldThrowOnFetch) throw RuntimeException("Erreur réseau fetchPendingReviews simulée")
         return fetchPendingReviewsResult
     }

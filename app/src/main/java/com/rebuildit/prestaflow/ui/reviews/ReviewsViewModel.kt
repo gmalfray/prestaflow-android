@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
 import com.rebuildit.prestaflow.domain.reviews.ReviewRejectionReason
 import com.rebuildit.prestaflow.domain.reviews.ReviewsRepository
 import com.rebuildit.prestaflow.domain.reviews.model.Review
@@ -29,6 +30,7 @@ class ReviewsViewModel
     constructor(
         private val reviewsRepository: ReviewsRepository,
         private val networkErrorMapper: NetworkErrorMapper,
+        private val resumeRefreshGuard: ScreenResumeRefreshGuard,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<ReviewsUiState>(ReviewsUiState.Loading)
         val uiState: StateFlow<ReviewsUiState> = _uiState.asStateFlow()
@@ -44,6 +46,36 @@ class ReviewsViewModel
         }
 
         fun onRefresh() = load(resetPage = true)
+
+        /**
+         * Rattrapage au retour sur l'écran Avis (cf. KDoc de
+         * [com.rebuildit.prestaflow.ui.orders.OrdersViewModel.onScreenResumed] pour le contrat
+         * général implémenté par [resumeRefreshGuard]).
+         *
+         * Aucun contrôle de capacité/scope ici : cet écran n'est atteignable QUE si la capacité
+         * `reviews` est vraie ET si le jeton porte `reviews.moderate` (cf.
+         * [com.rebuildit.prestaflow.ui.clients.ClientsSection.visibleSections], seul point d'entrée
+         * vers `ReviewsRoute`/ce ViewModel) — si l'une des deux venait à disparaître en cours de
+         * session, le sous-onglet Avis disparaîtrait AVANT qu'un retour sur cet écran ne soit
+         * possible.
+         *
+         * Rafraîchit AUSSI [ReviewsRepository.pendingReviewCount] (pastille de l'onglet Clients, cf.
+         * [com.rebuildit.prestaflow.ui.root.RootViewModel.clientsBadgeCount]) : sans ce second
+         * appel, un avis modéré ailleurs pendant qu'on était sur un autre onglet disparaîtrait de
+         * CETTE liste au retour sans que la pastille du shell ne se mette à jour — liste et
+         * pastille se contrediraient. Même throttle que la liste (un seul [resumeRefreshGuard]).
+         */
+        fun onScreenResumed() {
+            val busy =
+                when (val state = _uiState.value) {
+                    is ReviewsUiState.Loading -> true
+                    is ReviewsUiState.Content -> state.isRefreshing
+                    is ReviewsUiState.Error -> false
+                }
+            if (!resumeRefreshGuard.shouldRefresh(isBusy = busy)) return
+            load(resetPage = true)
+            viewModelScope.launch { reviewsRepository.refreshPendingCount() }
+        }
 
         fun onLoadMore() {
             val state = currentContent() ?: return
@@ -166,6 +198,9 @@ class ReviewsViewModel
                                 isRefreshing = false,
                                 error = null,
                             )
+                        // Repère du throttle de onScreenResumed : seul un rechargement COMPLET
+                        // (resetPage) compte comme "réussi" — loadMore ne le remet pas à zéro.
+                        if (resetPage) resumeRefreshGuard.markRefreshSucceeded()
                     }.onFailure { error ->
                         Timber.w(error, "Échec du chargement des avis en modération")
                         val mapped = networkErrorMapper.map(error)
