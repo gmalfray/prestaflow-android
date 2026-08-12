@@ -2,6 +2,8 @@ package com.rebuildit.prestaflow.ui.orders
 
 import androidx.lifecycle.SavedStateHandle
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard.Companion.MIN_INTERVAL_MS
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
@@ -42,6 +44,7 @@ class OrdersViewModelTest {
     private lateinit var fakeAuthRepo: FakeAuthRepository
     private lateinit var fakeLanguageRepo: FakeLanguageRepository
     private lateinit var fakeTimeProvider: FakeTimeProvider
+    private lateinit var resumeRefreshGuard: ScreenResumeRefreshGuard
 
     @Before
     fun setUp() {
@@ -51,6 +54,7 @@ class OrdersViewModelTest {
         fakeAuthRepo = FakeAuthRepository()
         fakeLanguageRepo = FakeLanguageRepository()
         fakeTimeProvider = FakeTimeProvider()
+        resumeRefreshGuard = ScreenResumeRefreshGuard(fakeTimeProvider)
     }
 
     @After
@@ -66,7 +70,7 @@ class OrdersViewModelTest {
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = fakeAuthRepo,
             languageRepository = fakeLanguageRepo,
-            timeProvider = fakeTimeProvider,
+            resumeRefreshGuard = resumeRefreshGuard,
         )
 
     // ─── Filtre multi-statuts ────────────────────────────────────────────────
@@ -913,7 +917,7 @@ class OrdersViewModelTest {
             advanceUntilIdle()
             fakeOrdersRepo.refreshCalls.clear()
 
-            fakeTimeProvider.advanceBy(AUTO_REFRESH_MIN_INTERVAL_MS) // délai minimal tout juste dépassé
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS) // délai minimal tout juste dépassé
             vm.onScreenResumed()
             advanceUntilIdle()
 
@@ -930,7 +934,7 @@ class OrdersViewModelTest {
             advanceUntilIdle()
             fakeOrdersRepo.refreshCalls.clear()
 
-            fakeTimeProvider.advanceBy(AUTO_REFRESH_MIN_INTERVAL_MS - 1) // juste avant le délai
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS - 1) // juste avant le délai
             vm.onScreenResumed()
             advanceUntilIdle()
 
@@ -945,7 +949,7 @@ class OrdersViewModelTest {
         runTest {
             val vm = buildViewModel()
             advanceUntilIdle()
-            fakeTimeProvider.advanceBy(AUTO_REFRESH_MIN_INTERVAL_MS)
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
             fakeOrdersRepo.refreshCalls.clear()
 
             // Un refresh reste en cours (le fake suspend sur la barrière tant qu'elle n'est pas complétée).
@@ -993,7 +997,7 @@ class OrdersViewModelTest {
             val vm = buildViewModel()
             advanceUntilIdle()
             fakePrefsRepo.markOrdersListSeenCalls.clear()
-            fakeTimeProvider.advanceBy(AUTO_REFRESH_MIN_INTERVAL_MS)
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
             fakeOrdersRepo.shouldThrowOnRefresh = true
 
             vm.onScreenResumed()
