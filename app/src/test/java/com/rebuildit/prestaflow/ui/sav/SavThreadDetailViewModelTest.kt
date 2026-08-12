@@ -197,6 +197,7 @@ class SavThreadDetailViewModelTest {
                     id = 154L,
                     status = SavThreadStatus.AWAITING_MERCHANT_REPLY,
                     unread = true,
+                    toProcess = true,
                     customerId = 88L,
                     customerName = "Camille Martin",
                     customerEmail = "camille@example.com",

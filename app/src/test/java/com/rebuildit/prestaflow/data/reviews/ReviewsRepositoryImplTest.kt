@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.data.reviews
 
+import app.cash.turbine.test
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.data.remote.dto.PaginationDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewAuthorDto
@@ -41,6 +42,48 @@ class ReviewsRepositoryImplTest {
                 ioDispatcher = UnconfinedTestDispatcher(),
             )
     }
+
+    // ─── pendingReviewCount / refreshPendingCount ──────────────────────────────
+
+    @Test
+    fun `pendingReviewCount emet 0 avant tout refresh`() =
+        runTest {
+            repository.pendingReviewCount.test {
+                assertEquals(0, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `refreshPendingCount compte tous les avis de la premiere page (deja filtree cote connecteur)`() =
+        runTest {
+            fakeApi.reviewsResponse =
+                ReviewListResponseDto(
+                    reviews = listOf(buildReviewDto(id = 1L), buildReviewDto(id = 2L), buildReviewDto(id = 3L)),
+                )
+
+            repository.refreshPendingCount()
+
+            repository.pendingReviewCount.test {
+                assertEquals(3, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `refreshPendingCount conserve la derniere valeur connue en cas d echec reseau`() =
+        runTest {
+            fakeApi.reviewsResponse = ReviewListResponseDto(reviews = listOf(buildReviewDto(id = 1L)))
+            repository.refreshPendingCount()
+
+            fakeApi.reviewsException = RuntimeException("Erreur réseau simulée")
+            repository.refreshPendingCount()
+
+            repository.pendingReviewCount.test {
+                assertEquals(1, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 
     @Test
     fun `fetchPendingReviews mappe la liste et la pagination`() =

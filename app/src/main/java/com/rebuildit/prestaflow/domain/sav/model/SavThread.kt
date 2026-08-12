@@ -37,8 +37,19 @@ enum class SavThreadStatus(
 data class SavThread(
     val id: Long,
     val status: SavThreadStatus,
-    /** Au moins un message de la cliente marqué non lu — convention du connecteur. */
+    /**
+     * ⚠️ Au moins un message de la cliente marqué non lu (convention du connecteur) — mais
+     * quasiment toujours vrai sur une boutique dont le SAV est traité par e-mail (PrestaShop ne
+     * pose ce drapeau qu'à l'ouverture en BO natif). Usage PAR FIL uniquement (ex. détail) ;
+     * **jamais** pour un compteur global, cf. [toProcess].
+     */
     val unread: Boolean,
+    /**
+     * Définition « à traiter » exacte (depuis le connecteur v1.20.0) : fil non clos, dernier
+     * message de la cliente, activité de moins de 90 jours. C'est ce champ qui doit conditionner
+     * tout badge/mise en avant par fil — pas [unread].
+     */
+    val toProcess: Boolean,
     val customerId: Long?,
     val customerName: String?,
     val customerEmail: String?,

@@ -155,7 +155,7 @@ private fun PrestaFlowApp(
     PrestaFlowTheme(settings = themeState.settings) {
         val rootViewModel: RootViewModel = hiltViewModel()
         val authState by rootViewModel.authState.collectAsStateWithLifecycle()
-        val unreadSavCount by rootViewModel.unreadSavCount.collectAsStateWithLifecycle()
+        val clientsBadgeCount by rootViewModel.clientsBadgeCount.collectAsStateWithLifecycle()
 
         when (authState) {
             AuthState.Loading -> LoadingScreen()
@@ -165,7 +165,7 @@ private fun PrestaFlowApp(
                     onLogout = rootViewModel::logout,
                     pendingOrderId = pendingOrderId,
                     onOrderIdConsumed = onOrderIdConsumed,
-                    unreadSavCount = unreadSavCount,
+                    clientsBadgeCount = clientsBadgeCount,
                 )
             AuthState.Unauthenticated -> UnauthenticatedFlow()
         }
@@ -233,23 +233,23 @@ private fun NavBarLabel(text: String) {
 }
 
 /**
- * Icône d'onglet de navigation, avec pastille optionnelle (ex. fils SAV non lus sur l'onglet
- * Clients — cf. [unreadSavCount] dans [AuthenticatedShell]). `null`/vide → pas de pastille, jamais
- * un badge "0" affiché (cf. [formatBadgeCount]). [badgeCount] alimente uniquement la description
- * d'accessibilité de la pastille (ignoré si [badgeLabel] est `null`).
+ * Icône d'onglet de navigation, avec pastille optionnelle (ex. somme SAV + Avis sur l'onglet
+ * Clients — cf. [clientsBadgeCount] dans [AuthenticatedShell]). `null`/vide → pas de pastille,
+ * jamais un badge "0" affiché (cf. [formatBadgeCount]). [badgeDescription] alimente la description
+ * d'accessibilité de la pastille (ignoré si [badgeLabel] est `null`) — c'est l'appelant qui la
+ * formule, ce composable restant générique (pas propre au SAV).
  */
 @Composable
 private fun NavIconWithBadge(
     icon: ImageVector,
     contentDescription: String,
     badgeLabel: String?,
-    badgeCount: Int = 0,
+    badgeDescription: String = "",
 ) {
     if (badgeLabel == null) {
         Icon(imageVector = icon, contentDescription = contentDescription)
         return
     }
-    val badgeDescription = stringResource(R.string.clients_badge_unread_sav_content_description, badgeCount)
     BadgedBox(
         badge = {
             Badge(
@@ -276,9 +276,12 @@ private fun AuthenticatedShell(
     onLogout: () -> Unit,
     pendingOrderId: Long? = null,
     onOrderIdConsumed: () -> Unit = {},
-    // Fils SAV non lus : pastille sur l'onglet Clients, compensation à la descente de niveau du
-    // SAV dans la nav (cf. étude rebuild-it/docs/app-avis-sav.md § "Contrepartie assumée").
-    unreadSavCount: Int = 0,
+    // Somme des fils SAV non lus et des avis en attente de modération (part avis comptée
+    // uniquement si la capacité `reviews` est vraie, cf. RootViewModel.clientsBadgeCount) :
+    // pastille sur l'onglet Clients, compensation à la descente de niveau du SAV/des Avis dans la
+    // nav (cf. étude rebuild-it/docs/app-avis-sav.md § "Contrepartie assumée"). La répartition
+    // SAV/Avis, elle, se lit sur les sous-onglets une fois dans Clients (cf. ClientsTabsScreen).
+    clientsBadgeCount: Int = 0,
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -350,6 +353,11 @@ private fun AuthenticatedShell(
     val hideTabChrome = isFullScreenRoute || isSettings || isNotifCategories
     val settingsLabel = stringResource(R.string.destination_settings)
     val backLabel = stringResource(R.string.content_description_back)
+    // Calculée une fois, réutilisée par les deux points d'affichage de la pastille (barre du bas
+    // + rail, cf. NavIconWithBadge ci-dessous) : le libellé doit dire que c'est une somme SAV +
+    // Avis, pas seulement du SAV (cf. retour Greg).
+    val clientsBadgeLabel = formatBadgeCount(clientsBadgeCount)
+    val clientsBadgeDescription = stringResource(R.string.clients_badge_summary_content_description, clientsBadgeCount)
 
     // Navigation partagée par la barre du bas (compact) ET le rail (medium/expanded) : évite de
     // dupliquer deux fois la même logique (et le même correctif) dans les deux blocs `onItemClick`.
@@ -473,11 +481,11 @@ private fun AuthenticatedShell(
                                     contentDescription = label,
                                     badgeLabel =
                                         if (destination == AppDestination.Clients) {
-                                            formatBadgeCount(unreadSavCount)
+                                            clientsBadgeLabel
                                         } else {
                                             null
                                         },
-                                    badgeCount = unreadSavCount,
+                                    badgeDescription = clientsBadgeDescription,
                                 )
                             },
                             colors = navigationBarItemColors,
@@ -522,11 +530,11 @@ private fun AuthenticatedShell(
                                         contentDescription = label,
                                         badgeLabel =
                                             if (destination == AppDestination.Clients) {
-                                                formatBadgeCount(unreadSavCount)
+                                                clientsBadgeLabel
                                             } else {
                                                 null
                                             },
-                                        badgeCount = unreadSavCount,
+                                        badgeDescription = clientsBadgeDescription,
                                     )
                                 },
                                 label = { NavBarLabel(label) },

@@ -10,24 +10,24 @@ import kotlinx.coroutines.flow.StateFlow
 
 /** Fake en mémoire de [SavRepository]. */
 class FakeSavRepository(
-    initialUnreadCount: Int = 0,
+    initialToProcessCount: Int = 0,
 ) : SavRepository {
-    private val _unreadThreadCount = MutableStateFlow(initialUnreadCount)
-    override val unreadThreadCount: StateFlow<Int> = _unreadThreadCount
+    private val _toProcessCount = MutableStateFlow(initialToProcessCount)
+    override val toProcessCount: StateFlow<Int> = _toProcessCount
 
-    fun emitUnreadCount(count: Int) {
-        _unreadThreadCount.value = count
+    fun emitToProcessCount(count: Int) {
+        _toProcessCount.value = count
     }
 
-    /** Valeur émise dans [unreadThreadCount] au prochain [refreshUnreadCount] réussi. */
-    var nextRefreshUnreadCount: Int? = null
-    var shouldThrowOnRefreshUnreadCount = false
-    var refreshUnreadCountCallCount = 0
+    /** Valeur émise dans [toProcessCount] au prochain [refreshToProcessCount] réussi. */
+    var nextRefreshToProcessCount: Int? = null
+    var shouldThrowOnRefreshToProcessCount = false
+    var refreshToProcessCountCallCount = 0
 
-    override suspend fun refreshUnreadCount() {
-        refreshUnreadCountCallCount++
-        if (shouldThrowOnRefreshUnreadCount) return // best-effort : ne remonte jamais l'erreur à l'appelant
-        nextRefreshUnreadCount?.let { _unreadThreadCount.value = it }
+    override suspend fun refreshToProcessCount() {
+        refreshToProcessCountCallCount++
+        if (shouldThrowOnRefreshToProcessCount) return // best-effort : ne remonte jamais l'erreur à l'appelant
+        nextRefreshToProcessCount?.let { _toProcessCount.value = it }
     }
 
     var fetchThreadsResult: SavThreadsPage = SavThreadsPage(threads = emptyList(), hasNext = false, nextOffset = 0)

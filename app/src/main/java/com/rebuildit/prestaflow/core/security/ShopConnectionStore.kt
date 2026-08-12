@@ -32,6 +32,12 @@ class ShopConnectionStore
             val label: String,
             val token: String,
             val expiresAt: Long? = null,
+            // Absent des connexions persistées avant l'introduction du filtrage par scope côté app
+            // (`emptyList()` par défaut, jamais une valeur réelle — le connecteur assigne toujours
+            // des scopes non vides à un jeton authentique) : AuthRepositoryImpl.refreshScopesIfMissing()
+            // détecte ce cas au démarrage et force un renouvellement silencieux du jeton plutôt que
+            // de laisser une utilisatrice ayant pourtant le droit voir le SAV disparaître sans
+            // explication (capacité != droit, cf. ClientsSection.visibleSections).
             val scopes: List<String> = emptyList(),
             val apiKey: String = "",
             // Absent des connexions persistées avant cette version : la valeur par défaut

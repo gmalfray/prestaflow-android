@@ -27,6 +27,7 @@ import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.SavStatsDto
 import com.rebuildit.prestaflow.data.remote.dto.SavStatusUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.SavThreadDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SavThreadListResponseDto
@@ -177,6 +178,16 @@ class FakePrestaFlowApi : PrestaFlowApi {
         lastSavThreadsFilters = filters
         savThreadsException?.let { throw it }
         return savThreadsResponse
+    }
+
+    var savStatsResponse: SavStatsDto = SavStatsDto()
+    var savStatsException: Throwable? = null
+    var getSavStatsCallCount = 0
+
+    override suspend fun getSavStats(): SavStatsDto {
+        getSavStatsCallCount++
+        savStatsException?.let { throw it }
+        return savStatsResponse
     }
 
     var savThreadDetailResponse: SavThreadDetailResponseDto? = null

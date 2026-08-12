@@ -18,12 +18,6 @@ import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Nombre max de fils inspectés pour approximer [SavRepositoryImpl.unreadThreadCount] — le max
- * accepté par le connecteur (`limit`, cf. `GET /sav`).
- */
-private const val UNREAD_COUNT_SCAN_LIMIT = 100
-
 @Singleton
 class SavRepositoryImpl
     @Inject
@@ -32,23 +26,22 @@ class SavRepositoryImpl
         private val networkErrorMapper: NetworkErrorMapper,
         private val ioDispatcher: CoroutineDispatcher,
     ) : SavRepository {
-        private val _unreadThreadCount = MutableStateFlow(0)
-        override val unreadThreadCount: Flow<Int> = _unreadThreadCount
+        private val _toProcessCount = MutableStateFlow(0)
+        override val toProcessCount: Flow<Int> = _toProcessCount
 
         /**
-         * Le connecteur n'expose pas de compteur dédié (cf. `rebuild-connector` docs/api.md § SAV) :
-         * on approxime en comptant les fils `unread` dans la première page de fils non-clos (tri
-         * par défaut du connecteur = non-clos d'abord). Avec 97 fils ouverts mesurés en prod (étude
-         * `rebuild-it/docs/app-avis-sav.md` § « Ce que disent les données »), une page de
-         * [UNREAD_COUNT_SCAN_LIMIT] suffit aujourd'hui. Si ce nombre venait à dépasser la limite,
-         * le compteur SOUS-ESTIMERAIT plutôt que d'enchaîner des pages supplémentaires en tâche de
-         * fond — coût réseau non justifié pour une simple pastille.
+         * `GET /sav/stats` (v1.20.0+) — compteur exact calculé en SQL côté connecteur, indépendant
+         * de la pagination. Remplace l'ancienne approximation par scan d'une page de `GET /sav`
+         * comptant les `unread` : cette dernière produisait des chiffres sans rapport avec la
+         * réalité (449 fils « non lus » mesurés en prod sur cette même boutique, contre 2 fils
+         * réellement « à traiter » — cf. Javadoc de [com.rebuildit.prestaflow.domain.sav.SavRepository.toProcessCount]).
+         * Best-effort : un échec réseau conserve la dernière valeur connue.
          */
-        override suspend fun refreshUnreadCount() {
+        override suspend fun refreshToProcessCount() {
             withContext(ioDispatcher) {
-                runCatching { api.getSavThreads(mapOf("limit" to UNREAD_COUNT_SCAN_LIMIT.toString())) }
+                runCatching { api.getSavStats() }
                     .onSuccess { response ->
-                        _unreadThreadCount.value = response.threads.count { it.unread }
+                        _toProcessCount.value = response.toProcess
                     }
                     .onFailure { error ->
                         Timber.w(networkErrorMapper.map(error).toString())

@@ -14,12 +14,36 @@ data class SavThreadListResponseDto(
     @SerialName("pagination") val pagination: PaginationDto? = null,
 )
 
+/**
+ * Réponse de `GET /sav/stats` (v1.20.0+) — compteur exact de fils « à traiter », calculé en SQL
+ * côté connecteur, indépendant de la pagination. Source de vérité pour la pastille SAV de l'app :
+ * cf. [com.rebuildit.prestaflow.domain.sav.SavRepository.toProcessCount].
+ */
+@Serializable
+data class SavStatsDto(
+    @SerialName("to_process") val toProcess: Int = 0,
+)
+
 @Serializable
 data class SavThreadDto(
     @SerialName("id") val id: Long,
     /** Un des 4 statuts natifs (`open`/`pending1`/`pending2`/`closed`). */
     @SerialName("status") val status: String = "",
+    /**
+     * ⚠️ Quasi inexploitable comme signal d'action : PrestaShop ne le pose que quand un employé
+     * ouvre le fil en BO natif, jamais quand le SAV est traité par e-mail (449/481 fils « non
+     * lus » mesurés en prod, dont 364 déjà clos). Conservé pour compat ascendante et pour un usage
+     * PAR FIL (ex. pastille dans le détail) — **ne doit plus alimenter aucun compteur global**,
+     * voir [toProcess] et [com.rebuildit.prestaflow.domain.sav.SavRepository.toProcessCount].
+     */
     @SerialName("unread") val unread: Boolean = false,
+    /**
+     * Depuis v1.20.0 — définition « à traiter » exacte, calculée côté connecteur : fil non clos,
+     * dernier message émis par la cliente, activité de moins de 90 jours
+     * (`SavService::TO_PROCESS_WINDOW_DAYS` côté `rebuild-connector`). C'est CE champ qui doit
+     * conditionner tout badge/mise en avant visuelle par fil, pas [unread].
+     */
+    @SerialName("to_process") val toProcess: Boolean = false,
     /**
      * ⚠️ Le connecteur émet TOUJOURS cet objet, même pour un contact anonyme : c'est
      * `customer.id`/`customer.name` qui valent alors `null` (jamais l'objet entier). Nullable ici

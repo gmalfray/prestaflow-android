@@ -14,8 +14,11 @@ import com.rebuildit.prestaflow.domain.auth.ShopUrlValidator
 import com.rebuildit.prestaflow.domain.auth.model.AuthToken
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -48,6 +51,10 @@ class AuthRepositoryImpl
         // Sérialise les rafraîchissements de jeton (plusieurs 401 concurrents → un seul re-login).
         private val refreshMutex = Mutex()
 
+        // Fire-and-forget pour refreshScopesIfMissing() : ce correctif doit s'exécuter en tâche de
+        // fond dès init(), qui n'est pas une coroutine — même pattern que FcmRegistrationManager.
+        private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
+
         init {
             migrateLegacySingleShopIfNeeded()
             val active = activeConnection()
@@ -61,6 +68,12 @@ class AuthRepositoryImpl
                     // on réactive la boutique (endpoint + token) sans bloquer sur l'écran de
                     // connexion. L'Authenticator OkHttp rafraîchira le jeton au 1er 401.
                     activate(active)
+                    // Connexion persistée AVANT le stockage des scopes (cf. Javadoc de
+                    // refreshScopesIfMissing) : le jeton publié ci-dessus porte des scopes vides,
+                    // ce qui masquerait à tort SAV/Avis (capacité != droit) — potentiellement pour
+                    // toute la durée de vie restante du jeton (jusqu'à 1h) si aucun 401 fortuit ne
+                    // survient entre-temps pour déclencher le refresh normal de TokenAuthenticator.
+                    refreshScopesIfMissing(active)
                 }
                 else -> {
                     // Connexion créée AVANT ce correctif : jeton expiré et pas de clé API
@@ -300,6 +313,40 @@ class AuthRepositoryImpl
         private fun refreshConnections() {
             val activeId = connectionStore.getActiveId()
             _connections.value = connectionStore.read().map { it.copy(isActive = it.id == activeId) }
+        }
+
+        /**
+         * Renouvelle silencieusement le jeton d'une connexion dont les scopes sont vides —
+         * signature d'une connexion persistée AVANT l'introduction du filtrage par scope côté app
+         * (`ShopConnectionStore.Stored.scopes` absent du JSON legacy, décodé à `emptyList()` par
+         * défaut). Un jeton authentique ne porte JAMAIS un tableau de scopes vide : le connecteur
+         * applique toujours des scopes par défaut (`SettingsService::DEFAULT_SCOPES`, cf.
+         * `rebuild-connector`) — `scopes.isEmpty()` signale donc sans ambiguïté ce cas legacy,
+         * jamais une session normale.
+         *
+         * Sans ce correctif, l'utilisatrice concernée verrait le SAV disparaître de l'onglet
+         * Clients sans explication alors qu'elle y a parfaitement droit (capacité toujours vraie,
+         * scope simplement jamais persisté) — et ça durerait potentiellement jusqu'à l'expiration
+         * du jeton (TTL ~1h côté module), le seul déclencheur normal d'un renouvellement
+         * ([TokenAuthenticator], sur un 401). On appelle donc directement [refreshActiveToken] —
+         * même mécanisme, déclenché au démarrage plutôt qu'en réaction à un 401 — qui effectue un
+         * VRAI re-login via la clé API conservée et republie [connection] avec les scopes réels.
+         *
+         * Best-effort et silencieux : un échec (ex. hors-ligne au démarrage) laisse les scopes
+         * vides pour cette session — SAV/Avis restent masqués (fail-closed, cf.
+         * `ClientsSection.visibleSections`) plutôt que de bloquer le démarrage ou de redemander une
+         * reconnexion complète ; le prochain démarrage — ou le prochain 401 — retentera.
+         */
+        private fun refreshScopesIfMissing(connection: ShopConnection) {
+            if (connection.token.scopes.isNotEmpty()) return
+            if (connection.apiKey.isBlank()) return // pas de reconnexion silencieuse possible sans clé API
+            scope.launch {
+                Timber.i(
+                    "Connexion %s sans scopes persistés (antérieure à leur introduction) — renouvellement silencieux",
+                    connection.shopUrl,
+                )
+                refreshActiveToken()
+            }
         }
 
         /** Migre un utilisateur déjà connecté (mono-boutique) vers une connexion. */

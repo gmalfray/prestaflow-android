@@ -166,6 +166,7 @@ class SavViewModelTest {
             id = id,
             status = SavThreadStatus.OPEN,
             unread = false,
+            toProcess = false,
             customerId = 1L,
             customerName = "Client Test",
             customerEmail = "client@example.com",
