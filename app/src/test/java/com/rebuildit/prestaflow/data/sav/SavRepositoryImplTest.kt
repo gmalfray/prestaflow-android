@@ -6,6 +6,7 @@ import com.rebuildit.prestaflow.data.remote.dto.SavCustomerDto
 import com.rebuildit.prestaflow.data.remote.dto.SavMessageDto
 import com.rebuildit.prestaflow.data.remote.dto.SavOrderDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.SavStatsDto
 import com.rebuildit.prestaflow.data.remote.dto.SavThreadDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SavThreadDto
 import com.rebuildit.prestaflow.data.remote.dto.SavThreadListResponseDto
@@ -36,49 +37,56 @@ class SavRepositoryImplTest {
             )
     }
 
-    // ─── unreadThreadCount / refreshUnreadCount ──────────────────────────────
+    // ─── toProcessCount / refreshToProcessCount ──────────────────────────────
+    //
+    // Depuis v1.20.0, ces tests portent sur `GET /sav/stats` (compteur SQL exact), PLUS sur un
+    // scan de `GET /sav` — cf. Javadoc de SavRepository.toProcessCount pour la raison (le drapeau
+    // `unread` s'est révélé inexploitable comme signal d'action).
 
     @Test
-    fun `unreadThreadCount emet 0 avant tout refresh`() =
+    fun `toProcessCount emet 0 avant tout refresh`() =
         runTest {
-            repository.unreadThreadCount.test {
+            repository.toProcessCount.test {
                 assertEquals(0, awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
         }
 
     @Test
-    fun `refreshUnreadCount compte les fils marques unread dans la premiere page`() =
+    fun `refreshToProcessCount reprend tel quel le compteur du connecteur`() =
         runTest {
-            fakeApi.savThreadsResponse =
-                SavThreadListResponseDto(
-                    threads =
-                        listOf(
-                            buildThreadDto(id = 1L, unread = true),
-                            buildThreadDto(id = 2L, unread = false),
-                            buildThreadDto(id = 3L, unread = true),
-                        ),
-                )
+            fakeApi.savStatsResponse = SavStatsDto(toProcess = 2)
 
-            repository.refreshUnreadCount()
+            repository.refreshToProcessCount()
 
-            repository.unreadThreadCount.test {
+            repository.toProcessCount.test {
                 assertEquals(2, awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
         }
 
     @Test
-    fun `refreshUnreadCount conserve la derniere valeur connue en cas d echec reseau`() =
+    fun `refreshToProcessCount appelle bien sav stats, pas une page de sav`() =
         runTest {
-            fakeApi.savThreadsResponse = SavThreadListResponseDto(threads = listOf(buildThreadDto(id = 1L, unread = true)))
-            repository.refreshUnreadCount()
+            fakeApi.savStatsResponse = SavStatsDto(toProcess = 2)
 
-            fakeApi.savThreadsException = RuntimeException("Erreur réseau simulée")
-            repository.refreshUnreadCount()
+            repository.refreshToProcessCount()
 
-            repository.unreadThreadCount.test {
-                assertEquals(1, awaitItem())
+            assertEquals(1, fakeApi.getSavStatsCallCount)
+            assertEquals(null, fakeApi.lastSavThreadsFilters)
+        }
+
+    @Test
+    fun `refreshToProcessCount conserve la derniere valeur connue en cas d echec reseau`() =
+        runTest {
+            fakeApi.savStatsResponse = SavStatsDto(toProcess = 2)
+            repository.refreshToProcessCount()
+
+            fakeApi.savStatsException = RuntimeException("Erreur réseau simulée")
+            repository.refreshToProcessCount()
+
+            repository.toProcessCount.test {
+                assertEquals(2, awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -119,6 +127,20 @@ class SavRepositoryImplTest {
             assertEquals(1, page.threads.size)
             assertTrue(page.hasNext)
             assertEquals(20, page.nextOffset)
+        }
+
+    @Test
+    fun `fetchThreads mappe le champ to_process de chaque fil`() =
+        runTest {
+            fakeApi.savThreadsResponse =
+                SavThreadListResponseDto(
+                    threads = listOf(buildThreadDto(id = 1L, toProcess = true), buildThreadDto(id = 2L, toProcess = false)),
+                )
+
+            val page = repository.fetchThreads()
+
+            assertTrue(page.threads.first { it.id == 1L }.toProcess)
+            assertFalse(page.threads.first { it.id == 2L }.toProcess)
         }
 
     // ─── fetchThread ──────────────────────────────────────────────────────────
@@ -186,10 +208,12 @@ class SavRepositoryImplTest {
         id: Long,
         status: String = "open",
         unread: Boolean = false,
+        toProcess: Boolean = false,
     ) = SavThreadDto(
         id = id,
         status = status,
         unread = unread,
+        toProcess = toProcess,
         customer = SavCustomerDto(id = 88L, name = "Camille Martin", email = "camille@example.com"),
         order = SavOrderDto(id = 4021L, reference = "ABCDEF123"),
         lastMessageAt = "2026-08-09 16:42:00",

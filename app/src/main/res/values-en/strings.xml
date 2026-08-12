@@ -202,7 +202,7 @@
     <string name="clients_section_clients">Customers</string>
     <string name="clients_section_sav">Support</string>
     <string name="clients_section_reviews">Reviews</string>
-    <string name="clients_badge_unread_sav_content_description">%1$d unread support threads</string>
+    <string name="clients_badge_sav_to_process_content_description">%1$d support threads to process</string>
     <string name="clients_badge_pending_reviews_content_description">%1$d reviews pending moderation</string>
     <string name="clients_badge_summary_content_description">%1$d in total between support and reviews</string>
 

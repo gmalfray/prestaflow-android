@@ -535,6 +535,95 @@ class AuthRepositoryImplTest {
             assertFalse("Pas de rafraîchissement possible sans apiKey", result)
         }
 
+    // ─── init() : renouvellement silencieux si scopes vides (connexion legacy) ─
+    //
+    // Cf. Javadoc de AuthRepositoryImpl.refreshScopesIfMissing : une connexion persistée AVANT
+    // l'introduction du filtrage par scope décode `scopes = emptyList()` (valeur par défaut de
+    // ShopConnectionStore.Stored.scopes) — sans ce correctif, le SAV/les Avis resteraient masqués
+    // pour une utilisatrice qui y a pourtant droit, potentiellement jusqu'à l'expiration du jeton.
+
+    @Test
+    fun `une connexion active sans scopes declenche un renouvellement silencieux au demarrage`() =
+        runTest(testDispatcher) {
+            connectionStore.write(
+                listOf(
+                    ShopConnection(
+                        id = "https://shop.test",
+                        shopUrl = "https://shop.test",
+                        label = "Boutique",
+                        token = AuthToken(value = "ancien-token", expiresAtEpochMillis = Long.MAX_VALUE, scopes = emptyList()),
+                        apiKey = "cle-api",
+                    ),
+                ),
+            )
+            connectionStore.setActiveId("https://shop.test")
+            loginResult =
+                { _, _ -> AuthResponseDto(token = "jwt-avec-scopes", expiresIn = 3600L, scopes = listOf("sav.read", "reviews.moderate")) }
+
+            val repo = buildRepository()
+            advanceUntilIdle()
+
+            val state = repo.authState.value
+            assertTrue(state is AuthState.Authenticated)
+            assertEquals(listOf("sav.read", "reviews.moderate"), (state as AuthState.Authenticated).token.scopes)
+            // La correction est aussi persistée, pas seulement en mémoire (survit à un redémarrage).
+            val persisted = connectionStore.read().first { it.id == "https://shop.test" }
+            assertEquals(listOf("sav.read", "reviews.moderate"), persisted.token.scopes)
+        }
+
+    @Test
+    fun `une connexion active avec des scopes deja presents ne redeclenche aucun renouvellement`() =
+        runTest(testDispatcher) {
+            connectionStore.write(
+                listOf(
+                    ShopConnection(
+                        id = "https://shop.test",
+                        shopUrl = "https://shop.test",
+                        label = "Boutique",
+                        token = AuthToken(value = "token-avec-scopes", expiresAtEpochMillis = Long.MAX_VALUE, scopes = listOf("orders")),
+                        apiKey = "cle-api",
+                    ),
+                ),
+            )
+            connectionStore.setActiveId("https://shop.test")
+            loginResult = { _, _ -> AuthResponseDto(token = "jwt-jamais-appele", expiresIn = 3600L, scopes = listOf("sav.read")) }
+
+            val repo = buildRepository()
+            advanceUntilIdle()
+
+            val state = repo.authState.value
+            assertTrue(state is AuthState.Authenticated)
+            // Le token reste celui déjà persisté : pas de re-login déclenché inutilement.
+            assertEquals("token-avec-scopes", (state as AuthState.Authenticated).token.value)
+        }
+
+    @Test
+    fun `une connexion active sans scopes ni cle API ne tente aucun renouvellement`() =
+        runTest(testDispatcher) {
+            connectionStore.write(
+                listOf(
+                    ShopConnection(
+                        id = "https://shop.test",
+                        shopUrl = "https://shop.test",
+                        label = "Boutique",
+                        token = AuthToken(value = "ancien-token", expiresAtEpochMillis = Long.MAX_VALUE, scopes = emptyList()),
+                        apiKey = "",
+                    ),
+                ),
+            )
+            connectionStore.setActiveId("https://shop.test")
+
+            val repo = buildRepository()
+            advanceUntilIdle()
+
+            // Best-effort silencieux : ni crash, ni tentative sans clé API ; le SAV reste masqué
+            // (fail-closed) plutôt qu'un renouvellement impossible à réaliser silencieusement.
+            val state = repo.authState.value
+            assertTrue(state is AuthState.Authenticated)
+            assertEquals("ancien-token", (state as AuthState.Authenticated).token.value)
+            assertTrue(state.token.scopes.isEmpty())
+        }
+
     // ─── login (alias de addConnection) ──────────────────────────────────────
 
     @Test

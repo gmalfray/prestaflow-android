@@ -92,13 +92,13 @@ class ClientsTabsViewModelTest {
         }
 
     @Test
-    fun `expose le compteur SAV non lus du SavRepository`() =
+    fun `expose le compteur SAV a traiter du SavRepository`() =
         runTest(testDispatcher) {
-            val fakeSavRepo = FakeSavRepository(initialUnreadCount = 88)
+            val fakeSavRepo = FakeSavRepository(initialToProcessCount = 2)
 
             val viewModel = buildViewModel(savRepository = fakeSavRepo)
 
-            assertEquals(88, viewModel.unreadSavCount.first())
+            assertEquals(2, viewModel.savToProcessCount.first())
         }
 
     @Test

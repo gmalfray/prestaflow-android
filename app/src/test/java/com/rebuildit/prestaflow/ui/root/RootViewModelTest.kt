@@ -86,13 +86,13 @@ class RootViewModelTest {
         }
 
     @Test
-    fun `un refresh du compteur SAV non lus est declenche si le jeton porte sav read`() =
+    fun `un refresh du compteur SAV a traiter est declenche si le jeton porte sav read`() =
         runTest(testDispatcher) {
             authenticateWithBothScopes()
             buildViewModel()
             advanceUntilIdle()
 
-            assertEquals(1, fakeSavRepo.refreshUnreadCountCallCount)
+            assertEquals(1, fakeSavRepo.refreshToProcessCountCallCount)
         }
 
     @Test
@@ -102,7 +102,7 @@ class RootViewModelTest {
             buildViewModel()
             advanceUntilIdle()
 
-            assertEquals(0, fakeSavRepo.refreshUnreadCountCallCount)
+            assertEquals(0, fakeSavRepo.refreshToProcessCountCallCount)
         }
 
     @Test
@@ -157,7 +157,7 @@ class RootViewModelTest {
             advanceUntilIdle()
 
             assertEquals(2, fakeCapabilitiesRepo.refreshCallCount)
-            assertEquals(2, fakeSavRepo.refreshUnreadCountCallCount)
+            assertEquals(2, fakeSavRepo.refreshToProcessCountCallCount)
         }
 
     @Test
@@ -168,7 +168,7 @@ class RootViewModelTest {
             advanceUntilIdle()
 
             assertEquals(0, fakeCapabilitiesRepo.refreshCallCount)
-            assertEquals(0, fakeSavRepo.refreshUnreadCountCallCount)
+            assertEquals(0, fakeSavRepo.refreshToProcessCountCallCount)
             assertEquals(0, fakeReviewsRepo.refreshPendingCountCallCount)
         }
 
@@ -177,7 +177,7 @@ class RootViewModelTest {
         runTest(testDispatcher) {
             fakeCapabilitiesRepo.nextRefreshResult = ShopCapabilities(sav = true, reviews = true)
             authenticateWithBothScopes()
-            fakeSavRepo.emitUnreadCount(97)
+            fakeSavRepo.emitToProcessCount(97)
             fakeReviewsRepo.emitPendingCount(3)
             val viewModel = buildViewModel()
             advanceUntilIdle()
@@ -190,7 +190,7 @@ class RootViewModelTest {
         runTest(testDispatcher) {
             fakeCapabilitiesRepo.nextRefreshResult = ShopCapabilities(sav = true, reviews = false)
             authenticateWithBothScopes()
-            fakeSavRepo.emitUnreadCount(97)
+            fakeSavRepo.emitToProcessCount(97)
             // Avis non nul malgré tout (ex. valeur résiduelle d'une capacité précédemment vraie) :
             // ne doit surtout pas fuiter dans la somme tant que la capacité est fausse — sinon on
             // recrée exactement le défaut initial (un compteur qui annonce un avis invisible).
@@ -207,7 +207,7 @@ class RootViewModelTest {
             // Jeton par défaut sans sav.read, mais le compteur SAV est déjà non nul (ex. valeur
             // résiduelle d'une session précédente où le scope était présent) : ne doit surtout pas
             // fuiter dans la somme — c'est exactement le défaut vécu par Greg.
-            fakeSavRepo.emitUnreadCount(88)
+            fakeSavRepo.emitToProcessCount(88)
             val viewModel = buildViewModel()
             advanceUntilIdle()
 

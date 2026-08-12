@@ -36,7 +36,7 @@ class ClientsTabsViewModel
         reviewsRepository: ReviewsRepository,
     ) : ViewModel() {
         val capabilities: StateFlow<ShopCapabilities> = capabilitiesRepository.capabilities
-        val unreadSavCount: Flow<Int> = savRepository.unreadThreadCount
+        val savToProcessCount: Flow<Int> = savRepository.toProcessCount
         val pendingReviewCount: Flow<Int> = reviewsRepository.pendingReviewCount
 
         // Valeur initiale calculée de façon SYNCHRONE (StateFlow.value, pas de suspension) : sans

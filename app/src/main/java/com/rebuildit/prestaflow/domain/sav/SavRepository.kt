@@ -13,16 +13,24 @@ import kotlinx.coroutines.flow.Flow
  * les pièces jointes.
  */
 interface SavRepository {
-    /** Nombre de fils SAV non lus, pour la pastille de l'onglet Clients. */
-    val unreadThreadCount: Flow<Int>
+    /**
+     * Nombre de fils SAV « à traiter » (depuis le connecteur v1.20.0), pour la pastille de
+     * l'onglet Clients. **PAS** un compte de fils « non lus » — ce drapeau natif PrestaShop
+     * (`unread`, cf. [com.rebuildit.prestaflow.domain.sav.model.SavThread.unread]) s'est révélé
+     * inexploitable comme signal d'action sur une boutique dont le SAV est traité par e-mail (449
+     * fils « non lus » mesurés en prod, dont 364 déjà clos et 190 déjà répondus — PrestaShop ne
+     * pose ce drapeau qu'à l'ouverture d'un fil en BO natif). « À traiter » = fil non clos,
+     * dernier message émis par la cliente, activité de moins de 90 jours — calculé exactement en
+     * SQL côté connecteur, cf. Javadoc de l'implémentation.
+     */
+    val toProcessCount: Flow<Int>
 
     /**
-     * Rafraîchit [unreadThreadCount] depuis le connecteur. Le connecteur n'exposant aucun
-     * compteur dédié, l'implémentation approxime à partir de la première page de fils non-clos —
-     * voir la Javadoc de l'implémentation pour la limite exacte. Best-effort : un échec réseau
-     * conserve la dernière valeur connue plutôt que de la remettre à zéro.
+     * Rafraîchit [toProcessCount] depuis le connecteur (`GET /sav/stats`, v1.20.0+) — compteur
+     * exact, PAS une approximation par scan de page. Best-effort : un échec réseau conserve la
+     * dernière valeur connue plutôt que de la remettre à zéro.
      */
-    suspend fun refreshUnreadCount()
+    suspend fun refreshToProcessCount()
 
     /**
      * Charge une page de fils depuis `GET /sav`.

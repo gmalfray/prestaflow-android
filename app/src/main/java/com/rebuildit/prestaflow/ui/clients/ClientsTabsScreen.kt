@@ -50,13 +50,13 @@ fun ClientsTabsRoute(
 ) {
     val capabilities by viewModel.capabilities.collectAsStateWithLifecycle()
     val scopes by viewModel.scopes.collectAsStateWithLifecycle()
-    val unreadSavCount by viewModel.unreadSavCount.collectAsStateWithLifecycle(initialValue = 0)
+    val savToProcessCount by viewModel.savToProcessCount.collectAsStateWithLifecycle(initialValue = 0)
     val pendingReviewCount by viewModel.pendingReviewCount.collectAsStateWithLifecycle(initialValue = 0)
 
     ClientsTabsScreen(
         capabilities = capabilities,
         scopes = scopes,
-        unreadSavCount = unreadSavCount,
+        savToProcessCount = savToProcessCount,
         pendingReviewCount = pendingReviewCount,
         modifier = modifier,
         clientsContent = { contentModifier ->
@@ -84,8 +84,9 @@ fun ClientsTabsScreen(
     // com.rebuildit.prestaflow.ui.root.RootViewModel.clientsBadgeCount) sur les sous-onglets
     // concernés : dès l'entrée dans l'onglet, on doit voir SANS naviguer si la pastille du shell
     // parlait du SAV, des avis, ou des deux — c'est le défaut remonté (cf. commentaire sur la
-    // TabRow ci-dessous).
-    unreadSavCount: Int = 0,
+    // TabRow ci-dessous). savToProcessCount = fils SAV « à traiter » (v1.20.0+, PAS un compte de
+    // fils « non lus » — cf. SavRepository.toProcessCount).
+    savToProcessCount: Int = 0,
     pendingReviewCount: Int = 0,
     clientsContent: @Composable (Modifier) -> Unit = {},
     savContent: @Composable (Modifier) -> Unit = {},
@@ -122,13 +123,13 @@ fun ClientsTabsScreen(
                 val badgeLabel =
                     when (section) {
                         ClientsSection.CLIENTS -> null
-                        ClientsSection.SAV -> formatBadgeCount(unreadSavCount)
+                        ClientsSection.SAV -> formatBadgeCount(savToProcessCount)
                         ClientsSection.REVIEWS -> formatBadgeCount(pendingReviewCount)
                     }
                 val badgeDescription =
                     when (section) {
                         ClientsSection.SAV ->
-                            stringResource(R.string.clients_badge_unread_sav_content_description, unreadSavCount)
+                            stringResource(R.string.clients_badge_sav_to_process_content_description, savToProcessCount)
                         ClientsSection.REVIEWS ->
                             stringResource(R.string.clients_badge_pending_reviews_content_description, pendingReviewCount)
                         ClientsSection.CLIENTS -> null
@@ -221,15 +222,18 @@ private fun PreviewClientsTabsWithReviews() {
     }
 }
 
-@Preview(showBackground = true, name = "Clients — pastilles SAV + Avis (cas remonté par Greg)")
+@Preview(showBackground = true, name = "Clients — pastilles SAV + Avis (compteur exact /sav/stats, pas un scan)")
 @Composable
 @Suppress("UnusedPrivateMember")
 private fun PreviewClientsTabsWithBadges() {
     PrestaFlowTheme {
+        // 2 fils « à traiter » — le nombre exact mesuré en prod avec la définition to_process,
+        // à comparer aux 88 fils "non lus" (au sens PrestaShop, donc trompeur) que la pastille
+        // affichait avant ce correctif : cf. Javadoc de SavRepository.toProcessCount.
         ClientsTabsScreen(
             capabilities = ShopCapabilities(sav = true, reviews = true),
             scopes = bothScopes,
-            unreadSavCount = 88,
+            savToProcessCount = 2,
             pendingReviewCount = 3,
         )
     }
@@ -243,7 +247,7 @@ private fun PreviewClientsTabsWithCappedBadge() {
         ClientsTabsScreen(
             capabilities = ShopCapabilities(sav = true, reviews = true),
             scopes = bothScopes,
-            unreadSavCount = 137,
+            savToProcessCount = 137,
             pendingReviewCount = 0,
         )
     }

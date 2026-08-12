@@ -12,6 +12,7 @@ fun SavThreadDto.toDomain(): SavThread =
         id = id,
         status = SavThreadStatus.fromApiValue(status),
         unread = unread,
+        toProcess = toProcess,
         customerId = customer?.id,
         customerName = customer?.name,
         customerEmail = customer?.email,

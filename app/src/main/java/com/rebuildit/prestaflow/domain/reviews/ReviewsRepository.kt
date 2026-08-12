@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.Flow
 interface ReviewsRepository {
     /**
      * Nombre d'avis en attente de modération, pour le sous-onglet Avis et la pastille de l'onglet
-     * Clients (contrat calqué sur [com.rebuildit.prestaflow.domain.sav.SavRepository.unreadThreadCount]).
+     * Clients (contrat calqué sur [com.rebuildit.prestaflow.domain.sav.SavRepository.toProcessCount]).
      * Ne reflète rien tant que [refreshPendingCount] n'a pas été appelé au moins une fois.
      */
     val pendingReviewCount: Flow<Int>

@@ -26,6 +26,7 @@ import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.SavStatsDto
 import com.rebuildit.prestaflow.data.remote.dto.SavStatusUpdateRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.SavThreadDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SavThreadListResponseDto
@@ -239,6 +240,14 @@ interface PrestaFlowApi {
     suspend fun getSavThreads(
         @QueryMap filters: Map<String, @JvmSuppressWildcards String> = emptyMap(),
     ): SavThreadListResponseDto
+
+    /**
+     * Compteur exact de fils « à traiter » (v1.20.0+), calculé en SQL côté connecteur —
+     * indépendant de la pagination. Remplace le scan d'une page de `GET /sav` que faisait
+     * [com.rebuildit.prestaflow.data.sav.SavRepositoryImpl] avant cette version (cf. sa Javadoc).
+     */
+    @GET("sav/stats")
+    suspend fun getSavStats(): SavStatsDto
 
     @GET("sav/{id}")
     suspend fun getSavThread(

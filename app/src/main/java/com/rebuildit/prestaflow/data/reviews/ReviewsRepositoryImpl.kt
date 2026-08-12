@@ -52,7 +52,7 @@ class ReviewsRepositoryImpl
          * app. Le connecteur n'exposant aucun compteur dédié (pas de `total` en pagination), on
          * approxime avec la taille de la première page — sous-estimation possible au-delà de
          * [PENDING_COUNT_SCAN_LIMIT], acceptée pour une simple pastille (même compromis que
-         * [com.rebuildit.prestaflow.data.sav.SavRepositoryImpl.refreshUnreadCount]).
+         * [com.rebuildit.prestaflow.data.sav.SavRepositoryImpl.refreshToProcessCount]).
          */
         override suspend fun refreshPendingCount() {
             withContext(ioDispatcher) {

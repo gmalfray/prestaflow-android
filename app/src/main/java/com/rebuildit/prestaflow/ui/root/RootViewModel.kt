@@ -31,7 +31,7 @@ class RootViewModel
 
         /**
          * Pastille de l'onglet Clients (chrome du shell, cf. [com.rebuildit.prestaflow.ui.MainActivity]) :
-         * somme des fils SAV non lus et des avis en attente de modération. Chaque part n'est
+         * somme des fils SAV « à traiter » et des avis en attente de modération. Chaque part n'est
          * comptée que si les DEUX conditions de [com.rebuildit.prestaflow.ui.clients.ClientsSection.visibleSections]
          * sont réunies — capacité de la boutique ET scope du jeton (`sav.read` / `reviews.moderate`)
          * — capacité ≠ droit, cf. étude `rebuild-it/docs/app-avis-sav.md` § « Capacité ≠ droit » et
@@ -44,13 +44,13 @@ class RootViewModel
          */
         val clientsBadgeCount: StateFlow<Int> =
             combine(
-                savRepository.unreadThreadCount,
+                savRepository.toProcessCount,
                 reviewsRepository.pendingReviewCount,
                 capabilitiesRepository.capabilities,
                 authState,
-            ) { unreadSav, pendingReviews, capabilities, auth ->
+            ) { savToProcess, pendingReviews, capabilities, auth ->
                 val scopes = auth.scopes
-                val savCount = if (AuthScopes.SAV_READ in scopes) unreadSav else 0
+                val savCount = if (AuthScopes.SAV_READ in scopes) savToProcess else 0
                 val reviewsCount = if (capabilities.reviews && AuthScopes.REVIEWS_MODERATE in scopes) pendingReviews else 0
                 savCount + reviewsCount
             }.stateIn(
@@ -68,10 +68,11 @@ class RootViewModel
                 authState.filterIsInstance<AuthState.Authenticated>().collect { authenticated ->
                     val capabilities = capabilitiesRepository.refresh()
                     val scopes = authenticated.token.scopes.toSet()
-                    // Jamais d'appel `GET /sav` sans le scope sav.read : le connecteur répondrait
-                    // 403 (cf. défaut remonté par Greg — capacité toujours vraie ≠ droit du jeton).
+                    // Jamais d'appel `GET /sav/stats` sans le scope sav.read : le connecteur
+                    // répondrait 403 (cf. défaut remonté par Greg — capacité toujours vraie != droit
+                    // du jeton).
                     if (AuthScopes.SAV_READ in scopes) {
-                        savRepository.refreshUnreadCount()
+                        savRepository.refreshToProcessCount()
                     }
                     // Jamais d'appel `GET /reviews` sur une boutique sans le module rbreviews (409)
                     // NI sans le scope reviews.moderate (403) — cf. Javadoc de refreshPendingCount.
