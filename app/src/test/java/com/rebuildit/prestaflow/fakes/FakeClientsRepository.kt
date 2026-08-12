@@ -26,6 +26,7 @@ class FakeClientsRepository : ClientsRepository {
 
     var fetchStatsResult: ClientStats? = ClientStats(total = 150, newThisMonth = 12)
     var shouldThrowOnRefresh = false
+    var refreshTopClientsCallCount = 0
 
     var fetchClientsResult: ClientsPage =
         ClientsPage(
@@ -44,6 +45,7 @@ class FakeClientsRepository : ClientsRepository {
         limit: Int,
         forceRemote: Boolean,
     ) {
+        refreshTopClientsCallCount++
         if (shouldThrowOnRefresh) throw RuntimeException("Erreur réseau simulée")
     }
 
