@@ -35,6 +35,12 @@ object NotificationChannels {
     /** Canal alertes stock faible — son système. */
     const val CHANNEL_STOCK_LOW = "stock_low"
 
+    // Motif de vibration du canal panne de paiement (ms) : silence, vibration, silence, vibration —
+    // cf. ensurePaymentErrorChannel. Nommé pour satisfaire detekt MagicNumber.
+    private const val PAYMENT_ERROR_VIBRATION_INITIAL_DELAY_MS = 0L
+    private const val PAYMENT_ERROR_VIBRATION_PULSE_MS = 250L
+    private const val PAYMENT_ERROR_VIBRATION_GAP_MS = 150L
+
     /**
      * Canal panne de paiement — importance HAUTE : la boutique ne peut plus encaisser,
      * ça doit sortir de la poche même noyé dans les autres notifications.
@@ -181,7 +187,13 @@ object NotificationChannels {
                 // le canal créé — le changer imposerait un CHANNEL_PAYMENT_ERROR v2.
                 setSound(paymentAlertSoundUri(context), attributes)
                 enableVibration(true)
-                vibrationPattern = longArrayOf(0, 250, 150, 250)
+                vibrationPattern =
+                    longArrayOf(
+                        PAYMENT_ERROR_VIBRATION_INITIAL_DELAY_MS,
+                        PAYMENT_ERROR_VIBRATION_PULSE_MS,
+                        PAYMENT_ERROR_VIBRATION_GAP_MS,
+                        PAYMENT_ERROR_VIBRATION_PULSE_MS,
+                    )
             }
         manager.createNotificationChannel(channel)
     }
