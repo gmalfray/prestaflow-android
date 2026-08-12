@@ -11,6 +11,10 @@
     <string name="notif_channel_stock_low_desc">Benachrichtigungen, wenn der Lagerbestand eines Produkts den Warnschwellenwert unterschreitet</string>
     <string name="notif_channel_payment_error_name">Zahlungsausfall</string>
     <string name="notif_channel_payment_error_desc">Warnung, wenn der Shop keine Zahlungen mehr annehmen kann (Bezahlvorgang fehlerhaft)</string>
+    <string name="notif_channel_sav_message_name">Support-Nachrichten</string>
+    <string name="notif_channel_sav_message_desc">Benachrichtigungen, wenn eine Kundin in einem Support-Thread schreibt</string>
+    <string name="notif_channel_review_pending_name">Zu moderierende Bewertungen</string>
+    <string name="notif_channel_review_pending_desc">Benachrichtigungen, wenn eine neue Bewertung in die Moderationswarteschlange gelangt</string>
     <string name="notif_channel_default_name">Benachrichtigungen</string>
     <string name="notif_channel_default_desc">Allgemeine App-Benachrichtigungen</string>
     <string name="notif_sale_default_title">Neue Bestellung</string>
@@ -459,6 +463,8 @@
     <string name="notif_category_order_shipping_updated">Versand</string>
     <string name="notif_category_stock_low">Niedriger Lagerbestand</string>
     <string name="notif_category_payment_error">Zahlungsausfall</string>
+    <string name="notif_category_sav_message">Neue Support-Nachrichten</string>
+    <string name="notif_category_review_pending">Neue zu moderierende Bewertungen</string>
     <string name="notif_categories_all_disabled_warning">Solange alle Kategorien deaktiviert sind, werden keine Benachrichtigungen empfangen.</string>
 
     <!-- Link von den Einstellungen -->

@@ -11,6 +11,10 @@
     <string name="notif_channel_stock_low_desc">Notifications when a product\'s stock drops below the alert threshold</string>
     <string name="notif_channel_payment_error_name">Payment outage</string>
     <string name="notif_channel_payment_error_desc">Alert when the shop can no longer take payments (checkout failing)</string>
+    <string name="notif_channel_sav_message_name">Support messages</string>
+    <string name="notif_channel_sav_message_desc">Notifications when a customer writes on a support thread</string>
+    <string name="notif_channel_review_pending_name">Reviews to moderate</string>
+    <string name="notif_channel_review_pending_desc">Notifications when a new review enters the moderation queue</string>
     <string name="notif_channel_default_name">Alerts</string>
     <string name="notif_channel_default_desc">General app notifications</string>
     <string name="notif_sale_default_title">New order</string>
@@ -460,6 +464,8 @@
     <string name="notif_category_order_shipping_updated">Shipments</string>
     <string name="notif_category_stock_low">Low stock</string>
     <string name="notif_category_payment_error">Payment outage</string>
+    <string name="notif_category_sav_message">New support messages</string>
+    <string name="notif_category_review_pending">New reviews to moderate</string>
     <string name="notif_categories_all_disabled_warning">No notification will be received while all categories are disabled.</string>
 
     <!-- Settings screen -->

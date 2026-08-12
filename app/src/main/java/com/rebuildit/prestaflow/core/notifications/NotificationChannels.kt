@@ -11,11 +11,14 @@ import com.rebuildit.prestaflow.R
 /**
  * Centralise la création de tous les canaux de notification de PrestaFlow.
  *
- * Quatre canaux métier :
+ * Canaux métier :
  *  - [CHANNEL_SALES]          : ventes (son caisse — `cash_register.mp3`), importance HIGH.
  *  - [CHANNEL_ORDER_STATUS]   : changements de statut, son système par défaut, importance DEFAULT.
  *  - [CHANNEL_ORDER_SHIPPING] : mises à jour d'expédition, son système par défaut, importance DEFAULT.
  *  - [CHANNEL_STOCK_LOW]      : alertes stock faible, son système par défaut, importance DEFAULT.
+ *  - [CHANNEL_PAYMENT_ERROR]  : panne de paiement, son dédié, importance HIGH.
+ *  - [CHANNEL_SAV_MESSAGE]    : nouveau message SAV, son dédié, importance HIGH.
+ *  - [CHANNEL_REVIEW_PENDING] : nouvel avis à modérer, son système par défaut, importance DEFAULT.
  *
  * Un canal filet de sécurité :
  *  - [CHANNEL_DEFAULT] : push background sans `channel_id` explicite, importance DEFAULT, son système.
@@ -48,6 +51,19 @@ object NotificationChannels {
     const val CHANNEL_PAYMENT_ERROR = "payment_error"
 
     /**
+     * Canal message SAV — importance HAUTE : une cliente attend une réponse, c'est la
+     * notification utile au quotidien. Son propre, distinct de la caisse (qui signifierait
+     * l'inverse : une vente, pas une attente).
+     */
+    const val CHANNEL_SAV_MESSAGE = "sav_message"
+
+    /**
+     * Canal avis à modérer — importance DEFAULT, son système : de l'information, pas une
+     * urgence (catégorie désactivée par défaut, cohérente avec le réglage boutique).
+     */
+    const val CHANNEL_REVIEW_PENDING = "review_pending"
+
+    /**
      * Canal par défaut (background fallback) — son système, sans caisse.
      * Utilisé comme `default_notification_channel_id` dans le manifeste.
      */
@@ -67,6 +83,8 @@ object NotificationChannels {
             "order.shipping.updated" -> CHANNEL_ORDER_SHIPPING
             "stock.low" -> CHANNEL_STOCK_LOW
             "shop.payment.error" -> CHANNEL_PAYMENT_ERROR
+            "sav.message" -> CHANNEL_SAV_MESSAGE
+            "review.pending" -> CHANNEL_REVIEW_PENDING
             else -> CHANNEL_DEFAULT
         }
 
@@ -82,6 +100,8 @@ object NotificationChannels {
         ensureOrderShippingChannel(context, manager)
         ensureStockLowChannel(context, manager)
         ensurePaymentErrorChannel(context, manager)
+        ensureSavMessageChannel(context, manager)
+        ensureReviewPendingChannel(context, manager)
         ensureDefaultChannel(context, manager)
     }
 
@@ -91,6 +111,9 @@ object NotificationChannels {
 
     /** Son du canal « paiement en panne » — deux notes descendantes, cf. tools/sounds/. */
     fun paymentAlertSoundUri(context: Context): Uri = Uri.parse("android.resource://${context.packageName}/${R.raw.payment_alert}")
+
+    /** Son du canal « message SAV » — deux notes ascendantes, cf. tools/sounds/. */
+    fun savMessageAlertSoundUri(context: Context): Uri = Uri.parse("android.resource://${context.packageName}/${R.raw.sav_message_alert}")
 
     // ── Privé ─────────────────────────────────────────────────────────────────
 
@@ -194,6 +217,48 @@ object NotificationChannels {
                         PAYMENT_ERROR_VIBRATION_GAP_MS,
                         PAYMENT_ERROR_VIBRATION_PULSE_MS,
                     )
+            }
+        manager.createNotificationChannel(channel)
+    }
+
+    private fun ensureSavMessageChannel(
+        context: Context,
+        manager: NotificationManager,
+    ) {
+        if (manager.getNotificationChannel(CHANNEL_SAV_MESSAGE) != null) return
+        val attributes =
+            AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                .build()
+        val channel =
+            NotificationChannel(
+                CHANNEL_SAV_MESSAGE,
+                context.getString(R.string.notif_channel_sav_message_name),
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = context.getString(R.string.notif_channel_sav_message_desc)
+                // Son propre : ni la caisse (= vente encaissée, l'inverse du message d'une cliente
+                // qui attend une réponse), ni le son système générique. ⚠️ Immuable une fois le
+                // canal créé — le changer imposerait un CHANNEL_SAV_MESSAGE v2.
+                setSound(savMessageAlertSoundUri(context), attributes)
+                enableVibration(true)
+            }
+        manager.createNotificationChannel(channel)
+    }
+
+    private fun ensureReviewPendingChannel(
+        context: Context,
+        manager: NotificationManager,
+    ) {
+        if (manager.getNotificationChannel(CHANNEL_REVIEW_PENDING) != null) return
+        val channel =
+            NotificationChannel(
+                CHANNEL_REVIEW_PENDING,
+                context.getString(R.string.notif_channel_review_pending_name),
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ).apply {
+                description = context.getString(R.string.notif_channel_review_pending_desc)
             }
         manager.createNotificationChannel(channel)
     }

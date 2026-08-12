@@ -11,6 +11,10 @@
     <string name="notif_channel_stock_low_desc">Notifications quand le stock d\'un produit passe sous le seuil d\'alerte</string>
     <string name="notif_channel_payment_error_name">Paiement en panne</string>
     <string name="notif_channel_payment_error_desc">Alerte quand la boutique ne peut plus encaisser (tunnel de paiement en erreur)</string>
+    <string name="notif_channel_sav_message_name">Messages SAV</string>
+    <string name="notif_channel_sav_message_desc">Notifications quand une cliente écrit sur un fil SAV</string>
+    <string name="notif_channel_review_pending_name">Avis à modérer</string>
+    <string name="notif_channel_review_pending_desc">Notifications quand un nouvel avis entre en file de modération</string>
     <string name="notif_channel_default_name">Alertes</string>
     <string name="notif_channel_default_desc">Notifications générales de l\'application</string>
     <string name="notif_sale_default_title">Nouvelle commande</string>
@@ -473,6 +477,8 @@
     <string name="notif_category_order_shipping_updated">Expéditions</string>
     <string name="notif_category_stock_low">Stock faible</string>
     <string name="notif_category_payment_error">Paiement en panne</string>
+    <string name="notif_category_sav_message">Nouveaux messages SAV</string>
+    <string name="notif_category_review_pending">Nouveaux avis à modérer</string>
     <string name="notif_categories_all_disabled_warning">Aucune notification ne sera reçue tant que toutes les catégories sont désactivées.</string>
 
     <!-- Lien depuis les réglages -->

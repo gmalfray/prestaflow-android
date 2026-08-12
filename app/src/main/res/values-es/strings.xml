@@ -11,6 +11,10 @@
     <string name="notif_channel_stock_low_desc">Notificaciones cuando el stock de un producto baja del umbral de alerta</string>
     <string name="notif_channel_payment_error_name">Fallo de pago</string>
     <string name="notif_channel_payment_error_desc">Alerta cuando la tienda ya no puede cobrar (proceso de pago con errores)</string>
+    <string name="notif_channel_sav_message_name">Mensajes de soporte</string>
+    <string name="notif_channel_sav_message_desc">Notificaciones cuando una clienta escribe en un hilo de soporte</string>
+    <string name="notif_channel_review_pending_name">Reseñas por moderar</string>
+    <string name="notif_channel_review_pending_desc">Notificaciones cuando una nueva reseña entra en la cola de moderación</string>
     <string name="notif_channel_default_name">Alertas</string>
     <string name="notif_channel_default_desc">Notificaciones generales de la aplicación</string>
     <string name="notif_sale_default_title">Nuevo pedido</string>
@@ -459,6 +463,8 @@
     <string name="notif_category_order_shipping_updated">Envíos</string>
     <string name="notif_category_stock_low">Stock bajo</string>
     <string name="notif_category_payment_error">Fallo de pago</string>
+    <string name="notif_category_sav_message">Nuevos mensajes de soporte</string>
+    <string name="notif_category_review_pending">Nuevas reseñas por moderar</string>
     <string name="notif_categories_all_disabled_warning">No se recibirá ninguna notificación mientras todas las categorías estén desactivadas.</string>
 
     <!-- Enlace desde ajustes -->

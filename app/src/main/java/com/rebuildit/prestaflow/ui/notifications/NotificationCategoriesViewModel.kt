@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 data class NotificationCategoriesUiState(
     val categories: Map<NotificationCategory, Boolean> =
-        NotificationCategory.entries.associateWith { true },
+        NotificationCategory.entries.associateWith { it.defaultEnabled },
 ) {
     val allDisabled: Boolean get() = categories.values.none { it }
 }

@@ -54,15 +54,15 @@ class NotificationCategoriesRepositoryImpl
             withContext(ioDispatcher) {
                 val prefs = dataStore.data.first()
                 NotificationCategory.entries.filter { category ->
-                    // Défaut = activé si la clé est absente
-                    prefs[category.prefKey()] != false
+                    // Défaut = category.defaultEnabled si la clé est absente
+                    prefs[category.prefKey()] ?: category.defaultEnabled
                 }.map { it.key }
             }
 
         private fun Preferences.toDomain(): Map<NotificationCategory, Boolean> =
             NotificationCategory.entries.associateWith { category ->
-                // Défaut = true (toutes activées)
-                this[category.prefKey()] != false
+                // Défaut = category.defaultEnabled (toutes activées sauf REVIEW_PENDING)
+                this[category.prefKey()] ?: category.defaultEnabled
             }
 
         private fun NotificationCategory.prefKey(): Preferences.Key<Boolean> = booleanPreferencesKey("notif_category_$key")

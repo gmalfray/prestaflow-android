@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
  * Préférences de catégories de notifications, par appareil.
  *
  * Chaque catégorie est stockée comme un booléen indépendant dans DataStore.
- * Défaut : toutes les catégories activées.
+ * Défaut tant que l'utilisateur n'a jamais touché à l'interrupteur : [NotificationCategory.defaultEnabled].
  */
 interface NotificationCategoriesRepository {
     /** Flux de la map catégorie → activée/désactivée. */

@@ -11,6 +11,10 @@
     <string name="notif_channel_stock_low_desc">Notificações quando o stock de um produto desce abaixo do limite de alerta</string>
     <string name="notif_channel_payment_error_name">Falha de pagamento</string>
     <string name="notif_channel_payment_error_desc">Alerta quando a loja deixa de conseguir receber pagamentos (checkout com erro)</string>
+    <string name="notif_channel_sav_message_name">Mensagens de suporte</string>
+    <string name="notif_channel_sav_message_desc">Notificações quando uma cliente escreve num tópico de suporte</string>
+    <string name="notif_channel_review_pending_name">Avaliações para moderar</string>
+    <string name="notif_channel_review_pending_desc">Notificações quando uma nova avaliação entra na fila de moderação</string>
     <string name="notif_channel_default_name">Alertas</string>
     <string name="notif_channel_default_desc">Notificações gerais da aplicação</string>
     <string name="notif_sale_default_title">Novo pedido</string>
@@ -459,6 +463,8 @@
     <string name="notif_category_order_shipping_updated">Envios</string>
     <string name="notif_category_stock_low">Stock baixo</string>
     <string name="notif_category_payment_error">Falha de pagamento</string>
+    <string name="notif_category_sav_message">Novas mensagens de suporte</string>
+    <string name="notif_category_review_pending">Novas avaliações para moderar</string>
     <string name="notif_categories_all_disabled_warning">Não será recebida nenhuma notificação enquanto todas as categorias estiverem desativadas.</string>
 
     <!-- Ligação a partir das definições -->
