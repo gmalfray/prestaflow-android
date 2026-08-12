@@ -104,7 +104,7 @@ fun NotificationCategoriesScreen(
                     NotificationCategory.entries.forEach { category ->
                         CategoryRow(
                             category = category,
-                            enabled = uiState.categories[category] != false,
+                            enabled = uiState.categories[category] ?: category.defaultEnabled,
                             onToggle = { checked -> onCategoryToggle(category, checked) },
                         )
                     }
@@ -183,6 +183,8 @@ private fun NotificationCategory.labelRes(): Int =
         NotificationCategory.ORDER_SHIPPING_UPDATED -> R.string.notif_category_order_shipping_updated
         NotificationCategory.STOCK_LOW -> R.string.notif_category_stock_low
         NotificationCategory.PAYMENT_ERROR -> R.string.notif_category_payment_error
+        NotificationCategory.SAV_MESSAGE -> R.string.notif_category_sav_message
+        NotificationCategory.REVIEW_PENDING -> R.string.notif_category_review_pending
     }
 
 // ─── Previews ────────────────────────────────────────────────────────────────

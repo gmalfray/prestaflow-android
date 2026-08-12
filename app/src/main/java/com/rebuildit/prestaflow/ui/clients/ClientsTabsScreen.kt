@@ -61,6 +61,7 @@ fun ClientsTabsRoute(
         scopes = scopes,
         savToProcessCount = savToProcessCount,
         pendingReviewCount = pendingReviewCount,
+        initialSection = viewModel.initialSection,
         modifier = modifier,
         clientsContent = { contentModifier ->
             ClientsRoute(
@@ -91,6 +92,10 @@ fun ClientsTabsScreen(
     // fils « non lus » — cf. SavRepository.toProcessCount).
     savToProcessCount: Int = 0,
     pendingReviewCount: Int = 0,
+    // Sous-onglet à afficher à l'ouverture (cf. ClientsTabsViewModel.initialSection) — porté par
+    // une notification "avis à modérer" (prestaflow://clients?section=reviews). Défaut CLIENTS
+    // pour tout accès normal (barre du bas, tuile dashboard).
+    initialSection: ClientsSection = ClientsSection.CLIENTS,
     clientsContent: @Composable (Modifier) -> Unit = {},
     savContent: @Composable (Modifier) -> Unit = {},
     reviewsContent: @Composable (Modifier) -> Unit = {},
@@ -106,7 +111,7 @@ fun ClientsTabsScreen(
         return
     }
 
-    var selected by rememberSaveable { mutableStateOf(ClientsSection.CLIENTS) }
+    var selected by rememberSaveable { mutableStateOf(initialSection) }
 
     // Filet de sécurité : si la section affichée disparaît (capacité/scope repassé en défaveur
     // pendant que l'utilisateur y était, ex. désinstallation du module ou changement de boutique

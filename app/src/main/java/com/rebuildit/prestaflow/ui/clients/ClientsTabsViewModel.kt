@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.clients
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
@@ -34,10 +35,26 @@ class ClientsTabsViewModel
         capabilitiesRepository: CapabilitiesRepository,
         savRepository: SavRepository,
         reviewsRepository: ReviewsRepository,
+        savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
         val capabilities: StateFlow<ShopCapabilities> = capabilitiesRepository.capabilities
         val savToProcessCount: Flow<Int> = savRepository.toProcessCount
         val pendingReviewCount: Flow<Int> = reviewsRepository.pendingReviewCount
+
+        /**
+         * Sous-onglet à afficher à l'ouverture, porté par l'argument de navigation `section` (cf.
+         * le deep link `prestaflow://clients?section=reviews` envoyé par un tap sur une
+         * notification "avis à modérer" —
+         * [com.rebuildit.prestaflow.data.push.PrestaFlowFirebaseMessagingService.buildReviewsDeepLinkIntent]).
+         * Absent ou toute autre valeur → [ClientsSection.CLIENTS], le comportement historique d'un
+         * accès direct via la barre du bas. Si la section demandée n'est finalement pas visible
+         * (capacité/scope manquant), [ClientsTabsScreen] retombe elle-même sur Clients.
+         */
+        val initialSection: ClientsSection =
+            when (savedStateHandle.get<String>("section")) {
+                "reviews" -> ClientsSection.REVIEWS
+                else -> ClientsSection.CLIENTS
+            }
 
         // Valeur initiale calculée de façon SYNCHRONE (StateFlow.value, pas de suspension) : sans
         // ça, la première composition verrait un instant un onglet SAV/Avis (ou son absence)

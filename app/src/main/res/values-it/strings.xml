@@ -11,6 +11,10 @@
     <string name="notif_channel_stock_low_desc">Notifiche quando la scorta di un prodotto scende sotto la soglia di allerta</string>
     <string name="notif_channel_payment_error_name">Pagamenti fuori servizio</string>
     <string name="notif_channel_payment_error_desc">Avviso quando il negozio non può più incassare (checkout in errore)</string>
+    <string name="notif_channel_sav_message_name">Messaggi di assistenza</string>
+    <string name="notif_channel_sav_message_desc">Notifiche quando una cliente scrive su una richiesta di assistenza</string>
+    <string name="notif_channel_review_pending_name">Recensioni da moderare</string>
+    <string name="notif_channel_review_pending_desc">Notifiche quando una nuova recensione entra in coda di moderazione</string>
     <string name="notif_channel_default_name">Avvisi</string>
     <string name="notif_channel_default_desc">Notifiche generali dell\'app</string>
     <string name="notif_sale_default_title">Nuovo ordine</string>
@@ -459,6 +463,8 @@
     <string name="notif_category_order_shipping_updated">Spedizioni</string>
     <string name="notif_category_stock_low">Scorte basse</string>
     <string name="notif_category_payment_error">Pagamenti fuori servizio</string>
+    <string name="notif_category_sav_message">Nuovi messaggi di assistenza</string>
+    <string name="notif_category_review_pending">Nuove recensioni da moderare</string>
     <string name="notif_categories_all_disabled_warning">Non verrà ricevuta alcuna notifica finché tutte le categorie sono disattivate.</string>
 
     <!-- Link dalle impostazioni -->

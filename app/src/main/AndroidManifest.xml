@@ -51,6 +51,24 @@
                     android:scheme="prestaflow"
                     android:host="products" />
             </intent-filter>
+            <!-- Deep link pour les notifications "nouveau message SAV" (event = sav.message).
+                 La notification foreground (ContentIntent) envoie prestaflow://sav/{threadId}. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="prestaflow"
+                    android:host="sav" />
+            </intent-filter>
+            <!-- Deep link pour les notifications "avis à modérer" (event = review.pending).
+                 La notification foreground (ContentIntent) envoie prestaflow://clients?section=reviews. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="prestaflow"
+                    android:host="clients" />
+            </intent-filter>
         </activity>
 
         <service

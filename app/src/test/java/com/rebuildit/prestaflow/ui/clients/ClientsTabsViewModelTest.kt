@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.clients
 
+import androidx.lifecycle.SavedStateHandle
 import com.rebuildit.prestaflow.domain.auth.AuthState
 import com.rebuildit.prestaflow.domain.auth.model.AuthScopes
 import com.rebuildit.prestaflow.domain.capabilities.model.ShopCapabilities
@@ -49,11 +50,13 @@ class ClientsTabsViewModelTest {
         authRepository: FakeAuthRepository = FakeAuthRepository(),
         savRepository: FakeSavRepository = FakeSavRepository(),
         reviewsRepository: FakeReviewsRepository = FakeReviewsRepository(),
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
     ) = ClientsTabsViewModel(
         authRepository = authRepository,
         capabilitiesRepository = FakeCapabilitiesRepository(initial = capabilities),
         savRepository = savRepository,
         reviewsRepository = reviewsRepository,
+        savedStateHandle = savedStateHandle,
     )
 
     @Test
@@ -67,6 +70,7 @@ class ClientsTabsViewModelTest {
                     capabilitiesRepository = fakeRepo,
                     savRepository = FakeSavRepository(),
                     reviewsRepository = FakeReviewsRepository(),
+                    savedStateHandle = SavedStateHandle(),
                 )
 
             assertTrue(viewModel.capabilities.value.reviews)
@@ -82,6 +86,7 @@ class ClientsTabsViewModelTest {
                     capabilitiesRepository = fakeRepo,
                     savRepository = FakeSavRepository(),
                     reviewsRepository = FakeReviewsRepository(),
+                    savedStateHandle = SavedStateHandle(),
                 )
             assertFalse(viewModel.capabilities.value.reviews)
 
@@ -152,5 +157,31 @@ class ClientsTabsViewModelTest {
             advanceUntilIdle()
 
             assertEquals(setOf(AuthScopes.REVIEWS_MODERATE), viewModel.scopes.value)
+        }
+
+    // ─── initialSection — deep link "avis à modérer" (prestaflow://clients?section=reviews) ───
+
+    @Test
+    fun `sans argument de navigation, la section initiale est Clients`() =
+        runTest(testDispatcher) {
+            val viewModel = buildViewModel(savedStateHandle = SavedStateHandle())
+
+            assertEquals(ClientsSection.CLIENTS, viewModel.initialSection)
+        }
+
+    @Test
+    fun `l argument de navigation section=reviews ouvre directement le sous-onglet Avis`() =
+        runTest(testDispatcher) {
+            val viewModel = buildViewModel(savedStateHandle = SavedStateHandle(mapOf("section" to "reviews")))
+
+            assertEquals(ClientsSection.REVIEWS, viewModel.initialSection)
+        }
+
+    @Test
+    fun `une valeur inconnue de section retombe sur Clients`() =
+        runTest(testDispatcher) {
+            val viewModel = buildViewModel(savedStateHandle = SavedStateHandle(mapOf("section" to "n-importe-quoi")))
+
+            assertEquals(ClientsSection.CLIENTS, viewModel.initialSection)
         }
 }

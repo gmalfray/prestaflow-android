@@ -209,7 +209,7 @@ fun PrestaFlowNavGraph(
         // "new" est transmis depuis la carte KPI "Nouveaux clients" du dashboard.
         // Accès direct via la barre de navigation → filter=null → mode TOP_CLIENTS par défaut.
         composable(
-            route = "${AppDestination.Clients.route}?filter={filter}&created_from={created_from}",
+            route = "${AppDestination.Clients.route}?filter={filter}&created_from={created_from}&section={section}",
             arguments =
                 listOf(
                     navArgument("filter") {
@@ -222,6 +222,20 @@ fun PrestaFlowNavGraph(
                         nullable = true
                         defaultValue = null
                     },
+                    // Sous-onglet à afficher à l'ouverture (cf. ClientsSection) : "reviews" pour
+                    // la notification "avis à modérer", null (défaut) pour tout accès normal
+                    // (barre du bas, tuile dashboard) → ClientsTabsViewModel.initialSection.
+                    navArgument("section") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+            deepLinks =
+                listOf(
+                    // Notification "avis à modérer" (event = review.pending), cf.
+                    // PrestaFlowFirebaseMessagingService.buildReviewsDeepLinkIntent.
+                    navDeepLink { uriPattern = "prestaflow://clients?section={section}" },
                 ),
         ) {
             // Hôte de la sous-navigation Clients/SAV/Avis (cf. ClientsTabsScreen) : la liste
@@ -245,6 +259,12 @@ fun PrestaFlowNavGraph(
             arguments =
                 listOf(
                     navArgument("threadId") { type = NavType.LongType },
+                ),
+            deepLinks =
+                listOf(
+                    // Notification "nouveau message SAV" (event = sav.message), cf.
+                    // PrestaFlowFirebaseMessagingService.buildSavThreadDeepLinkIntent.
+                    navDeepLink { uriPattern = "prestaflow://sav/{threadId}" },
                 ),
         ) {
             SavThreadDetailRoute(
