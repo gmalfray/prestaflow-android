@@ -86,14 +86,35 @@ interface ProductsRepository {
     ): Product
 
     /**
-     * Met à jour le stock du produit [productId], ou celui d'une de ses combinaisons (déclinaisons)
-     * si [combinationId] est renseigné (cas d'un scan ayant matché une combinaison — cf.
-     * [com.rebuildit.prestaflow.domain.products.model.MatchedCombination]). Le connecteur applique
-     * l'ajustement à la combinaison plutôt qu'au produit parent dans ce cas.
+     * Met à jour le stock du produit [productId] à une quantité ABSOLUE, ou celui d'une de ses
+     * combinaisons (déclinaisons) si [combinationId] est renseigné (cas d'un scan ayant matché une
+     * combinaison — cf. [com.rebuildit.prestaflow.domain.products.model.MatchedCombination]). Le
+     * connecteur applique l'ajustement à la combinaison plutôt qu'au produit parent dans ce cas.
+     *
+     * ATTENTION : écrase le stock serveur avec [quantity] tel quel — n'importe quelle vente survenue
+     * entre la lecture du stock et cet appel serait effacée. Pour une validation de session étalée
+     * dans le temps (réappro), préférer [adjustStock] (incrément relatif).
      */
     suspend fun updateStock(
         productId: Long,
         quantity: Int,
+        warehouseId: Long? = null,
+        reason: String? = null,
+        combinationId: Long? = null,
+    )
+
+    /**
+     * Applique un ajustement RELATIF (incrément signé, peut être négatif) au stock du produit
+     * [productId], ou à celui d'une de ses combinaisons si [combinationId] est renseigné. Contrairement
+     * à [updateStock] (quantité ABSOLUE), ne risque pas d'écraser une vente survenue côté boutique
+     * entre la lecture du stock et l'écriture — utilisé par la validation définitive du journal de
+     * réappro ([com.rebuildit.prestaflow.domain.products.ReplenishSessionRepository]), qui peut
+     * s'étaler sur plusieurs minutes. Backed par le mode incrémental du connecteur (`delta` dans le
+     * corps de `PATCH products/{id}/stock`, exclusif de `quantity`).
+     */
+    suspend fun adjustStock(
+        productId: Long,
+        delta: Int,
         warehouseId: Long? = null,
         reason: String? = null,
         combinationId: Long? = null,

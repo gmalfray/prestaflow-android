@@ -8,6 +8,7 @@ import com.rebuildit.prestaflow.domain.products.model.ProductImage
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.fakes.FakeLabelTextRecognizer
 import com.rebuildit.prestaflow.fakes.FakeProductsRepository
+import com.rebuildit.prestaflow.fakes.FakeReplenishSessionRepository
 import com.rebuildit.prestaflow.fakes.FakeStockReplenishPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -61,6 +62,7 @@ class StockReplenishLabelFallbackTest {
     private fun buildViewModel(): StockReplenishViewModel =
         StockReplenishViewModel(
             productsRepository = fakeRepo,
+            replenishSessionRepository = FakeReplenishSessionRepository(),
             networkErrorMapper = NetworkErrorMapper(),
             labelTextRecognizer = fakeRecognizer,
             stockReplenishPreferencesRepository = fakePrefsRepo,

@@ -181,11 +181,15 @@
     <string name="stock_replenish_add_content_description">Adicionar quantidade</string>
     <string name="stock_replenish_quantity_placeholder">Quantidade</string>
     <string name="stock_replenish_pending_label">%1$s: %2$s pendente(s)</string>
-    <string name="stock_replenish_undo_countdown">Cancelar (%1$d s)</string>
+    <string name="stock_replenish_cancel_action">Cancelar</string>
+    <string name="stock_replenish_submit_session_action">Terminar sessão</string>
+    <string name="stock_replenish_submit_success">%1$d artigo(s) enviado(s) com sucesso.</string>
+    <string name="stock_replenish_submit_partial">%1$d enviado(s), %2$d com falha — reenvie para tentar novamente.</string>
+    <string name="stock_replenish_submit_all_failed">Falha ao enviar os %1$d artigo(s) do registo.</string>
     <string name="stock_replenish_queue_added_content_description">Adicionado à fila de pendentes</string>
-    <string name="stock_replenish_session_recap">%1$d artigo(s) · +%2$d em stock</string>
+    <string name="stock_replenish_session_recap">%1$d artigo(s) · +%2$d pendente(s)</string>
     <string name="stock_replenish_session_recap_exit_title">Resumo da sessão</string>
-    <string name="stock_replenish_session_recap_exit_message">%1$d artigo(s) reabastecido(s), +%2$d unidades.</string>
+    <string name="stock_replenish_session_recap_exit_message">%1$d artigo(s) pendente(s) de envio, +%2$d unidades não validadas.</string>
     <string name="stock_replenish_session_recap_exit_action">OK</string>
 
     <string name="clients_list_empty">Ainda não há clientes.</string>

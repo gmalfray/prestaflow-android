@@ -143,6 +143,30 @@ class FakeProductsRepository : ProductsRepository {
         if (shouldThrowOnUpdateStock) throw RuntimeException("Erreur réseau simulée")
     }
 
+    data class AdjustStockCall(
+        val productId: Long,
+        val delta: Int,
+        val warehouseId: Long?,
+        val reason: String?,
+        val combinationId: Long? = null,
+    )
+
+    val adjustStockCalls = mutableListOf<AdjustStockCall>()
+
+    /** IDs de produit pour lesquels [adjustStock] doit échouer (une entrée = un échec, cf. tests d'échec partiel). */
+    val productIdsFailingOnAdjustStock = mutableSetOf<Long>()
+
+    override suspend fun adjustStock(
+        productId: Long,
+        delta: Int,
+        warehouseId: Long?,
+        reason: String?,
+        combinationId: Long?,
+    ) {
+        adjustStockCalls += AdjustStockCall(productId, delta, warehouseId, reason, combinationId)
+        if (productId in productIdsFailingOnAdjustStock) throw RuntimeException("Erreur réseau simulée")
+    }
+
     data class UploadProductImageCall(val productId: Long, val image: File)
 
     val uploadProductImageCalls = mutableListOf<UploadProductImageCall>()

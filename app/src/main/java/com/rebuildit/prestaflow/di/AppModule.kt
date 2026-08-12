@@ -39,8 +39,10 @@ import com.rebuildit.prestaflow.data.local.dao.DashboardDao
 import com.rebuildit.prestaflow.data.local.dao.OrderDao
 import com.rebuildit.prestaflow.data.local.dao.PendingSyncDao
 import com.rebuildit.prestaflow.data.local.dao.ProductDao
+import com.rebuildit.prestaflow.data.local.dao.ReplenishLogDao
 import com.rebuildit.prestaflow.data.local.dao.StockAvailabilityDao
 import com.rebuildit.prestaflow.data.local.db.LocalCacheStore
+import com.rebuildit.prestaflow.data.local.db.MIGRATION_15_16
 import com.rebuildit.prestaflow.data.local.db.PrestaFlowDatabase
 import com.rebuildit.prestaflow.data.local.db.RoomLocalCacheStore
 import com.rebuildit.prestaflow.data.local.db.migration14To15
@@ -49,6 +51,7 @@ import com.rebuildit.prestaflow.data.notifications.NotificationsRepositoryImpl
 import com.rebuildit.prestaflow.data.orders.OrdersPreferencesRepositoryImpl
 import com.rebuildit.prestaflow.data.orders.OrdersRepositoryImpl
 import com.rebuildit.prestaflow.data.products.ProductsRepositoryImpl
+import com.rebuildit.prestaflow.data.products.ReplenishSessionRepositoryImpl
 import com.rebuildit.prestaflow.data.products.StockReplenishPreferencesRepositoryImpl
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.interceptor.AcceptLanguageInterceptor
@@ -72,6 +75,7 @@ import com.rebuildit.prestaflow.domain.notifications.NotificationsRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersPreferencesRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.products.ProductsRepository
+import com.rebuildit.prestaflow.domain.products.ReplenishSessionRepository
 import com.rebuildit.prestaflow.domain.products.StockReplenishPreferencesRepository
 import com.rebuildit.prestaflow.domain.reviews.ReviewsRepository
 import com.rebuildit.prestaflow.domain.sav.SavRepository
@@ -242,6 +246,10 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideReplenishSessionRepository(impl: ReplenishSessionRepositoryImpl): ReplenishSessionRepository = impl
+
+    @Provides
+    @Singleton
     fun provideLabelTextRecognizer(impl: MlKitLabelTextRecognizer): LabelTextRecognizer = impl
 
     @Provides
@@ -311,11 +319,12 @@ object AppModule {
             PrestaFlowDatabase::class.java,
             "prestaflow.db",
         )
-            // v14->v15 : ajoute pending_sync.shop_url (cf. Migrations.kt). Le fallback destructif
-            // reste un garde-fou pour d'éventuelles versions futures sans migration écrite, mais
-            // NE COUVRE PAS ce saut precis : la vraie migration est prioritaire dès qu'elle
-            // s'applique, donc pending_sync n'est jamais détruite pour ce passage.
-            .addMigrations(migration14To15(endpointManager.getStoredShopUrl().orEmpty()))
+            // v14->v15 : ajoute pending_sync.shop_url. v15->v16 : crée replenish_log (journal de
+            // session de réappro, cf. Migrations.kt). Le fallback destructif reste un garde-fou pour
+            // d'éventuelles versions futures sans migration écrite, mais NE COUVRE PAS ces sauts
+            // précis : les vraies migrations sont prioritaires dès qu'elles s'appliquent, donc
+            // pending_sync/le cache produits ne sont jamais détruits pour ces passages.
+            .addMigrations(migration14To15(endpointManager.getStoredShopUrl().orEmpty()), MIGRATION_15_16)
             .fallbackToDestructiveMigration()
             .build()
 
@@ -347,6 +356,9 @@ object AppModule {
 
     @Provides
     fun provideClientDao(database: PrestaFlowDatabase): ClientDao = database.clientDao()
+
+    @Provides
+    fun provideReplenishLogDao(database: PrestaFlowDatabase): ReplenishLogDao = database.replenishLogDao()
 
     @Provides
     @Singleton

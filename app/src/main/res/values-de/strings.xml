@@ -181,11 +181,15 @@
     <string name="stock_replenish_add_content_description">Menge hinzufügen</string>
     <string name="stock_replenish_quantity_placeholder">Menge</string>
     <string name="stock_replenish_pending_label">%1$s: %2$s ausstehend</string>
-    <string name="stock_replenish_undo_countdown">Abbrechen (%1$d s)</string>
+    <string name="stock_replenish_cancel_action">Abbrechen</string>
+    <string name="stock_replenish_submit_session_action">Sitzung abschließen</string>
+    <string name="stock_replenish_submit_success">%1$d Artikel erfolgreich gesendet.</string>
+    <string name="stock_replenish_submit_partial">%1$d gesendet, %2$d fehlgeschlagen — erneut senden, um es noch einmal zu versuchen.</string>
+    <string name="stock_replenish_submit_all_failed">Senden der %1$d Artikel im Protokoll fehlgeschlagen.</string>
     <string name="stock_replenish_queue_added_content_description">Zur Warteschlange hinzugefügt</string>
-    <string name="stock_replenish_session_recap">%1$d Artikel · +%2$d im Bestand</string>
+    <string name="stock_replenish_session_recap">%1$d Artikel · +%2$d ausstehend</string>
     <string name="stock_replenish_session_recap_exit_title">Sitzungsübersicht</string>
-    <string name="stock_replenish_session_recap_exit_message">%1$d Artikel aufgefüllt, +%2$d Einheiten.</string>
+    <string name="stock_replenish_session_recap_exit_message">%1$d Artikel noch nicht gesendet, +%2$d Einheiten nicht bestätigt.</string>
     <string name="stock_replenish_session_recap_exit_action">OK</string>
 
     <string name="clients_list_empty">Noch keine Kunden.</string>

@@ -86,15 +86,30 @@ data class ImageDto(
     @SerialName("url") val url: String,
 )
 
+/**
+ * Corps du `PATCH products/{id}/stock` — exactement UN des deux modes, jamais les deux :
+ * - [quantity] : quantité ABSOLUE (mode historique, cf. [ProductsRepository.updateStock]).
+ * - [delta] : incrément SIGNÉ (mode relatif, cf. [ProductsRepository.adjustStock]) — n'écrase pas
+ *   une vente survenue côté boutique entre-temps, contrairement à [quantity].
+ *
+ * [ProductsRepository]: com.rebuildit.prestaflow.domain.products.ProductsRepository
+ */
 @Serializable
 data class StockUpdateRequestDto(
-    @SerialName("quantity") val quantity: Int,
+    @SerialName("quantity") val quantity: Int? = null,
+    @SerialName("delta") val delta: Int? = null,
     @SerialName("warehouse_id") val warehouseId: Long? = null,
     @SerialName("reason") val reason: String? = null,
     // Renseigné quand l'ajustement concerne une COMBINAISON (déclinaison) plutôt que le produit
     // lui-même — cf. [MatchedCombinationDto]. Omis si null (`explicitNulls = false`).
     @SerialName("combination_id") val combinationId: Long? = null,
-)
+) {
+    init {
+        require((quantity == null) != (delta == null)) {
+            "StockUpdateRequestDto requiert exactement quantity (absolu) OU delta (incrément), jamais les deux ni aucun."
+        }
+    }
+}
 
 /**
  * Corps du `PATCH /products/{id}` (action "attributes" côté connecteur, inférée par l'absence de
