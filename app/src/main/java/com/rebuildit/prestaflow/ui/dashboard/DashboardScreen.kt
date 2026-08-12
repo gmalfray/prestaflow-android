@@ -33,12 +33,10 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Fullscreen
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Payments
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -445,7 +443,6 @@ private fun DashboardHeader(
     onAddShop: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val refreshDesc = stringResource(id = R.string.dashboard_content_description_refresh)
     val activeShop = connections.firstOrNull { it.isActive }
     val shopName =
         activeShop?.label
@@ -560,36 +557,6 @@ private fun DashboardHeader(
                             onSwitch = onSwitchShop,
                             onAddShop = onAddShop,
                         )
-                    }
-                }
-                Box(
-                    modifier =
-                        Modifier
-                            .size(Dimensions.minTouchTarget)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-                            .semantics { contentDescription = refreshDesc },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    IconButton(
-                        onClick = onRefresh,
-                        enabled = !isRefreshing,
-                        modifier = Modifier.size(Dimensions.minTouchTarget),
-                    ) {
-                        if (isRefreshing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Outlined.Refresh,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(Dimensions.iconSizeMedium),
-                            )
-                        }
                     }
                 }
             }
