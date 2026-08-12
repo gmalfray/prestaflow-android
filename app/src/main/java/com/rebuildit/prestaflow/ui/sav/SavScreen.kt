@@ -319,7 +319,12 @@ private fun SavThreadRow(
     ) {
         Box {
             AvatarInitials(name = displayName)
-            if (thread.unread) {
+            // `toProcess` et NON `unread` : le drapeau « non lu » de PrestaShop n'est posé que
+            // lorsqu'un employé ouvre le fil dans la vue back-office. Cette boutique traite son
+            // SAV par mail, il ne l'est donc jamais : 449 fils sur 481 en production, fils clos
+            // et déjà répondus compris. Le point rouge apparaissait sur toutes les lignes et
+            // n'identifiait plus rien.
+            if (thread.toProcess) {
                 Box(
                     modifier =
                         Modifier
