@@ -320,8 +320,6 @@ private fun DashboardContent(
             item {
                 DashboardHeader(
                     connections = connections,
-                    isRefreshing = isRefreshing,
-                    onRefresh = onRefresh,
                     selectedPeriod = selectedPeriod,
                     customRange = customRange,
                     onPeriodSelected = onPeriodSelected,
@@ -433,8 +431,6 @@ private fun DashboardContent(
 @Composable
 private fun DashboardHeader(
     connections: List<ShopConnection>,
-    isRefreshing: Boolean,
-    onRefresh: () -> Unit,
     selectedPeriod: DashboardPeriod,
     customRange: Pair<String, String>?,
     onPeriodSelected: (DashboardPeriod) -> Unit,
