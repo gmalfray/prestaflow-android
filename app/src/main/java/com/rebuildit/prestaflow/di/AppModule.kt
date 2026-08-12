@@ -23,6 +23,8 @@ import com.rebuildit.prestaflow.core.ocr.MlKitLabelTextRecognizer
 import com.rebuildit.prestaflow.core.security.EncryptedTokenStorage
 import com.rebuildit.prestaflow.core.security.InMemoryTokenProvider
 import com.rebuildit.prestaflow.core.security.TokenStorage
+import com.rebuildit.prestaflow.core.util.SystemTimeProvider
+import com.rebuildit.prestaflow.core.util.TimeProvider
 import com.rebuildit.prestaflow.data.auth.AuthRepositoryImpl
 import com.rebuildit.prestaflow.data.auth.LoginApiClient
 import com.rebuildit.prestaflow.data.auth.LoginApiClientContract
@@ -204,6 +206,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideShopUrlValidator(): ShopUrlValidator = ShopUrlValidator()
+
+    @Provides
+    @Singleton
+    fun provideTimeProvider(impl: SystemTimeProvider): TimeProvider = impl
 
     @Provides
     @Singleton

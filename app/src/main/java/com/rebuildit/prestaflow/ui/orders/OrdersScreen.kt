@@ -80,6 +80,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.print.InvoicePrinter
@@ -115,6 +117,12 @@ fun OrdersRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    // Rattrapage : recharge la liste quand l'écran redevient visible (retour d'un autre onglet),
+    // cf. KDoc de OrdersViewModel.onScreenResumed pour le throttle et le pourquoi.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.onScreenResumed()
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     var showPrintModeDialog by remember { mutableStateOf(false) }
     var showBulkStatusDialog by remember { mutableStateOf(false) }

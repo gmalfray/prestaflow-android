@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
@@ -50,6 +52,12 @@ fun OrdersTwoPaneRoute(
     val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
     val actionState by detailViewModel.actionState.collectAsStateWithLifecycle()
     val availableStatuses by detailViewModel.availableStatuses.collectAsStateWithLifecycle()
+
+    // Rattrapage : recharge la liste quand l'écran redevient visible (retour d'un autre onglet),
+    // cf. KDoc de OrdersViewModel.onScreenResumed pour le throttle et le pourquoi.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        ordersViewModel.onScreenResumed()
+    }
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Panneau gauche : liste des commandes (40 %)

@@ -9,6 +9,8 @@ import com.rebuildit.prestaflow.fakes.FakeAuthRepository
 import com.rebuildit.prestaflow.fakes.FakeLanguageRepository
 import com.rebuildit.prestaflow.fakes.FakeOrdersPreferencesRepository
 import com.rebuildit.prestaflow.fakes.FakeOrdersRepository
+import com.rebuildit.prestaflow.fakes.FakeTimeProvider
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -39,6 +41,7 @@ class OrdersViewModelTest {
     private lateinit var fakePrefsRepo: FakeOrdersPreferencesRepository
     private lateinit var fakeAuthRepo: FakeAuthRepository
     private lateinit var fakeLanguageRepo: FakeLanguageRepository
+    private lateinit var fakeTimeProvider: FakeTimeProvider
 
     @Before
     fun setUp() {
@@ -47,6 +50,7 @@ class OrdersViewModelTest {
         fakePrefsRepo = FakeOrdersPreferencesRepository()
         fakeAuthRepo = FakeAuthRepository()
         fakeLanguageRepo = FakeLanguageRepository()
+        fakeTimeProvider = FakeTimeProvider()
     }
 
     @After
@@ -62,6 +66,7 @@ class OrdersViewModelTest {
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = fakeAuthRepo,
             languageRepository = fakeLanguageRepo,
+            timeProvider = fakeTimeProvider,
         )
 
     // ─── Filtre multi-statuts ────────────────────────────────────────────────
@@ -895,6 +900,107 @@ class OrdersViewModelTest {
 
             assertTrue(
                 "Aucune commande à marquer comme vue : rien à avancer",
+                fakePrefsRepo.markOrdersListSeenCalls.isEmpty(),
+            )
+        }
+
+    // ─── Rattrapage au retour sur l'écran (onScreenResumed) ─────────────────
+
+    @Test
+    fun `onScreenResumed declenche un refresh quand le delai minimal est depasse`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeOrdersRepo.refreshCalls.clear()
+
+            fakeTimeProvider.advanceBy(AUTO_REFRESH_MIN_INTERVAL_MS) // délai minimal tout juste dépassé
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un retour à l'écran après le délai minimal doit déclencher un refresh réseau",
+                fakeOrdersRepo.refreshCalls.isNotEmpty(),
+            )
+        }
+
+    @Test
+    fun `onScreenResumed est ignore avant expiration du delai minimal`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeOrdersRepo.refreshCalls.clear()
+
+            fakeTimeProvider.advanceBy(AUTO_REFRESH_MIN_INTERVAL_MS - 1) // juste avant le délai
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un aller-retour rapide entre onglets ne doit pas déclencher un second appel réseau",
+                fakeOrdersRepo.refreshCalls.isEmpty(),
+            )
+        }
+
+    @Test
+    fun `onScreenResumed est ignore si un chargement est deja en cours`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeTimeProvider.advanceBy(AUTO_REFRESH_MIN_INTERVAL_MS)
+            fakeOrdersRepo.refreshCalls.clear()
+
+            // Un refresh reste en cours (le fake suspend sur la barrière tant qu'elle n'est pas complétée).
+            val barrier = CompletableDeferred<Unit>()
+            fakeOrdersRepo.refreshBarrier = barrier
+            vm.onRefresh()
+            advanceUntilIdle() // fait avancer jusqu'à la suspension sur la barrière (non complétée)
+            assertTrue("Précondition : le 1er refresh doit être en cours (isRefreshing)", vm.uiState.value.isRefreshing)
+
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals(
+                "Aucun second refresh ne doit être lancé tant que le premier est en cours",
+                1,
+                fakeOrdersRepo.refreshCalls.size,
+            )
+
+            barrier.complete(Unit)
+            advanceUntilIdle()
+        }
+
+    @Test
+    fun `onRefresh - geste manuel - n est jamais throttle meme juste apres un refresh reussi`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeOrdersRepo.refreshCalls.clear()
+
+            // Aucun temps écoulé depuis le dernier refresh réussi (init) : un onScreenResumed serait
+            // ignoré ici, mais le geste manuel doit rester immédiat, sans exception.
+            vm.onRefresh()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Le tirer-pour-rafraîchir manuel ne doit jamais être ignoré par le throttle",
+                fakeOrdersRepo.refreshCalls.isNotEmpty(),
+            )
+        }
+
+    @Test
+    fun `un refresh de reprise en echec n avance pas le repere vu`() =
+        runTest {
+            fakeOrdersRepo.setOrders(listOf(buildOrder(6579L, "REF-6579")))
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakePrefsRepo.markOrdersListSeenCalls.clear()
+            fakeTimeProvider.advanceBy(AUTO_REFRESH_MIN_INTERVAL_MS)
+            fakeOrdersRepo.shouldThrowOnRefresh = true
+
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un rafraîchissement de reprise en échec ne doit jamais avancer le repère « vu »",
                 fakePrefsRepo.markOrdersListSeenCalls.isEmpty(),
             )
         }

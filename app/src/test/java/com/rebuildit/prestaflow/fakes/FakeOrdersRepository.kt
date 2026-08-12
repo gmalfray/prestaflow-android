@@ -4,6 +4,7 @@ import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.domain.orders.model.Order
 import com.rebuildit.prestaflow.domain.orders.model.OrderShipping
 import com.rebuildit.prestaflow.domain.orders.model.OrderStatusFilter
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +38,14 @@ class FakeOrdersRepository : OrdersRepository {
 
     var shouldThrowOnRefresh = false
     var refreshException: Throwable = RuntimeException("Erreur réseau simulée")
+
+    /**
+     * Quand non-null, [refresh] suspend sur ce [CompletableDeferred] avant de retourner — permet à
+     * un test de garder un "chargement en cours" ouvert pour vérifier qu'un second appel (ex.
+     * [OrdersViewModel.onScreenResumed]) est bien ignoré tant que le premier n'a pas abouti.
+     * Complété via `.complete(Unit)` depuis le test pour laisser le refresh en attente se terminer.
+     */
+    var refreshBarrier: CompletableDeferred<Unit>? = null
 
     /** Appels reçus par [updateOrderStatus] : (orderId, status). */
     val updateStatusCalls = mutableListOf<Pair<Long, String>>()
@@ -80,6 +89,7 @@ class FakeOrdersRepository : OrdersRepository {
         refreshCalls += Pair(forceRemote, statusIds.firstOrNull())
         refreshStatusIdsCalls += statusIds
         refreshSearchCalls += search
+        refreshBarrier?.await()
         if (shouldThrowOnRefresh) throw refreshException
         return hasMoreOnRefresh
     }
