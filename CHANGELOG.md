@@ -4,6 +4,30 @@ Les versions suivent [Semantic Versioning](https://semver.org/) : `MAJEUR.MINEUR
 
 ---
 
+## [0.45.0] - 2026-08-12
+
+### Ajouts
+- Notification quand une cliente écrit sur un fil SAV. Importance haute, son dédié de deux notes
+  ascendantes, volontairement à l'opposé du motif descendant et répété de l'alerte paiement, et
+  distinct de la caisse enregistreuse qui signifierait une vente. Activée par défaut. Un tap ouvre
+  le fil concerné. Son généré par `tools/sounds/make_sav_message_alert.py`, versionné pour rester
+  reproductible.
+- Notification quand un avis entre en file de modération. Importance normale, son système,
+  désactivée par défaut pour rester cohérente avec le réglage de la boutique. Un tap ouvre la file
+  de modération, faute d'écran de détail par avis.
+
+Le module émettait déjà ces deux événements et le hub les routait, mais l'app ne connaissait ni les
+catégories ni les canaux : elle ne s'abonnait qu'à cinq sujets, et rien ne pouvait arriver.
+
+Le son et l'importance d'un canal Android sont figés à sa création. En changer plus tard demandera
+un nouveau canal sous un autre identifiant.
+
+### Interne
+- Les catégories de notification peuvent avoir un défaut d'activation propre, là où elles étaient
+  toutes activées de la même façon.
+
+---
+
 ## [0.44.1] - 2026-08-12
 
 ### Corrections
