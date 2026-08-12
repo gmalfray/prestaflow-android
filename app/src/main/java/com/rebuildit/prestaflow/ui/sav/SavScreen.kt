@@ -29,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.UiText
@@ -61,6 +64,19 @@ fun SavRoute(
     viewModel: SavViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Rattrapage : recharge la liste (et le compteur "à traiter" de la pastille du shell) au retour
+    // sur cet écran, cf. KDoc de SavViewModel.onScreenResumed pour le contrat détaillé et le
+    // pourquoi des DEUX déclencheurs (SavRoute est monté dans le sous-onglet SAV de
+    // ClientsTabsRoute, démonté quand un autre sous-onglet est sélectionné — cf. le même commentaire
+    // dans ClientsScreen.ClientsRoute).
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.onScreenResumed()
+    }
+    LaunchedEffect(Unit) {
+        viewModel.onScreenResumed()
+    }
+
     SavScreen(
         state = state,
         modifier = modifier,

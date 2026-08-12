@@ -2,10 +2,13 @@ package com.rebuildit.prestaflow.ui.sav
 
 import app.cash.turbine.test
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard.Companion.MIN_INTERVAL_MS
 import com.rebuildit.prestaflow.domain.sav.model.SavThread
 import com.rebuildit.prestaflow.domain.sav.model.SavThreadStatus
 import com.rebuildit.prestaflow.domain.sav.model.SavThreadsPage
 import com.rebuildit.prestaflow.fakes.FakeSavRepository
+import com.rebuildit.prestaflow.fakes.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -24,11 +27,15 @@ import org.junit.Test
 class SavViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeRepo: FakeSavRepository
+    private lateinit var fakeTimeProvider: FakeTimeProvider
+    private lateinit var resumeRefreshGuard: ScreenResumeRefreshGuard
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeRepo = FakeSavRepository()
+        fakeTimeProvider = FakeTimeProvider()
+        resumeRefreshGuard = ScreenResumeRefreshGuard(fakeTimeProvider)
     }
 
     @After
@@ -36,7 +43,7 @@ class SavViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun buildViewModel() = SavViewModel(fakeRepo, NetworkErrorMapper())
+    private fun buildViewModel() = SavViewModel(fakeRepo, NetworkErrorMapper(), resumeRefreshGuard)
 
     @Test
     fun `charge la premiere page sans filtre au demarrage`() =
@@ -159,6 +166,68 @@ class SavViewModelTest {
 
                 cancelAndIgnoreRemainingEvents()
             }
+        }
+
+    // ─── Rattrapage au retour sur l'écran (onScreenResumed) ─────────────────
+
+    @Test
+    fun `onScreenResumed declenche un refresh de la liste ET du compteur apres le delai minimal`() =
+        runTest {
+            fakeRepo.fetchThreadsResult = SavThreadsPage(threads = listOf(buildThread(1L)), hasNext = false, nextOffset = 0)
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeRepo.lastFetchThreadsCall = null
+            fakeRepo.refreshToProcessCountCallCount = 0
+
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertTrue(
+                "Un retour à l'écran après le délai minimal doit recharger la liste",
+                fakeRepo.lastFetchThreadsCall != null,
+            )
+            assertTrue(
+                "Il doit AUSSI rafraîchir le compteur \"à traiter\" (pastille du shell), sinon " +
+                    "liste et pastille peuvent se contredire",
+                fakeRepo.refreshToProcessCountCallCount > 0,
+            )
+        }
+
+    @Test
+    fun `onScreenResumed est ignore avant expiration du delai minimal`() =
+        runTest {
+            fakeRepo.fetchThreadsResult = SavThreadsPage(threads = emptyList(), hasNext = false, nextOffset = 0)
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            fakeRepo.lastFetchThreadsCall = null
+
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS - 1)
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals(
+                "Un aller-retour rapide entre onglets ne doit pas déclencher un second appel réseau",
+                null,
+                fakeRepo.lastFetchThreadsCall,
+            )
+        }
+
+    @Test
+    fun `onScreenResumed conserve le filtre de statut actif`() =
+        runTest {
+            fakeRepo.fetchThreadsResult = SavThreadsPage(threads = emptyList(), hasNext = false, nextOffset = 0)
+            val vm = buildViewModel()
+            advanceUntilIdle()
+            vm.onFilterChange(SavStatusFilter.CLOSED)
+            advanceUntilIdle()
+            fakeRepo.lastFetchThreadsCall = null
+            fakeTimeProvider.advanceBy(MIN_INTERVAL_MS)
+
+            vm.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals(SavThreadStatus.CLOSED, fakeRepo.lastFetchThreadsCall?.status)
         }
 
     private fun buildThread(id: Long) =
