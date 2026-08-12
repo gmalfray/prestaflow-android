@@ -14,7 +14,7 @@
     <string name="notif_channel_default_name">Alertes</string>
     <string name="notif_channel_default_desc">Notifications générales de l\'application</string>
     <string name="notif_sale_default_title">Nouvelle commande</string>
-    <!-- Sync worker — tâche offline abandonnée après une réponse HTTP non réessayable (400/422…) -->
+    <!-- Sync worker : tâche offline abandonnée après une réponse HTTP non réessayable (400/422…) -->
     <string name="sync_failure_notif_title">Échec de synchronisation</string>
     <string name="sync_failure_notif_body">Une modification (%1$s) n\'a pas pu être enregistrée (HTTP %2$d). Ouvrez l\'app pour vérifier.</string>
     <string name="action_retry">Réessayer</string>
@@ -75,7 +75,7 @@
     <string name="dashboard_chart_trend_rising">en hausse</string>
     <string name="dashboard_chart_trend_falling">en baisse</string>
     <string name="dashboard_chart_trend_stable">stable</string>
-    <!-- Dashboard — légende et tooltip graphe -->
+    <!-- Dashboard : légende et tooltip graphe -->
     <string name="dashboard_legend_orders">Commandes</string>
     <string name="dashboard_legend_turnover">Chiffre d\'affaires</string>
     <string name="dashboard_tooltip_orders">Cmd : %1$d</string>
@@ -84,10 +84,10 @@
     <string name="dashboard_greeting">Bonjour</string>
     <string name="dashboard_content_description_refresh">Actualiser le tableau de bord</string>
     <string name="dashboard_content_description_kpi_card">%1$s : %2$s</string>
-    <!-- Dashboard — badge de tendance KPI. Arg : 1=pourcentage formaté (ex : "12,3 %") -->
+    <!-- Dashboard : badge de tendance KPI. Arg : 1=pourcentage formaté (ex : "12,3 %") -->
     <string name="dashboard_kpi_trend_up">en hausse de %1$s</string>
     <string name="dashboard_kpi_trend_down">en baisse de %1$s</string>
-    <!-- Dashboard — graphique plein écran -->
+    <!-- Dashboard : graphique plein écran -->
     <string name="dashboard_chart_expand_content_description">Voir le graphique en plein écran</string>
     <string name="dashboard_chart_fullscreen_close">Fermer</string>
 
@@ -220,7 +220,7 @@
     <string name="sav_status_awaiting_merchant">Attente marchand</string>
     <string name="sav_status_closed">Fermé</string>
 
-    <!-- Fil SAV — détail -->
+    <!-- Fil SAV : détail -->
     <string name="sav_thread_title">Fil SAV</string>
     <string name="sav_thread_error">Impossible d\’afficher ce fil</string>
     <string name="sav_thread_change_status_content_description">Changer le statut du fil</string>
@@ -230,16 +230,16 @@
     <string name="sav_thread_author_customer">Cliente</string>
     <string name="sav_thread_status_updated">Statut mis à jour</string>
     <string name="sav_thread_reply_sent">Réponse envoyée par e-mail à la cliente</string>
-    <string name="sav_thread_reply_sent_no_email">Réponse enregistrée — e-mail non envoyé (adresse indisponible)</string>
+    <string name="sav_thread_reply_sent_no_email">Réponse enregistrée, e-mail non envoyé (adresse indisponible)</string>
 
-    <!-- Fil SAV — confirmation d\'envoi (⚠️ envoie un vrai e-mail) -->
+    <!-- Fil SAV : confirmation d\'envoi (attention, envoie un vrai e-mail) -->
     <string name="sav_thread_reply_confirm_title">Envoyer cette réponse par e-mail ?</string>
     <string name="sav_thread_reply_confirm_recipient">Un e-mail sera envoyé à %1$s</string>
-    <string name="sav_thread_reply_confirm_recipient_unknown">Aucune adresse e-mail connue pour ce fil — la réponse sera enregistrée sans envoi.</string>
+    <string name="sav_thread_reply_confirm_recipient_unknown">Aucune adresse e-mail connue pour ce fil. La réponse sera enregistrée sans envoi.</string>
     <string name="sav_thread_reply_confirm_send">Envoyer</string>
     <string name="sav_thread_reply_confirm_cancel">Annuler</string>
 
-    <!-- Fil SAV — changement de statut -->
+    <!-- Fil SAV : changement de statut -->
     <string name="sav_status_picker_title">Changer le statut</string>
     <string name="sav_status_picker_confirm">Valider</string>
     <string name="sav_status_picker_cancel">Annuler</string>
@@ -247,23 +247,23 @@
     <!-- Écran Avis (masqué si le module d\'avis n\'est pas installé sur la boutique) -->
     <string name="reviews_list_empty">Aucun avis à modérer pour l\’instant.</string>
     <string name="reviews_list_error_title">Impossible d\’afficher les avis</string>
-    <string name="reviews_author_for_product">%1$s — %2$s</string>
+    <string name="reviews_author_for_product">%1$s · %2$s</string>
     <string name="reviews_existing_reply">Votre réponse : %1$s</string>
     <string name="reviews_action_publish">Publier</string>
     <string name="reviews_action_published">Avis publié</string>
-    <string name="reviews_action_trashed">Avis mis à la corbeille — auteur informé par e-mail</string>
-    <string name="reviews_action_trashed_no_email">Avis mis à la corbeille — e-mail non envoyé (adresse indisponible)</string>
+    <string name="reviews_action_trashed">Avis mis à la corbeille, auteur informé par e-mail</string>
+    <string name="reviews_action_trashed_no_email">Avis mis à la corbeille, e-mail non envoyé (adresse indisponible)</string>
     <string name="reviews_action_replied">Réponse publiée</string>
 
-    <!-- Avis — mise à la corbeille (⚠️ motif obligatoire, article L111-7-2, envoie un e-mail) -->
+    <!-- Avis : mise à la corbeille (attention, motif obligatoire, article L111-7-2, envoie un e-mail) -->
     <string name="reviews_trash_dialog_title">Motif du rejet</string>
-    <string name="reviews_trash_dialog_hint">Obligatoire — la cliente recevra ce motif par e-mail (article L111-7-2 du code de la consommation).</string>
+    <string name="reviews_trash_dialog_hint">Obligatoire : la cliente recevra ce motif par e-mail (article L111-7-2 du code de la consommation).</string>
     <string name="reviews_trash_dialog_placeholder">Ex. Contenu hors sujet, sans rapport avec le produit vendu.</string>
     <string name="reviews_trash_dialog_char_count">%1$d / %2$d caractères minimum</string>
     <string name="reviews_trash_dialog_confirm">Mettre à la corbeille</string>
     <string name="reviews_trash_dialog_cancel">Annuler</string>
 
-    <!-- Avis — réponse publique -->
+    <!-- Avis : réponse publique -->
     <string name="reviews_reply_dialog_title">Répondre publiquement</string>
     <string name="reviews_reply_dialog_placeholder">Votre réponse, visible sous l\’avis sur la boutique…</string>
     <string name="reviews_reply_dialog_confirm">Publier la réponse</string>
@@ -387,7 +387,7 @@
     <string name="orders_status_short_9">Terminé</string>
     <string name="orders_status_short_10">Virement</string>
 
-    <!-- Menu statuts (bottom sheet) : 2 volets — filtre (100% des statuts) + raccourcis (barre, max N) -->
+    <!-- Menu statuts (bottom sheet) : 2 volets, filtre (100% des statuts) + raccourcis (barre, max N) -->
     <string name="orders_filter_prefs_title">Statuts</string>
     <string name="orders_filter_prefs_section_filter">Filtrer par statut</string>
     <string name="orders_filter_prefs_section_filter_hint">Sélectionnez autant de statuts que nécessaire pour filtrer la liste</string>
@@ -421,19 +421,19 @@
     <!-- Pagination commandes -->
     <string name="orders_load_more">Charger plus</string>
 
-    <!-- Détail commande — messages d'action (externalisés pour i18n) -->
+    <!-- Détail commande : messages d'action (externalisés pour i18n) -->
     <string name="order_detail_status_updated">Statut mis à jour</string>
     <string name="order_detail_tracking_updated">Suivi mis à jour</string>
     <string name="order_detail_invoice_unavailable">Cette commande n\'a pas de facture disponible.</string>
     <string name="order_detail_shipping_label_unavailable">Aucun bordereau disponible pour cette commande.</string>
     <string name="order_detail_label_generated">Étiquette générée avec succès</string>
 
-    <!-- Réglages — confirmation suppression boutique -->
+    <!-- Réglages : confirmation suppression boutique -->
     <string name="settings_shops_remove_confirm_title">Supprimer la boutique ?</string>
     <string name="settings_shops_remove_confirm_message">Cette action vous déconnectera de la boutique %1$s.</string>
     <string name="settings_shops_remove_confirm_action">Supprimer</string>
 
-    <!-- Réglages — section Réappro stock (boutons rapides configurables) -->
+    <!-- Réglages : section Réappro stock (boutons rapides configurables) -->
     <string name="settings_stock_replenish_label">Réappro / boutons rapides</string>
     <string name="settings_stock_replenish_hint">Configurez la quantité ajoutée par chaque bouton rapide de l\'écran de réappro (1 à 5 boutons).</string>
     <string name="settings_stock_replenish_amount_label">Bouton %1$d</string>

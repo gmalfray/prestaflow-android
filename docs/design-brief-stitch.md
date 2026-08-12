@@ -1,19 +1,27 @@
-# PrestaFlow — Brief de design (Google Stitch)
+# PrestaFlow : brief de design (Google Stitch)
 
-Brief pour régénérer le design des écrans de l'app Android **PrestaFlow** via
+Brief pour régénérer le design des écrans de l'app Android PrestaFlow via
 Google Stitch (MCP `stitch` configuré). Outil métier pour marchand PrestaShop
-(boutique **pensebonheur.fr**, mercerie / loisirs créatifs).
+(boutique pensebonheur.fr, mercerie / loisirs créatifs).
 
 ## Charte (à injecter dans le thème Stitch)
-- **Primaire / marque** : `#C99587` (terracotta rose poudré)
-- **Accent surface** : `#D1C6BD` (beige chaud)
-- **Fond app** : `#FAF7F4` (blanc cassé chaud) · **Cartes** : `#FFFFFF`
-- **Succès** `#4CBB6C` · **Danger** `#FF4C4C` · **Alerte/Highlight** `#FF9A52`
-- **Texte** `#2B2B2B` · **Texte atténué** `#7A746E`
-- **Police** : Plus Jakarta Sans (ou Inter). Gros chiffres gras pour les KPI.
-- Material 3 (Material You), Android, portrait, light d'abord + variante dark.
-- Style : épuré, aéré, cartes arrondies (20dp), ombres douces, chaleureux mais pro.
-- **Tous les textes UI en FRANÇAIS.**
+
+| Rôle | Valeur |
+|------|--------|
+| Primaire / marque | `#C99587` (terracotta rose poudré) |
+| Accent surface | `#D1C6BD` (beige chaud) |
+| Fond app | `#FAF7F4` (blanc cassé chaud) |
+| Cartes | `#FFFFFF` |
+| Succès | `#4CBB6C` |
+| Danger | `#FF4C4C` |
+| Alerte / highlight | `#FF9A52` |
+| Texte | `#2B2B2B` |
+| Texte atténué | `#7A746E` |
+
+Police : Plus Jakarta Sans (ou Inter), avec de gros chiffres gras pour les KPI.
+Material 3 (Material You), Android, portrait, light d'abord plus une variante dark.
+Style épuré et aéré, cartes arrondies (20dp), ombres douces, chaleureux mais pro.
+Tous les textes de l'UI doivent être en français.
 
 > Côté MCP Stitch, `DesignTheme` accepte des couleurs hex (primary, etc.), un
 > `bodyFont` (enum : `PLUS_JAKARTA_SANS`, `INTER`, `LEXEND`, `MANROPE`…) et
@@ -51,7 +59,7 @@ All in-UI text must be in FRENCH. Bottom navigation bar with 5 items:
 Tableau de bord, Commandes, Produits, Clients, Réglages.
 ```
 
-## 2. Dashboard — « Tableau de bord » (écran prioritaire)
+## 2. Dashboard : « Tableau de bord » (écran prioritaire)
 
 ```
 Screen: "Tableau de bord" (merchant dashboard home).
@@ -98,7 +106,7 @@ B) "Détail client": header (name, email, since date), KPI row (commandes, total
 dépensé), and "Historique des commandes" list (ref, date, amount, status badge).
 ```
 
-## 6. Paniers — « Paniers »
+## 6. Paniers
 
 ```
 Screen "Paniers": list of carts (recent / abandoned) with customer, item count,
@@ -119,4 +127,4 @@ and a "Se déconnecter" button. Minimal and tidy.
 ## Méthode Stitch
 Coller le brief global d'abord, puis générer écran par écran dans la même session
 pour la cohérence. Itérer ensuite ("plus aéré", "variante sombre") et exporter vers
-Figma / code. Le Dashboard est la priorité (point noir actuel).
+Figma ou vers du code. Le Dashboard est la priorité : c'est le point noir actuel.

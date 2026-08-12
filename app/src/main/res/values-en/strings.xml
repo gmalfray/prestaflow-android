@@ -14,7 +14,7 @@
     <string name="notif_channel_default_name">Alerts</string>
     <string name="notif_channel_default_desc">General app notifications</string>
     <string name="notif_sale_default_title">New order</string>
-    <!-- Sync worker — tâche offline abandonnée après une réponse HTTP non réessayable (400/422…) -->
+    <!-- Sync worker : tâche offline abandonnée après une réponse HTTP non réessayable (400/422…) -->
     <string name="sync_failure_notif_title">Sync failed</string>
     <string name="sync_failure_notif_body">A change (%1$s) could not be saved (HTTP %2$d). Open the app to check.</string>
     <string name="action_retry">Retry</string>
@@ -75,7 +75,7 @@
     <string name="dashboard_chart_trend_rising">rising</string>
     <string name="dashboard_chart_trend_falling">falling</string>
     <string name="dashboard_chart_trend_stable">stable</string>
-    <!-- Dashboard — légende et tooltip graphe -->
+    <!-- Dashboard : légende et tooltip graphe -->
     <string name="dashboard_legend_orders">Orders</string>
     <string name="dashboard_legend_turnover">Turnover</string>
     <string name="dashboard_tooltip_orders">Ord: %1$d</string>
@@ -84,10 +84,10 @@
     <string name="dashboard_greeting">Hello</string>
     <string name="dashboard_content_description_refresh">Refresh dashboard</string>
     <string name="dashboard_content_description_kpi_card">%1$s: %2$s</string>
-    <!-- Dashboard — KPI trend badge. Arg: 1=formatted percentage (e.g. "12.3%") -->
+    <!-- Dashboard : KPI trend badge. Arg: 1=formatted percentage (e.g. "12.3%") -->
     <string name="dashboard_kpi_trend_up">up %1$s</string>
     <string name="dashboard_kpi_trend_down">down %1$s</string>
-    <!-- Dashboard — full-screen chart -->
+    <!-- Dashboard : full-screen chart -->
     <string name="dashboard_chart_expand_content_description">View chart full screen</string>
     <string name="dashboard_chart_fullscreen_close">Close</string>
 
@@ -226,10 +226,10 @@
     <string name="sav_thread_author_customer">Customer</string>
     <string name="sav_thread_status_updated">Status updated</string>
     <string name="sav_thread_reply_sent">Reply sent by email to the customer</string>
-    <string name="sav_thread_reply_sent_no_email">Reply saved — email not sent (address unavailable)</string>
+    <string name="sav_thread_reply_sent_no_email">Reply saved, email not sent (address unavailable)</string>
     <string name="sav_thread_reply_confirm_title">Send this reply by email?</string>
     <string name="sav_thread_reply_confirm_recipient">An email will be sent to %1$s</string>
-    <string name="sav_thread_reply_confirm_recipient_unknown">No known email address for this thread — the reply will be saved without sending.</string>
+    <string name="sav_thread_reply_confirm_recipient_unknown">No known email address for this thread. The reply will be saved without sending.</string>
     <string name="sav_thread_reply_confirm_send">Send</string>
     <string name="sav_thread_reply_confirm_cancel">Cancel</string>
     <string name="sav_status_picker_title">Change status</string>
@@ -238,15 +238,15 @@
 
     <string name="reviews_list_empty">No review to moderate yet.</string>
     <string name="reviews_list_error_title">Unable to display reviews</string>
-    <string name="reviews_author_for_product">%1$s — %2$s</string>
+    <string name="reviews_author_for_product">%1$s · %2$s</string>
     <string name="reviews_existing_reply">Your reply: %1$s</string>
     <string name="reviews_action_publish">Publish</string>
     <string name="reviews_action_published">Review published</string>
-    <string name="reviews_action_trashed">Review trashed — author notified by email</string>
-    <string name="reviews_action_trashed_no_email">Review trashed — email not sent (address unavailable)</string>
+    <string name="reviews_action_trashed">Review trashed, author notified by email</string>
+    <string name="reviews_action_trashed_no_email">Review trashed, email not sent (address unavailable)</string>
     <string name="reviews_action_replied">Reply published</string>
     <string name="reviews_trash_dialog_title">Rejection reason</string>
-    <string name="reviews_trash_dialog_hint">Required — the customer will receive this reason by email (French consumer code, article L111-7-2).</string>
+    <string name="reviews_trash_dialog_hint">Required: the customer will receive this reason by email (French consumer code, article L111-7-2).</string>
     <string name="reviews_trash_dialog_placeholder">E.g. Off-topic content, unrelated to the product sold.</string>
     <string name="reviews_trash_dialog_char_count">%1$d / %2$d characters minimum</string>
     <string name="reviews_trash_dialog_confirm">Move to trash</string>
@@ -306,7 +306,7 @@
     <string name="order_detail_title">Order Details</string>
     <string name="order_detail_reference_label">Reference</string>
     <string name="order_detail_error">Error loading order</string>
-    <string name="order_detail_cache_fallback">Details unavailable — showing cached data</string>
+    <string name="order_detail_cache_fallback">Details unavailable: showing cached data</string>
     <string name="order_detail_tracking_title">Tracking number</string>
     <string name="order_detail_tracking_label">Tracking number</string>
     <string name="order_detail_tracking_save">Save</string>
@@ -375,7 +375,7 @@
     <string name="orders_status_short_9">Done</string>
     <string name="orders_status_short_10">Transfer</string>
 
-    <!-- Menu statuts (bottom sheet) : 2 volets — filtre (100% des statuts) + raccourcis (barre, max N) -->
+    <!-- Menu statuts (bottom sheet) : 2 volets, filtre (100% des statuts) + raccourcis (barre, max N) -->
     <string name="orders_filter_prefs_title">Statuses</string>
     <string name="orders_filter_prefs_section_filter">Filter by status</string>
     <string name="orders_filter_prefs_section_filter_hint">Select any number of statuses to filter the list</string>
@@ -409,19 +409,19 @@
     <!-- Pagination commandes -->
     <string name="orders_load_more">Load more</string>
 
-    <!-- OrderDetail — messages d'action (externalisés pour i18n) -->
+    <!-- OrderDetail : messages d'action (externalisés pour i18n) -->
     <string name="order_detail_status_updated">Status updated</string>
     <string name="order_detail_tracking_updated">Tracking updated</string>
     <string name="order_detail_invoice_unavailable">This order has no invoice available.</string>
     <string name="order_detail_shipping_label_unavailable">No shipping label available for this order.</string>
     <string name="order_detail_label_generated">Label generated successfully</string>
 
-    <!-- Settings — confirmation suppression boutique -->
+    <!-- Settings : confirmation suppression boutique -->
     <string name="settings_shops_remove_confirm_title">Remove shop?</string>
     <string name="settings_shops_remove_confirm_message">This will log you out of the shop %1$s.</string>
     <string name="settings_shops_remove_confirm_action">Remove</string>
 
-    <!-- Settings — section Réappro stock (boutons rapides configurables) -->
+    <!-- Settings : section Réappro stock (boutons rapides configurables) -->
     <string name="settings_stock_replenish_label">Stock replenishment quick buttons</string>
     <string name="settings_stock_replenish_hint">Configure the amount added by each quick button on the stock replenishment screen (1 to 5 buttons).</string>
     <string name="settings_stock_replenish_amount_label">Button %1$d</string>

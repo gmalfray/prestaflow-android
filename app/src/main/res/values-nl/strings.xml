@@ -14,7 +14,7 @@
     <string name="notif_channel_default_name">Meldingen</string>
     <string name="notif_channel_default_desc">Algemene app-meldingen</string>
     <string name="notif_sale_default_title">Nieuwe bestelling</string>
-    <!-- Sync worker — offline taak gestopt na een niet-herhaalbare HTTP-reactie (400/422…) -->
+    <!-- Sync worker : offline taak gestopt na een niet-herhaalbare HTTP-reactie (400/422…) -->
     <string name="sync_failure_notif_title">Synchronisatie mislukt</string>
     <string name="sync_failure_notif_body">Een wijziging (%1$s) kon niet worden opgeslagen (HTTP %2$d). Open de app om te controleren.</string>
     <string name="action_retry">Opnieuw proberen</string>
@@ -75,7 +75,7 @@
     <string name="dashboard_chart_trend_rising">stijgend</string>
     <string name="dashboard_chart_trend_falling">dalend</string>
     <string name="dashboard_chart_trend_stable">stabiel</string>
-    <!-- Dashboard — legenda en tooltip van de grafiek -->
+    <!-- Dashboard : legenda en tooltip van de grafiek -->
     <string name="dashboard_legend_orders">Bestellingen</string>
     <string name="dashboard_legend_turnover">Omzet</string>
     <string name="dashboard_tooltip_orders">Best.: %1$d</string>
@@ -84,10 +84,10 @@
     <string name="dashboard_greeting">Hallo</string>
     <string name="dashboard_content_description_refresh">Dashboard vernieuwen</string>
     <string name="dashboard_content_description_kpi_card">%1$s: %2$s</string>
-    <!-- Dashboard — KPI-trendbadge. Arg: 1=geformatteerd percentage (bijv. "12,3%") -->
+    <!-- Dashboard : KPI-trendbadge. Arg: 1=geformatteerd percentage (bijv. "12,3%") -->
     <string name="dashboard_kpi_trend_up">%1$s hoger</string>
     <string name="dashboard_kpi_trend_down">%1$s lager</string>
-    <!-- Dashboard — volledig scherm grafiek -->
+    <!-- Dashboard : volledig scherm grafiek -->
     <string name="dashboard_chart_expand_content_description">Grafiek op volledig scherm bekijken</string>
     <string name="dashboard_chart_fullscreen_close">Sluiten</string>
 
@@ -226,10 +226,10 @@
     <string name="sav_thread_author_customer">Klant</string>
     <string name="sav_thread_status_updated">Status bijgewerkt</string>
     <string name="sav_thread_reply_sent">Antwoord per e-mail naar de klant verzonden</string>
-    <string name="sav_thread_reply_sent_no_email">Antwoord opgeslagen — e-mail niet verzonden (adres niet beschikbaar)</string>
+    <string name="sav_thread_reply_sent_no_email">Antwoord opgeslagen, e-mail niet verzonden (adres niet beschikbaar)</string>
     <string name="sav_thread_reply_confirm_title">Dit antwoord per e-mail verzenden?</string>
     <string name="sav_thread_reply_confirm_recipient">Er wordt een e-mail verzonden naar %1$s</string>
-    <string name="sav_thread_reply_confirm_recipient_unknown">Geen bekend e-mailadres voor dit gesprek — het antwoord wordt opgeslagen zonder verzending.</string>
+    <string name="sav_thread_reply_confirm_recipient_unknown">Geen bekend e-mailadres voor dit gesprek. Het antwoord wordt opgeslagen zonder verzending.</string>
     <string name="sav_thread_reply_confirm_send">Verzenden</string>
     <string name="sav_thread_reply_confirm_cancel">Annuleren</string>
     <string name="sav_status_picker_title">Status wijzigen</string>
@@ -238,15 +238,15 @@
 
     <string name="reviews_list_empty">Nog geen te modereren reviews.</string>
     <string name="reviews_list_error_title">Kan reviews niet weergeven</string>
-    <string name="reviews_author_for_product">%1$s — %2$s</string>
+    <string name="reviews_author_for_product">%1$s · %2$s</string>
     <string name="reviews_existing_reply">Uw antwoord: %1$s</string>
     <string name="reviews_action_publish">Publiceren</string>
     <string name="reviews_action_published">Recensie gepubliceerd</string>
-    <string name="reviews_action_trashed">Recensie verwijderd — auteur per e-mail geïnformeerd</string>
-    <string name="reviews_action_trashed_no_email">Recensie verwijderd — e-mail niet verzonden (adres niet beschikbaar)</string>
+    <string name="reviews_action_trashed">Recensie verwijderd, auteur per e-mail geïnformeerd</string>
+    <string name="reviews_action_trashed_no_email">Recensie verwijderd, e-mail niet verzonden (adres niet beschikbaar)</string>
     <string name="reviews_action_replied">Antwoord gepubliceerd</string>
     <string name="reviews_trash_dialog_title">Reden van afwijzing</string>
-    <string name="reviews_trash_dialog_hint">Verplicht — de klant ontvangt deze reden per e-mail (artikel L111-7-2 van het Franse consumentenrecht).</string>
+    <string name="reviews_trash_dialog_hint">Verplicht: de klant ontvangt deze reden per e-mail (artikel L111-7-2 van het Franse consumentenrecht).</string>
     <string name="reviews_trash_dialog_placeholder">Bijv. Inhoud niet relevant, geen verband met het verkochte product.</string>
     <string name="reviews_trash_dialog_char_count">%1$d / %2$d tekens minimaal</string>
     <string name="reviews_trash_dialog_confirm">Naar prullenbak verplaatsen</string>
@@ -374,7 +374,7 @@
     <string name="orders_status_short_9">Voltooid</string>
     <string name="orders_status_short_10">Overschr.</string>
 
-    <!-- Statusmenu (bottom sheet): 2 delen — filter (100% van de statussen) + snelkoppelingen (balk, max N) -->
+    <!-- Statusmenu (bottom sheet): 2 delen, filter (100% van de statussen) + snelkoppelingen (balk, max N) -->
     <string name="orders_filter_prefs_title">Statussen</string>
     <string name="orders_filter_prefs_section_filter">Filteren op status</string>
     <string name="orders_filter_prefs_section_filter_hint">Selecteer zoveel statussen als nodig om de lijst te filteren</string>
@@ -408,19 +408,19 @@
     <!-- Paginering bestellingen -->
     <string name="orders_load_more">Meer laden</string>
 
-    <!-- Besteldetails — actiemeldingen (uitgelicht voor i18n) -->
+    <!-- Besteldetails : actiemeldingen (uitgelicht voor i18n) -->
     <string name="order_detail_status_updated">Status bijgewerkt</string>
     <string name="order_detail_tracking_updated">Tracking bijgewerkt</string>
     <string name="order_detail_invoice_unavailable">Voor deze bestelling is geen factuur beschikbaar.</string>
     <string name="order_detail_shipping_label_unavailable">Geen verzendlabel beschikbaar voor deze bestelling.</string>
     <string name="order_detail_label_generated">Label succesvol gegenereerd</string>
 
-    <!-- Instellingen — bevestiging winkel verwijderen -->
+    <!-- Instellingen : bevestiging winkel verwijderen -->
     <string name="settings_shops_remove_confirm_title">Winkel verwijderen?</string>
     <string name="settings_shops_remove_confirm_message">Hierdoor word je afgemeld bij de winkel %1$s.</string>
     <string name="settings_shops_remove_confirm_action">Verwijderen</string>
 
-    <!-- Instellingen — sectie Voorraad aanvullen (instelbare snelknoppen) -->
+    <!-- Instellingen : sectie Voorraad aanvullen (instelbare snelknoppen) -->
     <string name="settings_stock_replenish_label">Snelknoppen voorraad aanvullen</string>
     <string name="settings_stock_replenish_hint">Stel in hoeveel elke snelknop toevoegt op het scherm voorraad aanvullen (1 tot 5 knoppen).</string>
     <string name="settings_stock_replenish_amount_label">Knop %1$d</string>

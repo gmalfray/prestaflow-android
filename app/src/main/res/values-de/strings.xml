@@ -14,7 +14,7 @@
     <string name="notif_channel_default_name">Benachrichtigungen</string>
     <string name="notif_channel_default_desc">Allgemeine App-Benachrichtigungen</string>
     <string name="notif_sale_default_title">Neue Bestellung</string>
-    <!-- Sync worker — Offline-Aufgabe nach nicht wiederholbarer HTTP-Antwort abgebrochen (400/422…) -->
+    <!-- Sync worker : Offline-Aufgabe nach nicht wiederholbarer HTTP-Antwort abgebrochen (400/422…) -->
     <string name="sync_failure_notif_title">Synchronisierung fehlgeschlagen</string>
     <string name="sync_failure_notif_body">Eine Änderung (%1$s) konnte nicht gespeichert werden (HTTP %2$d). Öffne die App, um es zu prüfen.</string>
     <string name="action_retry">Erneut versuchen</string>
@@ -75,7 +75,7 @@
     <string name="dashboard_chart_trend_rising">steigend</string>
     <string name="dashboard_chart_trend_falling">fallend</string>
     <string name="dashboard_chart_trend_stable">stabil</string>
-    <!-- Dashboard — Legende und Tooltip des Diagramms -->
+    <!-- Dashboard : Legende und Tooltip des Diagramms -->
     <string name="dashboard_legend_orders">Bestellungen</string>
     <string name="dashboard_legend_turnover">Umsatz</string>
     <string name="dashboard_tooltip_orders">Best.: %1$d</string>
@@ -84,10 +84,10 @@
     <string name="dashboard_greeting">Hallo</string>
     <string name="dashboard_content_description_refresh">Dashboard aktualisieren</string>
     <string name="dashboard_content_description_kpi_card">%1$s: %2$s</string>
-    <!-- Dashboard — KPI-Trendbadge. Arg: 1=formatierter Prozentsatz (z. B. „12,3 %“) -->
+    <!-- Dashboard : KPI-Trendbadge. Arg: 1=formatierter Prozentsatz (z. B. „12,3 %“) -->
     <string name="dashboard_kpi_trend_up">%1$s im Plus</string>
     <string name="dashboard_kpi_trend_down">%1$s im Minus</string>
-    <!-- Dashboard — Vollbilddiagramm -->
+    <!-- Dashboard : Vollbilddiagramm -->
     <string name="dashboard_chart_expand_content_description">Diagramm im Vollbild anzeigen</string>
     <string name="dashboard_chart_fullscreen_close">Schließen</string>
 
@@ -226,10 +226,10 @@
     <string name="sav_thread_author_customer">Kundin</string>
     <string name="sav_thread_status_updated">Status aktualisiert</string>
     <string name="sav_thread_reply_sent">Antwort per E-Mail an die Kundin gesendet</string>
-    <string name="sav_thread_reply_sent_no_email">Antwort gespeichert — E-Mail nicht gesendet (Adresse nicht verfügbar)</string>
+    <string name="sav_thread_reply_sent_no_email">Antwort gespeichert, E-Mail nicht gesendet (Adresse nicht verfügbar)</string>
     <string name="sav_thread_reply_confirm_title">Diese Antwort per E-Mail senden?</string>
     <string name="sav_thread_reply_confirm_recipient">Eine E-Mail wird an %1$s gesendet</string>
-    <string name="sav_thread_reply_confirm_recipient_unknown">Keine bekannte E-Mail-Adresse für diesen Thread — die Antwort wird ohne Versand gespeichert.</string>
+    <string name="sav_thread_reply_confirm_recipient_unknown">Keine bekannte E-Mail-Adresse für diesen Thread. Die Antwort wird ohne Versand gespeichert.</string>
     <string name="sav_thread_reply_confirm_send">Senden</string>
     <string name="sav_thread_reply_confirm_cancel">Abbrechen</string>
     <string name="sav_status_picker_title">Status ändern</string>
@@ -238,15 +238,15 @@
 
     <string name="reviews_list_empty">Noch keine Bewertung zu moderieren.</string>
     <string name="reviews_list_error_title">Bewertungen können nicht angezeigt werden</string>
-    <string name="reviews_author_for_product">%1$s — %2$s</string>
+    <string name="reviews_author_for_product">%1$s · %2$s</string>
     <string name="reviews_existing_reply">Ihre Antwort: %1$s</string>
     <string name="reviews_action_publish">Veröffentlichen</string>
     <string name="reviews_action_published">Bewertung veröffentlicht</string>
-    <string name="reviews_action_trashed">Bewertung in den Papierkorb verschoben — Autor per E-Mail informiert</string>
-    <string name="reviews_action_trashed_no_email">Bewertung in den Papierkorb verschoben — E-Mail nicht gesendet (Adresse nicht verfügbar)</string>
+    <string name="reviews_action_trashed">Bewertung in den Papierkorb verschoben, Autor per E-Mail informiert</string>
+    <string name="reviews_action_trashed_no_email">Bewertung in den Papierkorb verschoben, E-Mail nicht gesendet (Adresse nicht verfügbar)</string>
     <string name="reviews_action_replied">Antwort veröffentlicht</string>
     <string name="reviews_trash_dialog_title">Ablehnungsgrund</string>
-    <string name="reviews_trash_dialog_hint">Erforderlich — die Kundin erhält diesen Grund per E-Mail (Artikel L111-7-2 des französischen Verbraucherrechts).</string>
+    <string name="reviews_trash_dialog_hint">Erforderlich: Die Kundin erhält diesen Grund per E-Mail (Artikel L111-7-2 des französischen Verbraucherrechts).</string>
     <string name="reviews_trash_dialog_placeholder">Z. B. Themenfremder Inhalt, ohne Bezug zum verkauften Produkt.</string>
     <string name="reviews_trash_dialog_char_count">%1$d / %2$d Zeichen mindestens</string>
     <string name="reviews_trash_dialog_confirm">In den Papierkorb verschieben</string>
@@ -306,7 +306,7 @@
     <string name="order_detail_title">Bestelldetails</string>
     <string name="order_detail_reference_label">Referenz</string>
     <string name="order_detail_error">Fehler beim Laden der Bestellung</string>
-    <string name="order_detail_cache_fallback">Details nicht verfügbar – zwischengespeicherte Daten werden angezeigt</string>
+    <string name="order_detail_cache_fallback">Details nicht verfügbar: Zwischengespeicherte Daten werden angezeigt</string>
     <string name="order_detail_tracking_title">Sendungsnummer</string>
     <string name="order_detail_tracking_label">Sendungsnummer</string>
     <string name="order_detail_tracking_save">Speichern</string>
@@ -374,7 +374,7 @@
     <string name="orders_status_short_9">Fertig</string>
     <string name="orders_status_short_10">Überw.</string>
 
-    <!-- Statusmenü (Bottom Sheet): 2 Bereiche — Filter (alle Status) + Verknüpfungen (Leiste, max. N) -->
+    <!-- Statusmenü (Bottom Sheet): 2 Bereiche, Filter (alle Status) + Verknüpfungen (Leiste, max. N) -->
     <string name="orders_filter_prefs_title">Status</string>
     <string name="orders_filter_prefs_section_filter">Nach Status filtern</string>
     <string name="orders_filter_prefs_section_filter_hint">Wähle beliebig viele Status aus, um die Liste zu filtern</string>
@@ -408,19 +408,19 @@
     <!-- Seitenweise Laden von Bestellungen -->
     <string name="orders_load_more">Mehr laden</string>
 
-    <!-- Bestelldetails — Aktionsmeldungen (für i18n ausgelagert) -->
+    <!-- Bestelldetails : Aktionsmeldungen (für i18n ausgelagert) -->
     <string name="order_detail_status_updated">Status aktualisiert</string>
     <string name="order_detail_tracking_updated">Sendungsverfolgung aktualisiert</string>
     <string name="order_detail_invoice_unavailable">Für diese Bestellung ist keine Rechnung verfügbar.</string>
     <string name="order_detail_shipping_label_unavailable">Für diese Bestellung ist kein Versandetikett verfügbar.</string>
     <string name="order_detail_label_generated">Etikett erfolgreich erstellt</string>
 
-    <!-- Einstellungen — Bestätigung Shop entfernen -->
+    <!-- Einstellungen : Bestätigung Shop entfernen -->
     <string name="settings_shops_remove_confirm_title">Shop entfernen?</string>
     <string name="settings_shops_remove_confirm_message">Dadurch wirst du vom Shop %1$s abgemeldet.</string>
     <string name="settings_shops_remove_confirm_action">Entfernen</string>
 
-    <!-- Einstellungen — Abschnitt Warenauffüllung (konfigurierbare Schnellbuttons) -->
+    <!-- Einstellungen : Abschnitt Warenauffüllung (konfigurierbare Schnellbuttons) -->
     <string name="settings_stock_replenish_label">Schnellbuttons Warenauffüllung</string>
     <string name="settings_stock_replenish_hint">Lege fest, welche Menge jeder Schnellbutton auf dem Bildschirm zur Warenauffüllung hinzufügt (1 bis 5 Buttons).</string>
     <string name="settings_stock_replenish_amount_label">Button %1$d</string>
