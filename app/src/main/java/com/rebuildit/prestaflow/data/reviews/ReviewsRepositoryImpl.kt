@@ -12,6 +12,8 @@ import com.rebuildit.prestaflow.domain.reviews.model.Review
 import com.rebuildit.prestaflow.domain.reviews.model.ReviewTrashResult
 import com.rebuildit.prestaflow.domain.reviews.model.ReviewsPage
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
@@ -25,6 +27,13 @@ private val errorBodyJson = Json { ignoreUnknownKeys = true }
 private const val HTTP_CONFLICT = 409
 private const val HTTP_UNPROCESSABLE_ENTITY = 422
 
+/**
+ * Nombre max d'avis inspectés pour approximer [ReviewsRepositoryImpl.pendingReviewCount] — le max
+ * accepté par le connecteur (`limit`, cf. `GET /reviews`), même valeur que
+ * [com.rebuildit.prestaflow.data.sav.SavRepositoryImpl] pour le SAV.
+ */
+private const val PENDING_COUNT_SCAN_LIMIT = 100
+
 @Singleton
 class ReviewsRepositoryImpl
     @Inject
@@ -33,6 +42,26 @@ class ReviewsRepositoryImpl
         private val networkErrorMapper: NetworkErrorMapper,
         private val ioDispatcher: CoroutineDispatcher,
     ) : ReviewsRepository {
+        private val _pendingReviewCount = MutableStateFlow(0)
+        override val pendingReviewCount: Flow<Int> = _pendingReviewCount
+
+        /**
+         * Contrairement au SAV, `GET /reviews` ne renvoie QUE la file de modération
+         * (`RbReviewsBridge::getPendingReviews()` filtre déjà `validated = 0 AND deleted = 0` en
+         * base) : chaque élément reçu compte donc directement, sans filtre supplémentaire côté
+         * app. Le connecteur n'exposant aucun compteur dédié (pas de `total` en pagination), on
+         * approxime avec la taille de la première page — sous-estimation possible au-delà de
+         * [PENDING_COUNT_SCAN_LIMIT], acceptée pour une simple pastille (même compromis que
+         * [com.rebuildit.prestaflow.data.sav.SavRepositoryImpl.refreshUnreadCount]).
+         */
+        override suspend fun refreshPendingCount() {
+            withContext(ioDispatcher) {
+                runCatching { api.getReviews(limit = PENDING_COUNT_SCAN_LIMIT) }
+                    .onSuccess { response -> _pendingReviewCount.value = response.reviews.size }
+                    .onFailure { error -> Timber.w(networkErrorMapper.map(error).toString()) }
+            }
+        }
+
         override suspend fun fetchPendingReviews(
             limit: Int,
             offset: Int,

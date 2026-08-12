@@ -203,6 +203,8 @@
     <string name="clients_section_sav">Support</string>
     <string name="clients_section_reviews">Bewertungen</string>
     <string name="clients_badge_unread_sav_content_description">%1$d ungelesene Support-Anfragen</string>
+    <string name="clients_badge_pending_reviews_content_description">%1$d Bewertungen zur Moderation ausstehend</string>
+    <string name="clients_badge_summary_content_description">%1$d insgesamt zwischen Support und Bewertungen</string>
 
     <string name="sav_list_empty">Noch keine Support-Anfrage.</string>
     <string name="sav_list_error_title">Support kann nicht angezeigt werden</string>

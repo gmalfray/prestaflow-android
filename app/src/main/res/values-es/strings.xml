@@ -203,6 +203,8 @@
     <string name="clients_section_sav">Soporte</string>
     <string name="clients_section_reviews">Reseñas</string>
     <string name="clients_badge_unread_sav_content_description">%1$d hilos de soporte sin leer</string>
+    <string name="clients_badge_pending_reviews_content_description">%1$d reseñas pendientes de moderación</string>
+    <string name="clients_badge_summary_content_description">%1$d en total entre soporte y reseñas</string>
 
     <string name="sav_list_empty">Aún no hay ningún hilo de soporte.</string>
     <string name="sav_list_error_title">No se puede mostrar el soporte</string>

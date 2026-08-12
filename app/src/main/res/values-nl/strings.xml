@@ -203,6 +203,8 @@
     <string name="clients_section_sav">Klantenservice</string>
     <string name="clients_section_reviews">Reviews</string>
     <string name="clients_badge_unread_sav_content_description">%1$d ongelezen serviceverzoeken</string>
+    <string name="clients_badge_pending_reviews_content_description">%1$d beoordelingen in afwachting van moderatie</string>
+    <string name="clients_badge_summary_content_description">%1$d in totaal tussen klantenservice en beoordelingen</string>
 
     <string name="sav_list_empty">Nog geen serviceverzoeken.</string>
     <string name="sav_list_error_title">Kan klantenservice niet weergeven</string>

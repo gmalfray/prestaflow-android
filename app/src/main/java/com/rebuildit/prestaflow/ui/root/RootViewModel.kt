@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.auth.AuthState
 import com.rebuildit.prestaflow.domain.capabilities.CapabilitiesRepository
+import com.rebuildit.prestaflow.domain.reviews.ReviewsRepository
 import com.rebuildit.prestaflow.domain.sav.SavRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -21,19 +23,29 @@ class RootViewModel
         private val authRepository: AuthRepository,
         private val capabilitiesRepository: CapabilitiesRepository,
         savRepository: SavRepository,
+        reviewsRepository: ReviewsRepository,
     ) : ViewModel() {
         val authState: StateFlow<AuthState> = authRepository.authState
 
         /**
-         * Fils SAV non lus, pour la pastille de l'onglet Clients (chrome du shell, cf.
-         * [com.rebuildit.prestaflow.ui.MainActivity]) — compensation à la descente de niveau du
-         * SAV dans la nav, cf. étude `rebuild-it/docs/app-avis-sav.md`.
+         * Pastille de l'onglet Clients (chrome du shell, cf. [com.rebuildit.prestaflow.ui.MainActivity]) :
+         * somme des fils SAV non lus et des avis en attente de modération — la part avis n'est
+         * comptée que si la boutique active porte la capacité `reviews` (module `rbreviews`
+         * installé), sinon un avis resterait invisible depuis l'extérieur de l'onglet alors que le
+         * connecteur ne l'expose même pas. Compensation à la descente de niveau du SAV (et des
+         * Avis) dans la nav, cf. étude `rebuild-it/docs/app-avis-sav.md`.
          *
          * [SharingStarted.Eagerly] (pas `WhileSubscribed`) : la pastille du shell doit refléter le
          * compte dès l'affichage, sans attendre qu'un premier collecteur Compose s'abonne.
          */
-        val unreadSavCount: StateFlow<Int> =
-            savRepository.unreadThreadCount.stateIn(
+        val clientsBadgeCount: StateFlow<Int> =
+            combine(
+                savRepository.unreadThreadCount,
+                reviewsRepository.pendingReviewCount,
+                capabilitiesRepository.capabilities,
+            ) { unreadSav, pendingReviews, capabilities ->
+                unreadSav + if (capabilities.reviews) pendingReviews else 0
+            }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.Eagerly,
                 initialValue = 0,
@@ -46,8 +58,13 @@ class RootViewModel
             // boutique peut désinstaller le module sans que l'app le sache ».
             viewModelScope.launch {
                 authState.filterIsInstance<AuthState.Authenticated>().collect {
-                    capabilitiesRepository.refresh()
+                    val capabilities = capabilitiesRepository.refresh()
                     savRepository.refreshUnreadCount()
+                    // Jamais d'appel `GET /reviews` sur une boutique sans le module rbreviews : le
+                    // connecteur répondrait 409 (cf. Javadoc de refreshPendingCount).
+                    if (capabilities.reviews) {
+                        reviewsRepository.refreshPendingCount()
+                    }
                 }
             }
         }

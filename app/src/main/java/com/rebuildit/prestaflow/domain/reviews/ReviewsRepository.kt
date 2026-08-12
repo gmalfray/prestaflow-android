@@ -3,6 +3,7 @@ package com.rebuildit.prestaflow.domain.reviews
 import com.rebuildit.prestaflow.domain.reviews.model.Review
 import com.rebuildit.prestaflow.domain.reviews.model.ReviewTrashResult
 import com.rebuildit.prestaflow.domain.reviews.model.ReviewsPage
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Port des Avis — pont vers le module tiers `rbreviews`, capacité `reviews` (cf.
@@ -12,6 +13,24 @@ import com.rebuildit.prestaflow.domain.reviews.model.ReviewsPage
  * réglages du module.
  */
 interface ReviewsRepository {
+    /**
+     * Nombre d'avis en attente de modération, pour le sous-onglet Avis et la pastille de l'onglet
+     * Clients (contrat calqué sur [com.rebuildit.prestaflow.domain.sav.SavRepository.unreadThreadCount]).
+     * Ne reflète rien tant que [refreshPendingCount] n'a pas été appelé au moins une fois.
+     */
+    val pendingReviewCount: Flow<Int>
+
+    /**
+     * Rafraîchit [pendingReviewCount] depuis le connecteur. Comme pour le SAV, le connecteur
+     * n'expose aucun compteur dédié : on approxime à partir de la première page de la file de
+     * modération — voir la Javadoc de l'implémentation pour la limite exacte. Best-effort : un
+     * échec réseau conserve la dernière valeur connue plutôt que de la remettre à zéro.
+     *
+     * ⚠️ Ne PAS appeler si [com.rebuildit.prestaflow.domain.capabilities.model.ShopCapabilities.reviews]
+     * est faux : la route répondrait `409 reviews_unavailable` sur une boutique sans le module.
+     */
+    suspend fun refreshPendingCount()
+
     /** Charge une page de la file de modération (`GET /reviews`, plus récents d'abord). */
     suspend fun fetchPendingReviews(
         limit: Int = PAGE_SIZE,

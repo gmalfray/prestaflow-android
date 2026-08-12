@@ -204,6 +204,8 @@
     <string name="clients_section_sav">SAV</string>
     <string name="clients_section_reviews">Avis</string>
     <string name="clients_badge_unread_sav_content_description">%1$d fils SAV non lus</string>
+    <string name="clients_badge_pending_reviews_content_description">%1$d avis en attente de modération</string>
+    <string name="clients_badge_summary_content_description">%1$d au total entre le SAV et les avis</string>
 
     <!-- Écran SAV -->
     <string name="sav_list_empty">Aucun fil SAV pour l\’instant.</string>

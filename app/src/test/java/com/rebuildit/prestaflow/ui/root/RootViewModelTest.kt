@@ -1,8 +1,10 @@
 package com.rebuildit.prestaflow.ui.root
 
 import com.rebuildit.prestaflow.domain.auth.AuthState
+import com.rebuildit.prestaflow.domain.capabilities.model.ShopCapabilities
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
 import com.rebuildit.prestaflow.fakes.FakeCapabilitiesRepository
+import com.rebuildit.prestaflow.fakes.FakeReviewsRepository
 import com.rebuildit.prestaflow.fakes.FakeSavRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,7 +25,11 @@ import org.junit.Test
  * - Les capacités sont rafraîchies dès qu'une session authentifiée est observée (démarrage à chaud
  *   avec une boutique déjà active, ET après un changement de boutique — nouveau token).
  * - Pas de rafraîchissement tant que l'état reste non authentifié.
- * - [RootViewModel.unreadSavCount] reflète le flux exposé par [com.rebuildit.prestaflow.domain.sav.SavRepository].
+ * - Le compteur SAV est TOUJOURS rafraîchi (natif, capacité toujours vraie) ; le compteur Avis ne
+ *   l'est QUE si la capacité `reviews` est vraie (sinon la route connecteur répondrait 409).
+ * - [RootViewModel.clientsBadgeCount] est la somme SAV + Avis, la part avis n'étant comptée que si
+ *   `reviews` est vrai (cf. défaut remonté : la pastille du shell ne doit jamais compter un avis
+ *   invisible sur une boutique sans le module).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class RootViewModelTest {
@@ -32,6 +38,7 @@ class RootViewModelTest {
     private lateinit var fakeAuthRepo: FakeAuthRepository
     private lateinit var fakeCapabilitiesRepo: FakeCapabilitiesRepository
     private lateinit var fakeSavRepo: FakeSavRepository
+    private lateinit var fakeReviewsRepo: FakeReviewsRepository
 
     @Before
     fun setUp() {
@@ -39,6 +46,7 @@ class RootViewModelTest {
         fakeAuthRepo = FakeAuthRepository()
         fakeCapabilitiesRepo = FakeCapabilitiesRepository()
         fakeSavRepo = FakeSavRepository()
+        fakeReviewsRepo = FakeReviewsRepository()
     }
 
     @After
@@ -51,6 +59,7 @@ class RootViewModelTest {
             authRepository = fakeAuthRepo,
             capabilitiesRepository = fakeCapabilitiesRepo,
             savRepository = fakeSavRepo,
+            reviewsRepository = fakeReviewsRepo,
         )
 
     @Test
@@ -69,6 +78,26 @@ class RootViewModelTest {
             advanceUntilIdle()
 
             assertEquals(1, fakeSavRepo.refreshUnreadCountCallCount)
+        }
+
+    @Test
+    fun `un refresh du compteur avis est declenche si la capacite reviews est vraie`() =
+        runTest(testDispatcher) {
+            fakeCapabilitiesRepo.nextRefreshResult = ShopCapabilities(sav = true, reviews = true)
+            buildViewModel()
+            advanceUntilIdle()
+
+            assertEquals(1, fakeReviewsRepo.refreshPendingCountCallCount)
+        }
+
+    @Test
+    fun `aucun refresh du compteur avis n est declenche si la capacite reviews est fausse`() =
+        runTest(testDispatcher) {
+            fakeCapabilitiesRepo.nextRefreshResult = ShopCapabilities(sav = true, reviews = false)
+            buildViewModel()
+            advanceUntilIdle()
+
+            assertEquals(0, fakeReviewsRepo.refreshPendingCountCallCount)
         }
 
     @Test
@@ -96,15 +125,33 @@ class RootViewModelTest {
 
             assertEquals(0, fakeCapabilitiesRepo.refreshCallCount)
             assertEquals(0, fakeSavRepo.refreshUnreadCountCallCount)
+            assertEquals(0, fakeReviewsRepo.refreshPendingCountCallCount)
         }
 
     @Test
-    fun `unreadSavCount reflete le flux expose par SavRepository`() =
+    fun `clientsBadgeCount est la somme SAV + avis quand la capacite reviews est vraie`() =
         runTest(testDispatcher) {
+            fakeCapabilitiesRepo.nextRefreshResult = ShopCapabilities(sav = true, reviews = true)
             fakeSavRepo.emitUnreadCount(97)
+            fakeReviewsRepo.emitPendingCount(3)
             val viewModel = buildViewModel()
             advanceUntilIdle()
 
-            assertEquals(97, viewModel.unreadSavCount.value)
+            assertEquals(100, viewModel.clientsBadgeCount.value)
+        }
+
+    @Test
+    fun `clientsBadgeCount ignore le compteur avis quand la capacite reviews est fausse`() =
+        runTest(testDispatcher) {
+            fakeCapabilitiesRepo.nextRefreshResult = ShopCapabilities(sav = true, reviews = false)
+            fakeSavRepo.emitUnreadCount(97)
+            // Avis non nul malgré tout (ex. valeur résiduelle d'une capacité précédemment vraie) :
+            // ne doit surtout pas fuiter dans la somme tant que la capacité est fausse — sinon on
+            // recrée exactement le défaut initial (un compteur qui annonce un avis invisible).
+            fakeReviewsRepo.emitPendingCount(3)
+            val viewModel = buildViewModel()
+            advanceUntilIdle()
+
+            assertEquals(97, viewModel.clientsBadgeCount.value)
         }
 }

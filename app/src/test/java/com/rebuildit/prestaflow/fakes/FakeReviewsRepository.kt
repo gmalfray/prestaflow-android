@@ -5,13 +5,35 @@ import com.rebuildit.prestaflow.domain.reviews.ReviewsRepository
 import com.rebuildit.prestaflow.domain.reviews.model.Review
 import com.rebuildit.prestaflow.domain.reviews.model.ReviewTrashResult
 import com.rebuildit.prestaflow.domain.reviews.model.ReviewsPage
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Fake en mémoire de [ReviewsRepository]. Reproduit le garde-fou de l'implémentation réelle sur
  * [trash] (motif invalide → exception, AVANT tout accès réseau) : les tests de ViewModel doivent
  * pouvoir vérifier ce comportement sans dépendre de [com.rebuildit.prestaflow.data.reviews.ReviewsRepositoryImpl].
  */
-class FakeReviewsRepository : ReviewsRepository {
+class FakeReviewsRepository(
+    initialPendingCount: Int = 0,
+) : ReviewsRepository {
+    private val _pendingReviewCount = MutableStateFlow(initialPendingCount)
+    override val pendingReviewCount: StateFlow<Int> = _pendingReviewCount
+
+    fun emitPendingCount(count: Int) {
+        _pendingReviewCount.value = count
+    }
+
+    /** Valeur émise dans [pendingReviewCount] au prochain [refreshPendingCount] réussi. */
+    var nextRefreshPendingCount: Int? = null
+    var shouldThrowOnRefreshPendingCount = false
+    var refreshPendingCountCallCount = 0
+
+    override suspend fun refreshPendingCount() {
+        refreshPendingCountCallCount++
+        if (shouldThrowOnRefreshPendingCount) return // best-effort : ne remonte jamais l'erreur à l'appelant
+        nextRefreshPendingCount?.let { _pendingReviewCount.value = it }
+    }
+
     var fetchPendingReviewsResult: ReviewsPage = ReviewsPage(reviews = emptyList(), hasNext = false, nextOffset = 0)
     var shouldThrowOnFetch = false
 
