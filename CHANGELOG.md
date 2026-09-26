@@ -4,6 +4,22 @@ Les versions suivent [Semantic Versioning](https://semver.org/) : `MAJEUR.MINEUR
 
 ---
 
+## [0.45.1] - 2026-09-26
+
+### Corrections
+- L'affichage se déformait quand la taille de police du téléphone était agrandie (réglage
+  Affichage, Taille de police). Sur l'écran Commandes, le badge de statut se coupait net, sans
+  les trois petits points, chevauchait parfois la référence de la commande et poussait le crayon
+  d'édition hors de l'écran. La barre de navigation du bas allait plus loin : elle bridait
+  l'agrandissement de police pour que « Commandes » ne déborde pas, ce qui annulait le réglage
+  d'accessibilité choisi par la personne. Les écrans Clients, SAV, Paniers, Tableau de bord et
+  Réglages avaient le même défaut sur leurs badges, montants et libellés longs.
+
+Ces éléments passent maintenant à la ligne si besoin, sans jamais recouvrir un autre élément ni
+pousser un bouton hors du cadre, et sans brider le réglage de police choisi.
+
+---
+
 ## [0.45.0] - 2026-08-12
 
 ### Ajouts
