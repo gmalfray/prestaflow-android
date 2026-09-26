@@ -986,7 +986,7 @@ private fun DeltaSummary(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f, fill = false)) {
             Text(
                 text = stringResource(R.string.stock_replenish_delta_label, formatSignedDelta(delta)),
                 style = MaterialTheme.typography.headlineSmall,

@@ -907,13 +907,18 @@ private fun DashboardChartCard(
             modifier = Modifier.padding(Dimensions.spacingL),
             verticalArrangement = Arrangement.spacedBy(Dimensions.spacingL),
         ) {
-            // En-tête : titre + tendance à gauche, total à droite
+            // En-tête : titre + tendance à gauche, total à droite. weight(fill=false) sur les
+            // deux colonnes : le total en headlineMedium peut devenir large à fontScale élevé —
+            // chacune est plafonnée à sa part de largeur au lieu de chevaucher l'autre.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
                     Text(
                         text = stringResource(id = R.string.dashboard_chart_title_turnover),
                         style = MaterialTheme.typography.titleLarge,
@@ -950,7 +955,10 @@ private fun DashboardChartCard(
                         }
                     }
                 }
-                Column(horizontalAlignment = Alignment.End) {
+                Column(
+                    modifier = Modifier.weight(1f, fill = false),
+                    horizontalAlignment = Alignment.End,
+                ) {
                     Text(
                         text = totalText,
                         style = MaterialTheme.typography.headlineMedium,
@@ -999,6 +1007,9 @@ private fun DashboardChartCard(
                                 selectedContainerColor = colorNewCustomers.copy(alpha = 0.15f),
                                 selectedLabelColor = colorNewCustomers,
                             ),
+                        // Le libellé (« Nouveaux clients ») peut devenir large à fontScale élevé ;
+                        // borné pour ne pas déborder hors de la carte à côté du bouton plein écran.
+                        modifier = Modifier.weight(1f, fill = false),
                     )
                 }
             }
@@ -1058,7 +1069,10 @@ private fun DashboardChartFullscreenDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column {
+                    // weight(1f) : seule colonne pondérée du Row, elle absorbe l'espace restant
+                    // sans jamais pousser le bouton fermer (non pondéré) hors de l'écran, quel que
+                    // soit le fontScale — même piège que le crayon d'édition des commandes.
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(id = R.string.dashboard_chart_title_turnover),
                             style = MaterialTheme.typography.titleLarge,
@@ -1759,7 +1773,13 @@ private data class KpiItem(
 
 // ─── Previews ─────────────────────────────────────────────────────────────────
 
+/**
+ * Preuve visuelle du fix fontScale : en-tête boutique, cartes KPI et en-tête du graphique
+ * (montant en headlineMedium) ne doivent pas déborder hors de l'écran à fontScale 1.5 puis 2.0.
+ */
 @Preview(showBackground = true, name = "Dashboard — contenu")
+@Preview(showBackground = true, fontScale = 1.5f, name = "Dashboard — contenu — fontScale 1.5")
+@Preview(showBackground = true, fontScale = 2f, name = "Dashboard — contenu — fontScale 2.0")
 @Composable
 private fun PreviewDashboardContent() {
     PrestaFlowTheme {

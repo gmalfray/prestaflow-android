@@ -61,6 +61,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -81,6 +82,7 @@ import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.orders.components.StatusPickerDialog
 import com.rebuildit.prestaflow.ui.theme.Dimensions
+import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -367,13 +369,17 @@ fun OrderDetailContent(
         // Header Card : référence + statut + date + avatar client
         SoftCard {
             Column(modifier = Modifier.padding(Dimensions.cardPadding)) {
-                // Référence + badge statut
+                // Référence + badge statut.
+                // Les deux moitiés sont bornées par weight(fill=false) : à fontScale élevé, ni la
+                // référence ni le bloc badge+crayon ne peuvent déborder hors de l'écran ou se
+                // chevaucher — le badge wrappe dans sa moitié (cf. OrderStatusBadge) et le crayon,
+                // non pondéré dans sa propre Row, garde toujours sa taille et reste visible.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.Top,
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
                             text = stringResource(R.string.order_detail_reference_label),
                             style = MaterialTheme.typography.labelLarge,
@@ -386,7 +392,12 @@ fun OrderDetailContent(
                         )
                     }
                     Row(
+                        modifier =
+                            Modifier
+                                .weight(1f, fill = false)
+                                .padding(start = Dimensions.spacingS),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.End,
                     ) {
                         OrderStatusBadge(
                             status = order.status,
@@ -397,6 +408,7 @@ fun OrderDetailContent(
                                     ?: availableStatuses.firstOrNull {
                                         it.name.equals(order.status, ignoreCase = true)
                                     }?.color,
+                            modifier = Modifier.weight(1f, fill = false),
                         )
                         IconButton(
                             onClick = { showStatusDialog = true },
@@ -493,7 +505,8 @@ fun OrderDetailContent(
             }
         }
 
-        // Totals Card — fond surface, total en primary bold
+        // Totals Card — fond surface, total en primary bold. weight(fill=false) sur les deux :
+        // le montant en headlineMedium peut devenir large à fontScale élevé.
         SoftCard {
             Row(
                 modifier =
@@ -501,17 +514,22 @@ fun OrderDetailContent(
                         .fillMaxWidth()
                         .padding(Dimensions.cardPadding),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
                 Text(
                     text = stringResource(R.string.order_detail_total_paid),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
                 Text(
                     text = formatCurrency(order.totalPaid, order.currency),
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.primary,
+                    modifier =
+                        Modifier
+                            .weight(1f, fill = false)
+                            .padding(start = Dimensions.spacingXs),
                 )
             }
         }
@@ -815,5 +833,45 @@ private fun OrderItemThumbnail(
         )
     } else {
         Box(modifier = base)
+    }
+}
+
+// ─── Previews ─────────────────────────────────────────────────────────────────
+
+/**
+ * Preuve visuelle du fix fontScale sur l'en-tête de détail : référence + badge de statut long
+ * + crayon d'édition doivent cohabiter sans chevauchement à fontScale 1.5 puis 2.0, et le crayon
+ * doit rester visible (cf. bug « EN COURS DE PRÉPARATION » tronqué et crayon poussé hors écran).
+ */
+@Preview(showBackground = true, fontScale = 1.5f, name = "Détail commande — en-tête — fontScale 1.5")
+@Preview(showBackground = true, fontScale = 2f, name = "Détail commande — en-tête — fontScale 2.0")
+@Composable
+private fun PreviewOrderDetailHeaderLargeFontScale() {
+    PrestaFlowTheme {
+        OrderDetailContent(
+            order =
+                Order(
+                    id = 1L,
+                    reference = "FRAYKTSRP",
+                    status = "En cours de préparation",
+                    totalPaid = 45.0,
+                    currency = "EUR",
+                    customerName = "Marie Dupont",
+                    createdAtIso = "2026-06-19T14:20:00Z",
+                    updatedAtIso = "2026-06-19T14:20:00Z",
+                    hasInvoice = true,
+                    statusColor = "#FEF9C3",
+                    items =
+                        listOf(
+                            OrderItem(
+                                productId = 1L,
+                                name = "Pelote de laine mérinos",
+                                reference = "REF-001",
+                                quantity = 2,
+                                price = 12.5,
+                            ),
+                        ),
+                ),
+        )
     }
 }

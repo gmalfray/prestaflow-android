@@ -35,7 +35,6 @@ import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,14 +45,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -219,19 +217,20 @@ private fun LoadingScreen() {
 }
 
 /**
- * Libellé d'onglet de navigation (bottom bar + rail). Les 5 libellés sont dimensionnés pour tenir
- * sur une ligne à l'échelle de police par défaut ; on plafonne donc le `fontScale` à 1.0 pour ces
- * seuls libellés afin que « Commandes » ne déborde pas (coupure sur 2 lignes ou ellipsis) quand
- * l'utilisateur agrandit la police système. L'accessibilité (grande police) reste active partout
- * ailleurs dans l'app. Ellipsis conservé comme garde-fou ultime sur écrans exceptionnellement étroits.
+ * Libellé d'onglet de navigation (bottom bar + rail). Les 5 libellés tiennent sur une ligne à
+ * l'échelle de police par défaut ; à fontScale élevé (accessibilité), on les laisse wrapper sur
+ * 2 lignes plutôt que de plafonner le fontScale de l'utilisateur (qui désactiverait l'agrandissement
+ * qu'il a choisi dans les réglages système). Ellipsis conservé comme garde-fou ultime si même 2
+ * lignes ne suffisent pas sur un écran exceptionnellement étroit.
  */
 @Composable
 private fun NavBarLabel(text: String) {
-    val density = LocalDensity.current
-    val cappedDensity = Density(density.density, density.fontScale.coerceAtMost(1f))
-    CompositionLocalProvider(LocalDensity provides cappedDensity) {
-        Text(text = text, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
-    }
+    Text(
+        text = text,
+        maxLines = 2,
+        textAlign = TextAlign.Center,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 /**
@@ -265,6 +264,38 @@ private fun NavIconWithBadge(
         },
     ) {
         Icon(imageVector = icon, contentDescription = contentDescription)
+    }
+}
+
+// ─── Previews ─────────────────────────────────────────────────────────────────
+
+/**
+ * Preuve visuelle du fix fontScale sur la barre de navigation basse : les libellés (dont
+ * « Commandes ») doivent wrapper sur 2 lignes plutôt que d'être tronqués, le fontScale utilisateur
+ * n'étant plus plafonné (cf. [NavBarLabel]).
+ */
+@Preview(showBackground = true, fontScale = 1.5f, name = "Barre de navigation — fontScale 1.5")
+@Preview(showBackground = true, fontScale = 2f, name = "Barre de navigation — fontScale 2.0")
+@Composable
+@Suppress("UnusedPrivateMember") // Composable Preview privée : visible dans l'IDE Android Studio
+private fun NavigationBarLargeFontScalePreview() {
+    PrestaFlowTheme {
+        NavigationBar {
+            listOf(
+                "Tableau de bord" to true,
+                "Commandes" to false,
+                "Produits" to false,
+                "Clients" to false,
+                "Paniers" to false,
+            ).forEach { (label, selected) ->
+                NavigationBarItem(
+                    selected = selected,
+                    onClick = {},
+                    label = { NavBarLabel(label) },
+                    icon = { Icon(imageVector = Icons.Outlined.Settings, contentDescription = label) },
+                )
+            }
+        }
     }
 }
 

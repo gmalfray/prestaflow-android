@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -336,7 +337,10 @@ private fun SavThreadRow(
             }
         }
 
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        // weight(3f) (au lieu de 1f) : conserve à la colonne l'essentiel de la largeur restante,
+        // comme avant l'ajout du weight(fill=false) sur le badge juste en dessous — seul le badge
+        // doit être plafonné, pas le nom/la référence (déjà protégés par ellipsis).
+        Column(modifier = Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = displayName,
                 style = MaterialTheme.typography.titleSmall,
@@ -362,7 +366,10 @@ private fun SavThreadRow(
             }
         }
 
-        SavStatusBadge(status = thread.status)
+        // weight(fill=false) : à fontScale élevé, le badge ne doit pas pouvoir déborder hors
+        // écran (même fragilité que OrderStatusBadge dans les commandes) — il est plafonné à sa
+        // part de largeur et peut wrapper au lieu d'être poussé hors du champ.
+        SavStatusBadge(status = thread.status, modifier = Modifier.weight(1f, fill = false))
     }
 }
 
@@ -405,7 +412,10 @@ fun SavStatusBadge(
                 .background(bg)
                 .padding(horizontal = 10.dp, vertical = 4.dp),
     ) {
-        Text(text = label, color = fg, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+        // Pas de maxLines=1 : à fontScale élevé, le libellé doit pouvoir wrapper sur plusieurs
+        // lignes dans l'espace donné par l'appelant plutôt que d'être clippé sans ellipsis
+        // (même principe que OrderStatusBadge).
+        Text(text = label, color = fg, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
     }
 }
 
@@ -425,7 +435,14 @@ private fun PreviewSavEmpty() {
     PrestaFlowTheme { SavScreen(state = SavUiState.Content(threads = emptyList())) }
 }
 
+/**
+ * Preuve visuelle du fix fontScale : le badge de statut long (« Attente marchand ») et la
+ * référence de commande ne doivent ni se chevaucher ni déborder hors de l'écran à fontScale
+ * 1.5 puis 2.0.
+ */
 @Preview(showBackground = true, name = "SAV — liste")
+@Preview(showBackground = true, fontScale = 1.5f, name = "SAV — liste — fontScale 1.5")
+@Preview(showBackground = true, fontScale = 2f, name = "SAV — liste — fontScale 2.0")
 @Composable
 @Suppress("UnusedPrivateMember")
 private fun PreviewSavList() {
