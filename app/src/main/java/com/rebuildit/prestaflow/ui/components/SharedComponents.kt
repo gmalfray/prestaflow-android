@@ -421,10 +421,15 @@ fun SectionHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // weight(1f) : seul enfant pondéré du Row, il absorbe l'espace restant sans jamais
+        // pousser le lien « Voir tout » (non pondéré) hors de l'écran à fontScale élevé.
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
         )
         if (onSeeAll != null && seeAllLabel != null) {
             TextButton(onClick = onSeeAll) {

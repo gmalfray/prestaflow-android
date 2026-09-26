@@ -566,7 +566,10 @@ private fun SelectionActionBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
+            // weight(fill=false) : le compteur (« N sélectionnée(s) ») est borné pour ne jamais
+            // pousser les icônes d'action de droite (fixes, non pondérées) hors de l'écran.
             Row(
+                modifier = Modifier.weight(1f, fill = false),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
             ) {
@@ -581,6 +584,8 @@ private fun SelectionActionBar(
                     text = stringResource(R.string.orders_selection_count, selectedCount),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 

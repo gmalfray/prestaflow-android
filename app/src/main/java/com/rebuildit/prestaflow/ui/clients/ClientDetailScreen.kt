@@ -32,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,6 +50,7 @@ import com.rebuildit.prestaflow.ui.components.OrderStatusBadge
 import com.rebuildit.prestaflow.ui.components.euroCurrencyFormatter
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.theme.Dimensions
+import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -204,11 +207,17 @@ private fun ClientContent(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+                // weight(fill=false) sur les deux colonnes : à fontScale élevé, un montant en
+                // headlineMedium peut devenir large — chacune est plafonnée à sa part de largeur
+                // au lieu de déborder hors de l'écran.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Column(
+                        modifier = Modifier.weight(1f, fill = false),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
                         Text(
                             text = stringResource(R.string.client_total_spent_label).uppercase(),
                             style = MaterialTheme.typography.labelMedium,
@@ -221,6 +230,7 @@ private fun ClientContent(
                         )
                     }
                     Column(
+                        modifier = Modifier.weight(1f, fill = false),
                         horizontalAlignment = Alignment.End,
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
@@ -325,6 +335,9 @@ private fun OrderHistoryRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            // weight(fill=false) sur les deux : même fragilité fontScale que la ligne de liste
+            // des commandes (cf. OrdersScreen) — chacun est plafonné à sa part de largeur au lieu
+            // de déborder hors écran.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -333,27 +346,85 @@ private fun OrderHistoryRow(
                     text = order.reference,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
                 Text(
                     text = totalPaid,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
+                    modifier =
+                        Modifier
+                            .weight(1f, fill = false)
+                            .padding(start = Dimensions.spacingXs),
                 )
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
                 if (dateAdded != null) {
                     Text(
                         text = dateAdded,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
                 }
-                OrderStatusBadge(status = order.status, statusColor = resolvedStatusColor)
+                OrderStatusBadge(
+                    status = order.status,
+                    statusColor = resolvedStatusColor,
+                    modifier =
+                        Modifier
+                            .weight(1f, fill = false)
+                            .padding(start = Dimensions.spacingXs),
+                )
             }
         }
+    }
+}
+
+// ─── Previews ─────────────────────────────────────────────────────────────────
+
+/**
+ * Preuve visuelle du fix fontScale : les stats (total dépensé / commandes) et les lignes
+ * d'historique (référence + total, date + badge de statut long) ne doivent pas déborder hors de
+ * l'écran à fontScale 1.5 puis 2.0.
+ */
+@Preview(showBackground = true, name = "Client — détail")
+@Preview(showBackground = true, fontScale = 1.5f, name = "Client — détail — fontScale 1.5")
+@Preview(showBackground = true, fontScale = 2f, name = "Client — détail — fontScale 2.0")
+@Composable
+private fun PreviewClientDetail() {
+    PrestaFlowTheme {
+        ClientContent(
+            client =
+                Client(
+                    id = 1L,
+                    firstName = "Camille",
+                    lastName = "Martin",
+                    email = "camille.martin@example.com",
+                    ordersCount = 12,
+                    totalSpent = 1234.56,
+                    lastOrderAtIso = "2026-06-19T14:20:00Z",
+                    orders =
+                        listOf(
+                            ClientOrder(
+                                id = 1L,
+                                reference = "FRAYKTSRP",
+                                status = "En cours de préparation",
+                                totalPaid = 45.0,
+                                currency = "EUR",
+                                dateAdded = "2026-06-19 14:20:00",
+                            ),
+                        ),
+                ),
+            availableStatuses = emptyList(),
+            onOrderClick = {},
+        )
     }
 }

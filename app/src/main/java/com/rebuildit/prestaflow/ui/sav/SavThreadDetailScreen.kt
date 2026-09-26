@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -196,18 +197,22 @@ private fun SavThreadDetailContent(
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // En-tête : statut + commande liée
+        // En-tête : statut + commande liée. weight(fill=false) sur les deux : ni le badge ni la
+        // référence ne peuvent déborder hors de l'écran à fontScale élevé.
         Row(
             modifier = Modifier.fillMaxWidth().padding(Dimensions.screenEdgeMargin),
             horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SavStatusBadge(status = detail.thread.status)
+            SavStatusBadge(status = detail.thread.status, modifier = Modifier.weight(1f, fill = false))
             if (detail.thread.orderReference != null) {
                 Text(
                     text = stringResource(R.string.sav_thread_order_reference, detail.thread.orderReference),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
             }
         }
@@ -351,7 +356,13 @@ private fun SavReplyConfirmDialog(
 
 // ─── Previews ─────────────────────────────────────────────────────────────────
 
+/**
+ * Preuve visuelle du fix fontScale : badge de statut + référence de commande en en-tête ne
+ * doivent pas déborder hors de l'écran à fontScale 1.5 puis 2.0.
+ */
 @Preview(showBackground = true, name = "Fil SAV — détail")
+@Preview(showBackground = true, fontScale = 1.5f, name = "Fil SAV — détail — fontScale 1.5")
+@Preview(showBackground = true, fontScale = 2f, name = "Fil SAV — détail — fontScale 2.0")
 @Composable
 @Suppress("UnusedPrivateMember")
 private fun PreviewSavThreadDetail() {

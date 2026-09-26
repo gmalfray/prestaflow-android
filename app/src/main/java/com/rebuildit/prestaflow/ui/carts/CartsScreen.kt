@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -47,6 +48,7 @@ import com.rebuildit.prestaflow.ui.components.formatCurrency
 import com.rebuildit.prestaflow.ui.components.formatTimestamp
 import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
+import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -286,20 +288,27 @@ private fun CartRow(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
+            // weight(fill=false) sur les deux : le libellé du badge (« Converti en commande »,
+            // « Panier abandonné ») est une phrase complète qui peut devenir large à fontScale
+            // élevé — même fragilité que OrderStatusBadge, corrigée à l'identique.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
                 Text(
                     text = updatedAt ?: "",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
                 if (cart.hasOrder) {
                     Badge(
                         containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.weight(1f, fill = false).padding(start = Dimensions.spacingXs),
                     ) {
                         Text(
                             text = stringResource(R.string.carts_has_order),
@@ -310,6 +319,7 @@ private fun CartRow(
                     Badge(
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f, fill = false).padding(start = Dimensions.spacingXs),
                     ) {
                         Text(
                             text = stringResource(R.string.carts_abandoned),
@@ -319,5 +329,54 @@ private fun CartRow(
                 }
             }
         }
+    }
+}
+
+// ─── Previews ─────────────────────────────────────────────────────────────────
+
+/**
+ * Preuve visuelle du fix fontScale : le badge (« Converti en commande » / « Panier abandonné »),
+ * phrase complète, ne doit pas déborder hors de l'écran à côté de la date à fontScale 1.5/2.0.
+ */
+@Preview(showBackground = true, name = "Paniers — liste")
+@Preview(showBackground = true, fontScale = 1.5f, name = "Paniers — liste — fontScale 1.5")
+@Preview(showBackground = true, fontScale = 2f, name = "Paniers — liste — fontScale 2.0")
+@Composable
+private fun PreviewCartsList() {
+    PrestaFlowTheme {
+        CartsScreen(
+            state =
+                CartsUiState(
+                    allCarts =
+                        listOf(
+                            CartSummary(
+                                id = 1,
+                                customerName = "Camille Martin",
+                                customerEmail = "camille@example.com",
+                                currencyIso = "EUR",
+                                totalTaxIncl = 1234.56,
+                                itemsCount = 3,
+                                hasOrder = true,
+                                createdAtIso = "2026-06-19T14:20:00Z",
+                                updatedAtIso = "2026-06-19T14:20:00Z",
+                            ),
+                            CartSummary(
+                                id = 2,
+                                customerName = "Julien Martin",
+                                customerEmail = null,
+                                currencyIso = "EUR",
+                                totalTaxIncl = 28.50,
+                                itemsCount = 1,
+                                hasOrder = false,
+                                createdAtIso = "2026-06-18T09:15:00Z",
+                                updatedAtIso = "2026-06-18T09:15:00Z",
+                            ),
+                        ),
+                    isLoading = false,
+                    isRefreshing = false,
+                ),
+            onRefresh = {},
+            onCartClick = {},
+        )
     }
 }

@@ -505,7 +505,8 @@ fun OrderDetailContent(
             }
         }
 
-        // Totals Card — fond surface, total en primary bold
+        // Totals Card — fond surface, total en primary bold. weight(fill=false) sur les deux :
+        // le montant en headlineMedium peut devenir large à fontScale élevé.
         SoftCard {
             Row(
                 modifier =
@@ -513,17 +514,22 @@ fun OrderDetailContent(
                         .fillMaxWidth()
                         .padding(Dimensions.cardPadding),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
                 Text(
                     text = stringResource(R.string.order_detail_total_paid),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
                 Text(
                     text = formatCurrency(order.totalPaid, order.currency),
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.primary,
+                    modifier =
+                        Modifier
+                            .weight(1f, fill = false)
+                            .padding(start = Dimensions.spacingXs),
                 )
             }
         }

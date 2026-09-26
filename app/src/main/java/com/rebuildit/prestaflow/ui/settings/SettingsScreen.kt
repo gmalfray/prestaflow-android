@@ -67,6 +67,8 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -479,6 +481,7 @@ private fun ShopRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         IconButton(onClick = onRemove) {
@@ -703,10 +706,13 @@ private fun DarkModeSelector(
                 selected = current == config,
                 onClick = { onSelected(config) },
                 label = {
+                    // Pas de maxLines=1 : le chip est déjà borné par weight(1f) ci-dessous, le
+                    // libellé (ex. « Suivre le système ») peut donc wrapper proprement à fontScale
+                    // élevé au lieu d'être clippé sans ellipsis.
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelLarge,
-                        maxLines = 1,
+                        textAlign = TextAlign.Center,
                     )
                 },
                 shape = RoundedCornerShape(50),
