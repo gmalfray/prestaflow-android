@@ -348,6 +348,11 @@ fun OrderStatusBadge(
             }
         }
 
+    // Pas de largeur fixe et pas de maxLines=1 : à fontScale élevé (accessibilité), le libellé
+    // (souvent long : « EN COURS DE PRÉPARATION ») doit pouvoir wrapper sur plusieurs lignes dans
+    // l'espace que l'appelant lui donne (ex. Modifier.weight) plutôt que d'être tronqué/clippé sans
+    // ellipsis. Ne jamais réintroduire de largeur figée ici : c'est aux layouts appelants de borner
+    // la largeur (weight, widthIn) selon leur contexte.
     Box(
         modifier =
             modifier
@@ -359,7 +364,7 @@ fun OrderStatusBadge(
             text = status.uppercase(),
             color = textColor,
             style = MaterialTheme.typography.labelMedium,
-            maxLines = 1,
+            textAlign = TextAlign.Center,
         )
     }
 }

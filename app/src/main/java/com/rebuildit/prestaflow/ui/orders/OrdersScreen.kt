@@ -755,14 +755,28 @@ private fun OrderRow(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
+                // weight(fill=false) sur les deux : à fontScale élevé, chacun est borné à sa part
+                // de largeur au lieu de déborder hors de l'écran (la date s'ellipse, le badge
+                // wrappe — cf. OrderStatusBadge) ; à l'échelle normale, SpaceBetween les écarte
+                // normalement puisqu'aucun des deux ne force le remplissage.
                 Text(
                     text = updatedAt,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
-                OrderStatusBadge(status = status, statusColor = resolvedStatusColor)
+                OrderStatusBadge(
+                    status = status,
+                    statusColor = resolvedStatusColor,
+                    modifier =
+                        Modifier
+                            .weight(1f, fill = false)
+                            .padding(start = Dimensions.spacingXs),
+                )
             }
         }
     }
@@ -1210,6 +1224,82 @@ private fun PreviewOrdersList() {
             onRefresh = {},
             onOrderClick = {},
         )
+    }
+}
+
+/**
+ * Preuve visuelle du fix fontScale : statut long (« En cours de préparation ») ne doit plus être
+ * tronqué ni chevaucher le reste de la ligne, à fontScale 1.5 puis 2.0 (grande police système).
+ */
+@Preview(showBackground = true, fontScale = 1.5f, name = "Commandes — liste — fontScale 1.5")
+@Preview(showBackground = true, fontScale = 2f, name = "Commandes — liste — fontScale 2.0")
+@Composable
+private fun PreviewOrdersListLargeFontScale() {
+    PrestaFlowTheme {
+        OrdersScreen(
+            uiState =
+                OrdersUiState(
+                    orders =
+                        listOf(
+                            Order(
+                                id = 1L,
+                                reference = "FRAYKTSRP",
+                                status = "En cours de préparation",
+                                totalPaid = 45.0,
+                                currency = "EUR",
+                                customerName = "Marie Dupont",
+                                createdAtIso = "2026-06-19T14:20:00Z",
+                                updatedAtIso = "2026-06-19T14:20:00Z",
+                                hasInvoice = true,
+                                statusColor = "#FEF9C3",
+                            ),
+                            Order(
+                                id = 2L,
+                                reference = "FRAYKTSRQ",
+                                status = "Expédiée",
+                                totalPaid = 28.50,
+                                currency = "EUR",
+                                customerName = "Julien Martin",
+                                createdAtIso = "2026-06-18T09:15:00Z",
+                                updatedAtIso = "2026-06-18T09:15:00Z",
+                                hasInvoice = false,
+                            ),
+                        ),
+                    isLoading = false,
+                    isRefreshing = false,
+                ),
+            onRefresh = {},
+            onOrderClick = {},
+        )
+    }
+}
+
+/**
+ * Preuve visuelle : la barre de filtres statut (Payé / Prépa / Expédié / Terminé) reste utilisable
+ * à fontScale élevé grâce au défilement horizontal déjà en place sur la Row de chips — aucune
+ * puce n'est rognée, elle est simplement accessible par scroll au lieu d'être coupée.
+ */
+@Preview(showBackground = true, fontScale = 1.5f, name = "Filtres statut — fontScale 1.5")
+@Preview(showBackground = true, fontScale = 2f, name = "Filtres statut — fontScale 2.0")
+@Composable
+private fun PreviewStatusFilterBarLargeFontScale() {
+    PrestaFlowTheme {
+        Surface {
+            StatusFilterBar(
+                statuses =
+                    listOf(
+                        OrderStatusFilter(id = 2, name = "Paiement accepté", color = "#28A745"),
+                        OrderStatusFilter(id = 3, name = "En préparation", color = "#FEF9C3"),
+                        OrderStatusFilter(id = 4, name = "Expédiée", color = "#0D6EFD"),
+                        OrderStatusFilter(id = 9, name = "Terminée", color = "#6C757D"),
+                    ),
+                selectedStatusIds = setOf(3),
+                onStatusToggle = {},
+                onConfigureClick = {},
+                selectedSort = OrderSort.DATE_DESC,
+                onSortChanged = {},
+            )
+        }
     }
 }
 
