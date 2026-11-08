@@ -10,4 +10,9 @@ data class DashboardSnapshot(
     val lastUpdatedIso: String,
     /** CA de la même période, un an plus tôt (comparaison N-1). Null si le connecteur ne le fournit pas encore. */
     val previousTurnover: Double? = null,
-)
+    /** Commandes à 0 € de la période (incluses dans [ordersCount]). */
+    val ordersFreeCount: Int = 0,
+) {
+    /** Panier moyen sur les commandes payantes ; 0.0 sans commande payante. */
+    val avgCartPaid: Double get() = averageCartPaid(turnover, ordersCount, ordersFreeCount)
+}

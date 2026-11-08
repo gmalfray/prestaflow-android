@@ -9,6 +9,7 @@ import com.rebuildit.prestaflow.data.remote.dto.CustomerListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerStatsDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
 import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.FreeConversionDto
 import com.rebuildit.prestaflow.data.remote.dto.GenerateLabelResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
@@ -177,6 +178,12 @@ interface PrestaFlowApi {
         @Query("from") from: String? = null,
         @Query("to") to: String? = null,
     ): DashboardMetricsDto
+
+    @GET("dashboard/free-conversion")
+    suspend fun getFreeConversion(
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
+    ): FreeConversionDto
 
     @GET("customers/stats")
     suspend fun getCustomerStats(): CustomerStatsDto

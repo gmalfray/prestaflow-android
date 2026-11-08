@@ -59,6 +59,19 @@ val MIGRATION_15_16: Migration =
         }
     }
 
+/**
+ * v16 → v17 : ajoute `dashboard_metrics.ordersFreeCount` (commandes offertes de la période).
+ * Les lignes en cache reçoivent 0 jusqu'au prochain refresh. La série `chart_json` embarque les
+ * nouveaux champs de point avec des valeurs par défaut : aucune migration de contenu nécessaire.
+ */
+val MIGRATION_16_17: Migration =
+    object : Migration(DB_VERSION_16, DB_VERSION_17) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE dashboard_metrics ADD COLUMN ordersFreeCount INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
 private const val DB_VERSION_14 = 14
 private const val DB_VERSION_15 = 15
 private const val DB_VERSION_16 = 16
+private const val DB_VERSION_17 = 17

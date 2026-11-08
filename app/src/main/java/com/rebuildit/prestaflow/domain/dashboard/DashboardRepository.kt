@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.domain.dashboard
 
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
+import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
 import kotlinx.coroutines.flow.Flow
 
 interface DashboardRepository {
@@ -29,4 +30,13 @@ interface DashboardRepository {
         to: String,
         forceRemote: Boolean = false,
     )
+
+    /**
+     * Conversion offert → payant (`GET dashboard/free-conversion`), non mise en cache.
+     * Sans [from]/[to] : tout l'historique. Dates au format `YYYY-MM-DD` (date de 1re commande).
+     */
+    suspend fun getFreeConversion(
+        from: String? = null,
+        to: String? = null,
+    ): FreeConversion
 }

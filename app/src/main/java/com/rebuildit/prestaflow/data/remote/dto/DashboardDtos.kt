@@ -15,6 +15,8 @@ data class DashboardMetricsDto(
      * Null si le connecteur ne supporte pas encore ce champ.
      */
     @SerialName("previous_turnover") val previousTurnover: Double? = null,
+    /** Commandes à 0 € de la période, incluses dans [ordersCount] (connecteur récent). */
+    @SerialName("orders_free_count") val ordersFreeCount: Int = 0,
 )
 
 @Serializable
@@ -28,4 +30,17 @@ data class ChartPointDto(
      * Valeur par défaut 0 : les caches existants (JSON sans ce champ) se désérialisent sans erreur.
      */
     @SerialName("new_customers") val newCustomers: Int = 0,
+    /** Commandes à 0 € du bucket, incluses dans [orders]. */
+    @SerialName("orders_free") val ordersFree: Int = 0,
+    /** CA hors port du bucket de même rang l'an dernier (alignement positionnel), 0.0 si absent. */
+    @SerialName("turnover_previous") val turnoverPrevious: Double = 0.0,
+)
+
+/** Réponse de `GET dashboard/free-conversion`. */
+@Serializable
+data class FreeConversionDto(
+    @SerialName("free_first_customers") val freeFirstCustomers: Int = 0,
+    @SerialName("paid_first_customers") val paidFirstCustomers: Int = 0,
+    @SerialName("converted") val converted: Int = 0,
+    @SerialName("rate") val rate: Double = 0.0,
 )

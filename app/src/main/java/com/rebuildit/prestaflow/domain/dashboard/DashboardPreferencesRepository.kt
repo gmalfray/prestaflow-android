@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.domain.dashboard
 
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartMode
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import kotlinx.coroutines.flow.Flow
 
@@ -13,4 +14,10 @@ interface DashboardPreferencesRepository {
 
     /** Persiste la période par défaut. */
     suspend fun setDefaultPeriod(period: DashboardPeriod)
+
+    /** Courbe du graphique. Émet [DashboardChartMode.DEFAULT] si aucun choix n'est enregistré. */
+    val chartMode: Flow<DashboardChartMode>
+
+    /** Persiste la courbe choisie. */
+    suspend fun setChartMode(mode: DashboardChartMode)
 }

@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartMode
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -48,7 +49,33 @@ class DashboardPreferencesRepositoryImpl
             }
         }
 
+        override val chartMode: Flow<DashboardChartMode> =
+            dataStore.data
+                .catch { error ->
+                    if (error is IOException) {
+                        Timber.w(error, "Erreur lecture préférence courbe dashboard")
+                        emit(emptyPreferences())
+                    } else {
+                        throw error
+                    }
+                }
+                .map { prefs -> parseChartMode(prefs[KEY_CHART_MODE]) }
+                .distinctUntilChanged()
+
+        override suspend fun setChartMode(mode: DashboardChartMode) {
+            withContext(ioDispatcher) {
+                dataStore.edit { prefs -> prefs[KEY_CHART_MODE] = mode.name }
+            }
+        }
+
         companion object {
+            private val KEY_CHART_MODE = stringPreferencesKey("dashboard_chart_mode")
+
+            /** Valeur inconnue ou absente (ancienne version, clé corrompue) → défaut. */
+            internal fun parseChartMode(raw: String?): DashboardChartMode =
+                raw?.let { runCatching { DashboardChartMode.valueOf(it) }.getOrNull() }
+                    ?: DashboardChartMode.DEFAULT
+
             private val KEY_DEFAULT_PERIOD = stringPreferencesKey("dashboard_default_period")
             val DEFAULT_PERIOD: DashboardPeriod = DashboardPeriod.WEEK
         }
