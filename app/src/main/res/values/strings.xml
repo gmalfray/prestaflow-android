@@ -560,4 +560,12 @@
     <string name="dashboard_conversion_rate">%1$.1f %%</string>
     <string name="dashboard_conversion_detail">%1$d sur %2$d clients offerts à la 1re commande sont passés à l\'achat</string>
     <string name="notif_category_order_created_free">Commandes offertes (0 €) : régler le canal</string>
+    <string name="dashboard_widget_chart">Graphique</string>
+    <string name="dashboard_widget_pending_orders">En attente de paiement</string>
+    <string name="dashboard_widget_low_stock">Stock bas</string>
+    <string name="dashboard_edit_action">Personnaliser le tableau de bord</string>
+    <string name="dashboard_edit_title">Personnaliser le tableau de bord</string>
+    <string name="dashboard_edit_save">Enregistrer</string>
+    <string name="dashboard_edit_drag_handle">Déplacer %1$s</string>
+    <string name="dashboard_edit_show_widget">Afficher %1$s</string>
 </resources>

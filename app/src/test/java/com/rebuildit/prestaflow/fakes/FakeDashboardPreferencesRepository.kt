@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.fakes
 
 import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartMode
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardLayout
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,14 @@ class FakeDashboardPreferencesRepository(
 
     override suspend fun setChartMode(mode: DashboardChartMode) {
         chartModeFlow.value = mode
+    }
+
+    private val layoutFlow = MutableStateFlow(DashboardLayout.DEFAULT)
+
+    override val widgetLayout: Flow<DashboardLayout> = layoutFlow
+
+    override suspend fun setWidgetLayout(layout: DashboardLayout) {
+        layoutFlow.value = layout
     }
 
     override suspend fun setDefaultPeriod(period: DashboardPeriod) {

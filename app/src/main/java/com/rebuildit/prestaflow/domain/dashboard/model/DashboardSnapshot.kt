@@ -12,6 +12,10 @@ data class DashboardSnapshot(
     val previousTurnover: Double? = null,
     /** Commandes à 0 € de la période (incluses dans [ordersCount]). */
     val ordersFreeCount: Int = 0,
+    /** Commandes en attente de paiement. */
+    val pendingOrdersCount: Int = 0,
+    /** Produits sous le seuil de stock bas (plafonné à 50 par le connecteur). */
+    val lowStockCount: Int = 0,
 ) {
     /** Panier moyen sur les commandes payantes ; 0.0 sans commande payante. */
     val avgCartPaid: Double get() = averageCartPaid(turnover, ordersCount, ordersFreeCount)

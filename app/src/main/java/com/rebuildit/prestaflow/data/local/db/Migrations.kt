@@ -71,7 +71,21 @@ val MIGRATION_16_17: Migration =
         }
     }
 
+/**
+ * v17 → v18 : ajoute `dashboard_metrics.pendingOrdersCount` et `lowStockCount` (widgets
+ * « Commandes en attente » et « Alertes stock bas »). Les lignes en cache reçoivent 0 jusqu'au
+ * prochain refresh.
+ */
+val MIGRATION_17_18: Migration =
+    object : Migration(DB_VERSION_17, DB_VERSION_18) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE dashboard_metrics ADD COLUMN pendingOrdersCount INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE dashboard_metrics ADD COLUMN lowStockCount INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
 private const val DB_VERSION_14 = 14
 private const val DB_VERSION_15 = 15
 private const val DB_VERSION_16 = 16
 private const val DB_VERSION_17 = 17
+private const val DB_VERSION_18 = 18

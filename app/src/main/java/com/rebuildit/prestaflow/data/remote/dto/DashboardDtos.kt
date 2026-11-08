@@ -17,6 +17,17 @@ data class DashboardMetricsDto(
     @SerialName("previous_turnover") val previousTurnover: Double? = null,
     /** Commandes à 0 € de la période, incluses dans [ordersCount] (connecteur récent). */
     @SerialName("orders_free_count") val ordersFreeCount: Int = 0,
+    /** Commandes en attente de paiement (instantané, indépendant de la période). */
+    @SerialName("pending_orders_count") val pendingOrdersCount: Int = 0,
+    /** Produits actifs sous le seuil de stock bas (liste plafonnée à 50 côté connecteur). */
+    @SerialName("low_stock_alerts") val lowStockAlerts: List<LowStockAlertDto> = emptyList(),
+)
+
+/** Entrée de `low_stock_alerts` ; seuls les champs utiles au dashboard sont mappés. */
+@Serializable
+data class LowStockAlertDto(
+    @SerialName("product_id") val productId: Int = 0,
+    @SerialName("quantity") val quantity: Int = 0,
 )
 
 @Serializable

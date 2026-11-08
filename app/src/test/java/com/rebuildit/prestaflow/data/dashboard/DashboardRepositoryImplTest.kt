@@ -6,6 +6,7 @@ import com.rebuildit.prestaflow.data.local.entity.DashboardMetricEntity
 import com.rebuildit.prestaflow.data.remote.dto.ChartPointDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
 import com.rebuildit.prestaflow.data.remote.dto.FreeConversionDto
+import com.rebuildit.prestaflow.data.remote.dto.LowStockAlertDto
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.fakes.FakePrestaFlowApi
 import kotlinx.coroutines.flow.Flow
@@ -111,4 +112,46 @@ class DashboardRepositoryImplTest {
             assertEquals(10, result.converted)
             assertEquals(25.0, result.rate, 0.0)
         }
+
+    @Test
+    fun `refresh mappe pending_orders_count et le nombre de low_stock_alerts`() =
+        runTest {
+            api.dashboardMetrics =
+                DashboardMetricsDto(
+                    turnover = 10.0,
+                    ordersCount = 1,
+                    customersCount = 1,
+                    productsCount = 1,
+                    chart = emptyList(),
+                    pendingOrdersCount = 7,
+                    lowStockAlerts = listOf(LowStockAlertDto(42, 2), LowStockAlertDto(43, 0)),
+                )
+            repo.refresh(DashboardPeriod.WEEK, forceRemote = true)
+
+            val snapshot = repo.observeDashboard(DashboardPeriod.WEEK).first()!!
+            assertEquals(7, snapshot.pendingOrdersCount)
+            assertEquals(2, snapshot.lowStockCount)
+        }
+
+    @Test
+    fun `payload JSON du connecteur avec low_stock_alerts détaillé et champs absents`() {
+        val full =
+            json.decodeFromString(
+                DashboardMetricsDto.serializer(),
+                """{"turnover":1.0,"orders_count":1,"customers_count":1,"products_count":1,"chart":[],
+                    "pending_orders_count":3,
+                    "low_stock_alerts":[{"product_id":42,"name":"X","quantity":2,"image_url":null}]}""",
+            )
+        assertEquals(3, full.pendingOrdersCount)
+        assertEquals(42, full.lowStockAlerts.single().productId)
+        assertEquals(2, full.lowStockAlerts.single().quantity)
+
+        val legacy =
+            json.decodeFromString(
+                DashboardMetricsDto.serializer(),
+                """{"turnover":1.0,"orders_count":1,"customers_count":1,"products_count":1,"chart":[]}""",
+            )
+        assertEquals(0, legacy.pendingOrdersCount)
+        assertEquals(0, legacy.lowStockAlerts.size)
+    }
 }

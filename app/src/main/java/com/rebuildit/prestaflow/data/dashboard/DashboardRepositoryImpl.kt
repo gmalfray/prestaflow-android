@@ -65,6 +65,8 @@ class DashboardRepositoryImpl
                                 chartJson = json.encodeToString(chartSerializer, payload.chart),
                                 previousTurnover = payload.previousTurnover,
                                 ordersFreeCount = payload.ordersFreeCount,
+                                pendingOrdersCount = payload.pendingOrdersCount,
+                                lowStockCount = payload.lowStockAlerts.size,
                             )
                         dashboardDao.upsert(entity)
                     },
@@ -96,6 +98,8 @@ class DashboardRepositoryImpl
                                 chartJson = json.encodeToString(chartSerializer, payload.chart),
                                 previousTurnover = payload.previousTurnover,
                                 ordersFreeCount = payload.ordersFreeCount,
+                                pendingOrdersCount = payload.pendingOrdersCount,
+                                lowStockCount = payload.lowStockAlerts.size,
                             )
                         dashboardDao.upsert(entity)
                     },
@@ -132,6 +136,8 @@ class DashboardRepositoryImpl
                 lastUpdatedIso = lastUpdatedIso,
                 previousTurnover = previousTurnover,
                 ordersFreeCount = ordersFreeCount,
+                pendingOrdersCount = pendingOrdersCount,
+                lowStockCount = lowStockCount,
             )
         }
 
@@ -155,6 +161,8 @@ class DashboardRepositoryImpl
                 lastUpdatedIso = lastUpdatedIso,
                 previousTurnover = previousTurnover,
                 ordersFreeCount = ordersFreeCount,
+                pendingOrdersCount = pendingOrdersCount,
+                lowStockCount = lowStockCount,
             )
         }
 

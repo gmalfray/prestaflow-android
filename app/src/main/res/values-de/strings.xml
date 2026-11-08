@@ -546,4 +546,12 @@
     <string name="dashboard_conversion_rate">%1$.1f %%</string>
     <string name="dashboard_conversion_detail">%1$d von %2$d Kunden mit kostenloser Erstbestellung haben danach gekauft</string>
     <string name="notif_category_order_created_free">Gratis-Bestellungen (0 €): Kanaleinstellungen</string>
+    <string name="dashboard_widget_chart">Diagramm</string>
+    <string name="dashboard_widget_pending_orders">Zahlung ausstehend</string>
+    <string name="dashboard_widget_low_stock">Niedriger Bestand</string>
+    <string name="dashboard_edit_action">Dashboard anpassen</string>
+    <string name="dashboard_edit_title">Dashboard anpassen</string>
+    <string name="dashboard_edit_save">Speichern</string>
+    <string name="dashboard_edit_drag_handle">%1$s verschieben</string>
+    <string name="dashboard_edit_show_widget">%1$s anzeigen</string>
 </resources>

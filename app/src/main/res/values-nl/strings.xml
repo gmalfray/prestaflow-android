@@ -546,4 +546,12 @@
     <string name="dashboard_conversion_rate">%1$.1f %%</string>
     <string name="dashboard_conversion_detail">%1$d van %2$d klanten met een gratis eerste bestelling hebben daarna gekocht</string>
     <string name="notif_category_order_created_free">Gratis bestellingen (€0): kanaalinstellingen</string>
+    <string name="dashboard_widget_chart">Grafiek</string>
+    <string name="dashboard_widget_pending_orders">Wacht op betaling</string>
+    <string name="dashboard_widget_low_stock">Lage voorraad</string>
+    <string name="dashboard_edit_action">Dashboard aanpassen</string>
+    <string name="dashboard_edit_title">Dashboard aanpassen</string>
+    <string name="dashboard_edit_save">Opslaan</string>
+    <string name="dashboard_edit_drag_handle">%1$s verplaatsen</string>
+    <string name="dashboard_edit_show_widget">%1$s tonen</string>
 </resources>

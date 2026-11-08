@@ -9,6 +9,7 @@ import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartMode
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardLayout
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
@@ -57,6 +58,7 @@ class DashboardViewModel
                 selectedPeriodFlow.value = defaultPeriod
                 _uiState.update { it.copy(selectedPeriod = defaultPeriod) }
                 observeChartMode()
+                observeWidgetLayout()
                 observeDashboard()
                 loadConversion()
                 refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = false)
@@ -67,6 +69,19 @@ class DashboardViewModel
         fun onChartModeSelected(mode: DashboardChartMode) {
             _uiState.update { it.copy(chartMode = mode) }
             viewModelScope.launch { dashboardPrefsRepository.setChartMode(mode) }
+        }
+
+        fun onWidgetLayoutSaved(layout: DashboardLayout) {
+            _uiState.update { it.copy(widgetLayout = layout) }
+            viewModelScope.launch { dashboardPrefsRepository.setWidgetLayout(layout) }
+        }
+
+        private fun observeWidgetLayout() {
+            viewModelScope.launch {
+                dashboardPrefsRepository.widgetLayout.collect { layout ->
+                    _uiState.update { it.copy(widgetLayout = layout) }
+                }
+            }
         }
 
         private fun observeChartMode() {
@@ -320,6 +335,8 @@ data class DashboardUiState(
     val chartMode: DashboardChartMode = DashboardChartMode.DEFAULT,
     /** Carte conversion offert → payant, indépendante du chargement principal. */
     val conversion: ConversionState = ConversionState.Loading,
+    /** Disposition des widgets (préférence persistée). */
+    val widgetLayout: DashboardLayout = DashboardLayout.DEFAULT,
 )
 
 /** État de la carte conversion offert → payant. */

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartMode
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardLayout
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -68,7 +69,27 @@ class DashboardPreferencesRepositoryImpl
             }
         }
 
+        override val widgetLayout: Flow<DashboardLayout> =
+            dataStore.data
+                .catch { error ->
+                    if (error is IOException) {
+                        Timber.w(error, "Erreur lecture disposition widgets dashboard")
+                        emit(emptyPreferences())
+                    } else {
+                        throw error
+                    }
+                }
+                .map { prefs -> DashboardLayoutCodec.decode(prefs[KEY_WIDGETS_LAYOUT]) }
+                .distinctUntilChanged()
+
+        override suspend fun setWidgetLayout(layout: DashboardLayout) {
+            withContext(ioDispatcher) {
+                dataStore.edit { prefs -> prefs[KEY_WIDGETS_LAYOUT] = DashboardLayoutCodec.encode(layout) }
+            }
+        }
+
         companion object {
+            private val KEY_WIDGETS_LAYOUT = stringPreferencesKey("dashboard_widgets_layout")
             private val KEY_CHART_MODE = stringPreferencesKey("dashboard_chart_mode")
 
             /** Valeur inconnue ou absente (ancienne version, clé corrompue) → défaut. */

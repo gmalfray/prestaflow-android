@@ -24,18 +24,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Fullscreen
-import androidx.compose.material.icons.outlined.Group
-import androidx.compose.material.icons.outlined.Payments
-import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -95,8 +93,10 @@ import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartMode
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartPoint
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardLayout
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardWidget
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
 import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
 import com.rebuildit.prestaflow.ui.components.euroCurrencyFormatter
@@ -146,6 +146,7 @@ fun DashboardRoute(
         onAddShop = onAddShop,
         onOrdersClick = { onOrdersClick(state.selectedPeriod) },
         onClientsClick = onClientsClick,
+        onWidgetLayoutSaved = viewModel::onWidgetLayoutSaved,
     )
 }
 
@@ -163,6 +164,7 @@ fun DashboardScreen(
     onAddShop: () -> Unit = {},
     onOrdersClick: () -> Unit = {},
     onClientsClick: (createdFrom: String?) -> Unit = {},
+    onWidgetLayoutSaved: (DashboardLayout) -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
     val hasSnapshot = state.snapshot != null
@@ -191,6 +193,8 @@ fun DashboardScreen(
                 onAddShop = onAddShop,
                 onOrdersClick = onOrdersClick,
                 onClientsClick = onClientsClick,
+                widgetLayout = state.widgetLayout,
+                onWidgetLayoutSaved = onWidgetLayoutSaved,
             )
         else ->
             DashboardEmptyState(
@@ -266,6 +270,8 @@ private fun DashboardContent(
     onAddShop: () -> Unit,
     onOrdersClick: () -> Unit = {},
     onClientsClick: (createdFrom: String?) -> Unit = {},
+    widgetLayout: DashboardLayout = DashboardLayout.DEFAULT,
+    onWidgetLayoutSaved: (DashboardLayout) -> Unit = {},
 ) {
     val currencyFormatter = rememberCurrencyFormatter()
     val numberFormatter = rememberNumberFormatter()
@@ -336,6 +342,66 @@ private fun DashboardContent(
             )
         }
 
+    val pendingOrdersText = remember(snapshot.pendingOrdersCount) { numberFormatter.format(snapshot.pendingOrdersCount) }
+    val lowStockText =
+        remember(snapshot.lowStockCount) {
+            val count = numberFormatter.format(snapshot.lowStockCount)
+            if (snapshot.lowStockCount >= LOW_STOCK_CAP) "$count+" else count
+        }
+    val kpiItems =
+        mapOf(
+            DashboardWidget.TURNOVER to
+                KpiItem(
+                    title = stringResource(id = DashboardWidget.TURNOVER.titleRes()),
+                    value = turnoverText,
+                    icon = DashboardWidget.TURNOVER.icon(),
+                    trend = turnoverTrend,
+                    sparklineValues = turnoverSparkline,
+                ),
+            DashboardWidget.ORDERS to
+                KpiItem(
+                    title = stringResource(id = DashboardWidget.ORDERS.titleRes()),
+                    value = ordersText,
+                    icon = DashboardWidget.ORDERS.icon(),
+                    onClick = onOrdersClick,
+                    subtitle = ordersFreeSubtitle,
+                    trend = ordersTrend,
+                    sparklineValues = ordersSparkline,
+                ),
+            DashboardWidget.AVG_CART to
+                KpiItem(
+                    title = stringResource(id = DashboardWidget.AVG_CART.titleRes()),
+                    value = avgCartText,
+                    icon = DashboardWidget.AVG_CART.icon(),
+                    trend = avgCartTrend,
+                    sparklineValues = avgCartSparkline,
+                ),
+            DashboardWidget.NEW_CUSTOMERS to
+                KpiItem(
+                    title = stringResource(id = DashboardWidget.NEW_CUSTOMERS.titleRes()),
+                    value = newCustomersTotalText,
+                    icon = DashboardWidget.NEW_CUSTOMERS.icon(),
+                    onClick = { onClientsClick(newClientsCreatedFrom) },
+                    trend = newCustomersTrend,
+                    sparklineValues = newCustomersSparkline,
+                ),
+            DashboardWidget.PENDING_ORDERS to
+                KpiItem(
+                    title = stringResource(id = DashboardWidget.PENDING_ORDERS.titleRes()),
+                    value = pendingOrdersText,
+                    icon = DashboardWidget.PENDING_ORDERS.icon(),
+                ),
+            DashboardWidget.LOW_STOCK to
+                KpiItem(
+                    title = stringResource(id = DashboardWidget.LOW_STOCK.titleRes()),
+                    value = lowStockText,
+                    icon = DashboardWidget.LOW_STOCK.icon(),
+                ),
+        )
+    val widgetRows = remember(widgetLayout) { widgetLayout.rows() }
+
+    var showLayoutEditor by rememberSaveable { mutableStateOf(false) }
+
     // ── Graphique en plein écran (volet 3) ──────────────────────────────────────────
     var showFullscreenChart by rememberSaveable { mutableStateOf(false) }
 
@@ -359,6 +425,7 @@ private fun DashboardContent(
                     onCustomRangeSelected = onCustomRangeSelected,
                     onSwitchShop = onSwitchShop,
                     onAddShop = onAddShop,
+                    onEditLayout = { showLayoutEditor = true },
                 )
             }
 
@@ -373,79 +440,37 @@ private fun DashboardContent(
                 }
             }
 
-            // Grille KPI 2x2
-            item {
-                DashboardKpiGrid(
-                    modifier =
-                        Modifier
-                            .padding(horizontal = Dimensions.screenEdgeMargin)
-                            .padding(top = Dimensions.spacingL),
-                    kpiItems =
-                        listOf(
-                            KpiItem(
-                                title = stringResource(id = R.string.dashboard_kpi_turnover),
-                                value = turnoverText,
-                                icon = Icons.Outlined.Payments,
-                                trend = turnoverTrend,
-                                sparklineValues = turnoverSparkline,
-                            ),
-                            KpiItem(
-                                title = stringResource(id = R.string.dashboard_kpi_orders),
-                                value = ordersText,
-                                icon = Icons.Outlined.ShoppingBag,
-                                onClick = onOrdersClick,
-                                subtitle = ordersFreeSubtitle,
-                                trend = ordersTrend,
-                                sparklineValues = ordersSparkline,
-                            ),
-                            KpiItem(
-                                title = stringResource(id = R.string.dashboard_kpi_avg_cart),
-                                value = avgCartText,
-                                icon = Icons.Outlined.Analytics,
-                                trend = avgCartTrend,
-                                sparklineValues = avgCartSparkline,
-                            ),
-                            KpiItem(
-                                title = stringResource(id = R.string.dashboard_kpi_customers),
-                                value = newCustomersTotalText,
-                                icon = Icons.Outlined.Group,
-                                onClick = { onClientsClick(newClientsCreatedFrom) },
-                                trend = newCustomersTrend,
-                                sparklineValues = newCustomersSparkline,
-                            ),
-                        ),
-                )
-            }
-
-            // Conversion offert → payant (indépendante : n'affecte pas le reste si l'appel échoue)
-            item {
-                FreeConversionCard(
-                    modifier =
-                        Modifier
-                            .padding(horizontal = Dimensions.screenEdgeMargin)
-                            .padding(top = Dimensions.spacingL),
-                    state = conversion,
-                    onRetry = onConversionRetry,
-                )
-            }
-
-            // Carte graphique (courbe au choix)
-            item {
-                DashboardChartCard(
-                    modifier =
-                        Modifier
-                            .padding(horizontal = Dimensions.screenEdgeMargin)
-                            .padding(top = Dimensions.spacingL),
-                    points = snapshot.chart,
-                    mode = chartMode,
-                    onModeSelected = onChartModeSelected,
-                    totalText = chartTotalText,
-                    currentTurnover = snapshot.turnover,
-                    previousTurnover = snapshot.previousTurnover,
-                    // En mode plage libre, on n'affiche pas le comparatif "vs même période l'an dernier"
-                    selectedPeriod = if (customRange == null) selectedPeriod else null,
-                    onExpandClick = { showFullscreenChart = true },
-                )
+            // Widgets visibles, dans l'ordre de la disposition (HALF empilés deux par ligne)
+            items(widgetRows, key = { row -> row.first().id }) { row ->
+                val rowModifier =
+                    Modifier
+                        .padding(horizontal = Dimensions.screenEdgeMargin)
+                        .padding(top = Dimensions.spacingL)
+                val widget = row.first()
+                when (widget) {
+                    DashboardWidget.FREE_CONVERSION ->
+                        FreeConversionCard(modifier = rowModifier, state = conversion, onRetry = onConversionRetry)
+                    DashboardWidget.CHART ->
+                        DashboardChartCard(
+                            modifier = rowModifier,
+                            points = snapshot.chart,
+                            mode = chartMode,
+                            onModeSelected = onChartModeSelected,
+                            totalText = chartTotalText,
+                            currentTurnover = snapshot.turnover,
+                            previousTurnover = snapshot.previousTurnover,
+                            // En mode plage libre, on n'affiche pas le comparatif "vs même période l'an dernier"
+                            selectedPeriod = if (customRange == null) selectedPeriod else null,
+                            onExpandClick = { showFullscreenChart = true },
+                        )
+                    DashboardWidget.ORDERS_SPLIT ->
+                        DashboardOrdersSplitCard(
+                            modifier = rowModifier,
+                            ordersCount = snapshot.ordersCount,
+                            ordersFreeCount = snapshot.ordersFreeCount,
+                        )
+                    else -> DashboardKpiGrid(modifier = rowModifier, kpiItems = row.mapNotNull { kpiItems[it] })
+                }
             }
 
             // Dernière synchronisation
@@ -461,6 +486,17 @@ private fun DashboardContent(
                 )
             }
         }
+    }
+
+    if (showLayoutEditor) {
+        DashboardLayoutEditorDialog(
+            layout = widgetLayout,
+            onSave = { layout ->
+                onWidgetLayoutSaved(layout)
+                showLayoutEditor = false
+            },
+            onDismiss = { showLayoutEditor = false },
+        )
     }
 
     // Graphique plein écran — ouvert depuis DashboardChartCard (volet 3)
@@ -486,6 +522,7 @@ private fun DashboardHeader(
     onCustomRangeSelected: (String, String) -> Unit,
     onSwitchShop: (String) -> Unit,
     onAddShop: () -> Unit,
+    onEditLayout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val activeShop = connections.firstOrNull { it.isActive }
@@ -603,6 +640,12 @@ private fun DashboardHeader(
                             onAddShop = onAddShop,
                         )
                     }
+                }
+                IconButton(onClick = onEditLayout) {
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = stringResource(id = R.string.dashboard_edit_action),
+                    )
                 }
             }
 
@@ -1984,6 +2027,8 @@ private fun newCustomersCreatedFrom(
 }
 
 // ─── Modèle local ─────────────────────────────────────────────────────────────
+
+private const val LOW_STOCK_CAP = 50
 
 private data class KpiItem(
     val title: String,

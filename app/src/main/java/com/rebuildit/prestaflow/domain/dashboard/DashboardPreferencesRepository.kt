@@ -1,6 +1,7 @@
 package com.rebuildit.prestaflow.domain.dashboard
 
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartMode
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardLayout
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import kotlinx.coroutines.flow.Flow
 
@@ -20,4 +21,13 @@ interface DashboardPreferencesRepository {
 
     /** Persiste la courbe choisie. */
     suspend fun setChartMode(mode: DashboardChartMode)
+
+    /**
+     * Disposition des widgets, déjà fusionnée avec le catalogue courant.
+     * Émet [DashboardLayout.DEFAULT] si rien n'est enregistré ou si la valeur est illisible.
+     */
+    val widgetLayout: Flow<DashboardLayout>
+
+    /** Persiste la disposition des widgets. */
+    suspend fun setWidgetLayout(layout: DashboardLayout)
 }

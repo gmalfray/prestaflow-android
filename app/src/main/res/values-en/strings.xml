@@ -545,4 +545,12 @@
     <string name="dashboard_conversion_rate">%1$.1f %%</string>
     <string name="dashboard_conversion_detail">%1$d of %2$d customers with a free first order went on to buy</string>
     <string name="notif_category_order_created_free">Free orders (€0): channel settings</string>
+    <string name="dashboard_widget_chart">Chart</string>
+    <string name="dashboard_widget_pending_orders">Awaiting payment</string>
+    <string name="dashboard_widget_low_stock">Low stock</string>
+    <string name="dashboard_edit_action">Customize dashboard</string>
+    <string name="dashboard_edit_title">Customize dashboard</string>
+    <string name="dashboard_edit_save">Save</string>
+    <string name="dashboard_edit_drag_handle">Move %1$s</string>
+    <string name="dashboard_edit_show_widget">Show %1$s</string>
 </resources>

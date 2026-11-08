@@ -17,4 +17,8 @@ data class DashboardMetricEntity(
     @ColumnInfo(name = "previous_turnover", defaultValue = "NULL") val previousTurnover: Double? = null,
     /** Commandes à 0 € de la période (v17). */
     @ColumnInfo(name = "ordersFreeCount", defaultValue = "0") val ordersFreeCount: Int = 0,
+    /** Commandes en attente de paiement (v18). */
+    @ColumnInfo(name = "pendingOrdersCount", defaultValue = "0") val pendingOrdersCount: Int = 0,
+    /** Nombre de produits en stock bas (v18). */
+    @ColumnInfo(name = "lowStockCount", defaultValue = "0") val lowStockCount: Int = 0,
 )
