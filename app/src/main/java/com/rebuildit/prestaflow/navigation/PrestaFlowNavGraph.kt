@@ -16,6 +16,7 @@ import com.rebuildit.prestaflow.ui.carts.CartsRoute
 import com.rebuildit.prestaflow.ui.clients.ClientDetailRoute
 import com.rebuildit.prestaflow.ui.clients.ClientsTabsRoute
 import com.rebuildit.prestaflow.ui.dashboard.DashboardRoute
+import com.rebuildit.prestaflow.ui.dashboard.DashboardWidgetActions
 import com.rebuildit.prestaflow.ui.notifications.NotificationCategoriesRoute
 import com.rebuildit.prestaflow.ui.orders.OrderDetailRoute
 import com.rebuildit.prestaflow.ui.orders.OrdersRoute
@@ -56,6 +57,23 @@ fun PrestaFlowNavGraph(
     ) {
         composable(AppDestination.Dashboard.route) {
             DashboardRoute(
+                widgetActions =
+                    DashboardWidgetActions(
+                        onOrderClick = { orderId ->
+                            navController.navigate("${AppDestination.Orders.route}/$orderId")
+                        },
+                        onAllOrdersClick = {
+                            navController.navigate(AppDestination.Orders.route) { launchSingleTop = true }
+                        },
+                        onCartsClick = {
+                            navController.navigate(AppDestination.Carts.route) { launchSingleTop = true }
+                        },
+                        onReviewsClick = {
+                            navController.navigate("${AppDestination.Clients.route}?section=reviews") {
+                                launchSingleTop = true
+                            }
+                        },
+                    ),
                 onAddShop = {
                     navController.navigate(AppDestination.Settings.route) {
                         launchSingleTop = true

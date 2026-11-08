@@ -55,3 +55,20 @@ data class FreeConversionDto(
     @SerialName("converted") val converted: Int = 0,
     @SerialName("rate") val rate: Double = 0.0,
 )
+
+/** Réponse de `GET reports/bestsellers` : une ligne par couple produit / déclinaison. */
+@Serializable
+data class BestSellersResponseDto(
+    @SerialName("products") val products: List<BestSellerDto> = emptyList(),
+)
+
+@Serializable
+data class BestSellerDto(
+    @SerialName("product_id") val productId: Int = 0,
+    @SerialName("product_attribute_id") val productAttributeId: Int? = null,
+    @SerialName("name") val name: String? = null,
+    @SerialName("reference") val reference: String? = null,
+    @SerialName("quantity") val quantity: Int = 0,
+    @SerialName("total_tax_incl") val totalTaxIncl: Double = 0.0,
+    @SerialName("total_tax_excl") val totalTaxExcl: Double = 0.0,
+)

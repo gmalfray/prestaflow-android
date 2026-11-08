@@ -568,4 +568,12 @@
     <string name="dashboard_edit_save">Enregistrer</string>
     <string name="dashboard_edit_drag_handle">Déplacer %1$s</string>
     <string name="dashboard_edit_show_widget">Afficher %1$s</string>
+    <string name="dashboard_widget_latest_orders">Dernières commandes</string>
+    <string name="dashboard_widget_carts">Paniers abandonnés</string>
+    <string name="dashboard_widget_reviews">Avis à modérer</string>
+    <string name="dashboard_widget_top_products">Top produits</string>
+    <string name="dashboard_widget_error">Données indisponibles pour le moment.</string>
+    <string name="dashboard_widget_empty">Aucune donnée à afficher.</string>
+    <string name="dashboard_widget_carts_sub">%1$s en jeu</string>
+    <string name="dashboard_widget_top_qty">%1$d vendus</string>
 </resources>

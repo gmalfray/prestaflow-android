@@ -554,4 +554,12 @@
     <string name="dashboard_edit_save">Guardar</string>
     <string name="dashboard_edit_drag_handle">Mover %1$s</string>
     <string name="dashboard_edit_show_widget">Mostrar %1$s</string>
+    <string name="dashboard_widget_latest_orders">Últimos pedidos</string>
+    <string name="dashboard_widget_carts">Carritos abandonados</string>
+    <string name="dashboard_widget_reviews">Reseñas por moderar</string>
+    <string name="dashboard_widget_top_products">Productos más vendidos</string>
+    <string name="dashboard_widget_error">Datos no disponibles por ahora.</string>
+    <string name="dashboard_widget_empty">Nada que mostrar.</string>
+    <string name="dashboard_widget_carts_sub">%1$s en juego</string>
+    <string name="dashboard_widget_top_qty">%1$d vendidos</string>
 </resources>

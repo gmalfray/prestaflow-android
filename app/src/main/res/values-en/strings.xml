@@ -553,4 +553,12 @@
     <string name="dashboard_edit_save">Save</string>
     <string name="dashboard_edit_drag_handle">Move %1$s</string>
     <string name="dashboard_edit_show_widget">Show %1$s</string>
+    <string name="dashboard_widget_latest_orders">Latest orders</string>
+    <string name="dashboard_widget_carts">Abandoned carts</string>
+    <string name="dashboard_widget_reviews">Reviews to moderate</string>
+    <string name="dashboard_widget_top_products">Top products</string>
+    <string name="dashboard_widget_error">Data unavailable right now.</string>
+    <string name="dashboard_widget_empty">Nothing to show.</string>
+    <string name="dashboard_widget_carts_sub">%1$s at stake</string>
+    <string name="dashboard_widget_top_qty">%1$d sold</string>
 </resources>

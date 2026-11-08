@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.data.remote.api
 
 import com.rebuildit.prestaflow.data.remote.dto.AuthRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.AuthResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.BestSellersResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CartDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CartListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerDetailResponseDto
@@ -184,6 +185,13 @@ interface PrestaFlowApi {
         @Query("from") from: String? = null,
         @Query("to") to: String? = null,
     ): FreeConversionDto
+
+    @GET("reports/bestsellers")
+    suspend fun getBestSellers(
+        @Query("limit") limit: Int? = null,
+        @Query("date_from") dateFrom: String? = null,
+        @Query("date_to") dateTo: String? = null,
+    ): BestSellersResponseDto
 
     @GET("customers/stats")
     suspend fun getCustomerStats(): CustomerStatsDto

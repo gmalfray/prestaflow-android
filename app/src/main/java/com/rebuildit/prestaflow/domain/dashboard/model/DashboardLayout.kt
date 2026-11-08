@@ -15,9 +15,10 @@ data class DashboardLayout(
 
     /**
      * Regroupe les widgets visibles en lignes : les widgets HALF consécutifs sont empilés deux par
-     * ligne, les widgets FULL occupent une ligne seuls.
+     * ligne, les widgets FULL occupent une ligne seuls. [hidden] : widgets momentanément
+     * exclus du rendu sans toucher à la disposition (ex. fonctionnalité absente de la boutique).
      */
-    fun rows(): List<List<DashboardWidget>> {
+    fun rows(hidden: Set<DashboardWidget> = emptySet()): List<List<DashboardWidget>> {
         val rows = mutableListOf<List<DashboardWidget>>()
         val pendingHalves = mutableListOf<DashboardWidget>()
 
@@ -25,7 +26,7 @@ data class DashboardLayout(
             pendingHalves.chunked(2).forEach { rows += it }
             pendingHalves.clear()
         }
-        visibleWidgets.forEach { widget ->
+        visibleWidgets.filterNot { it in hidden }.forEach { widget ->
             if (widget.span == DashboardWidgetSpan.HALF) {
                 pendingHalves += widget
             } else {

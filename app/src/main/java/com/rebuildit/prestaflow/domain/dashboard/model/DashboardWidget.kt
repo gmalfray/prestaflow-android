@@ -21,19 +21,13 @@ enum class DashboardWidget(
     PENDING_ORDERS("kpi_pending_orders", DashboardWidgetSpan.HALF, false),
     LOW_STOCK("kpi_low_stock", DashboardWidgetSpan.HALF, false),
     ORDERS_SPLIT("orders_split", DashboardWidgetSpan.FULL, false),
+    LATEST_ORDERS("latest_orders", DashboardWidgetSpan.FULL, false),
+    CARTS("carts", DashboardWidgetSpan.HALF, false),
+    REVIEWS("reviews", DashboardWidgetSpan.HALF, false),
+    TOP_PRODUCTS("top_products", DashboardWidgetSpan.FULL, false),
     ;
 
     companion object {
-        /**
-         * Identifiants réservés aux widgets à chargement réseau propre (phase 2). Absents du
-         * catalogue tant qu'ils ne sont pas implémentés : une disposition qui les contiendrait est
-         * lue sans erreur, ils sont simplement ignorés.
-         */
-        const val RESERVED_ID_LATEST_ORDERS = "latest_orders"
-        const val RESERVED_ID_CARTS = "carts"
-        const val RESERVED_ID_REVIEWS = "reviews"
-        const val RESERVED_ID_TOP_PRODUCTS = "top_products"
-
         fun fromId(id: String): DashboardWidget? = entries.firstOrNull { it.id == id }
     }
 }

@@ -33,6 +33,7 @@ import com.rebuildit.prestaflow.data.carts.CartsRepositoryImpl
 import com.rebuildit.prestaflow.data.clients.ClientsRepositoryImpl
 import com.rebuildit.prestaflow.data.dashboard.DashboardPreferencesRepositoryImpl
 import com.rebuildit.prestaflow.data.dashboard.DashboardRepositoryImpl
+import com.rebuildit.prestaflow.data.dashboard.DashboardWidgetsRepositoryImpl
 import com.rebuildit.prestaflow.data.language.LanguageRepositoryImpl
 import com.rebuildit.prestaflow.data.local.dao.ClientDao
 import com.rebuildit.prestaflow.data.local.dao.DashboardDao
@@ -71,6 +72,7 @@ import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.clients.ClientsRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
+import com.rebuildit.prestaflow.domain.dashboard.DashboardWidgetsRepository
 import com.rebuildit.prestaflow.domain.language.LanguageRepository
 import com.rebuildit.prestaflow.domain.notifications.NotificationCategoriesRepository
 import com.rebuildit.prestaflow.domain.notifications.NotificationsRepository
@@ -257,6 +259,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDashboardRepository(impl: DashboardRepositoryImpl): DashboardRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideDashboardWidgetsRepository(impl: DashboardWidgetsRepositoryImpl): DashboardWidgetsRepository = impl
 
     @Provides
     @Singleton

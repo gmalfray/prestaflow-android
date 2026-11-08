@@ -4,12 +4,16 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.DonutLarge
+import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.PendingActions
 import androidx.compose.material.icons.outlined.Percent
 import androidx.compose.material.icons.outlined.QueryStats
+import androidx.compose.material.icons.outlined.RateReview
+import androidx.compose.material.icons.outlined.Receipt
+import androidx.compose.material.icons.outlined.RemoveShoppingCart
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rebuildit.prestaflow.R
@@ -28,6 +32,10 @@ internal fun DashboardWidget.titleRes(): Int =
         DashboardWidget.PENDING_ORDERS -> R.string.dashboard_widget_pending_orders
         DashboardWidget.LOW_STOCK -> R.string.dashboard_widget_low_stock
         DashboardWidget.ORDERS_SPLIT -> R.string.dashboard_chart_mode_paid_vs_free
+        DashboardWidget.LATEST_ORDERS -> R.string.dashboard_widget_latest_orders
+        DashboardWidget.CARTS -> R.string.dashboard_widget_carts
+        DashboardWidget.REVIEWS -> R.string.dashboard_widget_reviews
+        DashboardWidget.TOP_PRODUCTS -> R.string.dashboard_widget_top_products
     }
 
 internal fun DashboardWidget.icon(): ImageVector =
@@ -41,4 +49,8 @@ internal fun DashboardWidget.icon(): ImageVector =
         DashboardWidget.PENDING_ORDERS -> Icons.Outlined.PendingActions
         DashboardWidget.LOW_STOCK -> Icons.Outlined.Inventory2
         DashboardWidget.ORDERS_SPLIT -> Icons.Outlined.DonutLarge
+        DashboardWidget.LATEST_ORDERS -> Icons.Outlined.Receipt
+        DashboardWidget.CARTS -> Icons.Outlined.RemoveShoppingCart
+        DashboardWidget.REVIEWS -> Icons.Outlined.RateReview
+        DashboardWidget.TOP_PRODUCTS -> Icons.Outlined.EmojiEvents
     }

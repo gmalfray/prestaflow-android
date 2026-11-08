@@ -104,7 +104,6 @@ import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
 import java.text.NumberFormat
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -112,18 +111,27 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.roundToInt
 
+/** Navigations déclenchées depuis les widgets réseau du dashboard. */
+data class DashboardWidgetActions(
+    val onOrderClick: (Long) -> Unit = {},
+    val onAllOrdersClick: () -> Unit = {},
+    val onCartsClick: () -> Unit = {},
+    val onReviewsClick: () -> Unit = {},
+    val onRetry: (DashboardWidget) -> Unit = {},
+)
+
 @Composable
 fun DashboardRoute(
     onAddShop: () -> Unit = {},
     onOrdersClick: (DashboardPeriod) -> Unit = {},
     onClientsClick: (createdFrom: String?) -> Unit = {},
+    widgetActions: DashboardWidgetActions = DashboardWidgetActions(),
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel(),
     shopsViewModel: ShopsViewModel = hiltViewModel(),
@@ -147,6 +155,7 @@ fun DashboardRoute(
         onOrdersClick = { onOrdersClick(state.selectedPeriod) },
         onClientsClick = onClientsClick,
         onWidgetLayoutSaved = viewModel::onWidgetLayoutSaved,
+        widgetActions = widgetActions.copy(onRetry = viewModel::onWidgetRetry),
     )
 }
 
@@ -165,6 +174,7 @@ fun DashboardScreen(
     onOrdersClick: () -> Unit = {},
     onClientsClick: (createdFrom: String?) -> Unit = {},
     onWidgetLayoutSaved: (DashboardLayout) -> Unit = {},
+    widgetActions: DashboardWidgetActions = DashboardWidgetActions(),
 ) {
     val errorMessage = state.error?.asString()
     val hasSnapshot = state.snapshot != null
@@ -195,6 +205,8 @@ fun DashboardScreen(
                 onClientsClick = onClientsClick,
                 widgetLayout = state.widgetLayout,
                 onWidgetLayoutSaved = onWidgetLayoutSaved,
+                widgetStates = state,
+                widgetActions = widgetActions,
             )
         else ->
             DashboardEmptyState(
@@ -249,7 +261,7 @@ private fun DashboardEmptyState(
 // ─── Contenu principal ────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongParameterList", "LongMethod")
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 @Composable
 private fun DashboardContent(
     modifier: Modifier,
@@ -272,6 +284,8 @@ private fun DashboardContent(
     onClientsClick: (createdFrom: String?) -> Unit = {},
     widgetLayout: DashboardLayout = DashboardLayout.DEFAULT,
     onWidgetLayoutSaved: (DashboardLayout) -> Unit = {},
+    widgetStates: DashboardUiState = DashboardUiState(),
+    widgetActions: DashboardWidgetActions = DashboardWidgetActions(),
 ) {
     val currencyFormatter = rememberCurrencyFormatter()
     val numberFormatter = rememberNumberFormatter()
@@ -398,7 +412,32 @@ private fun DashboardContent(
                     icon = DashboardWidget.LOW_STOCK.icon(),
                 ),
         )
-    val widgetRows = remember(widgetLayout) { widgetLayout.rows() }
+    val reviewsUnavailable = widgetStates.pendingReviews == WidgetLoad.Unavailable
+    val widgetRows =
+        remember(widgetLayout, reviewsUnavailable) {
+            widgetLayout.rows(hidden = if (reviewsUnavailable) setOf(DashboardWidget.REVIEWS) else emptySet())
+        }
+    val cartsSubtitle =
+        (widgetStates.abandonedCarts as? WidgetLoad.Data)?.value?.takeIf { it.count > 0 }
+            ?.let { stringResource(id = R.string.dashboard_widget_carts_sub, currencyFormatter.format(it.totalTaxIncl)) }
+    val cartsItem =
+        KpiItem(
+            title = stringResource(id = DashboardWidget.CARTS.titleRes()),
+            value = widgetValueText(widgetStates.abandonedCarts) { numberFormatter.format(it.count) },
+            icon = DashboardWidget.CARTS.icon(),
+            onClick = widgetActions.onCartsClick,
+            subtitle = cartsSubtitle,
+        )
+    val reviewsItem =
+        KpiItem(
+            title = stringResource(id = DashboardWidget.REVIEWS.titleRes()),
+            value =
+                widgetValueText(widgetStates.pendingReviews) {
+                    numberFormatter.format(it.count) + if (it.hasMore) "+" else ""
+                },
+            icon = DashboardWidget.REVIEWS.icon(),
+            onClick = widgetActions.onReviewsClick,
+        )
 
     var showLayoutEditor by rememberSaveable { mutableStateOf(false) }
 
@@ -469,7 +508,32 @@ private fun DashboardContent(
                             ordersCount = snapshot.ordersCount,
                             ordersFreeCount = snapshot.ordersFreeCount,
                         )
-                    else -> DashboardKpiGrid(modifier = rowModifier, kpiItems = row.mapNotNull { kpiItems[it] })
+                    DashboardWidget.LATEST_ORDERS ->
+                        LatestOrdersCard(
+                            modifier = rowModifier,
+                            state = widgetStates.latestOrders,
+                            onRetry = { widgetActions.onRetry(DashboardWidget.LATEST_ORDERS) },
+                            onOrderClick = widgetActions.onOrderClick,
+                            onHeaderClick = widgetActions.onAllOrdersClick,
+                        )
+                    DashboardWidget.TOP_PRODUCTS ->
+                        TopProductsCard(
+                            modifier = rowModifier,
+                            state = widgetStates.topProducts,
+                            onRetry = { widgetActions.onRetry(DashboardWidget.TOP_PRODUCTS) },
+                        )
+                    else ->
+                        DashboardKpiGrid(
+                            modifier = rowModifier,
+                            kpiItems =
+                                row.mapNotNull { w ->
+                                    when (w) {
+                                        DashboardWidget.CARTS -> cartsItem
+                                        DashboardWidget.REVIEWS -> reviewsItem
+                                        else -> kpiItems[w]
+                                    }
+                                },
+                        )
                 }
             }
 
@@ -1857,14 +1921,14 @@ private fun rememberChartContentDescription(series: ChartSeriesData): String {
 }
 
 @Composable
-private fun rememberCurrencyFormatter(): NumberFormat {
+internal fun rememberCurrencyFormatter(): NumberFormat {
     val locales = LocalConfiguration.current.locales
     val locale = if (!locales.isEmpty) locales[0] else java.util.Locale.getDefault()
     return remember(locale) { euroCurrencyFormatter(locale) }
 }
 
 @Composable
-private fun rememberNumberFormatter(): NumberFormat {
+internal fun rememberNumberFormatter(): NumberFormat {
     val locales = LocalConfiguration.current.locales
     val locale = if (!locales.isEmpty) locales[0] else java.util.Locale.getDefault()
     return remember(locale) { NumberFormat.getIntegerInstance(locale) }
@@ -2001,34 +2065,20 @@ internal fun kpiTrendPercentFromSeries(
     return classifyTrend(current = values.drop(mid).sum(), previous = values.take(mid).sum())
 }
 
-/**
- * Borne `created_from` (yyyy-MM-dd) du drill-down "Nouveaux clients", alignée sur la période
- * civile affichée par le dashboard — mêmes bornes que le connecteur
- * (`DashboardService::resolvePeriodRange` v1.15.0) : aujourd'hui / lundi de la semaine en cours
- * (ISO) / 1ᵉʳ du mois en cours / 1ᵉʳ jour du trimestre civil en cours / 1ᵉʳ janvier. En plage
- * libre, la date de début choisie. Toutes les périodes se terminant « maintenant », `created_from`
- * seul suffit à faire correspondre la liste Clients au compteur du KPI (pas besoin de `created_to`).
- */
-private fun newCustomersCreatedFrom(
-    period: DashboardPeriod,
-    customRange: Pair<String, String>?,
-): String {
-    customRange?.let { return it.first }
-    val today = LocalDate.now()
-    val from =
-        when (period) {
-            DashboardPeriod.TODAY -> today
-            DashboardPeriod.WEEK -> today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            DashboardPeriod.MONTH -> today.withDayOfMonth(1)
-            DashboardPeriod.QUARTER -> today.withMonth((today.monthValue - 1) / 3 * 3 + 1).withDayOfMonth(1)
-            DashboardPeriod.YEAR -> today.withDayOfYear(1)
-        }
-    return from.format(DateTimeFormatter.ISO_LOCAL_DATE)
-}
-
 // ─── Modèle local ─────────────────────────────────────────────────────────────
 
 private const val LOW_STOCK_CAP = 50
+
+/** Valeur d'une tuile KPI réseau : le texte formaté, « … » pendant le chargement, « – » en erreur. */
+private fun <T> widgetValueText(
+    state: WidgetLoad<T>,
+    format: (T) -> String,
+): String =
+    when (state) {
+        is WidgetLoad.Data -> format(state.value)
+        WidgetLoad.Error -> "–"
+        else -> "…"
+    }
 
 private data class KpiItem(
     val title: String,

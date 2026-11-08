@@ -8,13 +8,20 @@ import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
+import com.rebuildit.prestaflow.domain.dashboard.DashboardWidgetsRepository
+import com.rebuildit.prestaflow.domain.dashboard.model.AbandonedCartsSummary
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartMode
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardLayout
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardWidget
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
+import com.rebuildit.prestaflow.domain.dashboard.model.LatestOrder
+import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
+import com.rebuildit.prestaflow.domain.dashboard.model.TopProduct
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,12 +36,14 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+@Suppress("LongParameterList") // dépendances injectées par Hilt
 @HiltViewModel
 class DashboardViewModel
     @Inject
     constructor(
         private val dashboardRepository: DashboardRepository,
         private val dashboardPrefsRepository: DashboardPreferencesRepository,
+        private val widgetsRepository: DashboardWidgetsRepository,
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
         private val resumeRefreshGuard: ScreenResumeRefreshGuard,
@@ -46,6 +55,9 @@ class DashboardViewModel
          * `null` = mode preset ([selectedPeriodFlow] actif).
          */
         private val customRangeFlow = MutableStateFlow<Pair<String, String>?>(null)
+
+        private val widgetJobs = mutableMapOf<DashboardWidget, Job>()
+        private var previouslyVisible: Set<DashboardWidget> = emptySet()
 
         private val _uiState = MutableStateFlow(DashboardUiState())
         val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -80,7 +92,73 @@ class DashboardViewModel
             viewModelScope.launch {
                 dashboardPrefsRepository.widgetLayout.collect { layout ->
                     _uiState.update { it.copy(widgetLayout = layout) }
+                    val visible = layout.visibleWidgets.toSet()
+                    (visible - previouslyVisible).forEach(::loadWidget)
+                    previouslyVisible = visible
                 }
+            }
+        }
+
+        fun onWidgetRetry(widget: DashboardWidget) = loadWidget(widget)
+
+        private fun loadVisibleWidgets() {
+            _uiState.value.widgetLayout.visibleWidgets.forEach(::loadWidget)
+        }
+
+        private fun loadWidget(widget: DashboardWidget) {
+            when (widget) {
+                DashboardWidget.LATEST_ORDERS ->
+                    launchWidgetLoad(widget, { it.latestOrders }, { s, v -> s.copy(latestOrders = v) }) {
+                        widgetsRepository.getLatestOrders(LATEST_ORDERS_LIMIT)
+                    }
+                DashboardWidget.CARTS ->
+                    launchWidgetLoad(widget, { it.abandonedCarts }, { s, v -> s.copy(abandonedCarts = v) }) {
+                        widgetsRepository.getAbandonedCarts(ABANDONED_CARTS_DAYS)
+                    }
+                DashboardWidget.REVIEWS ->
+                    launchWidgetLoad(widget, { it.pendingReviews }, { s, v -> s.copy(pendingReviews = v) }) {
+                        widgetsRepository.getPendingReviews()
+                    }
+                DashboardWidget.TOP_PRODUCTS ->
+                    launchWidgetLoad(widget, { it.topProducts }, { s, v -> s.copy(topProducts = v) }) {
+                        val (from, to) = periodDateRange(selectedPeriodFlow.value, customRangeFlow.value)
+                        widgetsRepository.getTopProducts(TOP_PRODUCTS_LIMIT, from, to)
+                    }
+                else -> Unit
+            }
+        }
+
+        /**
+         * Charge un widget isolé : un échec ne touche que son état. Les données déjà affichées sont
+         * conservées pendant le rechargement. [fetch] renvoie `null` quand la fonctionnalité est absente.
+         */
+        private fun <T : Any> launchWidgetLoad(
+            widget: DashboardWidget,
+            read: (DashboardUiState) -> WidgetLoad<T>,
+            write: (DashboardUiState, WidgetLoad<T>) -> DashboardUiState,
+            fetch: suspend () -> T?,
+        ) {
+            widgetJobs[widget]?.cancel()
+            widgetJobs[widget] =
+                viewModelScope.launch {
+                    if (read(_uiState.value) !is WidgetLoad.Data) {
+                        _uiState.update { write(it, WidgetLoad.Loading) }
+                    }
+                    runCatching { fetch() }
+                        .onSuccess { value ->
+                            _uiState.update { write(it, value?.let { v -> WidgetLoad.Data(v) } ?: WidgetLoad.Unavailable) }
+                        }
+                        .onFailure { error ->
+                            if (error is CancellationException) throw error
+                            Timber.w(error, "Failed to load dashboard widget %s", widget.id)
+                            _uiState.update { write(it, WidgetLoad.Error) }
+                        }
+                }
+        }
+
+        private fun reloadPeriodWidgets() {
+            if (DashboardWidget.TOP_PRODUCTS in _uiState.value.widgetLayout.visibleWidgets) {
+                loadWidget(DashboardWidget.TOP_PRODUCTS)
             }
         }
 
@@ -122,6 +200,7 @@ class DashboardViewModel
             }
             customRangeFlow.value = null
             selectedPeriodFlow.value = period
+            reloadPeriodWidgets()
             refresh(period, forceRemote = true, notifyOnError = true)
         }
 
@@ -144,11 +223,13 @@ class DashboardViewModel
                 )
             }
             customRangeFlow.value = Pair(from, to)
+            reloadPeriodWidgets()
             refreshCustom(from = from, to = to, notifyOnError = true)
         }
 
         fun onRefresh() {
             loadConversion()
+            loadVisibleWidgets()
             val custom = customRangeFlow.value
             if (custom != null) {
                 refreshCustom(from = custom.first, to = custom.second, notifyOnError = true)
@@ -169,6 +250,7 @@ class DashboardViewModel
          */
         fun onScreenResumed() {
             if (!resumeRefreshGuard.shouldRefresh(isBusy = _uiState.value.isRefreshing)) return
+            loadVisibleWidgets()
             val custom = customRangeFlow.value
             if (custom != null) {
                 refreshCustom(from = custom.first, to = custom.second, notifyOnError = false)
@@ -189,6 +271,15 @@ class DashboardViewModel
                             current.copy(snapshot = null, customRange = null, isLoading = true, error = null)
                         }
                         customRangeFlow.value = null
+                        _uiState.update {
+                            it.copy(
+                                latestOrders = WidgetLoad.Idle,
+                                abandonedCarts = WidgetLoad.Idle,
+                                pendingReviews = WidgetLoad.Idle,
+                                topProducts = WidgetLoad.Idle,
+                            )
+                        }
+                        loadVisibleWidgets()
                         refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = true)
                     }
             }
@@ -337,7 +428,15 @@ data class DashboardUiState(
     val conversion: ConversionState = ConversionState.Loading,
     /** Disposition des widgets (préférence persistée). */
     val widgetLayout: DashboardLayout = DashboardLayout.DEFAULT,
+    val latestOrders: WidgetLoad<List<LatestOrder>> = WidgetLoad.Idle,
+    val abandonedCarts: WidgetLoad<AbandonedCartsSummary> = WidgetLoad.Idle,
+    val pendingReviews: WidgetLoad<PendingReviewsCount> = WidgetLoad.Idle,
+    val topProducts: WidgetLoad<List<TopProduct>> = WidgetLoad.Idle,
 )
+
+private const val LATEST_ORDERS_LIMIT = 5
+private const val ABANDONED_CARTS_DAYS = 7
+private const val TOP_PRODUCTS_LIMIT = 5
 
 /** État de la carte conversion offert → payant. */
 sealed interface ConversionState {

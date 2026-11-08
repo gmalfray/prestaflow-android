@@ -57,9 +57,9 @@ class DashboardLayoutCodecTest {
     }
 
     @Test
-    fun `id inconnu et id réservé phase 2 sont ignorés, doublon aussi`() {
+    fun `id inconnu est ignoré, doublon aussi`() {
         val raw =
-            """[{"id":"latest_orders","visible":true},{"id":"chart","visible":false},
+            """[{"id":"nope_futur","visible":true},{"id":"chart","visible":false},
                 {"id":"nope","visible":true},{"id":"chart","visible":true},{"id":"kpi_orders","visible":true}]"""
         val layout = DashboardLayoutCodec.decode(raw)
         assertEquals(listOf(DashboardWidget.CHART, DashboardWidget.ORDERS), layout.items.take(2).map { it.widget })

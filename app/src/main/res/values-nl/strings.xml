@@ -554,4 +554,12 @@
     <string name="dashboard_edit_save">Opslaan</string>
     <string name="dashboard_edit_drag_handle">%1$s verplaatsen</string>
     <string name="dashboard_edit_show_widget">%1$s tonen</string>
+    <string name="dashboard_widget_latest_orders">Laatste bestellingen</string>
+    <string name="dashboard_widget_carts">Verlaten winkelwagens</string>
+    <string name="dashboard_widget_reviews">Te modereren beoordelingen</string>
+    <string name="dashboard_widget_top_products">Topproducten</string>
+    <string name="dashboard_widget_error">Gegevens momenteel niet beschikbaar.</string>
+    <string name="dashboard_widget_empty">Niets om te tonen.</string>
+    <string name="dashboard_widget_carts_sub">%1$s in het spel</string>
+    <string name="dashboard_widget_top_qty">%1$d verkocht</string>
 </resources>

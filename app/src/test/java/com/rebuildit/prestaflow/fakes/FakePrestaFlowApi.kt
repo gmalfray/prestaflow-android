@@ -3,6 +3,7 @@ package com.rebuildit.prestaflow.fakes
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.dto.AuthRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.AuthResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.BestSellersResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CartDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CartListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerDetailResponseDto
@@ -135,6 +136,21 @@ class FakePrestaFlowApi : PrestaFlowApi {
         from: String?,
         to: String?,
     ): FreeConversionDto = freeConversion ?: throw UnsupportedOperationException("Non utilisé dans ce test")
+
+    /** Réponse de [getBestSellers] ; null = appel non prévu par le test. */
+    var bestSellers: BestSellersResponseDto? = null
+
+    /** Dernière requête reçue par [getBestSellers] : limit, date_from, date_to. */
+    var lastBestSellersQuery: Triple<Int?, String?, String?>? = null
+
+    override suspend fun getBestSellers(
+        limit: Int?,
+        dateFrom: String?,
+        dateTo: String?,
+    ): BestSellersResponseDto {
+        lastBestSellersQuery = Triple(limit, dateFrom, dateTo)
+        return bestSellers ?: throw UnsupportedOperationException("Non utilisé dans ce test")
+    }
 
     override suspend fun getCustomerStats(): CustomerStatsDto = throw UnsupportedOperationException("Non utilisé dans ce test")
 

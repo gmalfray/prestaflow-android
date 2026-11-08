@@ -8,6 +8,7 @@ import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
 import com.rebuildit.prestaflow.fakes.FakeDashboardPreferencesRepository
 import com.rebuildit.prestaflow.fakes.FakeDashboardRepository
+import com.rebuildit.prestaflow.fakes.FakeDashboardWidgetsRepository
 import com.rebuildit.prestaflow.fakes.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,6 +45,7 @@ class DashboardViewModelChartConversionTest {
         DashboardViewModel(
             dashboardRepository = repo,
             dashboardPrefsRepository = prefs,
+            widgetsRepository = FakeDashboardWidgetsRepository(),
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = FakeAuthRepository(),
             resumeRefreshGuard = ScreenResumeRefreshGuard(FakeTimeProvider()),
