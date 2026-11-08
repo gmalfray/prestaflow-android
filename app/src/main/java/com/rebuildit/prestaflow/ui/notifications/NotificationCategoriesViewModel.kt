@@ -7,7 +7,7 @@ import com.rebuildit.prestaflow.domain.notifications.NotificationCategory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -15,6 +15,7 @@ import javax.inject.Inject
 data class NotificationCategoriesUiState(
     val categories: Map<NotificationCategory, Boolean> =
         NotificationCategory.entries.associateWith { it.defaultEnabled },
+    val notifyFreeOrders: Boolean = true,
 ) {
     val allDisabled: Boolean get() = categories.values.none { it }
 }
@@ -26,13 +27,21 @@ class NotificationCategoriesViewModel
         private val categoriesRepository: NotificationCategoriesRepository,
     ) : ViewModel() {
         val uiState: StateFlow<NotificationCategoriesUiState> =
-            categoriesRepository.categoryPreferences
-                .map { prefs -> NotificationCategoriesUiState(categories = prefs) }
+            combine(
+                categoriesRepository.categoryPreferences,
+                categoriesRepository.notifyFreeOrders,
+            ) { prefs, notifyFree -> NotificationCategoriesUiState(categories = prefs, notifyFreeOrders = notifyFree) }
                 .stateIn(
                     scope = viewModelScope,
                     started = SharingStarted.WhileSubscribed(5_000),
                     initialValue = NotificationCategoriesUiState(),
                 )
+
+        fun setNotifyFreeOrders(enabled: Boolean) {
+            viewModelScope.launch {
+                categoriesRepository.setNotifyFreeOrders(enabled)
+            }
+        }
 
         fun setCategory(
             category: NotificationCategory,

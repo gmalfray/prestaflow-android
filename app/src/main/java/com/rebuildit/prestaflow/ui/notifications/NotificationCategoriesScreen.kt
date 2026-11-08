@@ -47,6 +47,7 @@ fun NotificationCategoriesRoute(
         uiState = uiState,
         onBackClick = onBackClick,
         onCategoryToggle = viewModel::setCategory,
+        onNotifyFreeOrdersToggle = viewModel::setNotifyFreeOrders,
     )
 }
 
@@ -56,6 +57,7 @@ fun NotificationCategoriesScreen(
     uiState: NotificationCategoriesUiState,
     onBackClick: () -> Unit,
     onCategoryToggle: (NotificationCategory, Boolean) -> Unit,
+    onNotifyFreeOrdersToggle: (Boolean) -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -82,38 +84,60 @@ fun NotificationCategoriesScreen(
                     .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingL),
             verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
         ) {
-            // Section interrupteurs catégories
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                    ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            ) {
-                Column(
-                    modifier = Modifier.padding(Dimensions.cardPadding),
-                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
-                ) {
-                    Text(
-                        text = stringResource(R.string.notif_categories_section_label).uppercase(),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    NotificationCategory.entries.forEach { category ->
-                        CategoryRow(
-                            category = category,
-                            enabled = uiState.categories[category] ?: category.defaultEnabled,
-                            onToggle = { checked -> onCategoryToggle(category, checked) },
-                        )
-                    }
-                }
-            }
+            CategoriesCard(
+                uiState = uiState,
+                onCategoryToggle = onCategoryToggle,
+                onNotifyFreeOrdersToggle = onNotifyFreeOrdersToggle,
+            )
 
             // Avertissement toutes catégories désactivées
             if (uiState.allDisabled) {
                 AllDisabledWarning()
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoriesCard(
+    uiState: NotificationCategoriesUiState,
+    onCategoryToggle: (NotificationCategory, Boolean) -> Unit,
+    onNotifyFreeOrdersToggle: (Boolean) -> Unit,
+) {
+    // Section interrupteurs catégories
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimensions.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+        ) {
+            Text(
+                text = stringResource(R.string.notif_categories_section_label).uppercase(),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            NotificationCategory.entries.forEach { category ->
+                val categoryEnabled = uiState.categories[category] ?: category.defaultEnabled
+                CategoryRow(
+                    category = category,
+                    enabled = categoryEnabled,
+                    onToggle = { checked -> onCategoryToggle(category, checked) },
+                )
+                if (category == NotificationCategory.ORDER_CREATED) {
+                    FreeOrdersRow(
+                        checked = uiState.notifyFreeOrders,
+                        // Sans la catégorie, aucun push de commande n'arrive : sous-option inerte.
+                        enabled = categoryEnabled,
+                        onToggle = onNotifyFreeOrdersToggle,
+                    )
+                }
             }
         }
     }
@@ -142,6 +166,35 @@ private fun CategoryRow(
         Switch(
             checked = enabled,
             onCheckedChange = onToggle,
+        )
+    }
+}
+
+/** Sous-option de « Nouvelles ventes » : notifier aussi les commandes offertes (0 €). */
+@Composable
+private fun FreeOrdersRow(
+    checked: Boolean,
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = Dimensions.spacingL, bottom = Dimensions.spacingXs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = stringResource(R.string.notif_category_order_created_free),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onToggle,
+            enabled = enabled,
         )
     }
 }

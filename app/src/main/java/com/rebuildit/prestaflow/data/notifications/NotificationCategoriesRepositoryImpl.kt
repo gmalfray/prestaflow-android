@@ -50,6 +50,22 @@ class NotificationCategoriesRepositoryImpl
             }
         }
 
+        override val notifyFreeOrders: Flow<Boolean> =
+            dataStore.data
+                .catch { error ->
+                    if (error is IOException) emit(emptyPreferences()) else throw error
+                }
+                .map { prefs -> prefs[KEY_NOTIFY_FREE_ORDERS] ?: DEFAULT_NOTIFY_FREE_ORDERS }
+                .distinctUntilChanged()
+
+        override suspend fun setNotifyFreeOrders(enabled: Boolean) {
+            withContext(ioDispatcher) {
+                dataStore.edit { prefs -> prefs[KEY_NOTIFY_FREE_ORDERS] = enabled }
+            }
+        }
+
+        override suspend fun isNotifyFreeOrders(): Boolean = notifyFreeOrders.first()
+
         override suspend fun enabledTopics(): List<String> =
             withContext(ioDispatcher) {
                 val prefs = dataStore.data.first()
@@ -66,4 +82,9 @@ class NotificationCategoriesRepositoryImpl
             }
 
         private fun NotificationCategory.prefKey(): Preferences.Key<Boolean> = booleanPreferencesKey("notif_category_$key")
+
+        private companion object {
+            val KEY_NOTIFY_FREE_ORDERS = booleanPreferencesKey("notif_notify_free_orders")
+            const val DEFAULT_NOTIFY_FREE_ORDERS = true
+        }
     }

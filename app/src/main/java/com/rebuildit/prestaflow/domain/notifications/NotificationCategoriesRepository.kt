@@ -18,6 +18,17 @@ interface NotificationCategoriesRepository {
         enabled: Boolean,
     )
 
+    /**
+     * Sous-option de [NotificationCategory.ORDER_CREATED] : afficher aussi les notifications des
+     * commandes offertes (0 €). Booléen local (pas un topic FCM). Défaut : true.
+     */
+    val notifyFreeOrders: Flow<Boolean>
+
+    suspend fun setNotifyFreeOrders(enabled: Boolean)
+
+    /** Lecture ponctuelle de [notifyFreeOrders] (utilisée par le service FCM). */
+    suspend fun isNotifyFreeOrders(): Boolean
+
     /** Renvoie la liste des clés des catégories actuellement activées. */
     suspend fun enabledTopics(): List<String>
 }
