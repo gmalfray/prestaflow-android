@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
@@ -32,6 +33,7 @@ class DashboardViewModel
         private val dashboardPrefsRepository: DashboardPreferencesRepository,
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
+        private val resumeRefreshGuard: ScreenResumeRefreshGuard,
     ) : ViewModel() {
         private val selectedPeriodFlow = MutableStateFlow(DashboardPeriod.WEEK)
 
@@ -104,6 +106,26 @@ class DashboardViewModel
             }
         }
 
+        /**
+         * Rattrapage au retour sur l'écran Accueil (cf. KDoc de
+         * [com.rebuildit.prestaflow.ui.orders.OrdersViewModel.onScreenResumed] pour le contrat
+         * général porté par [resumeRefreshGuard]) : typiquement après un détour par le détail
+         * d'une commande ouvert depuis une notification de vente.
+         *
+         * Rafraîchit la période preset OU la plage libre active, selon le mode courant. Silencieux
+         * (`notifyOnError = false`) : en cas d'échec réseau le cache existant reste affiché. Le
+         * geste manuel [onRefresh] n'est jamais throttlé.
+         */
+        fun onScreenResumed() {
+            if (!resumeRefreshGuard.shouldRefresh(isBusy = _uiState.value.isRefreshing)) return
+            val custom = customRangeFlow.value
+            if (custom != null) {
+                refreshCustom(from = custom.first, to = custom.second, notifyOnError = false)
+            } else {
+                refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = false)
+            }
+        }
+
         private fun observeActiveShopSwitch() {
             viewModelScope.launch {
                 authRepository.connections
@@ -171,6 +193,7 @@ class DashboardViewModel
                 val result = runCatching { dashboardRepository.refresh(period, forceRemote) }
                 result
                     .onSuccess {
+                        resumeRefreshGuard.markRefreshSucceeded()
                         _uiState.update { current ->
                             current.copy(
                                 isRefreshing = false,
@@ -216,6 +239,7 @@ class DashboardViewModel
                 val result = runCatching { dashboardRepository.refreshCustom(from, to, forceRemote = true) }
                 result
                     .onSuccess {
+                        resumeRefreshGuard.markRefreshSucceeded()
                         _uiState.update { current ->
                             current.copy(
                                 isRefreshing = false,

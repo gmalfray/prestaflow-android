@@ -2,10 +2,12 @@ package com.rebuildit.prestaflow.ui.dashboard
 
 import app.cash.turbine.test
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
 import com.rebuildit.prestaflow.fakes.FakeDashboardPreferencesRepository
 import com.rebuildit.prestaflow.fakes.FakeDashboardRepository
+import com.rebuildit.prestaflow.fakes.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -36,6 +38,7 @@ class DashboardViewModelTest {
     private lateinit var fakeAuth: FakeAuthRepository
     private lateinit var fakePrefs: FakeDashboardPreferencesRepository
     private lateinit var viewModel: DashboardViewModel
+    private val fakeTime = FakeTimeProvider()
 
     @Before
     fun setUp() {
@@ -49,6 +52,7 @@ class DashboardViewModelTest {
                 dashboardPrefsRepository = fakePrefs,
                 networkErrorMapper = NetworkErrorMapper(),
                 authRepository = fakeAuth,
+                resumeRefreshGuard = ScreenResumeRefreshGuard(fakeTime),
             )
     }
 
@@ -160,5 +164,47 @@ class DashboardViewModelTest {
             val point = state.snapshot?.chart?.firstOrNull()
             assertNotNull(point)
             assertEquals(1, point?.newCustomers)
+        }
+
+    @Test
+    fun `onScreenResumed en mode preset — relance refresh forceRemote`() =
+        runTest {
+            advanceUntilIdle()
+            fakeRepo.lastRefreshCall = null
+            fakeTime.advanceBy(ScreenResumeRefreshGuard.MIN_INTERVAL_MS)
+
+            viewModel.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals(Pair(DashboardPeriod.WEEK, true), fakeRepo.lastRefreshCall)
+        }
+
+    @Test
+    fun `onScreenResumed en plage libre — relance refreshCustom`() =
+        runTest {
+            viewModel.onCustomRangeSelected("2026-05-01", "2026-05-31")
+            advanceUntilIdle()
+            fakeRepo.lastRefreshCustomCall = null
+            fakeRepo.lastRefreshCall = null
+            fakeTime.advanceBy(ScreenResumeRefreshGuard.MIN_INTERVAL_MS)
+
+            viewModel.onScreenResumed()
+            advanceUntilIdle()
+
+            assertEquals(Pair("2026-05-01", "2026-05-31"), fakeRepo.lastRefreshCustomCall)
+            assertNull(fakeRepo.lastRefreshCall)
+        }
+
+    @Test
+    fun `onScreenResumed — throttlé juste après un refresh réussi`() =
+        runTest {
+            advanceUntilIdle()
+            fakeRepo.lastRefreshCall = null
+            fakeTime.advanceBy(ScreenResumeRefreshGuard.MIN_INTERVAL_MS - 1)
+
+            viewModel.onScreenResumed()
+            advanceUntilIdle()
+
+            assertNull(fakeRepo.lastRefreshCall)
         }
 }

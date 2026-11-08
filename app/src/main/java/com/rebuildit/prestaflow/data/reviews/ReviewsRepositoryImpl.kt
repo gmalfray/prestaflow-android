@@ -14,6 +14,7 @@ import com.rebuildit.prestaflow.domain.reviews.model.ReviewsPage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
@@ -60,6 +61,10 @@ class ReviewsRepositoryImpl
                     .onSuccess { response -> _pendingReviewCount.value = response.reviews.size }
                     .onFailure { error -> Timber.w(networkErrorMapper.map(error).toString()) }
             }
+        }
+
+        override fun notifyReviewProcessed() {
+            _pendingReviewCount.update { current -> (current - 1).coerceAtLeast(0) }
         }
 
         override suspend fun fetchPendingReviews(
