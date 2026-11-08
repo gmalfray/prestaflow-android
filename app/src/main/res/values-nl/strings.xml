@@ -3,6 +3,8 @@
     <string name="app_name">PrestaFlow</string>
     <string name="notif_channel_sales_name">Verkoop</string>
     <string name="notif_channel_sales_desc">Meldingen bij nieuwe bestellingen (kassa-geluid)</string>
+    <string name="notif_channel_sales_free_name">Gratis bestellingen</string>
+    <string name="notif_channel_sales_free_desc">Bestellingen van €0 (cadeaus, 100%-codes), los van verkopen</string>
     <string name="notif_channel_order_status_name">Statuswijzigingen bestelling</string>
     <string name="notif_channel_order_status_desc">Meldingen wanneer de status van een bestelling wordt bijgewerkt</string>
     <string name="notif_channel_order_shipping_name">Verzendingen</string>
@@ -91,6 +93,10 @@
     <!-- Dashboard : KPI-trendbadge. Arg: 1=geformatteerd percentage (bijv. "12,3%") -->
     <string name="dashboard_kpi_trend_up">%1$s hoger</string>
     <string name="dashboard_kpi_trend_down">%1$s lager</string>
+    <string name="dashboard_kpi_trend_new">nieuw</string>
+    <string name="dashboard_kpi_trend_huge">≥ +1000 %</string>
+    <string name="dashboard_kpi_trend_new_desc">nieuw, geen vergelijkingsbasis</string>
+    <string name="dashboard_kpi_trend_huge_desc">meer dan tien keer hoger</string>
     <!-- Dashboard : volledig scherm grafiek -->
     <string name="dashboard_chart_expand_content_description">Grafiek op volledig scherm bekijken</string>
     <string name="dashboard_chart_fullscreen_close">Sluiten</string>
@@ -539,5 +545,5 @@
     <string name="dashboard_conversion_none">Geen klant met een gratis eerste bestelling.</string>
     <string name="dashboard_conversion_rate">%1$.1f %%</string>
     <string name="dashboard_conversion_detail">%1$d van %2$d klanten met een gratis eerste bestelling hebben daarna gekocht</string>
-    <string name="notif_category_order_created_free">Gratis bestellingen (€0) meenemen</string>
+    <string name="notif_category_order_created_free">Gratis bestellingen (€0): kanaalinstellingen</string>
 </resources>

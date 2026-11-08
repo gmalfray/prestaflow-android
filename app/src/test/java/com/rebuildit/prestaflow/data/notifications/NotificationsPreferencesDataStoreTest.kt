@@ -8,8 +8,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -24,16 +22,6 @@ class NotificationsPreferencesDataStoreTest {
 
     private fun newStore() =
         PreferenceDataStoreFactory.create(scope = kotlinx.coroutines.CoroutineScope(dispatcher)) { tmp.newFile("prefs.preferences_pb") }
-
-    @Test
-    fun `notifyFreeOrders vaut true par défaut puis persiste le choix`() =
-        runTest {
-            val repo = NotificationCategoriesRepositoryImpl(newStore(), dispatcher)
-            assertTrue(repo.isNotifyFreeOrders())
-            repo.setNotifyFreeOrders(false)
-            assertFalse(repo.isNotifyFreeOrders())
-            assertFalse(repo.notifyFreeOrders.first())
-        }
 
     @Test
     fun `courbe du dashboard - défaut CA vs N-1 puis choix persisté`() =

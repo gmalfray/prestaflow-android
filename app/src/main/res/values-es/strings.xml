@@ -3,6 +3,8 @@
     <string name="app_name">PrestaFlow</string>
     <string name="notif_channel_sales_name">Ventas</string>
     <string name="notif_channel_sales_desc">Notificaciones de nuevos pedidos (sonido de caja registradora)</string>
+    <string name="notif_channel_sales_free_name">Pedidos gratuitos</string>
+    <string name="notif_channel_sales_free_desc">Pedidos de 0 € (regalos, códigos del 100 %), separados de las ventas</string>
     <string name="notif_channel_order_status_name">Cambios de estado de pedido</string>
     <string name="notif_channel_order_status_desc">Notificaciones cuando se actualiza el estado de un pedido</string>
     <string name="notif_channel_order_shipping_name">Envíos</string>
@@ -91,6 +93,10 @@
     <!-- Dashboard : insignia de tendencia KPI. Arg: 1=porcentaje formateado (ej.: "12,3 %") -->
     <string name="dashboard_kpi_trend_up">sube %1$s</string>
     <string name="dashboard_kpi_trend_down">baja %1$s</string>
+    <string name="dashboard_kpi_trend_new">nuevo</string>
+    <string name="dashboard_kpi_trend_huge">≥ +1000 %</string>
+    <string name="dashboard_kpi_trend_new_desc">nuevo, sin base de comparación</string>
+    <string name="dashboard_kpi_trend_huge_desc">más de diez veces superior</string>
     <!-- Dashboard : gráfico a pantalla completa -->
     <string name="dashboard_chart_expand_content_description">Ver el gráfico a pantalla completa</string>
     <string name="dashboard_chart_fullscreen_close">Cerrar</string>
@@ -539,5 +545,5 @@
     <string name="dashboard_conversion_none">Ningún cliente con un primer pedido gratuito.</string>
     <string name="dashboard_conversion_rate">%1$.1f %%</string>
     <string name="dashboard_conversion_detail">%1$d de %2$d clientes con un primer pedido gratuito han comprado después</string>
-    <string name="notif_category_order_created_free">Incluir los pedidos gratuitos (0 €)</string>
+    <string name="notif_category_order_created_free">Pedidos gratuitos (0 €): ajustes del canal</string>
 </resources>

@@ -14,7 +14,6 @@ import com.google.firebase.messaging.RemoteMessage
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.notifications.FcmRegistrationManager
 import com.rebuildit.prestaflow.core.notifications.NotificationChannels
-import com.rebuildit.prestaflow.domain.notifications.NotificationCategoriesRepository
 import com.rebuildit.prestaflow.domain.orders.OrdersRepository
 import com.rebuildit.prestaflow.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -22,7 +21,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import retrofit2.HttpException
 import timber.log.Timber
 import java.io.IOException
@@ -42,9 +40,6 @@ private const val SECONDARY_ID_OFFSET = 1_000_000_000L
 class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var ordersRepository: OrdersRepository
-
-    @Inject
-    lateinit var notificationCategoriesRepository: NotificationCategoriesRepository
 
     @Inject
     lateinit var registrationManager: FcmRegistrationManager
@@ -88,7 +83,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
         // En arrière-plan, le système gère lui-même via default_notification_channel_id (manifeste).
         val title = message.notification?.title ?: message.data["title"]
         val body = message.notification?.body ?: message.data["body"]
-        if ((title != null || body != null) && isDisplayAllowedByPreferences(event, message.data)) {
+        if ((title != null || body != null)) {
             showNotification(
                 event = event,
                 title = title,
@@ -97,25 +92,9 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
                 productId = productId,
                 threadId = threadId,
                 reviewId = reviewId,
+                isFreeOrder = isFreeOrderPush(event, message.data),
             )
         }
-    }
-
-    /**
-     * Les commandes offertes (`order.created` avec `is_free = "1"`) ne s'affichent que si la
-     * sous-option « notifier les commandes offertes » est active. Lecture synchrone du DataStore :
-     * onMessageReceived tourne déjà sur un thread de fond, et la préférence n'est lue que pour ce
-     * cas précis.
-     */
-    private fun isDisplayAllowedByPreferences(
-        event: String?,
-        data: Map<String, String>,
-    ): Boolean {
-        if (!isFreeOrderPush(event, data)) return true
-        val notifyFree =
-            runCatching { runBlocking { notificationCategoriesRepository.isNotifyFreeOrders() } }
-                .getOrDefault(true)
-        return shouldDisplayPush(event, data, notifyFree)
     }
 
     override fun onDestroy() {
@@ -125,7 +104,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
 
     // ── Affichage ──────────────────────────────────────────────────────────────
 
-    // 7 paramètres : event + title + body + les 4 identifiants de destination mutuellement
+    // 8 paramètres : event + title + body + les 4 identifiants de destination mutuellement
     // exclusifs (order/product/thread/review), un seul non-null par push selon l'event reçu.
     @Suppress("LongParameterList")
     private fun showNotification(
@@ -136,6 +115,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
         productId: Long? = null,
         threadId: Long? = null,
         reviewId: Long? = null,
+        isFreeOrder: Boolean = false,
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) !=
@@ -144,7 +124,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
             return
         }
 
-        val channelId = NotificationChannels.channelForEvent(event)
+        val channelId = NotificationChannels.channelForEvent(event, isFreeOrder)
 
         val builder =
             NotificationCompat.Builder(applicationContext, channelId)
@@ -344,7 +324,7 @@ internal fun savThreadDeepLinkUriString(threadId: Long): String = "prestaflow://
 @Suppress("FunctionOnlyReturningConstant")
 internal fun reviewsDeepLinkUriString(): String = "prestaflow://clients?section=reviews"
 
-// ── Filtrage des commandes offertes (fonctions pures, testables) ──────────────────────────────
+// ── Commandes offertes : routage vers le canal dédié (fonctions pures, testables) ──────────────────────────────
 
 internal const val EVENT_ORDER_CREATED = "order.created"
 
@@ -353,10 +333,3 @@ internal fun isFreeOrderPush(
     event: String?,
     data: Map<String, String>,
 ): Boolean = event == EVENT_ORDER_CREATED && data["is_free"] == "1"
-
-/** Un push de commande offerte n'est affiché que si [notifyFreeOrders] ; tout le reste passe. */
-internal fun shouldDisplayPush(
-    event: String?,
-    data: Map<String, String>,
-    notifyFreeOrders: Boolean,
-): Boolean = !isFreeOrderPush(event, data) || notifyFreeOrders

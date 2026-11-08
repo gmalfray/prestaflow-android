@@ -24,15 +24,6 @@ class FakeNotificationCategoriesRepository : NotificationCategoriesRepository {
         prefsState.value = prefsState.value + (category to enabled)
     }
 
-    private val notifyFreeState = MutableStateFlow(true)
-    override val notifyFreeOrders: Flow<Boolean> = notifyFreeState
-
-    override suspend fun setNotifyFreeOrders(enabled: Boolean) {
-        notifyFreeState.value = enabled
-    }
-
-    override suspend fun isNotifyFreeOrders(): Boolean = notifyFreeState.value
-
     override suspend fun enabledTopics(): List<String> =
         prefsState.value
             .filter { (_, enabled) -> enabled }
