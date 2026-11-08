@@ -524,4 +524,20 @@
     <string name="carts_search_placeholder">Pesquisar por nome do cliente</string>
     <string name="carts_load_more">Carregar mais</string>
 
+    <string name="dashboard_chart_mode_turnover_vs_previous">Faturação vs ano anterior</string>
+    <string name="dashboard_chart_mode_turnover_avg_cart">Faturação + cesto médio</string>
+    <string name="dashboard_chart_mode_paid_vs_free">Pagos / gratuitos</string>
+    <string name="dashboard_chart_mode_avg_cart">Cesto médio</string>
+    <string name="dashboard_legend_turnover_previous">Ano anterior</string>
+    <string name="dashboard_legend_avg_cart">Cesto médio</string>
+    <string name="dashboard_legend_orders_paid">Pagos</string>
+    <string name="dashboard_legend_orders_free">Gratuitos</string>
+    <string name="dashboard_kpi_orders_free_sub">dos quais %1$d gratuitos</string>
+    <string name="dashboard_conversion_title">Conversão gratuito → pago</string>
+    <string name="dashboard_conversion_loading">A carregar…</string>
+    <string name="dashboard_conversion_error">Conversão indisponível de momento.</string>
+    <string name="dashboard_conversion_none">Nenhum cliente com a primeira encomenda gratuita.</string>
+    <string name="dashboard_conversion_rate">%1$.1f %%</string>
+    <string name="dashboard_conversion_detail">%1$d de %2$d clientes com a primeira encomenda gratuita compraram depois</string>
+    <string name="notif_category_order_created_free">Incluir as encomendas gratuitas (0 €)</string>
 </resources>

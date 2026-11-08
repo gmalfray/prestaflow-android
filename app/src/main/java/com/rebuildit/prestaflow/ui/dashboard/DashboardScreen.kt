@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -91,9 +93,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.core.ui.asString
 import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartMode
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartPoint
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
+import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
 import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
 import com.rebuildit.prestaflow.ui.components.euroCurrencyFormatter
 import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
@@ -136,6 +140,8 @@ fun DashboardRoute(
         onPeriodSelected = viewModel::onPeriodSelected,
         onCustomRangeSelected = viewModel::onCustomRangeSelected,
         onRefresh = viewModel::onRefresh,
+        onChartModeSelected = viewModel::onChartModeSelected,
+        onConversionRetry = viewModel::loadConversion,
         onSwitchShop = shopsViewModel::switchShop,
         onAddShop = onAddShop,
         onOrdersClick = { onOrdersClick(state.selectedPeriod) },
@@ -151,6 +157,8 @@ fun DashboardScreen(
     onPeriodSelected: (DashboardPeriod) -> Unit,
     onCustomRangeSelected: (String, String) -> Unit = { _, _ -> },
     onRefresh: () -> Unit,
+    onChartModeSelected: (DashboardChartMode) -> Unit = {},
+    onConversionRetry: () -> Unit = {},
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
     onOrdersClick: () -> Unit = {},
@@ -175,6 +183,10 @@ fun DashboardScreen(
                 onPeriodSelected = onPeriodSelected,
                 onCustomRangeSelected = onCustomRangeSelected,
                 onRefresh = onRefresh,
+                chartMode = state.chartMode,
+                onChartModeSelected = onChartModeSelected,
+                conversion = state.conversion,
+                onConversionRetry = onConversionRetry,
                 onSwitchShop = onSwitchShop,
                 onAddShop = onAddShop,
                 onOrdersClick = onOrdersClick,
@@ -246,6 +258,10 @@ private fun DashboardContent(
     onPeriodSelected: (DashboardPeriod) -> Unit,
     onCustomRangeSelected: (String, String) -> Unit,
     onRefresh: () -> Unit,
+    chartMode: DashboardChartMode,
+    onChartModeSelected: (DashboardChartMode) -> Unit,
+    conversion: ConversionState,
+    onConversionRetry: () -> Unit,
     onSwitchShop: (String) -> Unit,
     onAddShop: () -> Unit,
     onOrdersClick: () -> Unit = {},
@@ -256,13 +272,25 @@ private fun DashboardContent(
     val turnoverText = remember(snapshot.turnover) { currencyFormatter.format(snapshot.turnover) }
     val ordersText = remember(snapshot.ordersCount) { numberFormatter.format(snapshot.ordersCount) }
     // Nouveaux clients = somme de newCustomers sur les points du graphe.
-    // Cohérent avec la série "Nouveaux clients" de DualAxisSalesChart.
+    // Cohérent avec la série "Nouveaux clients" du graphique.
     // Vaut 0 tant que le connecteur < v1.7 ne remplit pas ce champ.
     val newCustomersTotal = remember(snapshot.chart) { snapshot.chart.sumOf { it.newCustomers } }
     val newCustomersTotalText = remember(newCustomersTotal) { numberFormatter.format(newCustomersTotal) }
+    // Panier moyen sur les commandes PAYANTES : les commandes offertes (0 €) le tireraient vers le bas.
     val avgCart =
-        remember(snapshot.turnover, snapshot.ordersCount) {
-            if (snapshot.ordersCount > 0) snapshot.turnover / snapshot.ordersCount else 0.0
+        remember(snapshot.turnover, snapshot.ordersCount, snapshot.ordersFreeCount) { snapshot.avgCartPaid }
+    val ordersFreeSubtitle =
+        if (snapshot.ordersFreeCount > 0) {
+            stringResource(id = R.string.dashboard_kpi_orders_free_sub, snapshot.ordersFreeCount)
+        } else {
+            null
+        }
+    val chartTotalText =
+        when (chartMode) {
+            DashboardChartMode.TURNOVER_VS_PREVIOUS, DashboardChartMode.TURNOVER_AND_AVG_CART -> turnoverText
+            DashboardChartMode.AVG_CART -> currencyFormatter.format(avgCart)
+            DashboardChartMode.PAID_VS_FREE ->
+                numberFormatter.format((snapshot.ordersCount - snapshot.ordersFreeCount).coerceAtLeast(0))
         }
     val avgCartText = remember(avgCart) { currencyFormatter.format(avgCart) }
     val lastUpdatedText = remember(snapshot.lastUpdatedIso) { formatLastUpdated(snapshot.lastUpdatedIso) }
@@ -284,7 +312,7 @@ private fun DashboardContent(
     val newCustomersSparkline = remember(snapshot.chart) { snapshot.chart.map { it.newCustomers.toFloat() } }
     val avgCartSparkline =
         remember(snapshot.chart) {
-            snapshot.chart.map { point -> if (point.orders > 0) (point.turnover / point.orders).toFloat() else 0f }
+            snapshot.chart.map { point -> point.avgCartPaid.toFloat() }
         }
 
     // ── Tendances par KPI (fonctions pures testables, cf. kpiTrendPercent*) ────────────
@@ -303,7 +331,7 @@ private fun DashboardContent(
     val avgCartTrend =
         remember(snapshot.chart, isCustomRange) {
             kpiTrendPercentFromSeries(
-                snapshot.chart.map { point -> if (point.orders > 0) point.turnover / point.orders else 0.0 },
+                snapshot.chart.map { point -> point.avgCartPaid },
                 isCustomRange,
             )
         }
@@ -366,6 +394,7 @@ private fun DashboardContent(
                                 value = ordersText,
                                 icon = Icons.Outlined.ShoppingBag,
                                 onClick = onOrdersClick,
+                                subtitle = ordersFreeSubtitle,
                                 trendPercent = ordersTrend,
                                 sparklineValues = ordersSparkline,
                             ),
@@ -388,7 +417,19 @@ private fun DashboardContent(
                 )
             }
 
-            // Carte graphique CA
+            // Conversion offert → payant (indépendante : n'affecte pas le reste si l'appel échoue)
+            item {
+                FreeConversionCard(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = Dimensions.screenEdgeMargin)
+                            .padding(top = Dimensions.spacingL),
+                    state = conversion,
+                    onRetry = onConversionRetry,
+                )
+            }
+
+            // Carte graphique (courbe au choix)
             item {
                 DashboardChartCard(
                     modifier =
@@ -396,7 +437,9 @@ private fun DashboardContent(
                             .padding(horizontal = Dimensions.screenEdgeMargin)
                             .padding(top = Dimensions.spacingL),
                     points = snapshot.chart,
-                    totalText = turnoverText,
+                    mode = chartMode,
+                    onModeSelected = onChartModeSelected,
+                    totalText = chartTotalText,
                     currentTurnover = snapshot.turnover,
                     previousTurnover = snapshot.previousTurnover,
                     // En mode plage libre, on n'affiche pas le comparatif "vs même période l'an dernier"
@@ -424,7 +467,8 @@ private fun DashboardContent(
     if (showFullscreenChart) {
         DashboardChartFullscreenDialog(
             points = snapshot.chart,
-            totalText = turnoverText,
+            mode = chartMode,
+            totalText = chartTotalText,
             onDismiss = { showFullscreenChart = false },
         )
     }
@@ -702,7 +746,8 @@ private fun KpiCard(
 ) {
     val cardDesc = stringResource(id = R.string.dashboard_content_description_kpi_card, item.title, item.value)
     val trendDesc = item.trendPercent?.let { percent -> kpiTrendContentDescription(percent) }
-    val fullCardDesc = if (trendDesc != null) "$cardDesc, $trendDesc" else cardDesc
+    val fullCardDesc =
+        listOfNotNull(cardDesc, item.subtitle, trendDesc).joinToString(", ")
     val cardShape = RoundedCornerShape(Dimensions.cardCornerRadius)
     val cardColors =
         CardDefaults.cardColors(
@@ -767,6 +812,15 @@ private fun KpiCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (item.subtitle != null) {
+                    Text(
+                        text = item.subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
 
             // Mini-sparkline — dégradation silencieuse si série vide/trop courte/plate (cf. KpiSparkline)
@@ -884,6 +938,8 @@ private fun kpiTrendContentDescription(percent: Double): String {
 @Composable
 private fun DashboardChartCard(
     points: List<DashboardChartPoint>,
+    mode: DashboardChartMode,
+    onModeSelected: (DashboardChartMode) -> Unit,
     totalText: String,
     currentTurnover: Double,
     previousTurnover: Double?,
@@ -925,12 +981,13 @@ private fun DashboardChartCard(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Text(
-                        text = stringResource(id = R.string.dashboard_chart_title_turnover),
+                        text = stringResource(id = chartModeTitleRes(mode)),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     // Comparatif vs même période l'an dernier (N-1) — masqué en mode plage libre
-                    if (previousTurnover != null && selectedPeriod != null) {
+                    // et pour les courbes qui ne portent pas sur le CA
+                    if (previousTurnover != null && selectedPeriod != null && mode.isTurnoverBased()) {
                         val delta =
                             if (previousTurnover > 0.0) {
                                 (currentTurnover - previousTurnover) / previousTurnover * 100.0
@@ -977,7 +1034,10 @@ private fun DashboardChartCard(
                 }
             }
 
+            ChartModeSelector(selected = mode, onSelected = onModeSelected)
+
             // Icône agrandir + toggle 3ᵉ série : chip compact "Nouveaux clients"
+            // (la superposition ne s'applique qu'à l'axe de comptage : courbe payantes/offertes)
             if (points.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -998,24 +1058,26 @@ private fun DashboardChartCard(
                             modifier = Modifier.size(Dimensions.iconSizeSmall),
                         )
                     }
-                    FilterChip(
-                        selected = showNewCustomers,
-                        onClick = { showNewCustomers = !showNewCustomers },
-                        label = {
-                            Text(
-                                text = stringResource(id = R.string.dashboard_chart_new_customers),
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        },
-                        colors =
-                            FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = colorNewCustomers.copy(alpha = 0.15f),
-                                selectedLabelColor = colorNewCustomers,
-                            ),
-                        // Le libellé (« Nouveaux clients ») peut devenir large à fontScale élevé ;
-                        // borné pour ne pas déborder hors de la carte à côté du bouton plein écran.
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
+                    if (mode == DashboardChartMode.PAID_VS_FREE) {
+                        FilterChip(
+                            selected = showNewCustomers,
+                            onClick = { showNewCustomers = !showNewCustomers },
+                            label = {
+                                Text(
+                                    text = stringResource(id = R.string.dashboard_chart_new_customers),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            },
+                            colors =
+                                FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = colorNewCustomers.copy(alpha = 0.15f),
+                                    selectedLabelColor = colorNewCustomers,
+                                ),
+                            // Le libellé (« Nouveaux clients ») peut devenir large à fontScale élevé ;
+                            // borné pour ne pas déborder hors de la carte à côté du bouton plein écran.
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    }
                 }
             }
 
@@ -1027,14 +1089,133 @@ private fun DashboardChartCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                DualAxisSalesChart(
+                DashboardLineChart(
                     points = points,
+                    mode = mode,
                     height = 160.dp,
-                    showNewCustomers = showNewCustomers,
+                    showNewCustomers = showNewCustomers && mode == DashboardChartMode.PAID_VS_FREE,
                 )
             }
         }
     }
+}
+
+private fun DashboardChartMode.isTurnoverBased(): Boolean =
+    this == DashboardChartMode.TURNOVER_VS_PREVIOUS || this == DashboardChartMode.TURNOVER_AND_AVG_CART
+
+private fun chartModeTitleRes(mode: DashboardChartMode): Int =
+    when (mode) {
+        DashboardChartMode.TURNOVER_VS_PREVIOUS -> R.string.dashboard_chart_title_turnover
+        DashboardChartMode.TURNOVER_AND_AVG_CART -> R.string.dashboard_chart_mode_turnover_avg_cart
+        DashboardChartMode.PAID_VS_FREE -> R.string.dashboard_chart_mode_paid_vs_free
+        DashboardChartMode.AVG_CART -> R.string.dashboard_chart_mode_avg_cart
+    }
+
+private fun chartModeChipRes(mode: DashboardChartMode): Int =
+    when (mode) {
+        DashboardChartMode.TURNOVER_VS_PREVIOUS -> R.string.dashboard_chart_mode_turnover_vs_previous
+        DashboardChartMode.TURNOVER_AND_AVG_CART -> R.string.dashboard_chart_mode_turnover_avg_cart
+        DashboardChartMode.PAID_VS_FREE -> R.string.dashboard_chart_mode_paid_vs_free
+        DashboardChartMode.AVG_CART -> R.string.dashboard_chart_mode_avg_cart
+    }
+
+/** Sélecteur de courbe : chips défilables horizontalement (libellés longs en DE/NL). */
+@Composable
+private fun ChartModeSelector(
+    selected: DashboardChartMode,
+    onSelected: (DashboardChartMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+    ) {
+        DashboardChartMode.entries.forEach { mode ->
+            FilterChip(
+                selected = mode == selected,
+                onClick = { onSelected(mode) },
+                label = {
+                    Text(
+                        text = stringResource(id = chartModeChipRes(mode)),
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                    )
+                },
+            )
+        }
+    }
+}
+
+// ─── Carte conversion offert → payant ─────────────────────────────────────────
+
+@Composable
+private fun FreeConversionCard(
+    state: ConversionState,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimensions.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+        ) {
+            Text(
+                text = stringResource(id = R.string.dashboard_conversion_title).uppercase(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            when (state) {
+                ConversionState.Loading ->
+                    Text(
+                        text = stringResource(id = R.string.dashboard_conversion_loading),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                ConversionState.Error ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.dashboard_conversion_error),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onRetry) { Text(stringResource(id = R.string.action_retry)) }
+                    }
+                is ConversionState.Data -> FreeConversionData(state.conversion)
+            }
+        }
+    }
+}
+
+@Composable
+private fun FreeConversionData(conversion: FreeConversion) {
+    if (conversion.freeFirstCustomers <= 0) {
+        Text(
+            text = stringResource(id = R.string.dashboard_conversion_none),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        return
+    }
+    Text(
+        text = stringResource(id = R.string.dashboard_conversion_rate, conversion.rate),
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Text(
+        text = stringResource(id = R.string.dashboard_conversion_detail, conversion.converted, conversion.freeFirstCustomers),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 // ─── Graphique plein écran (volet 3) ───────────────────────────────────────────
@@ -1048,6 +1229,7 @@ private fun DashboardChartCard(
 @Composable
 private fun DashboardChartFullscreenDialog(
     points: List<DashboardChartPoint>,
+    mode: DashboardChartMode,
     totalText: String,
     onDismiss: () -> Unit,
 ) {
@@ -1079,7 +1261,7 @@ private fun DashboardChartFullscreenDialog(
                     // soit le fontScale — même piège que le crayon d'édition des commandes.
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = stringResource(id = R.string.dashboard_chart_title_turnover),
+                            text = stringResource(id = chartModeTitleRes(mode)),
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -1112,10 +1294,11 @@ private fun DashboardChartFullscreenDialog(
                                 .fillMaxWidth(),
                     ) {
                         // Réserve un peu de place sous le Canvas pour la légende du graphique
-                        // (DualAxisSalesChart empile Canvas + légende dans la hauteur donnée).
+                        // (DashboardLineChart empile Canvas + légende dans la hauteur donnée).
                         val chartHeight = (maxHeight - 32.dp).coerceAtLeast(120.dp)
-                        DualAxisSalesChart(
+                        DashboardLineChart(
                             points = points,
+                            mode = mode,
                             height = chartHeight,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -1135,6 +1318,7 @@ private val colorNewCustomers = Color(0xFF2E7D32)
 // Marges internes du canvas
 private val chartPadLeft = 52.dp
 private val chartPadRight = 60.dp
+private val chartPadRightNoAxis = 12.dp
 private val chartPadTop = 12.dp
 private val chartPadBottom = 28.dp
 
@@ -1201,43 +1385,85 @@ private fun catmullRomPath(offsets: List<Offset>): Path {
     return path
 }
 
+@Composable
+private fun chartSeriesColor(kind: ChartSeriesKind): Color =
+    when (kind) {
+        ChartSeriesKind.TURNOVER -> Color(0xFF1976D2)
+        ChartSeriesKind.TURNOVER_PREVIOUS -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+        ChartSeriesKind.AVG_CART, ChartSeriesKind.ORDERS_PAID -> MaterialTheme.colorScheme.primary
+        ChartSeriesKind.ORDERS_FREE -> Color(0xFFF57C00)
+        ChartSeriesKind.NEW_CUSTOMERS -> colorNewCustomers
+    }
+
+@Composable
+private fun chartSeriesLabel(kind: ChartSeriesKind): String =
+    stringResource(
+        id =
+            when (kind) {
+                ChartSeriesKind.TURNOVER -> R.string.dashboard_legend_turnover
+                ChartSeriesKind.TURNOVER_PREVIOUS -> R.string.dashboard_legend_turnover_previous
+                ChartSeriesKind.AVG_CART -> R.string.dashboard_legend_avg_cart
+                ChartSeriesKind.ORDERS_PAID -> R.string.dashboard_legend_orders_paid
+                ChartSeriesKind.ORDERS_FREE -> R.string.dashboard_legend_orders_free
+                ChartSeriesKind.NEW_CUSTOMERS -> R.string.dashboard_chart_new_customers
+            },
+    )
+
+/** Séries en pointillés : comparatif N-1 et nouveaux clients (superposition). */
+private fun ChartSeriesKind.isDashed(): Boolean = this == ChartSeriesKind.TURNOVER_PREVIOUS || this == ChartSeriesKind.NEW_CUSTOMERS
+
+/** Max d'axe « rond » pour les séries d'un côté ; 1.0 si aucune série. */
+private fun axisMaxFor(series: List<ChartSeriesData>): Double {
+    if (series.isEmpty()) return 1.0
+    val rawMax = series.maxOf { s -> s.values.maxOrNull() ?: 0.0 }
+    return if (series.first().unit == ChartUnit.COUNT) niceMaxInt(ceil(rawMax).toInt()).toDouble() else niceMaxDouble(rawMax)
+}
+
+private fun formatAxisValue(
+    value: Double,
+    unit: ChartUnit,
+): String = if (unit == ChartUnit.COUNT) value.roundToInt().toString() else formatCaLabel(value)
+
+/**
+ * Graphique en courbes lissées piloté par [mode] (cf. [buildChartSeries]) : jusqu'à deux axes Y
+ * (gauche/droite selon les séries), tooltip au tap, légende dynamique.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Suppress("LongMethod", "ComplexMethod")
 @Composable
-internal fun DualAxisSalesChart(
+internal fun DashboardLineChart(
     points: List<DashboardChartPoint>,
+    mode: DashboardChartMode,
     height: Dp = 200.dp,
     showNewCustomers: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     if (points.isEmpty()) return
 
-    val colorOrders = MaterialTheme.colorScheme.primary
-    val colorTurnover = Color(0xFF1976D2)
-    val colorNewCust = colorNewCustomers
+    val series = remember(mode, points, showNewCustomers) { buildChartSeries(mode, points, showNewCustomers) }
+    val colors = series.map { chartSeriesColor(it.kind) }
+    val labels = series.map { chartSeriesLabel(it.kind) }
+    val leftSeries = series.filter { it.side == ChartAxisSide.LEFT }
+    val rightSeries = series.filter { it.side == ChartAxisSide.RIGHT }
+    val maxLeft = remember(series) { axisMaxFor(leftSeries) }
+    val maxRight = remember(series) { axisMaxFor(rightSeries) }
+    val padRight = if (rightSeries.isNotEmpty()) chartPadRight else chartPadRightNoAxis
+
     val colorGrid = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
     val colorLabel = MaterialTheme.colorScheme.onSurfaceVariant
     val colorSurface = MaterialTheme.colorScheme.surfaceContainerLowest
     val colorOnSurface = MaterialTheme.colorScheme.onSurface
-    val chartDesc = rememberChartContentDescription(points)
+    val chartDesc = rememberChartContentDescription(series.first())
+    val currencyFormatter = rememberCurrencyFormatter()
     val textMeasurer = rememberTextMeasurer()
     val labelStyle = MaterialTheme.typography.labelSmall
-
-    // Axe gauche = max(orders, newCustomers si série active)
-    val rawMaxLeft =
-        if (showNewCustomers) {
-            max(points.maxOf { it.orders }, points.maxOf { it.newCustomers })
-        } else {
-            points.maxOf { it.orders }
-        }
-    val maxOrders = niceMaxInt(rawMaxLeft)
-    val maxTurnover = niceMaxDouble(points.maxOf { it.turnover })
 
     // Animation d'apparition (0 → 1 en 700 ms)
     var animProgress by remember { mutableFloatStateOf(0f) }
     val animatedProgress by animateFloatAsState(
         targetValue = animProgress,
         animationSpec = tween(durationMillis = 700),
-        label = "dual_chart_anim",
+        label = "line_chart_anim",
     )
     LaunchedEffect(points) { animProgress = 1f }
 
@@ -1266,12 +1492,12 @@ internal fun DualAxisSalesChart(
                         .fillMaxWidth()
                         .height(height)
                         .semantics(mergeDescendants = true) { contentDescription = chartDesc }
-                        .pointerInput(points) {
+                        .pointerInput(points, padRight) {
                             detectTapGestures { offset ->
                                 val n = points.size
                                 if (n < 2) return@detectTapGestures
                                 val pl = chartPadLeft.toPx()
-                                val pr = chartPadRight.toPx()
+                                val pr = padRight.toPx()
                                 val step = (size.width.toFloat() - pl - pr) / (n - 1)
                                 val idx = ((offset.x - pl) / step).roundToInt().coerceIn(0, n - 1)
                                 selectedIndex = if (selectedIndex == idx) -1 else idx
@@ -1282,60 +1508,53 @@ internal fun DualAxisSalesChart(
                 if (n < 2) return@Canvas
 
                 val pl = chartPadLeft.toPx()
-                val pr = chartPadRight.toPx()
+                val pr = padRight.toPx()
                 val pt = chartPadTop.toPx()
                 val pb = chartPadBottom.toPx()
                 val cw = size.width - pl - pr
                 val ch = size.height - pt - pb
                 val stepX = if (n > 1) cw / (n - 1) else cw
 
-                fun ordY(v: Int): Float = pt + ch - ch * (v.toFloat() / maxOrders).coerceIn(0f, 1f) * animatedProgress
+                fun yFor(
+                    value: Double,
+                    axisMax: Double,
+                ): Float = pt + ch - ch * (value / axisMax).toFloat().coerceIn(0f, 1f) * animatedProgress
 
-                fun caY(v: Double): Float = pt + ch - ch * (v.toFloat() / maxTurnover.toFloat()).coerceIn(0f, 1f) * animatedProgress
-
-                val ordOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, ordY(p.orders)) }
-                val caOffsets = points.mapIndexed { i, p -> Offset(pl + stepX * i, caY(p.turnover)) }
-                val newCustOffsets =
-                    if (showNewCustomers) {
-                        points.mapIndexed { i, p -> Offset(pl + stepX * i, ordY(p.newCustomers)) }
-                    } else {
-                        emptyList()
+                val offsetsBySeries =
+                    series.map { s ->
+                        val axisMax = if (s.side == ChartAxisSide.LEFT) maxLeft else maxRight
+                        s.values.mapIndexed { i, v -> Offset(pl + stepX * i, yFor(v, axisMax)) }
                     }
 
-                // ── Labels axe Y gauche (commandes / nouveaux clients) ────────────────
+                // ── Labels axes Y (gauche, puis droit si une série l'utilise) ─────────
                 val gridCount = 4
                 repeat(gridCount + 1) { i ->
                     val fraction = i.toFloat() / gridCount
-                    val value = (maxOrders * (1f - fraction)).roundToInt()
-                    val measured = textMeasurer.measure(value.toString(), style = labelStyle)
                     val y = pt + ch * fraction
-                    drawText(
-                        textLayoutResult = measured,
-                        color = colorLabel,
-                        topLeft =
-                            Offset(
-                                x = pl - measured.size.width.toFloat() - 6.dp.toPx(),
-                                y = y - measured.size.height / 2f,
-                            ),
-                    )
-                }
-
-                // ── Labels axe Y droit (CA) ───────────────────────────────────────────
-                repeat(gridCount + 1) { i ->
-                    val fraction = i.toFloat() / gridCount
-                    val value = maxTurnover * (1.0 - fraction)
-                    val label = formatCaLabel(value)
-                    val measured = textMeasurer.measure(label, style = labelStyle)
-                    val y = pt + ch * fraction
-                    drawText(
-                        textLayoutResult = measured,
-                        color = colorLabel,
-                        topLeft =
-                            Offset(
-                                x = pl + cw + 6.dp.toPx(),
-                                y = y - measured.size.height / 2f,
-                            ),
-                    )
+                    if (leftSeries.isNotEmpty()) {
+                        val measured =
+                            textMeasurer.measure(
+                                formatAxisValue(maxLeft * (1.0 - fraction), leftSeries.first().unit),
+                                style = labelStyle,
+                            )
+                        drawText(
+                            textLayoutResult = measured,
+                            color = colorLabel,
+                            topLeft = Offset(pl - measured.size.width.toFloat() - 6.dp.toPx(), y - measured.size.height / 2f),
+                        )
+                    }
+                    if (rightSeries.isNotEmpty()) {
+                        val measured =
+                            textMeasurer.measure(
+                                formatAxisValue(maxRight * (1.0 - fraction), rightSeries.first().unit),
+                                style = labelStyle,
+                            )
+                        drawText(
+                            textLayoutResult = measured,
+                            color = colorLabel,
+                            topLeft = Offset(pl + cw + 6.dp.toPx(), y - measured.size.height / 2f),
+                        )
+                    }
                 }
 
                 // ── Grille horizontale pointillée ─────────────────────────────────────
@@ -1352,55 +1571,37 @@ internal fun DualAxisSalesChart(
                 }
 
                 // ── Courbes lissées Catmull-Rom ───────────────────────────────────────
-                drawPath(
-                    path = catmullRomPath(ordOffsets),
-                    color = colorOrders,
-                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
-                )
-                drawPath(
-                    path = catmullRomPath(caOffsets),
-                    color = colorTurnover,
-                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
-                )
-                if (showNewCustomers && newCustOffsets.isNotEmpty()) {
+                series.forEachIndexed { si, s ->
                     drawPath(
-                        path = catmullRomPath(newCustOffsets),
-                        color = colorNewCust,
+                        path = catmullRomPath(offsetsBySeries[si]),
+                        color = colors[si],
                         style =
                             Stroke(
                                 width = 2.5.dp.toPx(),
                                 cap = StrokeCap.Round,
                                 pathEffect =
-                                    PathEffect.dashPathEffect(
-                                        floatArrayOf(8.dp.toPx(), 4.dp.toPx()),
-                                    ),
+                                    if (s.kind.isDashed()) {
+                                        PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 4.dp.toPx()))
+                                    } else {
+                                        null
+                                    },
                             ),
                     )
                 }
 
                 // ── Marqueurs sur les vrais points ────────────────────────────────────
                 val mr = 4.dp.toPx()
-                ordOffsets.forEachIndexed { i, o ->
-                    val sel = i == selectedIndex
-                    drawCircle(colorOrders, if (sel) mr * 1.8f else mr, o)
-                    if (sel) drawCircle(Color.White, mr * 0.7f, o)
-                }
-                caOffsets.forEachIndexed { i, o ->
-                    val sel = i == selectedIndex
-                    drawCircle(colorTurnover, if (sel) mr * 1.8f else mr, o)
-                    if (sel) drawCircle(Color.White, mr * 0.7f, o)
-                }
-                if (showNewCustomers) {
-                    newCustOffsets.forEachIndexed { i, o ->
+                offsetsBySeries.forEachIndexed { si, offsets ->
+                    offsets.forEachIndexed { i, o ->
                         val sel = i == selectedIndex
-                        drawCircle(colorNewCust, if (sel) mr * 1.8f else mr, o)
+                        drawCircle(colors[si], if (sel) mr * 1.8f else mr, o)
                         if (sel) drawCircle(Color.White, mr * 0.7f, o)
                     }
                 }
 
                 // ── Indicateur vertical de sélection ─────────────────────────────────
                 if (selectedIndex in points.indices) {
-                    val selX = ordOffsets[selectedIndex].x
+                    val selX = pl + stepX * selectedIndex
                     drawLine(
                         color = colorLabel.copy(alpha = 0.35f),
                         start = Offset(selX, pt),
@@ -1408,10 +1609,8 @@ internal fun DualAxisSalesChart(
                         strokeWidth = 1.dp.toPx(),
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx())),
                     )
-                    drawCircle(colorOrders.copy(alpha = 0.15f), 12.dp.toPx(), ordOffsets[selectedIndex])
-                    drawCircle(colorTurnover.copy(alpha = 0.15f), 12.dp.toPx(), caOffsets[selectedIndex])
-                    if (showNewCustomers && newCustOffsets.isNotEmpty()) {
-                        drawCircle(colorNewCust.copy(alpha = 0.15f), 12.dp.toPx(), newCustOffsets[selectedIndex])
+                    offsetsBySeries.forEachIndexed { si, offsets ->
+                        drawCircle(colors[si].copy(alpha = 0.15f), 12.dp.toPx(), offsets[selectedIndex])
                     }
                 }
 
@@ -1436,26 +1635,25 @@ internal fun DualAxisSalesChart(
 
             // ── Tooltip overlay Compose ───────────────────────────────────────────────
             if (selectedIndex in points.indices) {
-                val selectedPt = points[selectedIndex]
                 val n = points.size
-                val usableW = totalWidthDp - chartPadLeft - chartPadRight
+                val usableW = totalWidthDp - chartPadLeft - padRight
                 val stepXDp = if (n > 1) usableW / (n - 1) else usableW
                 val rawX = chartPadLeft + stepXDp * selectedIndex
-                val tooltipW = 160.dp
-                val clampedX = rawX.coerceIn(0.dp, totalWidthDp - tooltipW)
+                val tooltipW = 170.dp
+                val clampedX = rawX.coerceIn(0.dp, (totalWidthDp - tooltipW).coerceAtLeast(0.dp))
 
                 ChartTooltipBubble(
                     modifier =
                         Modifier
                             .offset(x = clampedX, y = chartPadTop + 8.dp)
                             .width(tooltipW),
-                    label = selectedPt.label,
-                    orders = selectedPt.orders,
-                    turnover = selectedPt.turnover,
-                    newCustomers = if (showNewCustomers) selectedPt.newCustomers else null,
-                    colorOrders = colorOrders,
-                    colorTurnover = colorTurnover,
-                    colorNewCustomers = colorNewCust,
+                    label = points[selectedIndex].label,
+                    rows =
+                        series.mapIndexed { si, s ->
+                            val v = s.values[selectedIndex]
+                            val text = if (s.unit == ChartUnit.COUNT) v.roundToInt().toString() else currencyFormatter.format(v)
+                            ChartTooltipRow(colors[si], "${labels[si]} : $text")
+                        },
                     containerColor = colorSurface,
                     onContainerColor = colorOnSurface,
                 )
@@ -1463,52 +1661,38 @@ internal fun DualAxisSalesChart(
         }
 
         // ── Légende sous le graphe ────────────────────────────────────────────────────
-        Row(
+        FlowRow(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .padding(top = 6.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(colorOrders))
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = stringResource(id = R.string.dashboard_legend_orders),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.width(Dimensions.spacingM))
-            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(colorTurnover))
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = stringResource(id = R.string.dashboard_legend_turnover),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (showNewCustomers) {
-                Spacer(modifier = Modifier.width(Dimensions.spacingM))
-                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(colorNewCustomers))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = stringResource(id = R.string.dashboard_chart_new_customers),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            series.forEachIndexed { si, _ ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(colors[si]))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = labels[si],
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
 }
 
+private data class ChartTooltipRow(
+    val color: Color,
+    val text: String,
+)
+
 @Composable
 private fun ChartTooltipBubble(
     label: String,
-    orders: Int,
-    turnover: Double,
-    newCustomers: Int?,
-    colorOrders: Color,
-    colorTurnover: Color,
-    colorNewCustomers: Color,
+    rows: List<ChartTooltipRow>,
     containerColor: Color,
     onContainerColor: Color,
     modifier: Modifier = Modifier,
@@ -1529,30 +1713,12 @@ private fun ChartTooltipBubble(
                 style = MaterialTheme.typography.labelMedium,
                 color = onContainerColor,
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorOrders))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = stringResource(id = R.string.dashboard_tooltip_orders, orders),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = onContainerColor,
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorTurnover))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = stringResource(id = R.string.dashboard_tooltip_turnover, formatCaLabel(turnover)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = onContainerColor,
-                )
-            }
-            if (newCustomers != null) {
+            rows.forEach { row ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorNewCustomers))
+                    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(row.color))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = stringResource(id = R.string.dashboard_tooltip_new_customers, newCustomers),
+                        text = row.text,
                         style = MaterialTheme.typography.bodySmall,
                         color = onContainerColor,
                     )
@@ -1605,14 +1771,18 @@ private fun ErrorBanner(
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 @Composable
-private fun rememberChartContentDescription(points: List<DashboardChartPoint>): String {
+private fun rememberChartContentDescription(series: ChartSeriesData): String {
     val currencyFormatter = rememberCurrencyFormatter()
-    val peakValue = points.maxOf { it.turnover }
-    val formattedPeak = remember(peakValue) { currencyFormatter.format(peakValue) }
+    val numberFormatter = rememberNumberFormatter()
+    val peakValue = series.values.maxOrNull() ?: 0.0
+    val formattedPeak =
+        remember(peakValue, series.unit) {
+            if (series.unit == ChartUnit.MONEY) currencyFormatter.format(peakValue) else numberFormatter.format(peakValue)
+        }
     val trendRes =
-        remember(points) {
-            val first = points.first().turnover
-            val last = points.last().turnover
+        remember(series) {
+            val first = series.values.firstOrNull() ?: 0.0
+            val last = series.values.lastOrNull() ?: 0.0
             when {
                 last > first * 1.001 -> R.string.dashboard_chart_trend_rising
                 last < first * 0.999 -> R.string.dashboard_chart_trend_falling
@@ -1770,6 +1940,8 @@ private data class KpiItem(
     val icon: ImageVector,
     /** Callback de navigation. Null = carte non cliquable. */
     val onClick: (() -> Unit)? = null,
+    /** Sous-texte discret sous la valeur (ex : « dont 3 offertes »). Null = rien. */
+    val subtitle: String? = null,
     /** Variation en % (signée) vs même période l'an dernier (CA) / 1ʳᵉ moitié de la série (autres KPI). Null = badge masqué. */
     val trendPercent: Double? = null,
     /** Série pour la mini-sparkline. Peut être vide/trop courte/plate — géré par [KpiSparkline]. */

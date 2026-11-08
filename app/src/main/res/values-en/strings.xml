@@ -523,4 +523,20 @@
     <string name="carts_search_placeholder">Search by customer name</string>
     <string name="carts_load_more">Load more</string>
 
+    <string name="dashboard_chart_mode_turnover_vs_previous">Turnover vs last year</string>
+    <string name="dashboard_chart_mode_turnover_avg_cart">Turnover + avg. cart</string>
+    <string name="dashboard_chart_mode_paid_vs_free">Paid / free</string>
+    <string name="dashboard_chart_mode_avg_cart">Average cart</string>
+    <string name="dashboard_legend_turnover_previous">Last year</string>
+    <string name="dashboard_legend_avg_cart">Average cart</string>
+    <string name="dashboard_legend_orders_paid">Paid</string>
+    <string name="dashboard_legend_orders_free">Free</string>
+    <string name="dashboard_kpi_orders_free_sub">incl. %1$d free</string>
+    <string name="dashboard_conversion_title">Free → paid conversion</string>
+    <string name="dashboard_conversion_loading">Loading…</string>
+    <string name="dashboard_conversion_error">Conversion unavailable right now.</string>
+    <string name="dashboard_conversion_none">No customer whose first order was free.</string>
+    <string name="dashboard_conversion_rate">%1$.1f %%</string>
+    <string name="dashboard_conversion_detail">%1$d of %2$d customers with a free first order went on to buy</string>
+    <string name="notif_category_order_created_free">Include free orders (€0)</string>
 </resources>

@@ -524,4 +524,20 @@
     <string name="carts_search_placeholder">Nach Kundennamen suchen</string>
     <string name="carts_load_more">Mehr laden</string>
 
+    <string name="dashboard_chart_mode_turnover_vs_previous">Umsatz vs. Vorjahr</string>
+    <string name="dashboard_chart_mode_turnover_avg_cart">Umsatz + Ø Warenkorb</string>
+    <string name="dashboard_chart_mode_paid_vs_free">Bezahlt / gratis</string>
+    <string name="dashboard_chart_mode_avg_cart">Ø Warenkorb</string>
+    <string name="dashboard_legend_turnover_previous">Vorjahr</string>
+    <string name="dashboard_legend_avg_cart">Ø Warenkorb</string>
+    <string name="dashboard_legend_orders_paid">Bezahlt</string>
+    <string name="dashboard_legend_orders_free">Gratis</string>
+    <string name="dashboard_kpi_orders_free_sub">davon %1$d gratis</string>
+    <string name="dashboard_conversion_title">Konversion gratis → bezahlt</string>
+    <string name="dashboard_conversion_loading">Wird geladen…</string>
+    <string name="dashboard_conversion_error">Konversion derzeit nicht verfügbar.</string>
+    <string name="dashboard_conversion_none">Kein Kunde mit einer kostenlosen Erstbestellung.</string>
+    <string name="dashboard_conversion_rate">%1$.1f %%</string>
+    <string name="dashboard_conversion_detail">%1$d von %2$d Kunden mit kostenloser Erstbestellung haben danach gekauft</string>
+    <string name="notif_category_order_created_free">Gratis-Bestellungen (0 €) einbeziehen</string>
 </resources>
