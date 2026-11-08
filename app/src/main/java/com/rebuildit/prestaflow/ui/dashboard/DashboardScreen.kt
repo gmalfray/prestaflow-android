@@ -386,7 +386,7 @@ private fun DashboardContent(
                                 title = stringResource(id = R.string.dashboard_kpi_turnover),
                                 value = turnoverText,
                                 icon = Icons.Outlined.Payments,
-                                trendPercent = turnoverTrend,
+                                trend = turnoverTrend,
                                 sparklineValues = turnoverSparkline,
                             ),
                             KpiItem(
@@ -395,14 +395,14 @@ private fun DashboardContent(
                                 icon = Icons.Outlined.ShoppingBag,
                                 onClick = onOrdersClick,
                                 subtitle = ordersFreeSubtitle,
-                                trendPercent = ordersTrend,
+                                trend = ordersTrend,
                                 sparklineValues = ordersSparkline,
                             ),
                             KpiItem(
                                 title = stringResource(id = R.string.dashboard_kpi_avg_cart),
                                 value = avgCartText,
                                 icon = Icons.Outlined.Analytics,
-                                trendPercent = avgCartTrend,
+                                trend = avgCartTrend,
                                 sparklineValues = avgCartSparkline,
                             ),
                             KpiItem(
@@ -410,7 +410,7 @@ private fun DashboardContent(
                                 value = newCustomersTotalText,
                                 icon = Icons.Outlined.Group,
                                 onClick = { onClientsClick(newClientsCreatedFrom) },
-                                trendPercent = newCustomersTrend,
+                                trend = newCustomersTrend,
                                 sparklineValues = newCustomersSparkline,
                             ),
                         ),
@@ -745,7 +745,7 @@ private fun KpiCard(
     modifier: Modifier = Modifier,
 ) {
     val cardDesc = stringResource(id = R.string.dashboard_content_description_kpi_card, item.title, item.value)
-    val trendDesc = item.trendPercent?.let { percent -> kpiTrendContentDescription(percent) }
+    val trendDesc = item.trend?.let { trend -> kpiTrendContentDescription(trend) }
     val fullCardDesc =
         listOfNotNull(cardDesc, item.subtitle, trendDesc).joinToString(", ")
     val cardShape = RoundedCornerShape(Dimensions.cardCornerRadius)
@@ -789,8 +789,8 @@ private fun KpiCard(
                         modifier = Modifier.size(Dimensions.iconSizeMedium),
                     )
                 }
-                if (item.trendPercent != null) {
-                    KpiTrendBadge(percent = item.trendPercent)
+                if (item.trend != null) {
+                    KpiTrendBadge(trend = item.trend)
                 }
             }
 
@@ -861,10 +861,10 @@ private fun KpiCard(
  */
 @Composable
 private fun KpiTrendBadge(
-    percent: Double,
+    trend: KpiTrend,
     modifier: Modifier = Modifier,
 ) {
-    val isPositive = percent >= 0.0
+    val isPositive = trend.isPositive
     val color = if (isPositive) kpiTrendPositiveColor else kpiTrendNegativeColor
     val icon = if (isPositive) Icons.Outlined.ArrowUpward else Icons.Outlined.ArrowDownward
     Row(
@@ -883,7 +883,7 @@ private fun KpiTrendBadge(
         )
         Spacer(modifier = Modifier.width(2.dp))
         Text(
-            text = formatTrendPercent(percent),
+            text = formatKpiTrend(trend),
             style = MaterialTheme.typography.labelSmall,
             color = color,
         )
@@ -926,10 +926,53 @@ private val kpiTrendNegativeColor = Color(0xFFFF4C4C)
 /** Formate un pourcentage de tendance déjà signé, ex : `12.3%` (valeur absolue, le signe est porté par la couleur/flèche). */
 private fun formatTrendPercent(percent: Double): String = "${"%.1f".format(abs(percent))}%"
 
+/** Texte du badge : pourcentage normal, « nouv. » (base N-1 nulle) ou « ≥ +1000 % » (variation énorme). */
 @Composable
-private fun kpiTrendContentDescription(percent: Double): String {
-    val resId = if (percent >= 0.0) R.string.dashboard_kpi_trend_up else R.string.dashboard_kpi_trend_down
-    return stringResource(id = resId, formatTrendPercent(percent))
+private fun formatKpiTrend(trend: KpiTrend): String =
+    when (trend) {
+        is KpiTrend.Percent -> formatTrendPercent(trend.value)
+        KpiTrend.New -> stringResource(id = R.string.dashboard_kpi_trend_new)
+        KpiTrend.Huge -> stringResource(id = R.string.dashboard_kpi_trend_huge)
+    }
+
+@Composable
+private fun kpiTrendContentDescription(trend: KpiTrend): String =
+    when (trend) {
+        is KpiTrend.Percent -> {
+            val resId = if (trend.isPositive) R.string.dashboard_kpi_trend_up else R.string.dashboard_kpi_trend_down
+            stringResource(id = resId, formatTrendPercent(trend.value))
+        }
+        KpiTrend.New -> stringResource(id = R.string.dashboard_kpi_trend_new_desc)
+        KpiTrend.Huge -> stringResource(id = R.string.dashboard_kpi_trend_huge_desc)
+    }
+
+/** Bandeau « +x % vs même période l'an dernier » du graphe, assaini par la même règle que les badges KPI. */
+@Composable
+private fun ChartComparisonBanner(
+    trend: KpiTrend?,
+    period: DashboardPeriod,
+) {
+    val isPositive = trend?.isPositive ?: true
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text =
+                when (trend) {
+                    is KpiTrend.Percent -> "${if (isPositive) "+" else ""}${"%.1f".format(trend.value)}%"
+                    null -> "0.0%"
+                    else -> formatKpiTrend(trend)
+                },
+            style = MaterialTheme.typography.labelLarge,
+            color = if (isPositive) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error,
+        )
+        Text(
+            text = stringResource(id = periodComparisonLabelRes(period)),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 // ─── Carte graphique ──────────────────────────────────────────────────────────
@@ -988,33 +1031,10 @@ private fun DashboardChartCard(
                     // Comparatif vs même période l'an dernier (N-1) — masqué en mode plage libre
                     // et pour les courbes qui ne portent pas sur le CA
                     if (previousTurnover != null && selectedPeriod != null && mode.isTurnoverBased()) {
-                        val delta =
-                            if (previousTurnover > 0.0) {
-                                (currentTurnover - previousTurnover) / previousTurnover * 100.0
-                            } else {
-                                0.0
-                            }
-                        val isPositive = delta >= 0.0
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "${if (isPositive) "+" else ""}${"%.1f".format(delta)}%",
-                                style = MaterialTheme.typography.labelLarge,
-                                color =
-                                    if (isPositive) {
-                                        Color(0xFF2E7D32)
-                                    } else {
-                                        MaterialTheme.colorScheme.error
-                                    },
-                            )
-                            Text(
-                                text = stringResource(id = periodComparisonLabelRes(selectedPeriod)),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        ChartComparisonBanner(
+                            trend = kpiTrendPercent(currentTurnover, previousTurnover, isCustomRange = false),
+                            period = selectedPeriod,
+                        )
                     }
                 }
                 Column(
@@ -1867,44 +1887,75 @@ private fun periodComparisonLabelRes(period: DashboardPeriod): Int =
 
 // ─── Calcul de tendance KPI (fonctions pures, testables) ──────────────────────
 
+/** Seuil (en %) au-delà duquel un pourcentage de variation est jugé non informatif (> 10x). */
+internal const val KPI_TREND_HUGE_THRESHOLD_PERCENT = 1000.0
+
+/** Tendance d'un KPI, assainie : jamais de pourcentage sur une base nulle ni de nombre délirant. */
+internal sealed interface KpiTrend {
+    val isPositive: Boolean
+
+    /** Variation normale en % (signée). */
+    data class Percent(val value: Double) : KpiTrend {
+        override val isPositive: Boolean get() = value >= 0.0
+    }
+
+    /** Base de comparaison nulle : croissance non définie (badge « nouv. »). */
+    data object New : KpiTrend {
+        override val isPositive: Boolean get() = true
+    }
+
+    /** Hausse d'au moins [KPI_TREND_HUGE_THRESHOLD_PERCENT] % : pas de nombre trompeur (badge « ≥ +1000 % »). */
+    data object Huge : KpiTrend {
+        override val isPositive: Boolean get() = true
+    }
+}
+
 /**
- * Variation en % entre [current] et [previous] (ex : CA vs même période l'an dernier, N-1).
+ * Règle commune N-1 :
+ * - base [previous] <= 0 : [KpiTrend.New] si [current] > 0, sinon `null` (rien à comparer) ;
+ * - |variation| >= 1000 % : [KpiTrend.Huge] (hausse) ou [KpiTrend.Percent] (une baisse ne dépasse jamais -100 %) ;
+ * - sinon : [KpiTrend.Percent].
+ */
+internal fun classifyTrend(
+    current: Double,
+    previous: Double,
+): KpiTrend? {
+    if (previous <= 0.0) return if (current > 0.0) KpiTrend.New else null
+    val percent = (current - previous) / previous * 100.0
+    return if (percent >= KPI_TREND_HUGE_THRESHOLD_PERCENT) KpiTrend.Huge else KpiTrend.Percent(percent)
+}
+
+/**
+ * Variation entre [current] et [previous] (ex : CA vs même période l'an dernier, N-1),
+ * assainie par [classifyTrend].
  *
- * Retourne `null` (badge masqué) si :
- * - [isCustomRange] est vrai — pas de "précédent" comparable en plage libre ;
- * - [previous] est absent ou nul — dénominateur à 0, division impossible.
+ * Retourne `null` (badge masqué) si [isCustomRange] est vrai (pas de "précédent" comparable
+ * en plage libre), si [previous] est absent, ou si base et valeur courante sont nulles.
  */
 internal fun kpiTrendPercent(
     current: Double,
     previous: Double?,
     isCustomRange: Boolean,
-): Double? {
-    if (isCustomRange) return null
-    if (previous == null || previous == 0.0) return null
-    return (current - previous) / previous * 100.0
+): KpiTrend? {
+    if (isCustomRange || previous == null) return null
+    return classifyTrend(current, previous)
 }
 
 /**
  * Tendance "sur la période" dérivée d'une série de buckets [values] (ex : commandes,
  * nouveaux clients, panier moyen par jour/semaine) : compare la somme de la 2ᵉ moitié
- * de la série à la somme de la 1ʳᵉ moitié.
+ * de la série à la somme de la 1ʳᵉ moitié, avec la même règle d'assainissement que [classifyTrend].
  *
- * Retourne `null` (badge masqué) si :
- * - [isCustomRange] est vrai ;
- * - la série a moins de 2 points (pas de comparaison possible) ;
- * - la somme de la 1ʳᵉ moitié est nulle (dénominateur à 0, jamais de "+∞"/NaN).
+ * Retourne `null` (badge masqué) si [isCustomRange] est vrai, si la série a moins de
+ * 2 points, ou si les deux moitiés sont nulles.
  */
 internal fun kpiTrendPercentFromSeries(
     values: List<Double>,
     isCustomRange: Boolean,
-): Double? {
-    if (isCustomRange) return null
-    if (values.size < 2) return null
+): KpiTrend? {
+    if (isCustomRange || values.size < 2) return null
     val mid = values.size / 2
-    val firstHalfSum = values.take(mid).sum()
-    val secondHalfSum = values.drop(mid).sum()
-    if (firstHalfSum == 0.0) return null
-    return (secondHalfSum - firstHalfSum) / firstHalfSum * 100.0
+    return classifyTrend(current = values.drop(mid).sum(), previous = values.take(mid).sum())
 }
 
 /**
@@ -1942,8 +1993,8 @@ private data class KpiItem(
     val onClick: (() -> Unit)? = null,
     /** Sous-texte discret sous la valeur (ex : « dont 3 offertes »). Null = rien. */
     val subtitle: String? = null,
-    /** Variation en % (signée) vs même période l'an dernier (CA) / 1ʳᵉ moitié de la série (autres KPI). Null = badge masqué. */
-    val trendPercent: Double? = null,
+    /** Tendance vs même période l'an dernier (CA) / 1ʳᵉ moitié de la série (autres KPI). Null = badge masqué. */
+    val trend: KpiTrend? = null,
     /** Série pour la mini-sparkline. Peut être vide/trop courte/plate — géré par [KpiSparkline]. */
     val sparklineValues: List<Float> = emptyList(),
 )
