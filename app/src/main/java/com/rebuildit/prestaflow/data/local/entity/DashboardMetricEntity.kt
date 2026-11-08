@@ -15,4 +15,6 @@ data class DashboardMetricEntity(
     @ColumnInfo(name = "chart_json") val chartJson: String,
     /** CA période précédente — null si le connecteur ne le fournit pas encore. */
     @ColumnInfo(name = "previous_turnover", defaultValue = "NULL") val previousTurnover: Double? = null,
+    /** Commandes à 0 € de la période (v17). */
+    @ColumnInfo(name = "ordersFreeCount", defaultValue = "0") val ordersFreeCount: Int = 0,
 )

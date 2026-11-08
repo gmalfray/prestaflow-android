@@ -13,6 +13,7 @@ import com.rebuildit.prestaflow.R
  *
  * Canaux métier :
  *  - [CHANNEL_SALES]          : ventes (son caisse — `cash_register.mp3`), importance HIGH.
+ *  - [CHANNEL_SALES_FREE]     : commandes offertes (0 €), son système, importance DEFAULT (coupable dans les réglages système).
  *  - [CHANNEL_ORDER_STATUS]   : changements de statut, son système par défaut, importance DEFAULT.
  *  - [CHANNEL_ORDER_SHIPPING] : mises à jour d'expédition, son système par défaut, importance DEFAULT.
  *  - [CHANNEL_STOCK_LOW]      : alertes stock faible, son système par défaut, importance DEFAULT.
@@ -28,6 +29,13 @@ import com.rebuildit.prestaflow.R
 object NotificationChannels {
     /** Canal ventes — son caisse (immuable à la création du canal). */
     const val CHANNEL_SALES = "sales_v2"
+
+    /**
+     * Canal commandes offertes (0 €) — id EXACT attendu par le hub push (`is_free=1`). Importance
+     * DEFAULT et son système : discret, distinct des vraies ventes ; le marchand peut le couper
+     * dans les réglages système sans toucher à [CHANNEL_SALES].
+     */
+    const val CHANNEL_SALES_FREE = "sales_free_v1"
 
     /** Canal changements de statut de commande — son système. */
     const val CHANNEL_ORDER_STATUS = "order_status"
@@ -74,11 +82,15 @@ object NotificationChannels {
     /**
      * Retourne le `channel_id` à utiliser pour un push reçu en foreground
      * selon la valeur de `data["event"]`.
+     * Un `order.created` offert ([isFreeOrder]) part sur [CHANNEL_SALES_FREE], pas sur [CHANNEL_SALES].
      * Pour tout event inconnu ou absent, retourne [CHANNEL_DEFAULT] (sobre).
      */
-    fun channelForEvent(event: String?): String =
+    fun channelForEvent(
+        event: String?,
+        isFreeOrder: Boolean = false,
+    ): String =
         when (event) {
-            "order.created" -> CHANNEL_SALES
+            "order.created" -> if (isFreeOrder) CHANNEL_SALES_FREE else CHANNEL_SALES
             "order.status.changed" -> CHANNEL_ORDER_STATUS
             "order.shipping.updated" -> CHANNEL_ORDER_SHIPPING
             "stock.low" -> CHANNEL_STOCK_LOW
@@ -96,6 +108,7 @@ object NotificationChannels {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
 
         ensureSalesChannel(context, manager)
+        ensureSalesFreeChannel(context, manager)
         ensureOrderStatusChannel(context, manager)
         ensureOrderShippingChannel(context, manager)
         ensureStockLowChannel(context, manager)
@@ -136,6 +149,22 @@ object NotificationChannels {
                 description = context.getString(R.string.notif_channel_sales_desc)
                 setSound(cashRegisterSoundUri(context), attributes)
                 enableVibration(true)
+            }
+        manager.createNotificationChannel(channel)
+    }
+
+    private fun ensureSalesFreeChannel(
+        context: Context,
+        manager: NotificationManager,
+    ) {
+        if (manager.getNotificationChannel(CHANNEL_SALES_FREE) != null) return
+        val channel =
+            NotificationChannel(
+                CHANNEL_SALES_FREE,
+                context.getString(R.string.notif_channel_sales_free_name),
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ).apply {
+                description = context.getString(R.string.notif_channel_sales_free_desc)
             }
         manager.createNotificationChannel(channel)
     }

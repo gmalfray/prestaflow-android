@@ -43,6 +43,7 @@ import com.rebuildit.prestaflow.data.local.dao.ReplenishLogDao
 import com.rebuildit.prestaflow.data.local.dao.StockAvailabilityDao
 import com.rebuildit.prestaflow.data.local.db.LocalCacheStore
 import com.rebuildit.prestaflow.data.local.db.MIGRATION_15_16
+import com.rebuildit.prestaflow.data.local.db.MIGRATION_16_17
 import com.rebuildit.prestaflow.data.local.db.PrestaFlowDatabase
 import com.rebuildit.prestaflow.data.local.db.RoomLocalCacheStore
 import com.rebuildit.prestaflow.data.local.db.migration14To15
@@ -324,7 +325,7 @@ object AppModule {
             // d'éventuelles versions futures sans migration écrite, mais NE COUVRE PAS ces sauts
             // précis : les vraies migrations sont prioritaires dès qu'elles s'appliquent, donc
             // pending_sync/le cache produits ne sont jamais détruits pour ces passages.
-            .addMigrations(migration14To15(endpointManager.getStoredShopUrl().orEmpty()), MIGRATION_15_16)
+            .addMigrations(migration14To15(endpointManager.getStoredShopUrl().orEmpty()), MIGRATION_15_16, MIGRATION_16_17)
             .fallbackToDestructiveMigration()
             .build()
 

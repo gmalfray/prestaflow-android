@@ -5,10 +5,12 @@ import com.rebuildit.prestaflow.data.local.dao.DashboardDao
 import com.rebuildit.prestaflow.data.local.entity.DashboardMetricEntity
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.dto.ChartPointDto
+import com.rebuildit.prestaflow.data.remote.dto.FreeConversionDto
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartPoint
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
+import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -62,6 +64,7 @@ class DashboardRepositoryImpl
                                 lastUpdatedIso = java.time.Instant.now().toString(),
                                 chartJson = json.encodeToString(chartSerializer, payload.chart),
                                 previousTurnover = payload.previousTurnover,
+                                ordersFreeCount = payload.ordersFreeCount,
                             )
                         dashboardDao.upsert(entity)
                     },
@@ -92,6 +95,7 @@ class DashboardRepositoryImpl
                                 lastUpdatedIso = java.time.Instant.now().toString(),
                                 chartJson = json.encodeToString(chartSerializer, payload.chart),
                                 previousTurnover = payload.previousTurnover,
+                                ordersFreeCount = payload.ordersFreeCount,
                             )
                         dashboardDao.upsert(entity)
                     },
@@ -102,6 +106,14 @@ class DashboardRepositoryImpl
                 )
             }
         }
+
+        override suspend fun getFreeConversion(
+            from: String?,
+            to: String?,
+        ): FreeConversion =
+            withContext(ioDispatcher) {
+                api.getFreeConversion(from = from, to = to).toDomain()
+            }
 
         // ── Mappers ───────────────────────────────────────────────────────────────
 
@@ -119,6 +131,7 @@ class DashboardRepositoryImpl
                 chart = chartPoints.map { it.toDomain() },
                 lastUpdatedIso = lastUpdatedIso,
                 previousTurnover = previousTurnover,
+                ordersFreeCount = ordersFreeCount,
             )
         }
 
@@ -141,6 +154,7 @@ class DashboardRepositoryImpl
                 chart = chartPoints.map { it.toDomain() },
                 lastUpdatedIso = lastUpdatedIso,
                 previousTurnover = previousTurnover,
+                ordersFreeCount = ordersFreeCount,
             )
         }
 
@@ -152,6 +166,16 @@ class DashboardRepositoryImpl
                 customers = customers,
                 turnover = turnover,
                 newCustomers = newCustomers,
+                ordersFree = ordersFree,
+                turnoverPrevious = turnoverPrevious,
+            )
+
+        private fun FreeConversionDto.toDomain(): FreeConversion =
+            FreeConversion(
+                freeFirstCustomers = freeFirstCustomers,
+                paidFirstCustomers = paidFirstCustomers,
+                converted = converted,
+                rate = rate,
             )
 
         // ── Helpers ───────────────────────────────────────────────────────────────

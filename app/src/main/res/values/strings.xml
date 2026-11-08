@@ -3,6 +3,8 @@
     <string name="app_name">PrestaFlow</string>
     <string name="notif_channel_sales_name">Ventes</string>
     <string name="notif_channel_sales_desc">Notifications de nouvelle commande (son de caisse)</string>
+    <string name="notif_channel_sales_free_name">Commandes offertes</string>
+    <string name="notif_channel_sales_free_desc">Commandes à 0 € (cadeaux, codes 100 %), séparées des ventes</string>
     <string name="notif_channel_order_status_name">Changements de statut commande</string>
     <string name="notif_channel_order_status_desc">Notifications lors de la mise à jour du statut d\'une commande</string>
     <string name="notif_channel_order_shipping_name">Expéditions</string>
@@ -91,6 +93,10 @@
     <!-- Dashboard : badge de tendance KPI. Arg : 1=pourcentage formaté (ex : "12,3 %") -->
     <string name="dashboard_kpi_trend_up">en hausse de %1$s</string>
     <string name="dashboard_kpi_trend_down">en baisse de %1$s</string>
+    <string name="dashboard_kpi_trend_new">nouv.</string>
+    <string name="dashboard_kpi_trend_huge">≥ +1000 %</string>
+    <string name="dashboard_kpi_trend_new_desc">nouveau, pas de base de comparaison</string>
+    <string name="dashboard_kpi_trend_huge_desc">en hausse de plus de dix fois</string>
     <!-- Dashboard : graphique plein écran -->
     <string name="dashboard_chart_expand_content_description">Voir le graphique en plein écran</string>
     <string name="dashboard_chart_fullscreen_close">Fermer</string>
@@ -538,4 +544,20 @@
     <string name="carts_search_placeholder">Rechercher par nom client</string>
     <string name="carts_load_more">Charger plus</string>
 
+    <string name="dashboard_chart_mode_turnover_vs_previous">CA vs N-1</string>
+    <string name="dashboard_chart_mode_turnover_avg_cart">CA + panier moyen</string>
+    <string name="dashboard_chart_mode_paid_vs_free">Payantes / offertes</string>
+    <string name="dashboard_chart_mode_avg_cart">Panier moyen</string>
+    <string name="dashboard_legend_turnover_previous">CA N-1</string>
+    <string name="dashboard_legend_avg_cart">Panier moyen</string>
+    <string name="dashboard_legend_orders_paid">Payantes</string>
+    <string name="dashboard_legend_orders_free">Offertes</string>
+    <string name="dashboard_kpi_orders_free_sub">dont %1$d offertes</string>
+    <string name="dashboard_conversion_title">Conversion offert → payant</string>
+    <string name="dashboard_conversion_loading">Calcul en cours…</string>
+    <string name="dashboard_conversion_error">Conversion indisponible pour le moment.</string>
+    <string name="dashboard_conversion_none">Aucun client dont la première commande était offerte.</string>
+    <string name="dashboard_conversion_rate">%1$.1f %%</string>
+    <string name="dashboard_conversion_detail">%1$d sur %2$d clients offerts à la 1re commande sont passés à l\'achat</string>
+    <string name="notif_category_order_created_free">Commandes offertes (0 €) : régler le canal</string>
 </resources>

@@ -31,6 +31,13 @@ interface ReviewsRepository {
      */
     suspend fun refreshPendingCount()
 
+    /**
+     * Décrémente localement [pendingReviewCount] (plancher 0) après qu'un avis a quitté la file de
+     * modération (publié ou mis à la corbeille) : retour visuel immédiat sur la pastille, sans
+     * appel réseau. [refreshPendingCount] reste le point de réconciliation avec le serveur.
+     */
+    fun notifyReviewProcessed()
+
     /** Charge une page de la file de modération (`GET /reviews`, plus récents d'abord). */
     suspend fun fetchPendingReviews(
         limit: Int = PAGE_SIZE,

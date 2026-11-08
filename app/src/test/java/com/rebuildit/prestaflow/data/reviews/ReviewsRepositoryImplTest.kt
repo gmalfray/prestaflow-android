@@ -71,6 +71,25 @@ class ReviewsRepositoryImplTest {
         }
 
     @Test
+    fun `notifyReviewProcessed decremente la pastille et plafonne a 0`() =
+        runTest {
+            fakeApi.reviewsResponse =
+                ReviewListResponseDto(reviews = listOf(buildReviewDto(id = 1L), buildReviewDto(id = 2L)))
+            repository.refreshPendingCount()
+
+            repository.pendingReviewCount.test {
+                assertEquals(2, awaitItem())
+                repository.notifyReviewProcessed()
+                assertEquals(1, awaitItem())
+                repository.notifyReviewProcessed()
+                assertEquals(0, awaitItem())
+                repository.notifyReviewProcessed()
+                expectNoEvents()
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
     fun `refreshPendingCount conserve la derniere valeur connue en cas d echec reseau`() =
         runTest {
             fakeApi.reviewsResponse = ReviewListResponseDto(reviews = listOf(buildReviewDto(id = 1L)))

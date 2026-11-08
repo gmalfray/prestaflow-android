@@ -89,6 +89,7 @@ class ReviewsViewModel
                 runCatching { reviewsRepository.publish(reviewId) }
                     .onSuccess {
                         removeFromQueue(reviewId)
+                        reviewsRepository.notifyReviewProcessed()
                         _actionState.update {
                             it.copy(inProgress = false, message = UiText.FromResources(R.string.reviews_action_published))
                         }
@@ -116,6 +117,7 @@ class ReviewsViewModel
                 runCatching { reviewsRepository.trash(reviewId, reason) }
                     .onSuccess { result ->
                         removeFromQueue(reviewId)
+                        reviewsRepository.notifyReviewProcessed()
                         val feedback =
                             if (result.authorNotified) {
                                 R.string.reviews_action_trashed

@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.ui.UiText
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
 import com.rebuildit.prestaflow.domain.auth.AuthRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartMode
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
+import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +36,7 @@ class DashboardViewModel
         private val dashboardPrefsRepository: DashboardPreferencesRepository,
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
+        private val resumeRefreshGuard: ScreenResumeRefreshGuard,
     ) : ViewModel() {
         private val selectedPeriodFlow = MutableStateFlow(DashboardPeriod.WEEK)
 
@@ -51,9 +56,41 @@ class DashboardViewModel
                 val defaultPeriod = dashboardPrefsRepository.defaultPeriod.first()
                 selectedPeriodFlow.value = defaultPeriod
                 _uiState.update { it.copy(selectedPeriod = defaultPeriod) }
+                observeChartMode()
                 observeDashboard()
+                loadConversion()
                 refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = false)
                 observeActiveShopSwitch()
+            }
+        }
+
+        fun onChartModeSelected(mode: DashboardChartMode) {
+            _uiState.update { it.copy(chartMode = mode) }
+            viewModelScope.launch { dashboardPrefsRepository.setChartMode(mode) }
+        }
+
+        private fun observeChartMode() {
+            viewModelScope.launch {
+                dashboardPrefsRepository.chartMode.collect { mode ->
+                    _uiState.update { it.copy(chartMode = mode) }
+                }
+            }
+        }
+
+        /**
+         * Charge la carte « conversion offert → payant » (tout l'historique). Isolée du reste :
+         * un échec n'affecte ni le dashboard ni son bandeau d'erreur, seulement la carte.
+         */
+        fun loadConversion() {
+            viewModelScope.launch {
+                _uiState.update { it.copy(conversion = ConversionState.Loading) }
+                runCatching { dashboardRepository.getFreeConversion() }
+                    .onSuccess { data -> _uiState.update { it.copy(conversion = ConversionState.Data(data)) } }
+                    .onFailure { error ->
+                        if (error is CancellationException) throw error
+                        Timber.w(error, "Failed to load free conversion")
+                        _uiState.update { it.copy(conversion = ConversionState.Error) }
+                    }
             }
         }
 
@@ -96,11 +133,32 @@ class DashboardViewModel
         }
 
         fun onRefresh() {
+            loadConversion()
             val custom = customRangeFlow.value
             if (custom != null) {
                 refreshCustom(from = custom.first, to = custom.second, notifyOnError = true)
             } else {
                 refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = true)
+            }
+        }
+
+        /**
+         * Rattrapage au retour sur l'écran Accueil (cf. KDoc de
+         * [com.rebuildit.prestaflow.ui.orders.OrdersViewModel.onScreenResumed] pour le contrat
+         * général porté par [resumeRefreshGuard]) : typiquement après un détour par le détail
+         * d'une commande ouvert depuis une notification de vente.
+         *
+         * Rafraîchit la période preset OU la plage libre active, selon le mode courant. Silencieux
+         * (`notifyOnError = false`) : en cas d'échec réseau le cache existant reste affiché. Le
+         * geste manuel [onRefresh] n'est jamais throttlé.
+         */
+        fun onScreenResumed() {
+            if (!resumeRefreshGuard.shouldRefresh(isBusy = _uiState.value.isRefreshing)) return
+            val custom = customRangeFlow.value
+            if (custom != null) {
+                refreshCustom(from = custom.first, to = custom.second, notifyOnError = false)
+            } else {
+                refresh(selectedPeriodFlow.value, forceRemote = true, notifyOnError = false)
             }
         }
 
@@ -171,6 +229,7 @@ class DashboardViewModel
                 val result = runCatching { dashboardRepository.refresh(period, forceRemote) }
                 result
                     .onSuccess {
+                        resumeRefreshGuard.markRefreshSucceeded()
                         _uiState.update { current ->
                             current.copy(
                                 isRefreshing = false,
@@ -216,6 +275,7 @@ class DashboardViewModel
                 val result = runCatching { dashboardRepository.refreshCustom(from, to, forceRemote = true) }
                 result
                     .onSuccess {
+                        resumeRefreshGuard.markRefreshSucceeded()
                         _uiState.update { current ->
                             current.copy(
                                 isRefreshing = false,
@@ -256,4 +316,17 @@ data class DashboardUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val error: UiText? = null,
+    /** Courbe du graphique (préférence persistée). */
+    val chartMode: DashboardChartMode = DashboardChartMode.DEFAULT,
+    /** Carte conversion offert → payant, indépendante du chargement principal. */
+    val conversion: ConversionState = ConversionState.Loading,
 )
+
+/** État de la carte conversion offert → payant. */
+sealed interface ConversionState {
+    data object Loading : ConversionState
+
+    data object Error : ConversionState
+
+    data class Data(val conversion: FreeConversion) : ConversionState
+}

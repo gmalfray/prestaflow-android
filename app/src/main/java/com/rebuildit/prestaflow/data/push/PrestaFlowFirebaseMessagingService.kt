@@ -83,7 +83,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
         // En arrière-plan, le système gère lui-même via default_notification_channel_id (manifeste).
         val title = message.notification?.title ?: message.data["title"]
         val body = message.notification?.body ?: message.data["body"]
-        if (title != null || body != null) {
+        if ((title != null || body != null)) {
             showNotification(
                 event = event,
                 title = title,
@@ -92,6 +92,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
                 productId = productId,
                 threadId = threadId,
                 reviewId = reviewId,
+                isFreeOrder = isFreeOrderPush(event, message.data),
             )
         }
     }
@@ -103,7 +104,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
 
     // ── Affichage ──────────────────────────────────────────────────────────────
 
-    // 7 paramètres : event + title + body + les 4 identifiants de destination mutuellement
+    // 8 paramètres : event + title + body + les 4 identifiants de destination mutuellement
     // exclusifs (order/product/thread/review), un seul non-null par push selon l'event reçu.
     @Suppress("LongParameterList")
     private fun showNotification(
@@ -114,6 +115,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
         productId: Long? = null,
         threadId: Long? = null,
         reviewId: Long? = null,
+        isFreeOrder: Boolean = false,
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) !=
@@ -122,7 +124,7 @@ class PrestaFlowFirebaseMessagingService : FirebaseMessagingService() {
             return
         }
 
-        val channelId = NotificationChannels.channelForEvent(event)
+        val channelId = NotificationChannels.channelForEvent(event, isFreeOrder)
 
         val builder =
             NotificationCompat.Builder(applicationContext, channelId)
@@ -321,3 +323,13 @@ internal fun savThreadDeepLinkUriString(threadId: Long): String = "prestaflow://
 // ci-dessus, même sans paramètre : "avis à modérer" ne référence aucun identifiant individuel.
 @Suppress("FunctionOnlyReturningConstant")
 internal fun reviewsDeepLinkUriString(): String = "prestaflow://clients?section=reviews"
+
+// ── Commandes offertes : routage vers le canal dédié (fonctions pures, testables) ──────────────────────────────
+
+internal const val EVENT_ORDER_CREATED = "order.created"
+
+/** Vrai pour un push `order.created` dont la commande est à 0 € (`is_free = "1"`). */
+internal fun isFreeOrderPush(
+    event: String?,
+    data: Map<String, String>,
+): Boolean = event == EVENT_ORDER_CREATED && data["is_free"] == "1"

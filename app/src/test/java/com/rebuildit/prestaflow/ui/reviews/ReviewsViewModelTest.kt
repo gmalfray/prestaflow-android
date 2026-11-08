@@ -106,6 +106,35 @@ class ReviewsViewModelTest {
             assertEquals(listOf(812L), fakeRepo.publishCalls)
         }
 
+    @Test
+    fun `onPublish decremente la pastille d avis en attente`() =
+        runTest {
+            fakeRepo.emitPendingCount(2)
+            fakeRepo.fetchPendingReviewsResult = ReviewsPage(reviews = listOf(buildReview(812L)), hasNext = false, nextOffset = 0)
+            fakeRepo.publishResult = buildReview(812L, validated = true)
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onPublish(812L)
+            advanceUntilIdle()
+
+            assertEquals(1, fakeRepo.pendingReviewCount.value)
+        }
+
+    @Test
+    fun `onPublish en echec ne touche pas la pastille`() =
+        runTest {
+            fakeRepo.emitPendingCount(2)
+            fakeRepo.shouldThrowOnPublish = true
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onPublish(812L)
+            advanceUntilIdle()
+
+            assertEquals(2, fakeRepo.pendingReviewCount.value)
+        }
+
     // ─── trash — garde-fou motif obligatoire ────────────────────────────────
 
     @Test

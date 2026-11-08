@@ -10,6 +10,7 @@ import com.rebuildit.prestaflow.data.remote.dto.CustomerListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerStatsDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
 import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.FreeConversionDto
 import com.rebuildit.prestaflow.data.remote.dto.GenerateLabelResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
@@ -118,11 +119,22 @@ class FakePrestaFlowApi : PrestaFlowApi {
         imageId: Long,
     ): ProductDetailResponseDto = throw UnsupportedOperationException("Non utilisé dans ce test")
 
+    /** Réponse de [getDashboardMetrics] ; null = appel non prévu par le test. */
+    var dashboardMetrics: DashboardMetricsDto? = null
+
+    /** Réponse de [getFreeConversion] ; null = appel non prévu par le test. */
+    var freeConversion: FreeConversionDto? = null
+
     override suspend fun getDashboardMetrics(
         period: String?,
         from: String?,
         to: String?,
-    ): DashboardMetricsDto = throw UnsupportedOperationException("Non utilisé dans ce test")
+    ): DashboardMetricsDto = dashboardMetrics ?: throw UnsupportedOperationException("Non utilisé dans ce test")
+
+    override suspend fun getFreeConversion(
+        from: String?,
+        to: String?,
+    ): FreeConversionDto = freeConversion ?: throw UnsupportedOperationException("Non utilisé dans ce test")
 
     override suspend fun getCustomerStats(): CustomerStatsDto = throw UnsupportedOperationException("Non utilisé dans ce test")
 

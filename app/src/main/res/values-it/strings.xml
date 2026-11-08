@@ -3,6 +3,8 @@
     <string name="app_name">PrestaFlow</string>
     <string name="notif_channel_sales_name">Vendite</string>
     <string name="notif_channel_sales_desc">Notifiche di nuovi ordini (suono di cassa)</string>
+    <string name="notif_channel_sales_free_name">Ordini gratuiti</string>
+    <string name="notif_channel_sales_free_desc">Ordini da 0 € (regali, codici 100 %), separati dalle vendite</string>
     <string name="notif_channel_order_status_name">Cambi di stato ordine</string>
     <string name="notif_channel_order_status_desc">Notifiche quando lo stato di un ordine viene aggiornato</string>
     <string name="notif_channel_order_shipping_name">Spedizioni</string>
@@ -91,6 +93,10 @@
     <!-- Dashboard : badge di tendenza KPI. Arg: 1=percentuale formattata (es.: "12,3%") -->
     <string name="dashboard_kpi_trend_up">in crescita del %1$s</string>
     <string name="dashboard_kpi_trend_down">in calo del %1$s</string>
+    <string name="dashboard_kpi_trend_new">nuovo</string>
+    <string name="dashboard_kpi_trend_huge">≥ +1000 %</string>
+    <string name="dashboard_kpi_trend_new_desc">nuovo, nessuna base di confronto</string>
+    <string name="dashboard_kpi_trend_huge_desc">oltre dieci volte superiore</string>
     <!-- Dashboard : grafico a schermo intero -->
     <string name="dashboard_chart_expand_content_description">Visualizza il grafico a schermo intero</string>
     <string name="dashboard_chart_fullscreen_close">Chiudi</string>
@@ -524,4 +530,20 @@
     <string name="carts_search_placeholder">Cerca per nome cliente</string>
     <string name="carts_load_more">Carica altri</string>
 
+    <string name="dashboard_chart_mode_turnover_vs_previous">Fatturato vs anno prec.</string>
+    <string name="dashboard_chart_mode_turnover_avg_cart">Fatturato + carrello medio</string>
+    <string name="dashboard_chart_mode_paid_vs_free">A pagamento / gratuiti</string>
+    <string name="dashboard_chart_mode_avg_cart">Carrello medio</string>
+    <string name="dashboard_legend_turnover_previous">Anno prec.</string>
+    <string name="dashboard_legend_avg_cart">Carrello medio</string>
+    <string name="dashboard_legend_orders_paid">A pagamento</string>
+    <string name="dashboard_legend_orders_free">Gratuiti</string>
+    <string name="dashboard_kpi_orders_free_sub">di cui %1$d gratuiti</string>
+    <string name="dashboard_conversion_title">Conversione gratis → a pagamento</string>
+    <string name="dashboard_conversion_loading">Caricamento…</string>
+    <string name="dashboard_conversion_error">Conversione non disponibile al momento.</string>
+    <string name="dashboard_conversion_none">Nessun cliente con un primo ordine gratuito.</string>
+    <string name="dashboard_conversion_rate">%1$.1f %%</string>
+    <string name="dashboard_conversion_detail">%1$d su %2$d clienti con un primo ordine gratuito hanno poi acquistato</string>
+    <string name="notif_category_order_created_free">Ordini gratuiti (0 €): impostazioni del canale</string>
 </resources>

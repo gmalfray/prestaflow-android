@@ -4,6 +4,7 @@ import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartPoint
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
+import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -26,6 +27,20 @@ class FakeDashboardRepository : DashboardRepository {
 
     /** Exception à lancer lors du prochain appel à [refreshCustom]. Null = succès. */
     var refreshCustomException: Throwable? = null
+
+    /** Résultat de [getFreeConversion]. */
+    var freeConversion: FreeConversion = FreeConversion(0, 0, 0, 0.0)
+
+    /** Exception à lancer lors du prochain appel à [getFreeConversion]. Null = succès. */
+    var freeConversionException: Throwable? = null
+
+    override suspend fun getFreeConversion(
+        from: String?,
+        to: String?,
+    ): FreeConversion {
+        freeConversionException?.let { throw it }
+        return freeConversion
+    }
 
     private fun flowForPeriod(period: DashboardPeriod) = snapshotByPeriod.getOrPut(period.name) { MutableStateFlow(null) }
 

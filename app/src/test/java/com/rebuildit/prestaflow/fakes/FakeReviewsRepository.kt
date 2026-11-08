@@ -23,6 +23,13 @@ class FakeReviewsRepository(
         _pendingReviewCount.value = count
     }
 
+    var notifyReviewProcessedCallCount = 0
+
+    override fun notifyReviewProcessed() {
+        notifyReviewProcessedCallCount++
+        _pendingReviewCount.value = (_pendingReviewCount.value - 1).coerceAtLeast(0)
+    }
+
     /** Valeur émise dans [pendingReviewCount] au prochain [refreshPendingCount] réussi. */
     var nextRefreshPendingCount: Int? = null
     var shouldThrowOnRefreshPendingCount = false

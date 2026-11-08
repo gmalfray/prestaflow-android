@@ -1,6 +1,10 @@
 package com.rebuildit.prestaflow.ui.notifications
 
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,12 +32,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rebuildit.prestaflow.R
+import com.rebuildit.prestaflow.core.notifications.NotificationChannels
 import com.rebuildit.prestaflow.domain.notifications.NotificationCategory
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
@@ -43,10 +50,12 @@ fun NotificationCategoriesRoute(
     viewModel: NotificationCategoriesViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     NotificationCategoriesScreen(
         uiState = uiState,
         onBackClick = onBackClick,
         onCategoryToggle = viewModel::setCategory,
+        onOpenFreeOrdersChannelSettings = { openFreeOrdersChannelSettings(context) },
     )
 }
 
@@ -56,6 +65,7 @@ fun NotificationCategoriesScreen(
     uiState: NotificationCategoriesUiState,
     onBackClick: () -> Unit,
     onCategoryToggle: (NotificationCategory, Boolean) -> Unit,
+    onOpenFreeOrdersChannelSettings: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -82,38 +92,58 @@ fun NotificationCategoriesScreen(
                     .padding(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingL),
             verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
         ) {
-            // Section interrupteurs catégories
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                    ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            ) {
-                Column(
-                    modifier = Modifier.padding(Dimensions.cardPadding),
-                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
-                ) {
-                    Text(
-                        text = stringResource(R.string.notif_categories_section_label).uppercase(),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    NotificationCategory.entries.forEach { category ->
-                        CategoryRow(
-                            category = category,
-                            enabled = uiState.categories[category] ?: category.defaultEnabled,
-                            onToggle = { checked -> onCategoryToggle(category, checked) },
-                        )
-                    }
-                }
-            }
+            CategoriesCard(
+                uiState = uiState,
+                onCategoryToggle = onCategoryToggle,
+                onOpenFreeOrdersChannelSettings = onOpenFreeOrdersChannelSettings,
+            )
 
             // Avertissement toutes catégories désactivées
             if (uiState.allDisabled) {
                 AllDisabledWarning()
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoriesCard(
+    uiState: NotificationCategoriesUiState,
+    onCategoryToggle: (NotificationCategory, Boolean) -> Unit,
+    onOpenFreeOrdersChannelSettings: () -> Unit,
+) {
+    // Section interrupteurs catégories
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimensions.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
+        ) {
+            Text(
+                text = stringResource(R.string.notif_categories_section_label).uppercase(),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            NotificationCategory.entries.forEach { category ->
+                val categoryEnabled = uiState.categories[category] ?: category.defaultEnabled
+                CategoryRow(
+                    category = category,
+                    enabled = categoryEnabled,
+                    onToggle = { checked -> onCategoryToggle(category, checked) },
+                )
+                if (category == NotificationCategory.ORDER_CREATED) {
+                    // Sans la catégorie, aucun push de commande n'arrive : raccourci inutile.
+                    if (categoryEnabled) {
+                        FreeOrdersRow(onClick = onOpenFreeOrdersChannelSettings)
+                    }
+                }
             }
         }
     }
@@ -144,6 +174,46 @@ private fun CategoryRow(
             onCheckedChange = onToggle,
         )
     }
+}
+
+/**
+ * Raccourci sous « Nouvelles ventes » : ouvre les réglages système du canal « commandes offertes »
+ * ([NotificationChannels.CHANNEL_SALES_FREE]), où le marchand coupe ou atténue ces notifications
+ * sans toucher à celles des vraies ventes (le canal est honoré par l'OS, même app fermée).
+ */
+@Composable
+private fun FreeOrdersRow(onClick: () -> Unit) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(start = Dimensions.spacingL, top = Dimensions.spacingXs, bottom = Dimensions.spacingXs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = stringResource(R.string.notif_category_order_created_free),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Ouvre l'écran système du canal « commandes offertes » (API 26+, = minSdk). */
+private fun openFreeOrdersChannelSettings(context: Context) {
+    val intent =
+        Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            .putExtra(Settings.EXTRA_CHANNEL_ID, NotificationChannels.CHANNEL_SALES_FREE)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(intent) }
 }
 
 @Composable

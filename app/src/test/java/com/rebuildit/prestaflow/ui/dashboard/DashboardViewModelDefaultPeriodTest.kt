@@ -1,10 +1,12 @@
 package com.rebuildit.prestaflow.ui.dashboard
 
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
+import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
 import com.rebuildit.prestaflow.fakes.FakeDashboardPreferencesRepository
 import com.rebuildit.prestaflow.fakes.FakeDashboardRepository
+import com.rebuildit.prestaflow.fakes.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -41,6 +43,7 @@ class DashboardViewModelDefaultPeriodTest {
             dashboardPrefsRepository = prefs,
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = FakeAuthRepository(),
+            resumeRefreshGuard = ScreenResumeRefreshGuard(FakeTimeProvider()),
         )
 
     @Test
