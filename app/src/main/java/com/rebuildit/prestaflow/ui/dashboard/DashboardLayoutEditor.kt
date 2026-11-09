@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -72,6 +73,34 @@ internal fun DashboardLayoutEditorDialog(
     onSave: (DashboardLayout) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    // decorFitsSystemWindows = false : la fenêtre du dialog est de bout en bout (edge-to-edge) et
+    // les insets sont appliqués par le contenu, sinon le pied passe sous la navigation gestuelle.
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            DashboardLayoutEditorContent(
+                layout = layout,
+                onSave = onSave,
+                onDismiss = onDismiss,
+                modifier = Modifier.systemBarsPadding(),
+            )
+        }
+    }
+}
+
+/**
+ * Contenu plein écran : en-tête fixe, liste scrollable ([weight] 1) et pied d'actions fixe, toujours
+ * visible quelle que soit la longueur de la liste ou la taille de police.
+ */
+@Composable
+internal fun DashboardLayoutEditorContent(
+    layout: DashboardLayout,
+    onSave: (DashboardLayout) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var items by remember { mutableStateOf(layout.items) }
     val lazyListState = rememberLazyListState()
     val haptic = LocalHapticFeedback.current
@@ -80,48 +109,33 @@ internal fun DashboardLayoutEditorDialog(
             items = items.toMutableList().apply { add(to.index, removeAt(from.index)) }
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background,
+    Column(modifier = modifier.fillMaxSize().padding(top = Dimensions.spacingM)) {
+        EditorHeader()
+        LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            state = lazyListState,
+            contentPadding = PaddingValues(horizontal = Dimensions.screenEdgeMargin, vertical = Dimensions.spacingM),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
         ) {
-            Column(modifier = Modifier.fillMaxSize().padding(top = Dimensions.spacingM)) {
-                EditorHeader()
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    state = lazyListState,
-                    contentPadding =
-                        PaddingValues(
-                            horizontal = Dimensions.screenEdgeMargin,
-                            vertical = Dimensions.spacingM,
-                        ),
-                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingS),
-                ) {
-                    items(items, key = { it.widget.id }) { item ->
-                        // ReorderableItem anime déjà le déplacement des voisins (animateItem).
-                        ReorderableItem(reorderableState, key = item.widget.id) { isDragging ->
-                            WidgetEditorRow(
-                                item = item,
-                                isDragging = isDragging,
-                                dragHandle =
-                                    Modifier.draggableHandle(
-                                        onDragStarted = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) },
-                                        onDragStopped = { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) },
-                                    ),
-                                onVisibleChange = { visible ->
-                                    items = items.map { if (it.widget == item.widget) it.copy(visible = visible) else it }
-                                },
-                            )
-                        }
-                    }
+            items(items, key = { it.widget.id }) { item ->
+                // ReorderableItem anime déjà le déplacement des voisins (animateItem).
+                ReorderableItem(reorderableState, key = item.widget.id) { isDragging ->
+                    WidgetEditorRow(
+                        item = item,
+                        isDragging = isDragging,
+                        dragHandle =
+                            Modifier.draggableHandle(
+                                onDragStarted = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) },
+                                onDragStopped = { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) },
+                            ),
+                        onVisibleChange = { visible ->
+                            items = items.map { if (it.widget == item.widget) it.copy(visible = visible) else it }
+                        },
+                    )
                 }
-                EditorActionBar(onDismiss = onDismiss, onSave = { onSave(DashboardLayout(items)) })
             }
         }
+        EditorActionBar(onDismiss = onDismiss, onSave = { onSave(DashboardLayout(items)) })
     }
 }
 
@@ -315,3 +329,15 @@ private fun EditorPreviewColumn() {
 @Preview(name = "Editeur 2.0", showBackground = true, fontScale = 2f, heightDp = 900)
 @Composable
 private fun PreviewLayoutEditorRows() = EditorPreviewColumn()
+
+@Preview(name = "Editeur complet 1.0", showBackground = true, widthDp = 411, heightDp = 800)
+@Preview(name = "Editeur complet 1.5", showBackground = true, widthDp = 411, heightDp = 800, fontScale = 1.5f)
+@Preview(name = "Editeur complet 2.0", showBackground = true, widthDp = 411, heightDp = 800, fontScale = 2f)
+@Composable
+private fun PreviewLayoutEditorFull() {
+    PrestaFlowTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            DashboardLayoutEditorContent(layout = DashboardLayout.DEFAULT, onSave = {}, onDismiss = {})
+        }
+    }
+}
