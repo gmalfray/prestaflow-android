@@ -1,6 +1,7 @@
 package com.rebuildit.prestaflow.ui.dashboard
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -23,8 +24,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -56,6 +60,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -63,15 +68,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -83,6 +93,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -98,12 +109,15 @@ import com.rebuildit.prestaflow.domain.dashboard.model.DashboardLayout
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardWidget
+import com.rebuildit.prestaflow.domain.dashboard.model.DashboardWidgetSpan
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
 import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
 import com.rebuildit.prestaflow.ui.components.euroCurrencyFormatter
 import com.rebuildit.prestaflow.ui.settings.ShopsViewModel
 import com.rebuildit.prestaflow.ui.theme.Dimensions
 import com.rebuildit.prestaflow.ui.theme.PrestaFlowTheme
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyGridState
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.LocalDate
@@ -466,14 +480,93 @@ private fun DashboardContent(
             isRefreshing = isRefreshing,
             onRefresh = onRefresh,
         ) {
-            LazyColumn(
+            val renderWidget: @Composable (DashboardWidget) -> Unit = { widget ->
+                val cellModifier = Modifier.fillMaxWidth()
+                when (widget) {
+                    DashboardWidget.FREE_CONVERSION ->
+                        FreeConversionCard(modifier = cellModifier, state = conversion, onRetry = onConversionRetry)
+                    DashboardWidget.CHART ->
+                        DashboardChartCard(
+                            modifier = cellModifier,
+                            points = snapshot.chart,
+                            mode = chartMode,
+                            onModeSelected = onChartModeSelected,
+                            totalText = chartTotalText,
+                            currentTurnover = snapshot.turnover,
+                            previousTurnover = snapshot.previousTurnover,
+                            // En mode plage libre, on n'affiche pas le comparatif "vs même période l'an dernier"
+                            selectedPeriod = if (customRange == null) selectedPeriod else null,
+                            onExpandClick = { showFullscreenChart = true },
+                        )
+                    DashboardWidget.ORDERS_SPLIT ->
+                        DashboardOrdersSplitCard(
+                            modifier = cellModifier,
+                            ordersCount = snapshot.ordersCount,
+                            ordersFreeCount = snapshot.ordersFreeCount,
+                        )
+                    DashboardWidget.LATEST_ORDERS ->
+                        LatestOrdersCard(
+                            modifier = cellModifier,
+                            state = widgetStates.latestOrders,
+                            onRetry = { widgetActions.onRetry(DashboardWidget.LATEST_ORDERS) },
+                            onOrderClick = widgetActions.onOrderClick,
+                            onHeaderClick = widgetActions.onAllOrdersClick,
+                        )
+                    DashboardWidget.TOP_PRODUCTS ->
+                        TopProductsCard(
+                            modifier = cellModifier,
+                            state = widgetStates.topProducts,
+                            onRetry = { widgetActions.onRetry(DashboardWidget.TOP_PRODUCTS) },
+                        )
+                    else -> {
+                        val item =
+                            when (widget) {
+                                DashboardWidget.CARTS -> cartsItem
+                                DashboardWidget.REVIEWS -> reviewsItem
+                                else -> kpiItems[widget]
+                            }
+                        if (item != null) KpiCard(modifier = cellModifier, item = item)
+                    }
+                }
+            }
+
+            // Ordre local des widgets affichés, mis à jour pendant le glisser et persisté au relâché.
+            val displayedWidgets = remember(widgetRows) { widgetRows.flatten() }
+            val orderedWidgets = remember(displayedWidgets) { mutableStateListOf<DashboardWidget>().apply { addAll(displayedWidgets) } }
+            val gridState = rememberLazyGridState()
+            val haptic = LocalHapticFeedback.current
+            val reorderableState =
+                rememberReorderableLazyGridState(gridState) { from, to ->
+                    val fromIndex = orderedWidgets.indexOfFirst { it.id == from.key }
+                    val toIndex = orderedWidgets.indexOfFirst { it.id == to.key }
+                    if (fromIndex >= 0 && toIndex >= 0) {
+                        orderedWidgets.add(toIndex, orderedWidgets.removeAt(fromIndex))
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                }
+            LazyVerticalGrid(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(0.dp),
+                state = gridState,
+                columns = GridCells.Fixed(2),
+                contentPadding =
+                    PaddingValues(
+                        start = Dimensions.screenEdgeMargin,
+                        end = Dimensions.screenEdgeMargin,
+                        bottom = 100.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.gutter),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.gutter),
             ) {
-                // En-tête collant intégré dans la liste pour éviter un ScaffoldTopBar
-                item {
+                // En-tête intégré dans la grille (pleine largeur, non déplaçable). Les marges latérales
+                // de la grille sont compensées pour garder l'en-tête bord à bord comme avant.
+                item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
                     DashboardHeader(
+                        modifier =
+                            Modifier.layout { measurable, constraints ->
+                                val margin = Dimensions.screenEdgeMargin.roundToPx()
+                                val placeable = measurable.measure(constraints.offset(horizontal = 2 * margin))
+                                layout(constraints.maxWidth, placeable.height) { placeable.place(-margin, 0) }
+                            },
                         connections = connections,
                         selectedPeriod = selectedPeriod,
                         customRange = customRange,
@@ -487,80 +580,49 @@ private fun DashboardContent(
 
                 // Bandeau erreur inline
                 if (errorMessage != null) {
-                    item {
-                        ErrorBanner(
-                            message = errorMessage,
-                            onRetry = onRefresh,
-                            modifier = Modifier.padding(horizontal = Dimensions.screenEdgeMargin),
-                        )
+                    item(key = "error", span = { GridItemSpan(maxLineSpan) }) {
+                        ErrorBanner(message = errorMessage, onRetry = onRefresh)
                     }
                 }
 
-                // Widgets visibles, dans l'ordre de la disposition (HALF empilés deux par ligne)
-                items(widgetRows, key = { row -> row.first().id }) { row ->
-                    val rowModifier =
-                        Modifier
-                            .padding(horizontal = Dimensions.screenEdgeMargin)
-                            .padding(top = Dimensions.spacingL)
-                    val widget = row.first()
-                    when (widget) {
-                        DashboardWidget.FREE_CONVERSION ->
-                            FreeConversionCard(modifier = rowModifier, state = conversion, onRetry = onConversionRetry)
-                        DashboardWidget.CHART ->
-                            DashboardChartCard(
-                                modifier = rowModifier,
-                                points = snapshot.chart,
-                                mode = chartMode,
-                                onModeSelected = onChartModeSelected,
-                                totalText = chartTotalText,
-                                currentTurnover = snapshot.turnover,
-                                previousTurnover = snapshot.previousTurnover,
-                                // En mode plage libre, on n'affiche pas le comparatif "vs même période l'an dernier"
-                                selectedPeriod = if (customRange == null) selectedPeriod else null,
-                                onExpandClick = { showFullscreenChart = true },
-                            )
-                        DashboardWidget.ORDERS_SPLIT ->
-                            DashboardOrdersSplitCard(
-                                modifier = rowModifier,
-                                ordersCount = snapshot.ordersCount,
-                                ordersFreeCount = snapshot.ordersFreeCount,
-                            )
-                        DashboardWidget.LATEST_ORDERS ->
-                            LatestOrdersCard(
-                                modifier = rowModifier,
-                                state = widgetStates.latestOrders,
-                                onRetry = { widgetActions.onRetry(DashboardWidget.LATEST_ORDERS) },
-                                onOrderClick = widgetActions.onOrderClick,
-                                onHeaderClick = widgetActions.onAllOrdersClick,
-                            )
-                        DashboardWidget.TOP_PRODUCTS ->
-                            TopProductsCard(
-                                modifier = rowModifier,
-                                state = widgetStates.topProducts,
-                                onRetry = { widgetActions.onRetry(DashboardWidget.TOP_PRODUCTS) },
-                            )
-                        else ->
-                            DashboardKpiGrid(
-                                modifier = rowModifier,
-                                kpiItems =
-                                    row.mapNotNull { w ->
-                                        when (w) {
-                                            DashboardWidget.CARTS -> cartsItem
-                                            DashboardWidget.REVIEWS -> reviewsItem
-                                            else -> kpiItems[w]
-                                        }
-                                    },
-                            )
+                // Widgets visibles : HALF = 1 colonne, FULL = pleine largeur. Appui long = déplacement.
+                items(
+                    orderedWidgets.toList(),
+                    key = { it.id },
+                    span = { widget ->
+                        GridItemSpan(if (widget.span == DashboardWidgetSpan.HALF) 1 else maxLineSpan)
+                    },
+                ) { widget ->
+                    ReorderableItem(reorderableState, key = widget.id) { isDragging ->
+                        val scale by animateFloatAsState(if (isDragging) DRAG_LIFT_SCALE else 1f, label = "widgetScale")
+                        val elevation by animateDpAsState(if (isDragging) DRAG_LIFT_ELEVATION else 0.dp, label = "widgetElevation")
+                        Box(
+                            modifier =
+                                Modifier
+                                    .graphicsLayer {
+                                        scaleX = scale
+                                        scaleY = scale
+                                    }
+                                    .shadow(elevation, RoundedCornerShape(Dimensions.cardCornerRadius))
+                                    .longPressDraggableHandle(
+                                        onDragStarted = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) },
+                                        onDragStopped = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            if (orderedWidgets.toList() != displayedWidgets) {
+                                                onWidgetLayoutSaved(widgetLayout.withVisibleOrder(orderedWidgets.toList()))
+                                            }
+                                        },
+                                    ),
+                        ) {
+                            renderWidget(widget)
+                        }
                     }
                 }
 
                 // Dernière synchronisation
-                item {
+                item(key = "last_sync", span = { GridItemSpan(maxLineSpan) }) {
                     Text(
-                        modifier =
-                            Modifier
-                                .padding(horizontal = Dimensions.screenEdgeMargin)
-                                .padding(top = Dimensions.spacingS, bottom = Dimensions.spacingL),
+                        modifier = Modifier.padding(top = Dimensions.spacingS, bottom = Dimensions.spacingL),
                         text = stringResource(id = R.string.label_last_sync, lastUpdatedText),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -590,6 +652,25 @@ private fun DashboardContent(
             onDismiss = { showFullscreenChart = false },
         )
     }
+}
+
+private const val DRAG_LIFT_SCALE = 1.03f
+private val DRAG_LIFT_ELEVATION = 12.dp
+
+/**
+ * Nouvelle disposition après un glisser sur l'accueil : les widgets affichés ([order]) reprennent,
+ * dans le nouvel ordre, les emplacements qu'ils occupaient ; les autres (masqués, ou exclus
+ * momentanément comme les avis indisponibles) restent exactement où ils étaient.
+ */
+internal fun DashboardLayout.withVisibleOrder(order: List<DashboardWidget>): DashboardLayout {
+    val byWidget = items.associateBy { it.widget }
+    val shown = order.toSet()
+    val queue = order.iterator()
+    return DashboardLayout(
+        items.map { item ->
+            if (item.widget in shown && queue.hasNext()) byWidget.getValue(queue.next()) else item
+        },
+    )
 }
 
 // ─── En-tête ─────────────────────────────────────────────────────────────────
@@ -826,34 +907,6 @@ private fun PeriodChip(
 }
 
 // ─── Grille KPI ───────────────────────────────────────────────────────────────
-
-@Composable
-private fun DashboardKpiGrid(
-    kpiItems: List<KpiItem>,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Dimensions.gutter),
-    ) {
-        kpiItems.chunked(2).forEach { rowItems ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimensions.gutter),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                rowItems.forEach { item ->
-                    KpiCard(
-                        modifier = Modifier.weight(1f),
-                        item = item,
-                    )
-                }
-                if (rowItems.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
 
 /**
  * Carte KPI Terracotta — fond blanc, icône dans un conteneur teinté en haut-gauche,
