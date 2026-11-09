@@ -561,6 +561,16 @@
     <string name="dashboard_widget_empty">Nada para mostrar.</string>
     <string name="dashboard_widget_carts_sub">%1$s em jogo</string>
     <string name="dashboard_widget_top_qty">%1$d vendidos</string>
+    <string name="dashboard_widget_sales_by_universe">Vendas por categoria</string>
+    <string name="dashboard_universe_kits">Kits</string>
+    <string name="dashboard_universe_patrons_pdf">Moldes PDF</string>
+    <string name="dashboard_universe_ebooks">Ebooks</string>
+    <string name="dashboard_universe_livres">Livros</string>
+    <string name="dashboard_universe_fils">Fios</string>
+    <string name="dashboard_universe_mercerie">Armarinho</string>
+    <string name="dashboard_universe_autre">Outros</string>
+    <string name="dashboard_universe_digital_share">Digital: %1$d %% da receita</string>
+    <string name="dashboard_universe_free_patterns">Moldes gratuitos descarregados: %1$d</string>
     <string name="dashboard_edit_hint">Toque na pega e arraste para reordenar. O interruptor oculta ou mostra um widget.</string>
     <string name="dashboard_edit_span_half">Meia largura</string>
     <string name="dashboard_edit_span_full">Largura total</string>

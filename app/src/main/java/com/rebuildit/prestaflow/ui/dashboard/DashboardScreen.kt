@@ -428,9 +428,15 @@ private fun DashboardContent(
                 ),
         )
     val reviewsUnavailable = widgetStates.pendingReviews == WidgetLoad.Unavailable
+    val universeUnavailable = widgetStates.salesByUniverse == WidgetLoad.Unavailable
     val widgetRows =
-        remember(widgetLayout, reviewsUnavailable) {
-            widgetLayout.rows(hidden = if (reviewsUnavailable) setOf(DashboardWidget.REVIEWS) else emptySet())
+        remember(widgetLayout, reviewsUnavailable, universeUnavailable) {
+            val hidden =
+                buildSet {
+                    if (reviewsUnavailable) add(DashboardWidget.REVIEWS)
+                    if (universeUnavailable) add(DashboardWidget.SALES_BY_UNIVERSE)
+                }
+            widgetLayout.rows(hidden = hidden)
         }
     val cartsSubtitle =
         (widgetStates.abandonedCarts as? WidgetLoad.Data)?.value?.takeIf { it.count > 0 }
@@ -517,6 +523,12 @@ private fun DashboardContent(
                             modifier = cellModifier,
                             state = widgetStates.topProducts,
                             onRetry = { widgetActions.onRetry(DashboardWidget.TOP_PRODUCTS) },
+                        )
+                    DashboardWidget.SALES_BY_UNIVERSE ->
+                        SalesByUniverseCard(
+                            modifier = cellModifier,
+                            state = widgetStates.salesByUniverse,
+                            onRetry = { widgetActions.onRetry(DashboardWidget.SALES_BY_UNIVERSE) },
                         )
                     else -> {
                         val item =

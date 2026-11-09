@@ -26,6 +26,7 @@ import com.rebuildit.prestaflow.data.remote.dto.ReviewReplyRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewReplyResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.SalesByUniversResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SavStatsDto
@@ -192,6 +193,12 @@ interface PrestaFlowApi {
         @Query("date_from") dateFrom: String? = null,
         @Query("date_to") dateTo: String? = null,
     ): BestSellersResponseDto
+
+    @GET("reports/sales-by-univers")
+    suspend fun getSalesByUnivers(
+        @Query("date_from") dateFrom: String? = null,
+        @Query("date_to") dateTo: String? = null,
+    ): SalesByUniversResponseDto
 
     @GET("customers/stats")
     suspend fun getCustomerStats(): CustomerStatsDto

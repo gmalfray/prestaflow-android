@@ -8,6 +8,7 @@ import com.rebuildit.prestaflow.data.remote.dto.OrderListItemDto
 import com.rebuildit.prestaflow.data.remote.dto.PaginationDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewListResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.SalesByUniversResponseDto
 import com.rebuildit.prestaflow.domain.carts.model.CartSummary
 import com.rebuildit.prestaflow.fakes.FakeCartsRepository
 import com.rebuildit.prestaflow.fakes.FakePrestaFlowApi
@@ -151,5 +152,70 @@ class DashboardWidgetsRepositoryImplTest {
             api.reviewsException = httpException(500)
             val thrown = runCatching { repo.getPendingReviews() }.exceptionOrNull()
             assertTrue(thrown is HttpException)
+        }
+
+    private val universesJson =
+        """{"universes":[
+            {"key":"fils","is_digital":false,"ca_tax_incl":100.0,"ca_tax_excl":83.0,"quantity":10,"lines":8},
+            {"key":"kits","is_digital":false,"ca_tax_incl":600.0,"ca_tax_excl":500.0,"quantity":30,"lines":25},
+            {"key":"patrons_pdf","is_digital":true,"ca_tax_incl":250.0,"ca_tax_excl":208.0,"quantity":50,"lines":40},
+            {"key":"ebooks","is_digital":true,"ca_tax_incl":50.0,"ca_tax_excl":41.0,"quantity":5,"lines":5},
+            {"key":"livres","is_digital":false,"ca_tax_incl":0,"ca_tax_excl":0,"quantity":0,"lines":0},
+            {"key":"autre","is_digital":false}],
+            "free_patterns":{"quantity":899,"lines":891},
+            "period":{"date_from":null,"date_to":null}}"""
+
+    @Test
+    fun `univers - le DTO se désérialise avec défauts et champs inconnus ignorés`() {
+        val dto = json.decodeFromString(SalesByUniversResponseDto.serializer(), universesJson)
+        assertEquals(6, dto.universes.size)
+        assertEquals(600.0, dto.universes[1].caTaxIncl, 0.0)
+        assertTrue(dto.universes[2].isDigital)
+        assertEquals(0.0, dto.universes[5].caTaxIncl, 0.0)
+        assertEquals(899, dto.freePatterns?.quantity)
+
+        val minimal = json.decodeFromString(SalesByUniversResponseDto.serializer(), "{}")
+        assertTrue(minimal.universes.isEmpty())
+        assertNull(minimal.freePatterns)
+    }
+
+    @Test
+    fun `univers - tri décroissant, exclusion des zéros et poids du numérique`() =
+        runTest {
+            api.salesByUnivers = json.decodeFromString(SalesByUniversResponseDto.serializer(), universesJson)
+            val result = repo.getSalesByUnivers("2026-11-01 00:00:00", "2026-11-09 23:59:59")!!
+
+            assertEquals("2026-11-01 00:00:00" to "2026-11-09 23:59:59", api.lastSalesByUniversQuery)
+            assertEquals(listOf("kits", "patrons_pdf", "fils", "ebooks"), result.universes.map { it.key })
+            assertEquals(1000.0, result.totalTaxIncl, 0.0001)
+            assertEquals(0.3f, result.digitalShareRatio, 0.0001f)
+            assertEquals(899, result.freePatternsQuantity)
+            assertFalse(result.isEmpty)
+            assertTrue(result.universes.first { it.key == "ebooks" }.isDigital)
+        }
+
+    @Test
+    fun `univers - aucune vente donne un modèle vide et un poids nul`() =
+        runTest {
+            api.salesByUnivers =
+                json.decodeFromString(
+                    SalesByUniversResponseDto.serializer(),
+                    """{"universes":[{"key":"kits","is_digital":false,"ca_tax_incl":0.0}],"free_patterns":null}""",
+                )
+            val result = repo.getSalesByUnivers(null, null)!!
+            assertTrue(result.isEmpty)
+            assertEquals(0f, result.digitalShareRatio, 0f)
+            assertEquals(0, result.freePatternsQuantity)
+        }
+
+    @Test
+    fun `univers - 404 ou 409 donne null, une autre erreur est propagée`() =
+        runTest {
+            api.salesByUniversException = httpException(404)
+            assertNull(repo.getSalesByUnivers(null, null))
+            api.salesByUniversException = httpException(409)
+            assertNull(repo.getSalesByUnivers(null, null))
+            api.salesByUniversException = httpException(500)
+            assertTrue(runCatching { repo.getSalesByUnivers(null, null) }.exceptionOrNull() is HttpException)
         }
 }

@@ -72,3 +72,26 @@ data class BestSellerDto(
     @SerialName("total_tax_incl") val totalTaxIncl: Double = 0.0,
     @SerialName("total_tax_excl") val totalTaxExcl: Double = 0.0,
 )
+
+/** Réponse de `GET reports/sales-by-univers` : 7 univers fixes, plus le compteur de patrons gratuits. */
+@Serializable
+data class SalesByUniversResponseDto(
+    @SerialName("universes") val universes: List<UniverseSalesDto> = emptyList(),
+    @SerialName("free_patterns") val freePatterns: FreePatternsDto? = null,
+)
+
+@Serializable
+data class UniverseSalesDto(
+    @SerialName("key") val key: String = "",
+    @SerialName("is_digital") val isDigital: Boolean = false,
+    @SerialName("ca_tax_incl") val caTaxIncl: Double = 0.0,
+    @SerialName("ca_tax_excl") val caTaxExcl: Double = 0.0,
+    @SerialName("quantity") val quantity: Int = 0,
+    @SerialName("lines") val lines: Int = 0,
+)
+
+@Serializable
+data class FreePatternsDto(
+    @SerialName("quantity") val quantity: Int = 0,
+    @SerialName("lines") val lines: Int = 0,
+)

@@ -34,3 +34,24 @@ data class PendingReviewsCount(
     val count: Int,
     val hasMore: Boolean,
 )
+
+/** CA d'un univers de produits sur la période ([key] = clé stable du connecteur, ex. `kits`). */
+data class UniverseSales(
+    val key: String,
+    val isDigital: Boolean,
+    val caTaxIncl: Double,
+    val quantity: Int,
+)
+
+/**
+ * Ventes par univers. [universes] ne contient que les univers au CA > 0, triés par CA décroissant ;
+ * [digitalShareRatio] (0..1) = CA des univers numériques / CA total (0 si aucune vente).
+ */
+data class SalesByUniverse(
+    val universes: List<UniverseSales>,
+    val freePatternsQuantity: Int,
+    val digitalShareRatio: Float,
+) {
+    val totalTaxIncl: Double get() = universes.sumOf { it.caTaxIncl }
+    val isEmpty: Boolean get() = universes.isEmpty()
+}

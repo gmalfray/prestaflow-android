@@ -3,12 +3,15 @@ package com.rebuildit.prestaflow.data.dashboard
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
 import com.rebuildit.prestaflow.data.remote.dto.BestSellerDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListItemDto
+import com.rebuildit.prestaflow.data.remote.dto.SalesByUniversResponseDto
 import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardWidgetsRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.AbandonedCartsSummary
 import com.rebuildit.prestaflow.domain.dashboard.model.LatestOrder
 import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
+import com.rebuildit.prestaflow.domain.dashboard.model.SalesByUniverse
 import com.rebuildit.prestaflow.domain.dashboard.model.TopProduct
+import com.rebuildit.prestaflow.domain.dashboard.model.UniverseSales
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
@@ -16,6 +19,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val HTTP_CONFLICT = 409
+private const val HTTP_NOT_FOUND = 404
 
 /** Maximum accepté par `GET /reviews` ; au-delà, le compteur est un minorant. */
 private const val REVIEWS_SCAN_LIMIT = 100
@@ -73,7 +77,35 @@ class DashboardWidgetsRepositoryImpl
                     .aggregateByProduct()
                     .take(limit)
             }
+
+        override suspend fun getSalesByUnivers(
+            dateFrom: String?,
+            dateTo: String?,
+        ): SalesByUniverse? =
+            withContext(ioDispatcher) {
+                try {
+                    api.getSalesByUnivers(dateFrom = dateFrom, dateTo = dateTo).toDomain()
+                } catch (error: HttpException) {
+                    if (error.code() == HTTP_NOT_FOUND || error.code() == HTTP_CONFLICT) null else throw error
+                }
+            }
     }
+
+/** Garde les univers au CA > 0, triés par CA décroissant ; poids du numérique = CA numérique / CA total. */
+internal fun SalesByUniversResponseDto.toDomain(): SalesByUniverse {
+    val sold =
+        universes
+            .filter { it.caTaxIncl > 0.0 }
+            .map { UniverseSales(key = it.key, isDigital = it.isDigital, caTaxIncl = it.caTaxIncl, quantity = it.quantity) }
+            .sortedByDescending { it.caTaxIncl }
+    val total = sold.sumOf { it.caTaxIncl }
+    val digital = sold.filter { it.isDigital }.sumOf { it.caTaxIncl }
+    return SalesByUniverse(
+        universes = sold,
+        freePatternsQuantity = freePatterns?.quantity ?: 0,
+        digitalShareRatio = if (total > 0.0) (digital / total).toFloat() else 0f,
+    )
+}
 
 internal fun List<BestSellerDto>.aggregateByProduct(): List<TopProduct> =
     groupBy { it.productId }

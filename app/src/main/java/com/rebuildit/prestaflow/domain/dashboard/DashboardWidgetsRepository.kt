@@ -3,6 +3,7 @@ package com.rebuildit.prestaflow.domain.dashboard
 import com.rebuildit.prestaflow.domain.dashboard.model.AbandonedCartsSummary
 import com.rebuildit.prestaflow.domain.dashboard.model.LatestOrder
 import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
+import com.rebuildit.prestaflow.domain.dashboard.model.SalesByUniverse
 import com.rebuildit.prestaflow.domain.dashboard.model.TopProduct
 
 /**
@@ -28,4 +29,14 @@ interface DashboardWidgetsRepository {
         dateFrom: String?,
         dateTo: String?,
     ): List<TopProduct>
+
+    /**
+     * CA par univers de produits sur la période ([dateFrom] / [dateTo] au format
+     * `yyyy-MM-dd HH:mm:ss`, null = toute la période). `null` si l'endpoint est absent de la boutique
+     * (connecteur pas à jour : HTTP 404 ou 409).
+     */
+    suspend fun getSalesByUnivers(
+        dateFrom: String?,
+        dateTo: String?,
+    ): SalesByUniverse?
 }

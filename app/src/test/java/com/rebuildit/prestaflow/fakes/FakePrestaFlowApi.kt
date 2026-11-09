@@ -27,6 +27,7 @@ import com.rebuildit.prestaflow.data.remote.dto.ReviewReplyRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewReplyResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.SalesByUniversResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SavStatsDto
@@ -150,6 +151,24 @@ class FakePrestaFlowApi : PrestaFlowApi {
     ): BestSellersResponseDto {
         lastBestSellersQuery = Triple(limit, dateFrom, dateTo)
         return bestSellers ?: throw UnsupportedOperationException("Non utilisé dans ce test")
+    }
+
+    /** Réponse de [getSalesByUnivers] ; null = appel non prévu par le test. */
+    var salesByUnivers: SalesByUniversResponseDto? = null
+
+    /** Exception à lever par [getSalesByUnivers] (ex. HttpException 404). */
+    var salesByUniversException: Throwable? = null
+
+    /** Dernière requête reçue par [getSalesByUnivers] : date_from, date_to. */
+    var lastSalesByUniversQuery: Pair<String?, String?>? = null
+
+    override suspend fun getSalesByUnivers(
+        dateFrom: String?,
+        dateTo: String?,
+    ): SalesByUniversResponseDto {
+        lastSalesByUniversQuery = dateFrom to dateTo
+        salesByUniversException?.let { throw it }
+        return salesByUnivers ?: throw UnsupportedOperationException("Non utilisé dans ce test")
     }
 
     override suspend fun getCustomerStats(): CustomerStatsDto = throw UnsupportedOperationException("Non utilisé dans ce test")

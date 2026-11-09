@@ -561,6 +561,16 @@
     <string name="dashboard_widget_empty">Nichts anzuzeigen.</string>
     <string name="dashboard_widget_carts_sub">%1$s im Spiel</string>
     <string name="dashboard_widget_top_qty">%1$d verkauft</string>
+    <string name="dashboard_widget_sales_by_universe">Umsatz nach Kategorie</string>
+    <string name="dashboard_universe_kits">Kits</string>
+    <string name="dashboard_universe_patrons_pdf">PDF-Anleitungen</string>
+    <string name="dashboard_universe_ebooks">E-Books</string>
+    <string name="dashboard_universe_livres">Bücher</string>
+    <string name="dashboard_universe_fils">Garn</string>
+    <string name="dashboard_universe_mercerie">Kurzwaren</string>
+    <string name="dashboard_universe_autre">Sonstiges</string>
+    <string name="dashboard_universe_digital_share">Digital: %1$d %% des Umsatzes</string>
+    <string name="dashboard_universe_free_patterns">Kostenlose Anleitungen heruntergeladen: %1$d</string>
     <string name="dashboard_edit_hint">Griff berühren und ziehen, um die Reihenfolge zu ändern. Mit dem Schalter blenden Sie ein Widget aus oder ein.</string>
     <string name="dashboard_edit_span_half">Halbe Breite</string>
     <string name="dashboard_edit_span_full">Volle Breite</string>

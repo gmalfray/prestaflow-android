@@ -561,6 +561,16 @@
     <string name="dashboard_widget_empty">Niets om te tonen.</string>
     <string name="dashboard_widget_carts_sub">%1$s in het spel</string>
     <string name="dashboard_widget_top_qty">%1$d verkocht</string>
+    <string name="dashboard_widget_sales_by_universe">Verkoop per categorie</string>
+    <string name="dashboard_universe_kits">Kits</string>
+    <string name="dashboard_universe_patrons_pdf">PDF-patronen</string>
+    <string name="dashboard_universe_ebooks">E-books</string>
+    <string name="dashboard_universe_livres">Boeken</string>
+    <string name="dashboard_universe_fils">Garen</string>
+    <string name="dashboard_universe_mercerie">Fournituren</string>
+    <string name="dashboard_universe_autre">Overig</string>
+    <string name="dashboard_universe_digital_share">Digitaal: %1$d %% van de omzet</string>
+    <string name="dashboard_universe_free_patterns">Gratis patronen gedownload: %1$d</string>
     <string name="dashboard_edit_hint">Raak de greep aan en sleep om de volgorde te wijzigen. Met de schakelaar verberg of toon je een widget.</string>
     <string name="dashboard_edit_span_half">Halve breedte</string>
     <string name="dashboard_edit_span_full">Volle breedte</string>

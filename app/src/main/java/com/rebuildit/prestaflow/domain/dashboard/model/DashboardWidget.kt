@@ -25,6 +25,7 @@ enum class DashboardWidget(
     CARTS("carts", DashboardWidgetSpan.HALF, false),
     REVIEWS("reviews", DashboardWidgetSpan.HALF, false),
     TOP_PRODUCTS("top_products", DashboardWidgetSpan.FULL, false),
+    SALES_BY_UNIVERSE("sales_by_universe", DashboardWidgetSpan.FULL, false),
     ;
 
     companion object {

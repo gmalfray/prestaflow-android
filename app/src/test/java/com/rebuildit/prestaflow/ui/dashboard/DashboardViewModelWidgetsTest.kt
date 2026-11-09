@@ -6,7 +6,9 @@ import com.rebuildit.prestaflow.domain.dashboard.model.DashboardLayout
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardWidget
 import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
+import com.rebuildit.prestaflow.domain.dashboard.model.SalesByUniverse
 import com.rebuildit.prestaflow.domain.dashboard.model.TopProduct
+import com.rebuildit.prestaflow.domain.dashboard.model.UniverseSales
 import com.rebuildit.prestaflow.fakes.FakeAuthRepository
 import com.rebuildit.prestaflow.fakes.FakeDashboardPreferencesRepository
 import com.rebuildit.prestaflow.fakes.FakeDashboardRepository
@@ -122,5 +124,40 @@ class DashboardViewModelWidgetsTest {
             assertEquals(callsBefore + 1, widgets.topProductsCalls)
             assertTrue(widgets.lastTopProductsRange!!.first!!.endsWith("-01-01 00:00:00"))
             assertTrue(widgets.lastTopProductsRange!!.second!!.endsWith(" 23:59:59"))
+        }
+
+    @Test
+    fun `ventes par univers - chargé seulement si visible puis rechargé au changement de période`() =
+        runTest {
+            val hidden = vm()
+            advanceUntilIdle()
+            assertEquals(0, widgets.salesByUniverseCalls)
+            assertEquals(WidgetLoad.Idle, hidden.uiState.value.salesByUniverse)
+
+            prefs.setWidgetLayout(layoutWith(DashboardWidget.SALES_BY_UNIVERSE))
+            widgets.salesByUniverse = SalesByUniverse(listOf(UniverseSales("kits", false, 10.0, 1)), 2, 0f)
+            val vm = vm()
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.salesByUniverse is WidgetLoad.Data)
+            val callsBefore = widgets.salesByUniverseCalls
+            vm.onPeriodSelected(DashboardPeriod.YEAR)
+            advanceUntilIdle()
+            assertEquals(callsBefore + 1, widgets.salesByUniverseCalls)
+            assertTrue(widgets.lastSalesByUniverseRange!!.first!!.endsWith("-01-01 00:00:00"))
+        }
+
+    @Test
+    fun `ventes par univers - endpoint absent donne Unavailable, échec donne Error`() =
+        runTest {
+            prefs.setWidgetLayout(layoutWith(DashboardWidget.SALES_BY_UNIVERSE))
+            widgets.salesByUniverse = null
+            val vm = vm()
+            advanceUntilIdle()
+            assertEquals(WidgetLoad.Unavailable, vm.uiState.value.salesByUniverse)
+
+            widgets.failure = IllegalStateException("boom")
+            vm.onWidgetRetry(DashboardWidget.SALES_BY_UNIVERSE)
+            advanceUntilIdle()
+            assertEquals(WidgetLoad.Error, vm.uiState.value.salesByUniverse)
         }
 }

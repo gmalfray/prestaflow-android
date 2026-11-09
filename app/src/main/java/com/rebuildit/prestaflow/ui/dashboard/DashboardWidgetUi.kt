@@ -3,6 +3,7 @@ package com.rebuildit.prestaflow.ui.dashboard
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Analytics
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.DonutLarge
 import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.Group
@@ -21,6 +22,7 @@ import com.rebuildit.prestaflow.domain.dashboard.model.DashboardWidget
 
 /** Libellé du widget (carte du dashboard et ligne de l'éditeur). */
 @StringRes
+@Suppress("CyclomaticComplexMethod") // when exhaustif sur le catalogue
 internal fun DashboardWidget.titleRes(): Int =
     when (this) {
         DashboardWidget.TURNOVER -> R.string.dashboard_kpi_turnover
@@ -36,8 +38,10 @@ internal fun DashboardWidget.titleRes(): Int =
         DashboardWidget.CARTS -> R.string.dashboard_widget_carts
         DashboardWidget.REVIEWS -> R.string.dashboard_widget_reviews
         DashboardWidget.TOP_PRODUCTS -> R.string.dashboard_widget_top_products
+        DashboardWidget.SALES_BY_UNIVERSE -> R.string.dashboard_widget_sales_by_universe
     }
 
+@Suppress("CyclomaticComplexMethod")
 internal fun DashboardWidget.icon(): ImageVector =
     when (this) {
         DashboardWidget.TURNOVER -> Icons.Outlined.Payments
@@ -53,4 +57,5 @@ internal fun DashboardWidget.icon(): ImageVector =
         DashboardWidget.CARTS -> Icons.Outlined.RemoveShoppingCart
         DashboardWidget.REVIEWS -> Icons.Outlined.RateReview
         DashboardWidget.TOP_PRODUCTS -> Icons.Outlined.EmojiEvents
+        DashboardWidget.SALES_BY_UNIVERSE -> Icons.Outlined.BarChart
     }

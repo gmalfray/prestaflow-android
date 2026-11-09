@@ -18,6 +18,7 @@ import com.rebuildit.prestaflow.domain.dashboard.model.DashboardWidget
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
 import com.rebuildit.prestaflow.domain.dashboard.model.LatestOrder
 import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
+import com.rebuildit.prestaflow.domain.dashboard.model.SalesByUniverse
 import com.rebuildit.prestaflow.domain.dashboard.model.TopProduct
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -124,6 +125,11 @@ class DashboardViewModel
                         val (from, to) = periodDateRange(selectedPeriodFlow.value, customRangeFlow.value)
                         widgetsRepository.getTopProducts(TOP_PRODUCTS_LIMIT, from, to)
                     }
+                DashboardWidget.SALES_BY_UNIVERSE ->
+                    launchWidgetLoad(widget, { it.salesByUniverse }, { s, v -> s.copy(salesByUniverse = v) }) {
+                        val (from, to) = periodDateRange(selectedPeriodFlow.value, customRangeFlow.value)
+                        widgetsRepository.getSalesByUnivers(from, to)
+                    }
                 else -> Unit
             }
         }
@@ -157,9 +163,10 @@ class DashboardViewModel
         }
 
         private fun reloadPeriodWidgets() {
-            if (DashboardWidget.TOP_PRODUCTS in _uiState.value.widgetLayout.visibleWidgets) {
-                loadWidget(DashboardWidget.TOP_PRODUCTS)
-            }
+            val visible = _uiState.value.widgetLayout.visibleWidgets
+            listOf(DashboardWidget.TOP_PRODUCTS, DashboardWidget.SALES_BY_UNIVERSE)
+                .filter { it in visible }
+                .forEach(::loadWidget)
         }
 
         private fun observeChartMode() {
@@ -277,6 +284,7 @@ class DashboardViewModel
                                 abandonedCarts = WidgetLoad.Idle,
                                 pendingReviews = WidgetLoad.Idle,
                                 topProducts = WidgetLoad.Idle,
+                                salesByUniverse = WidgetLoad.Idle,
                             )
                         }
                         loadVisibleWidgets()
@@ -432,6 +440,7 @@ data class DashboardUiState(
     val abandonedCarts: WidgetLoad<AbandonedCartsSummary> = WidgetLoad.Idle,
     val pendingReviews: WidgetLoad<PendingReviewsCount> = WidgetLoad.Idle,
     val topProducts: WidgetLoad<List<TopProduct>> = WidgetLoad.Idle,
+    val salesByUniverse: WidgetLoad<SalesByUniverse> = WidgetLoad.Idle,
 )
 
 private const val LATEST_ORDERS_LIMIT = 5

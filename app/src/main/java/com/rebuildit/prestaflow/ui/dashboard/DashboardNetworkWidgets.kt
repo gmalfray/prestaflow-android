@@ -58,7 +58,7 @@ internal fun formatShortDate(iso: String?): String =
 /** Carte pleine largeur d'un widget réseau : titre, puis chargement / erreur locale / contenu. */
 @Suppress("LongParameterList")
 @Composable
-private fun <T> NetworkWidgetCard(
+internal fun <T> NetworkWidgetCard(
     widget: DashboardWidget,
     state: WidgetLoad<T>,
     onRetry: () -> Unit,

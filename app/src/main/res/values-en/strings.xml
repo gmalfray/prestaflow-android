@@ -560,6 +560,16 @@
     <string name="dashboard_widget_empty">Nothing to show.</string>
     <string name="dashboard_widget_carts_sub">%1$s at stake</string>
     <string name="dashboard_widget_top_qty">%1$d sold</string>
+    <string name="dashboard_widget_sales_by_universe">Sales by category</string>
+    <string name="dashboard_universe_kits">Kits</string>
+    <string name="dashboard_universe_patrons_pdf">PDF patterns</string>
+    <string name="dashboard_universe_ebooks">Ebooks</string>
+    <string name="dashboard_universe_livres">Books</string>
+    <string name="dashboard_universe_fils">Yarn</string>
+    <string name="dashboard_universe_mercerie">Haberdashery</string>
+    <string name="dashboard_universe_autre">Other</string>
+    <string name="dashboard_universe_digital_share">Digital: %1$d %% of revenue</string>
+    <string name="dashboard_universe_free_patterns">Free patterns downloaded: %1$d</string>
     <string name="dashboard_edit_hint">Touch the handle and drag to reorder. The switch hides or shows a widget.</string>
     <string name="dashboard_edit_span_half">Half width</string>
     <string name="dashboard_edit_span_full">Full width</string>
