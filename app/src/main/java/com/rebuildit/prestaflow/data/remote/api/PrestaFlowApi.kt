@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.data.remote.api
 
+import com.rebuildit.prestaflow.data.remote.dto.AcquisitionChannelsResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.AuthRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.AuthResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.BestSellersResponseDto
@@ -7,9 +8,11 @@ import com.rebuildit.prestaflow.data.remote.dto.CartDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CartListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerListResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.CustomerRetentionDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerStatsDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
 import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.FreeConversionCohortsResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.FreeConversionDto
 import com.rebuildit.prestaflow.data.remote.dto.GenerateLabelResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
@@ -199,6 +202,24 @@ interface PrestaFlowApi {
         @Query("date_from") dateFrom: String? = null,
         @Query("date_to") dateTo: String? = null,
     ): SalesByUniversResponseDto
+
+    @GET("reports/customer-retention")
+    suspend fun getCustomerRetention(
+        @Query("date_from") dateFrom: String? = null,
+        @Query("date_to") dateTo: String? = null,
+    ): CustomerRetentionDto
+
+    @GET("reports/acquisition-channels")
+    suspend fun getAcquisitionChannels(
+        @Query("date_from") dateFrom: String? = null,
+        @Query("date_to") dateTo: String? = null,
+        @Query("window_days") windowDays: Int? = null,
+    ): AcquisitionChannelsResponseDto
+
+    @GET("dashboard/free-conversion-cohorts")
+    suspend fun getFreeConversionCohorts(
+        @Query("months") months: Int? = null,
+    ): FreeConversionCohortsResponseDto
 
     @GET("customers/stats")
     suspend fun getCustomerStats(): CustomerStatsDto

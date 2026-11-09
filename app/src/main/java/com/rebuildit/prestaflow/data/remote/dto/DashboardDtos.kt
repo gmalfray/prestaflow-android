@@ -95,3 +95,42 @@ data class FreePatternsDto(
     @SerialName("quantity") val quantity: Int = 0,
     @SerialName("lines") val lines: Int = 0,
 )
+
+/** Réponse de `GET reports/customer-retention`. `median_days_between_orders` est null sans réachat. */
+@Serializable
+data class CustomerRetentionDto(
+    @SerialName("paying_customers") val payingCustomers: Int = 0,
+    @SerialName("repeat_customers") val repeatCustomers: Int = 0,
+    @SerialName("repeat_rate") val repeatRate: Double? = null,
+    @SerialName("median_days_between_orders") val medianDaysBetweenOrders: Double? = null,
+    @SerialName("new_customers") val newCustomers: Int = 0,
+    @SerialName("recurring_customers") val recurringCustomers: Int = 0,
+)
+
+/** Réponse de `GET reports/acquisition-channels` : commandes par dernier canal avant achat. */
+@Serializable
+data class AcquisitionChannelsResponseDto(
+    @SerialName("channels") val channels: List<AcquisitionChannelDto> = emptyList(),
+    @SerialName("window_days") val windowDays: Int? = null,
+)
+
+@Serializable
+data class AcquisitionChannelDto(
+    @SerialName("key") val key: String = "",
+    @SerialName("orders") val orders: Int = 0,
+)
+
+/** Réponse de `GET dashboard/free-conversion-cohorts` : une cohorte par mois de 1re commande offerte. */
+@Serializable
+data class FreeConversionCohortsResponseDto(
+    @SerialName("cohorts") val cohorts: List<FreeConversionCohortDto> = emptyList(),
+)
+
+@Serializable
+data class FreeConversionCohortDto(
+    @SerialName("month") val month: String = "",
+    @SerialName("first_free_customers") val firstFreeCustomers: Int = 0,
+    @SerialName("converted_30d") val converted30d: Int = 0,
+    @SerialName("converted_60d") val converted60d: Int = 0,
+    @SerialName("converted_90d") val converted90d: Int = 0,
+)

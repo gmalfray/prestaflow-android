@@ -2,6 +2,9 @@ package com.rebuildit.prestaflow.fakes
 
 import com.rebuildit.prestaflow.domain.dashboard.DashboardWidgetsRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.AbandonedCartsSummary
+import com.rebuildit.prestaflow.domain.dashboard.model.AcquisitionChannels
+import com.rebuildit.prestaflow.domain.dashboard.model.CustomerRetention
+import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversionCohorts
 import com.rebuildit.prestaflow.domain.dashboard.model.LatestOrder
 import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
 import com.rebuildit.prestaflow.domain.dashboard.model.SalesByUniverse
@@ -14,7 +17,17 @@ class FakeDashboardWidgetsRepository : DashboardWidgetsRepository {
     var reviews: PendingReviewsCount? = PendingReviewsCount(count = 0, hasMore = false)
     var topProducts: List<TopProduct> = emptyList()
     var salesByUniverse: SalesByUniverse? = SalesByUniverse(emptyList(), 0, 0f)
+    var customerRetention: CustomerRetention? = CustomerRetention(0, 0, 0.0, null, 0, 0)
+    var acquisitionChannels: AcquisitionChannels? = AcquisitionChannels(emptyList(), 30)
+    var freeCohorts: FreeConversionCohorts? = FreeConversionCohorts(emptyList())
     var failure: Throwable? = null
+
+    var customerRetentionCalls = 0
+    var acquisitionChannelsCalls = 0
+    var freeCohortsCalls = 0
+    var lastRetentionRange: Pair<String?, String?>? = null
+    var lastChannelsWindowDays: Int? = null
+    var lastCohortsMonths: Int? = null
 
     var latestOrdersCalls = 0
     var cartsCalls = 0
@@ -61,5 +74,33 @@ class FakeDashboardWidgetsRepository : DashboardWidgetsRepository {
         lastSalesByUniverseRange = dateFrom to dateTo
         failure?.let { throw it }
         return salesByUniverse
+    }
+
+    override suspend fun getCustomerRetention(
+        dateFrom: String?,
+        dateTo: String?,
+    ): CustomerRetention? {
+        customerRetentionCalls++
+        lastRetentionRange = dateFrom to dateTo
+        failure?.let { throw it }
+        return customerRetention
+    }
+
+    override suspend fun getAcquisitionChannels(
+        dateFrom: String?,
+        dateTo: String?,
+        windowDays: Int,
+    ): AcquisitionChannels? {
+        acquisitionChannelsCalls++
+        lastChannelsWindowDays = windowDays
+        failure?.let { throw it }
+        return acquisitionChannels
+    }
+
+    override suspend fun getFreeConversionCohorts(months: Int): FreeConversionCohorts? {
+        freeCohortsCalls++
+        lastCohortsMonths = months
+        failure?.let { throw it }
+        return freeCohorts
     }
 }

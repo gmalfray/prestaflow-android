@@ -1,6 +1,7 @@
 package com.rebuildit.prestaflow.fakes
 
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
+import com.rebuildit.prestaflow.data.remote.dto.AcquisitionChannelsResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.AuthRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.AuthResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.BestSellersResponseDto
@@ -8,9 +9,11 @@ import com.rebuildit.prestaflow.data.remote.dto.CartDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CartListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerListResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.CustomerRetentionDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerStatsDto
 import com.rebuildit.prestaflow.data.remote.dto.DashboardMetricsDto
 import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
+import com.rebuildit.prestaflow.data.remote.dto.FreeConversionCohortsResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.FreeConversionDto
 import com.rebuildit.prestaflow.data.remote.dto.GenerateLabelResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
@@ -169,6 +172,45 @@ class FakePrestaFlowApi : PrestaFlowApi {
         lastSalesByUniversQuery = dateFrom to dateTo
         salesByUniversException?.let { throw it }
         return salesByUnivers ?: throw UnsupportedOperationException("Non utilisé dans ce test")
+    }
+
+    var customerRetention: CustomerRetentionDto? = null
+    var customerRetentionException: Throwable? = null
+    var lastCustomerRetentionQuery: Pair<String?, String?>? = null
+
+    override suspend fun getCustomerRetention(
+        dateFrom: String?,
+        dateTo: String?,
+    ): CustomerRetentionDto {
+        lastCustomerRetentionQuery = dateFrom to dateTo
+        customerRetentionException?.let { throw it }
+        return customerRetention ?: throw UnsupportedOperationException("Non utilisé dans ce test")
+    }
+
+    var acquisitionChannels: AcquisitionChannelsResponseDto? = null
+    var acquisitionChannelsException: Throwable? = null
+
+    /** Dernière requête de [getAcquisitionChannels] : date_from, date_to, window_days. */
+    var lastAcquisitionChannelsQuery: Triple<String?, String?, Int?>? = null
+
+    override suspend fun getAcquisitionChannels(
+        dateFrom: String?,
+        dateTo: String?,
+        windowDays: Int?,
+    ): AcquisitionChannelsResponseDto {
+        lastAcquisitionChannelsQuery = Triple(dateFrom, dateTo, windowDays)
+        acquisitionChannelsException?.let { throw it }
+        return acquisitionChannels ?: throw UnsupportedOperationException("Non utilisé dans ce test")
+    }
+
+    var freeConversionCohorts: FreeConversionCohortsResponseDto? = null
+    var freeConversionCohortsException: Throwable? = null
+    var lastFreeConversionCohortsMonths: Int? = null
+
+    override suspend fun getFreeConversionCohorts(months: Int?): FreeConversionCohortsResponseDto {
+        lastFreeConversionCohortsMonths = months
+        freeConversionCohortsException?.let { throw it }
+        return freeConversionCohorts ?: throw UnsupportedOperationException("Non utilisé dans ce test")
     }
 
     override suspend fun getCustomerStats(): CustomerStatsDto = throw UnsupportedOperationException("Non utilisé dans ce test")

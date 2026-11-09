@@ -26,6 +26,9 @@ enum class DashboardWidget(
     REVIEWS("reviews", DashboardWidgetSpan.HALF, false),
     TOP_PRODUCTS("top_products", DashboardWidgetSpan.FULL, false),
     SALES_BY_UNIVERSE("sales_by_universe", DashboardWidgetSpan.FULL, false),
+    CUSTOMER_RETENTION("customer_retention", DashboardWidgetSpan.FULL, false),
+    ACQUISITION_CHANNELS("acquisition_channels", DashboardWidgetSpan.FULL, false),
+    FREE_CONVERSION_COHORTS("free_conversion_cohorts", DashboardWidgetSpan.FULL, false),
     ;
 
     companion object {

@@ -160,4 +160,67 @@ class DashboardViewModelWidgetsTest {
             advanceUntilIdle()
             assertEquals(WidgetLoad.Error, vm.uiState.value.salesByUniverse)
         }
+
+    @Test
+    fun `fidélité et canaux - masqués par défaut, rechargés au changement de période`() =
+        runTest {
+            val hidden = vm()
+            advanceUntilIdle()
+            assertEquals(0, widgets.customerRetentionCalls)
+            assertEquals(0, widgets.acquisitionChannelsCalls)
+            assertEquals(WidgetLoad.Idle, hidden.uiState.value.customerRetention)
+
+            prefs.setWidgetLayout(layoutWith(DashboardWidget.CUSTOMER_RETENTION, DashboardWidget.ACQUISITION_CHANNELS))
+            val vm = vm()
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.customerRetention is WidgetLoad.Data)
+            assertTrue(vm.uiState.value.acquisitionChannels is WidgetLoad.Data)
+            assertEquals(30, widgets.lastChannelsWindowDays)
+            val retentionBefore = widgets.customerRetentionCalls
+            val channelsBefore = widgets.acquisitionChannelsCalls
+            vm.onPeriodSelected(DashboardPeriod.YEAR)
+            advanceUntilIdle()
+            assertEquals(retentionBefore + 1, widgets.customerRetentionCalls)
+            assertEquals(channelsBefore + 1, widgets.acquisitionChannelsCalls)
+            assertTrue(widgets.lastRetentionRange!!.first!!.endsWith("-01-01 00:00:00"))
+        }
+
+    @Test
+    fun `cohortes - 12 mois fixes, pas rechargées au changement de période`() =
+        runTest {
+            prefs.setWidgetLayout(layoutWith(DashboardWidget.FREE_CONVERSION_COHORTS))
+            val vm = vm()
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.freeCohorts is WidgetLoad.Data)
+            assertEquals(12, widgets.lastCohortsMonths)
+            val callsBefore = widgets.freeCohortsCalls
+            vm.onPeriodSelected(DashboardPeriod.YEAR)
+            advanceUntilIdle()
+            assertEquals(callsBefore, widgets.freeCohortsCalls)
+        }
+
+    @Test
+    fun `nouveaux widgets - endpoint absent donne Unavailable, échec donne Error`() =
+        runTest {
+            prefs.setWidgetLayout(
+                layoutWith(
+                    DashboardWidget.CUSTOMER_RETENTION,
+                    DashboardWidget.ACQUISITION_CHANNELS,
+                    DashboardWidget.FREE_CONVERSION_COHORTS,
+                ),
+            )
+            widgets.customerRetention = null
+            widgets.acquisitionChannels = null
+            widgets.freeCohorts = null
+            val vm = vm()
+            advanceUntilIdle()
+            assertEquals(WidgetLoad.Unavailable, vm.uiState.value.customerRetention)
+            assertEquals(WidgetLoad.Unavailable, vm.uiState.value.acquisitionChannels)
+            assertEquals(WidgetLoad.Unavailable, vm.uiState.value.freeCohorts)
+
+            widgets.failure = IllegalStateException("boom")
+            vm.onWidgetRetry(DashboardWidget.FREE_CONVERSION_COHORTS)
+            advanceUntilIdle()
+            assertEquals(WidgetLoad.Error, vm.uiState.value.freeCohorts)
+        }
 }

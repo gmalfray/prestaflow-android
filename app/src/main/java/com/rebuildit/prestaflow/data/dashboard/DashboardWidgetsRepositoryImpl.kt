@@ -1,12 +1,20 @@
 package com.rebuildit.prestaflow.data.dashboard
 
 import com.rebuildit.prestaflow.data.remote.api.PrestaFlowApi
+import com.rebuildit.prestaflow.data.remote.dto.AcquisitionChannelsResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.BestSellerDto
+import com.rebuildit.prestaflow.data.remote.dto.CustomerRetentionDto
+import com.rebuildit.prestaflow.data.remote.dto.FreeConversionCohortsResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListItemDto
 import com.rebuildit.prestaflow.data.remote.dto.SalesByUniversResponseDto
 import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardWidgetsRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.AbandonedCartsSummary
+import com.rebuildit.prestaflow.domain.dashboard.model.AcquisitionChannel
+import com.rebuildit.prestaflow.domain.dashboard.model.AcquisitionChannels
+import com.rebuildit.prestaflow.domain.dashboard.model.CustomerRetention
+import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversionCohort
+import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversionCohorts
 import com.rebuildit.prestaflow.domain.dashboard.model.LatestOrder
 import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
 import com.rebuildit.prestaflow.domain.dashboard.model.SalesByUniverse
@@ -20,6 +28,8 @@ import javax.inject.Singleton
 
 private const val HTTP_CONFLICT = 409
 private const val HTTP_NOT_FOUND = 404
+private const val PERCENT = 100.0
+private const val DEFAULT_ATTRIBUTION_WINDOW_DAYS = 30
 
 /** Maximum accepté par `GET /reviews` ; au-delà, le compteur est un minorant. */
 private const val REVIEWS_SCAN_LIMIT = 100
@@ -83,13 +93,84 @@ class DashboardWidgetsRepositoryImpl
             dateTo: String?,
         ): SalesByUniverse? =
             withContext(ioDispatcher) {
-                try {
-                    api.getSalesByUnivers(dateFrom = dateFrom, dateTo = dateTo).toDomain()
-                } catch (error: HttpException) {
-                    if (error.code() == HTTP_NOT_FOUND || error.code() == HTTP_CONFLICT) null else throw error
+                nullIfUnavailable { api.getSalesByUnivers(dateFrom = dateFrom, dateTo = dateTo).toDomain() }
+            }
+
+        override suspend fun getCustomerRetention(
+            dateFrom: String?,
+            dateTo: String?,
+        ): CustomerRetention? =
+            withContext(ioDispatcher) {
+                nullIfUnavailable { api.getCustomerRetention(dateFrom = dateFrom, dateTo = dateTo).toDomain() }
+            }
+
+        override suspend fun getAcquisitionChannels(
+            dateFrom: String?,
+            dateTo: String?,
+            windowDays: Int,
+        ): AcquisitionChannels? =
+            withContext(ioDispatcher) {
+                nullIfUnavailable {
+                    api.getAcquisitionChannels(dateFrom = dateFrom, dateTo = dateTo, windowDays = windowDays).toDomain(windowDays)
                 }
             }
+
+        override suspend fun getFreeConversionCohorts(months: Int): FreeConversionCohorts? =
+            withContext(ioDispatcher) {
+                nullIfUnavailable { api.getFreeConversionCohorts(months = months).toDomain() }
+            }
     }
+
+/** Endpoint absent côté boutique (connecteur pas à jour : 404 ou 409) : `null` ; toute autre erreur est propagée. */
+private inline fun <T : Any> nullIfUnavailable(block: () -> T): T? =
+    try {
+        block()
+    } catch (error: HttpException) {
+        if (error.code() == HTTP_NOT_FOUND || error.code() == HTTP_CONFLICT) null else throw error
+    }
+
+/** Le taux du connecteur prime ; à défaut il est recalculé depuis les effectifs. */
+internal fun CustomerRetentionDto.toDomain(): CustomerRetention =
+    CustomerRetention(
+        payingCustomers = payingCustomers,
+        repeatCustomers = repeatCustomers,
+        repeatRatePercent =
+            repeatRate ?: if (payingCustomers > 0) repeatCustomers * PERCENT / payingCustomers else 0.0,
+        medianDaysBetweenOrders = medianDaysBetweenOrders,
+        newCustomers = newCustomers,
+        recurringCustomers = recurringCustomers,
+    )
+
+/** Clés normalisées (trim + minuscules), doublons fusionnés, canaux à 0 commande écartés, tri décroissant. */
+internal fun AcquisitionChannelsResponseDto.toDomain(requestedWindowDays: Int = DEFAULT_ATTRIBUTION_WINDOW_DAYS): AcquisitionChannels =
+    AcquisitionChannels(
+        channels =
+            channels
+                .filter { it.key.isNotBlank() }
+                .groupBy { it.key.trim().lowercase() }
+                .map { (key, rows) -> AcquisitionChannel(key = key, orders = rows.sumOf { it.orders }) }
+                .filter { it.orders > 0 }
+                .sortedByDescending { it.orders },
+        windowDays = windowDays ?: requestedWindowDays,
+    )
+
+/** Mois les plus récents d'abord (le format `yyyy-MM` se trie lexicalement) ; cohortes sans mois écartées. */
+internal fun FreeConversionCohortsResponseDto.toDomain(): FreeConversionCohorts =
+    FreeConversionCohorts(
+        cohorts =
+            cohorts
+                .filter { it.month.isNotBlank() }
+                .map {
+                    FreeConversionCohort(
+                        month = it.month,
+                        firstFreeCustomers = it.firstFreeCustomers,
+                        converted30d = it.converted30d,
+                        converted60d = it.converted60d,
+                        converted90d = it.converted90d,
+                    )
+                }
+                .sortedByDescending { it.month },
+    )
 
 /** Garde les univers au CA > 0, triés par CA décroissant ; poids du numérique = CA numérique / CA total. */
 internal fun SalesByUniversResponseDto.toDomain(): SalesByUniverse {

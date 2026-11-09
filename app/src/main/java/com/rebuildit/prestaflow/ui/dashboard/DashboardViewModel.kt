@@ -10,12 +10,15 @@ import com.rebuildit.prestaflow.domain.dashboard.DashboardPreferencesRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardWidgetsRepository
 import com.rebuildit.prestaflow.domain.dashboard.model.AbandonedCartsSummary
+import com.rebuildit.prestaflow.domain.dashboard.model.AcquisitionChannels
+import com.rebuildit.prestaflow.domain.dashboard.model.CustomerRetention
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardChartMode
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardLayout
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardPeriod
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardSnapshot
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardWidget
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
+import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversionCohorts
 import com.rebuildit.prestaflow.domain.dashboard.model.LatestOrder
 import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
 import com.rebuildit.prestaflow.domain.dashboard.model.SalesByUniverse
@@ -130,6 +133,21 @@ class DashboardViewModel
                         val (from, to) = periodDateRange(selectedPeriodFlow.value, customRangeFlow.value)
                         widgetsRepository.getSalesByUnivers(from, to)
                     }
+                DashboardWidget.CUSTOMER_RETENTION ->
+                    launchWidgetLoad(widget, { it.customerRetention }, { s, v -> s.copy(customerRetention = v) }) {
+                        val (from, to) = periodDateRange(selectedPeriodFlow.value, customRangeFlow.value)
+                        widgetsRepository.getCustomerRetention(from, to)
+                    }
+                DashboardWidget.ACQUISITION_CHANNELS ->
+                    launchWidgetLoad(widget, { it.acquisitionChannels }, { s, v -> s.copy(acquisitionChannels = v) }) {
+                        val (from, to) = periodDateRange(selectedPeriodFlow.value, customRangeFlow.value)
+                        widgetsRepository.getAcquisitionChannels(from, to, ACQUISITION_WINDOW_DAYS)
+                    }
+                // Non period-aware : toujours les COHORTS_MONTHS derniers mois, quel que soit le sélecteur.
+                DashboardWidget.FREE_CONVERSION_COHORTS ->
+                    launchWidgetLoad(widget, { it.freeCohorts }, { s, v -> s.copy(freeCohorts = v) }) {
+                        widgetsRepository.getFreeConversionCohorts(COHORTS_MONTHS)
+                    }
                 else -> Unit
             }
         }
@@ -164,7 +182,12 @@ class DashboardViewModel
 
         private fun reloadPeriodWidgets() {
             val visible = _uiState.value.widgetLayout.visibleWidgets
-            listOf(DashboardWidget.TOP_PRODUCTS, DashboardWidget.SALES_BY_UNIVERSE)
+            listOf(
+                DashboardWidget.TOP_PRODUCTS,
+                DashboardWidget.SALES_BY_UNIVERSE,
+                DashboardWidget.CUSTOMER_RETENTION,
+                DashboardWidget.ACQUISITION_CHANNELS,
+            )
                 .filter { it in visible }
                 .forEach(::loadWidget)
         }
@@ -285,6 +308,9 @@ class DashboardViewModel
                                 pendingReviews = WidgetLoad.Idle,
                                 topProducts = WidgetLoad.Idle,
                                 salesByUniverse = WidgetLoad.Idle,
+                                customerRetention = WidgetLoad.Idle,
+                                acquisitionChannels = WidgetLoad.Idle,
+                                freeCohorts = WidgetLoad.Idle,
                             )
                         }
                         loadVisibleWidgets()
@@ -441,11 +467,16 @@ data class DashboardUiState(
     val pendingReviews: WidgetLoad<PendingReviewsCount> = WidgetLoad.Idle,
     val topProducts: WidgetLoad<List<TopProduct>> = WidgetLoad.Idle,
     val salesByUniverse: WidgetLoad<SalesByUniverse> = WidgetLoad.Idle,
+    val customerRetention: WidgetLoad<CustomerRetention> = WidgetLoad.Idle,
+    val acquisitionChannels: WidgetLoad<AcquisitionChannels> = WidgetLoad.Idle,
+    val freeCohorts: WidgetLoad<FreeConversionCohorts> = WidgetLoad.Idle,
 )
 
 private const val LATEST_ORDERS_LIMIT = 5
 private const val ABANDONED_CARTS_DAYS = 7
 private const val TOP_PRODUCTS_LIMIT = 5
+private const val ACQUISITION_WINDOW_DAYS = 30
+private const val COHORTS_MONTHS = 12
 
 /** État de la carte conversion offert → payant. */
 sealed interface ConversionState {

@@ -4,6 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Campaign
+import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.DonutLarge
 import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.Group
@@ -15,6 +17,7 @@ import androidx.compose.material.icons.outlined.QueryStats
 import androidx.compose.material.icons.outlined.RateReview
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.RemoveShoppingCart
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rebuildit.prestaflow.R
@@ -39,6 +42,9 @@ internal fun DashboardWidget.titleRes(): Int =
         DashboardWidget.REVIEWS -> R.string.dashboard_widget_reviews
         DashboardWidget.TOP_PRODUCTS -> R.string.dashboard_widget_top_products
         DashboardWidget.SALES_BY_UNIVERSE -> R.string.dashboard_widget_sales_by_universe
+        DashboardWidget.CUSTOMER_RETENTION -> R.string.dashboard_widget_customer_retention
+        DashboardWidget.ACQUISITION_CHANNELS -> R.string.dashboard_widget_acquisition_channels
+        DashboardWidget.FREE_CONVERSION_COHORTS -> R.string.dashboard_widget_free_cohorts
     }
 
 @Suppress("CyclomaticComplexMethod")
@@ -58,4 +64,7 @@ internal fun DashboardWidget.icon(): ImageVector =
         DashboardWidget.REVIEWS -> Icons.Outlined.RateReview
         DashboardWidget.TOP_PRODUCTS -> Icons.Outlined.EmojiEvents
         DashboardWidget.SALES_BY_UNIVERSE -> Icons.Outlined.BarChart
+        DashboardWidget.CUSTOMER_RETENTION -> Icons.Outlined.Repeat
+        DashboardWidget.ACQUISITION_CHANNELS -> Icons.Outlined.Campaign
+        DashboardWidget.FREE_CONVERSION_COHORTS -> Icons.Outlined.CardGiftcard
     }

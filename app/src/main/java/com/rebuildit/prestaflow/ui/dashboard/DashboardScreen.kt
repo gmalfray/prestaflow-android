@@ -429,12 +429,18 @@ private fun DashboardContent(
         )
     val reviewsUnavailable = widgetStates.pendingReviews == WidgetLoad.Unavailable
     val universeUnavailable = widgetStates.salesByUniverse == WidgetLoad.Unavailable
+    val retentionUnavailable = widgetStates.customerRetention == WidgetLoad.Unavailable
+    val channelsUnavailable = widgetStates.acquisitionChannels == WidgetLoad.Unavailable
+    val cohortsUnavailable = widgetStates.freeCohorts == WidgetLoad.Unavailable
     val widgetRows =
-        remember(widgetLayout, reviewsUnavailable, universeUnavailable) {
+        remember(widgetLayout, reviewsUnavailable, universeUnavailable, retentionUnavailable, channelsUnavailable, cohortsUnavailable) {
             val hidden =
                 buildSet {
                     if (reviewsUnavailable) add(DashboardWidget.REVIEWS)
                     if (universeUnavailable) add(DashboardWidget.SALES_BY_UNIVERSE)
+                    if (retentionUnavailable) add(DashboardWidget.CUSTOMER_RETENTION)
+                    if (channelsUnavailable) add(DashboardWidget.ACQUISITION_CHANNELS)
+                    if (cohortsUnavailable) add(DashboardWidget.FREE_CONVERSION_COHORTS)
                 }
             widgetLayout.rows(hidden = hidden)
         }
@@ -529,6 +535,24 @@ private fun DashboardContent(
                             modifier = cellModifier,
                             state = widgetStates.salesByUniverse,
                             onRetry = { widgetActions.onRetry(DashboardWidget.SALES_BY_UNIVERSE) },
+                        )
+                    DashboardWidget.CUSTOMER_RETENTION ->
+                        CustomerRetentionCard(
+                            modifier = cellModifier,
+                            state = widgetStates.customerRetention,
+                            onRetry = { widgetActions.onRetry(DashboardWidget.CUSTOMER_RETENTION) },
+                        )
+                    DashboardWidget.ACQUISITION_CHANNELS ->
+                        AcquisitionChannelsCard(
+                            modifier = cellModifier,
+                            state = widgetStates.acquisitionChannels,
+                            onRetry = { widgetActions.onRetry(DashboardWidget.ACQUISITION_CHANNELS) },
+                        )
+                    DashboardWidget.FREE_CONVERSION_COHORTS ->
+                        FreeCohortsCard(
+                            modifier = cellModifier,
+                            state = widgetStates.freeCohorts,
+                            onRetry = { widgetActions.onRetry(DashboardWidget.FREE_CONVERSION_COHORTS) },
                         )
                     else -> {
                         val item =

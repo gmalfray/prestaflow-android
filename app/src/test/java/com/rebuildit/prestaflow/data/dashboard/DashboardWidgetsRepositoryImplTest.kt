@@ -1,7 +1,10 @@
 package com.rebuildit.prestaflow.data.dashboard
 
+import com.rebuildit.prestaflow.data.remote.dto.AcquisitionChannelsResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.BestSellerDto
 import com.rebuildit.prestaflow.data.remote.dto.BestSellersResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.CustomerRetentionDto
+import com.rebuildit.prestaflow.data.remote.dto.FreeConversionCohortsResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListCustomerDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListItemDto
@@ -10,6 +13,7 @@ import com.rebuildit.prestaflow.data.remote.dto.ReviewDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewListResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SalesByUniversResponseDto
 import com.rebuildit.prestaflow.domain.carts.model.CartSummary
+import com.rebuildit.prestaflow.domain.dashboard.model.AcquisitionChannel
 import com.rebuildit.prestaflow.fakes.FakeCartsRepository
 import com.rebuildit.prestaflow.fakes.FakePrestaFlowApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -217,5 +221,112 @@ class DashboardWidgetsRepositoryImplTest {
             assertNull(repo.getSalesByUnivers(null, null))
             api.salesByUniversException = httpException(500)
             assertTrue(runCatching { repo.getSalesByUnivers(null, null) }.exceptionOrNull() is HttpException)
+        }
+
+    @Test
+    fun `fidélité - le DTO se désérialise, la médiane null est conservée`() =
+        runTest {
+            api.customerRetention =
+                json.decodeFromString(
+                    CustomerRetentionDto.serializer(),
+                    """{"paying_customers":820,"repeat_customers":310,"repeat_rate":37.8,"median_days_between_orders":null,
+                        "new_customers":510,"recurring_customers":310,"period":{"from":"x"}}""",
+                )
+            val result = repo.getCustomerRetention("2026-11-01 00:00:00", "2026-11-09 23:59:59")!!
+
+            assertEquals("2026-11-01 00:00:00" to "2026-11-09 23:59:59", api.lastCustomerRetentionQuery)
+            assertEquals(820, result.payingCustomers)
+            assertEquals(37.8, result.repeatRatePercent, 0.0001)
+            assertNull(result.medianDaysBetweenOrders)
+            assertEquals(510, result.newCustomers)
+            assertFalse(result.isEmpty)
+        }
+
+    @Test
+    fun `fidélité - taux recalculé si absent, vide si aucun client payant`() {
+        val recomputed = CustomerRetentionDto(payingCustomers = 200, repeatCustomers = 50).toDomain()
+        assertEquals(25.0, recomputed.repeatRatePercent, 0.0001)
+        val empty = json.decodeFromString(CustomerRetentionDto.serializer(), "{}").toDomain()
+        assertEquals(0.0, empty.repeatRatePercent, 0.0)
+        assertTrue(empty.isEmpty)
+    }
+
+    @Test
+    fun `fidélité - 404 ou 409 donne null, une autre erreur est propagée`() =
+        runTest {
+            api.customerRetentionException = httpException(404)
+            assertNull(repo.getCustomerRetention(null, null))
+            api.customerRetentionException = httpException(409)
+            assertNull(repo.getCustomerRetention(null, null))
+            api.customerRetentionException = httpException(500)
+            assertTrue(runCatching { repo.getCustomerRetention(null, null) }.exceptionOrNull() is HttpException)
+        }
+
+    @Test
+    fun `canaux - tri décroissant, clés normalisées fusionnées, zéros écartés, parts`() =
+        runTest {
+            api.acquisitionChannels =
+                json.decodeFromString(
+                    AcquisitionChannelsResponseDto.serializer(),
+                    """{"channels":[{"key":"direct","orders":44},{"key":"recherche","orders":100},
+                        {"key":"Recherche","orders":18},{"key":"instagram","orders":38},{"key":"pinterest","orders":0},
+                        {"key":"","orders":9}],"window_days":30,"period":{}}""",
+                )
+            val result = repo.getAcquisitionChannels("a", "b", 30)!!
+
+            assertEquals(Triple<String?, String?, Int?>("a", "b", 30), api.lastAcquisitionChannelsQuery)
+            assertEquals(listOf("recherche", "direct", "instagram"), result.channels.map { it.key })
+            assertEquals(118, result.channels.first().orders)
+            assertEquals(200, result.totalOrders)
+            assertEquals(0.59f, result.shareOf(result.channels.first()), 0.0001f)
+            assertEquals(30, result.windowDays)
+            assertFalse(result.isEmpty)
+        }
+
+    @Test
+    fun `canaux - réponse vide donne un modèle vide, 404 donne null`() =
+        runTest {
+            api.acquisitionChannels = json.decodeFromString(AcquisitionChannelsResponseDto.serializer(), "{}")
+            val result = repo.getAcquisitionChannels(null, null, 30)!!
+            assertTrue(result.isEmpty)
+            assertEquals(0f, result.shareOf(AcquisitionChannel("x", 1)), 0f)
+            assertEquals(30, result.windowDays)
+
+            api.acquisitionChannelsException = httpException(404)
+            assertNull(repo.getAcquisitionChannels(null, null, 30))
+            api.acquisitionChannelsException = httpException(500)
+            assertTrue(runCatching { repo.getAcquisitionChannels(null, null, 30) }.exceptionOrNull() is HttpException)
+        }
+
+    @Test
+    fun `cohortes - mois récents d'abord et taux dérivés par effectif`() =
+        runTest {
+            api.freeConversionCohorts =
+                json.decodeFromString(
+                    FreeConversionCohortsResponseDto.serializer(),
+                    """{"cohorts":[{"month":"2026-04","first_free_customers":55,"converted_30d":3,"converted_60d":5,"converted_90d":8},
+                        {"month":"2026-05","first_free_customers":40,"converted_30d":1,"converted_60d":2,"converted_90d":3},
+                        {"month":"2026-06","first_free_customers":0}],"period":{}}""",
+                )
+            val result = repo.getFreeConversionCohorts(12)!!
+
+            assertEquals(12, api.lastFreeConversionCohortsMonths)
+            assertEquals(listOf("2026-06", "2026-05", "2026-04"), result.cohorts.map { it.month })
+            val may = result.cohorts[1]
+            assertEquals(7.5, may.rate90Percent, 0.0001)
+            assertEquals(5.0, may.rate60Percent, 0.0001)
+            assertEquals(2.5, may.rate30Percent, 0.0001)
+            assertEquals(0.0, result.cohorts[0].rate90Percent, 0.0)
+        }
+
+    @Test
+    fun `cohortes - 404 ou 409 donne null, une autre erreur est propagée`() =
+        runTest {
+            api.freeConversionCohortsException = httpException(409)
+            assertNull(repo.getFreeConversionCohorts(12))
+            api.freeConversionCohortsException = httpException(404)
+            assertNull(repo.getFreeConversionCohorts(12))
+            api.freeConversionCohortsException = httpException(500)
+            assertTrue(runCatching { repo.getFreeConversionCohorts(12) }.exceptionOrNull() is HttpException)
         }
 }

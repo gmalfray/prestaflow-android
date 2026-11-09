@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -133,21 +134,31 @@ private fun UniverseRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        ShareBar(share = share, color = barColor)
+    }
+}
+
+/** Barre de proportion (piste `surfaceContainerHigh`, remplissage [color]) ; plancher visuel à 2 %. */
+@Composable
+internal fun ShareBar(
+    share: Float,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(BarHeight)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh, BarShape),
+    ) {
         Box(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .height(BarHeight)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh, BarShape),
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(share.coerceIn(0.02f, 1f))
-                        .background(barColor, BarShape),
-            )
-        }
+                    .fillMaxHeight()
+                    .fillMaxWidth(share.coerceIn(0.02f, 1f))
+                    .background(color, BarShape),
+        )
     }
 }
 
