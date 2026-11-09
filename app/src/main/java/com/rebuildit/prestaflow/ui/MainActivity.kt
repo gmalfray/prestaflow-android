@@ -355,6 +355,13 @@ private fun AuthenticatedShell(
     // ré-entrée sur l'onglet, tant que l'argument de navigation "filter" reste "new").
     var clientsEnteredWithPeriod by rememberSaveable { mutableStateOf(false) }
 
+    // Même correctif que les deux flags ci-dessus, pour la tuile KPI "Stock bas" du dashboard qui ouvre
+    // Produits préfiltré sur le stock bas (route "products?stock=low_stock"). Sans ce flag, un clic
+    // ultérieur sur l'onglet "Produits" restaure via restoreState cette entrée filtrée (même pattern de
+    // route paramétrée) au lieu d'une entrée fraîche : le filtre stock bas reste collé et l'onglet
+    // oscille entre la liste totale et le stock bas d'un passage à l'autre.
+    var productsEnteredWithStock by rememberSaveable { mutableStateOf(false) }
+
     // Navigation vers le détail commande depuis une notification push.
     // Déclenché à chaque changement de pendingOrderId (non-null uniquement).
     // popUpTo assure un back stack propre : Dashboard → détail commande (retour arrière → Dashboard).
@@ -459,6 +466,17 @@ private fun AuthenticatedShell(
                 // la branche standard (cf. remarque IMPORTANT ci-dessus, identique pour Clients).
                 clientsEnteredWithPeriod = false
                 navController.navigate(AppDestination.Clients.route) {
+                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                    launchSingleTop = true
+                }
+            }
+            destination == AppDestination.Products && productsEnteredWithStock -> {
+                // Cf. commentaire sur productsEnteredWithStock : force une entrée Produits fraîche (sans
+                // restoreState, et sans l'argument stock) au lieu de restaurer l'entrée préfiltrée stock
+                // bas ouverte depuis la tuile du dashboard. Même frontière popUpTo que la branche
+                // standard (cf. remarque IMPORTANT ci-dessus, identique pour Produits).
+                productsEnteredWithStock = false
+                navController.navigate(AppDestination.Products.route) {
                     popUpTo(navController.graph.startDestinationId) { saveState = true }
                     launchSingleTop = true
                 }
@@ -609,6 +627,7 @@ private fun AuthenticatedShell(
                     modifier = Modifier.fillMaxSize(),
                     onOrdersOpenedWithPeriod = { ordersEnteredWithPeriod = true },
                     onClientsOpenedWithPeriod = { clientsEnteredWithPeriod = true },
+                    onProductsOpenedWithStock = { productsEnteredWithStock = true },
                 )
             }
         }

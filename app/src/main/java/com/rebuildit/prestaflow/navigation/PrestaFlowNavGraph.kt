@@ -48,6 +48,9 @@ fun PrestaFlowNavGraph(
     // ouvre Clients avec un filtre de période — cf. commentaire détaillé sur le flag
     // clientsEnteredWithPeriod dans MainActivity.kt.
     onClientsOpenedWithPeriod: () -> Unit = {},
+    // Même rôle que les deux flags ci-dessus, pour la tuile KPI "Stock bas" du dashboard qui ouvre
+    // l'onglet Produits préfiltré sur le stock bas (route "products?stock=low_stock").
+    onProductsOpenedWithStock: () -> Unit = {},
 ) {
     val isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
 
@@ -75,6 +78,10 @@ fun PrestaFlowNavGraph(
                             }
                         },
                         onLowStockClick = {
+                            // Flag consommé au prochain clic sur l'onglet Produits (cf. MainActivity) :
+                            // force alors une entrée fraîche sans filtre, pour que le stock bas se retire
+                            // et que l'onglet n'oscille pas entre liste totale et stock bas.
+                            onProductsOpenedWithStock()
                             // Tuile "Stock bas" → onglet Produits préfiltré sur le stock bas, pour voir
                             // et réassortir les références concernées. Même frontière
                             // popUpTo(startDestinationId) + saveState que les autres tuiles qui ouvrent un
