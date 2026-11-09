@@ -540,7 +540,6 @@
     <string name="dashboard_legend_orders_free">Gratuitos</string>
     <string name="dashboard_kpi_orders_free_sub">de ellos %1$d gratuitos</string>
     <string name="dashboard_conversion_title">Conversión gratis → de pago</string>
-    <string name="dashboard_conversion_loading">Cargando…</string>
     <string name="dashboard_conversion_error">Conversión no disponible por ahora.</string>
     <string name="dashboard_conversion_none">Ningún cliente con un primer pedido gratuito.</string>
     <string name="dashboard_conversion_rate">%1$.1f %%</string>

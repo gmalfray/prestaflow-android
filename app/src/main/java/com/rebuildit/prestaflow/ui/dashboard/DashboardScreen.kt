@@ -1592,7 +1592,7 @@ private fun chartSeriesColor(kind: ChartSeriesKind): Color =
         ChartSeriesKind.TURNOVER -> Color(0xFF1976D2)
         ChartSeriesKind.TURNOVER_PREVIOUS -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         ChartSeriesKind.AVG_CART, ChartSeriesKind.ORDERS_PAID -> MaterialTheme.colorScheme.primary
-        ChartSeriesKind.ORDERS_FREE -> Color(0xFFF57C00)
+        ChartSeriesKind.ORDERS_FREE -> MaterialTheme.colorScheme.primaryContainer
         ChartSeriesKind.NEW_CUSTOMERS -> colorNewCustomers
     }
 

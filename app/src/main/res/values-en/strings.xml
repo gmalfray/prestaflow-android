@@ -539,7 +539,6 @@
     <string name="dashboard_legend_orders_free">Free</string>
     <string name="dashboard_kpi_orders_free_sub">incl. %1$d free</string>
     <string name="dashboard_conversion_title">Free → paid conversion</string>
-    <string name="dashboard_conversion_loading">Loading…</string>
     <string name="dashboard_conversion_error">Conversion unavailable right now.</string>
     <string name="dashboard_conversion_none">No customer whose first order was free.</string>
     <string name="dashboard_conversion_rate">%1$.1f %%</string>
