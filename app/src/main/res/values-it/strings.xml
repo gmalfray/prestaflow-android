@@ -562,4 +562,12 @@
     <string name="dashboard_widget_empty">Niente da mostrare.</string>
     <string name="dashboard_widget_carts_sub">%1$s in gioco</string>
     <string name="dashboard_widget_top_qty">%1$d venduti</string>
+    <string name="dashboard_edit_hint">Tocca la maniglia e trascina per riordinare. L\'interruttore nasconde o mostra un widget.</string>
+    <string name="dashboard_edit_span_half">Metà larghezza</string>
+    <string name="dashboard_edit_span_full">Larghezza intera</string>
+    <string name="dashboard_widget_loading">Caricamento</string>
+    <string name="dashboard_widget_unavailable_short">Non disponibile</string>
+    <string name="dashboard_split_total_label">ordini</string>
+    <string name="dashboard_split_percent">%1$d %%</string>
+    <string name="dashboard_split_description">%1$s: %2$d ordini, %3$s %4$d (%5$d %%), %6$s %7$d (%8$d %%)</string>
 </resources>

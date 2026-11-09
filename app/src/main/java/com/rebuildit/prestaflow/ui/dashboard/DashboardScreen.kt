@@ -34,6 +34,7 @@ import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Fullscreen
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -420,23 +421,38 @@ private fun DashboardContent(
     val cartsSubtitle =
         (widgetStates.abandonedCarts as? WidgetLoad.Data)?.value?.takeIf { it.count > 0 }
             ?.let { stringResource(id = R.string.dashboard_widget_carts_sub, currencyFormatter.format(it.totalTaxIncl)) }
+    val loadingText = stringResource(id = R.string.dashboard_widget_loading)
+    val unavailableText = stringResource(id = R.string.dashboard_widget_unavailable_short)
     val cartsItem =
         KpiItem(
             title = stringResource(id = DashboardWidget.CARTS.titleRes()),
-            value = widgetValueText(widgetStates.abandonedCarts) { numberFormatter.format(it.count) },
+            value =
+                widgetValueText(widgetStates.abandonedCarts, loadingText, unavailableText) { numberFormatter.format(it.count) },
             icon = DashboardWidget.CARTS.icon(),
-            onClick = widgetActions.onCartsClick,
+            onClick =
+                if (widgetStates.abandonedCarts == WidgetLoad.Error) {
+                    { widgetActions.onRetry(DashboardWidget.CARTS) }
+                } else {
+                    widgetActions.onCartsClick
+                },
             subtitle = cartsSubtitle,
+            status = widgetStates.abandonedCarts.tileStatus(),
         )
     val reviewsItem =
         KpiItem(
             title = stringResource(id = DashboardWidget.REVIEWS.titleRes()),
             value =
-                widgetValueText(widgetStates.pendingReviews) {
+                widgetValueText(widgetStates.pendingReviews, loadingText, unavailableText) {
                     numberFormatter.format(it.count) + if (it.hasMore) "+" else ""
                 },
             icon = DashboardWidget.REVIEWS.icon(),
-            onClick = widgetActions.onReviewsClick,
+            onClick =
+                if (widgetStates.pendingReviews == WidgetLoad.Error) {
+                    { widgetActions.onRetry(DashboardWidget.REVIEWS) }
+                } else {
+                    widgetActions.onReviewsClick
+                },
+            status = widgetStates.pendingReviews.tileStatus(),
         )
 
     var showLayoutEditor by rememberSaveable { mutableStateOf(false) }
@@ -912,14 +928,38 @@ private fun KpiCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = item.value,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (item.subtitle != null) {
+                when (item.status) {
+                    TileStatus.Loading -> SkeletonBar(modifier = Modifier.fillMaxWidth(0.5f).padding(vertical = 5.dp), height = 18.dp)
+                    TileStatus.Unavailable ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Refresh,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(Dimensions.iconSizeSmall),
+                            )
+                            Text(
+                                text = item.value,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    TileStatus.Ready ->
+                        Text(
+                            text = item.value,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                }
+                if (item.subtitle != null && item.status == TileStatus.Ready) {
                     Text(
                         text = item.subtitle,
                         style = MaterialTheme.typography.labelSmall,
@@ -1291,32 +1331,11 @@ private fun FreeConversionCard(
             modifier = Modifier.padding(Dimensions.cardPadding),
             verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
         ) {
-            Text(
-                text = stringResource(id = R.string.dashboard_conversion_title).uppercase(),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            WidgetCardHeader(widget = DashboardWidget.FREE_CONVERSION)
             when (state) {
-                ConversionState.Loading ->
-                    Text(
-                        text = stringResource(id = R.string.dashboard_conversion_loading),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                ConversionState.Loading -> WidgetSkeleton(lines = 2)
                 ConversionState.Error ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(id = R.string.dashboard_conversion_error),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(onClick = onRetry) { Text(stringResource(id = R.string.action_retry)) }
-                    }
+                    WidgetErrorRow(message = stringResource(id = R.string.dashboard_conversion_error), onRetry = onRetry)
                 is ConversionState.Data -> FreeConversionData(state.conversion)
             }
         }
@@ -2069,15 +2088,25 @@ internal fun kpiTrendPercentFromSeries(
 
 private const val LOW_STOCK_CAP = 50
 
-/** Valeur d'une tuile KPI réseau : le texte formaté, « … » pendant le chargement, « – » en erreur. */
+/** Statut d'affichage d'une tuile à données réseau. */
+private fun <T> WidgetLoad<T>.tileStatus(): TileStatus =
+    when (this) {
+        is WidgetLoad.Data -> TileStatus.Ready
+        WidgetLoad.Error -> TileStatus.Unavailable
+        else -> TileStatus.Loading
+    }
+
+/** Valeur d'une tuile KPI réseau : texte formaté, ou texte annoncé (chargement / indisponible). */
 private fun <T> widgetValueText(
     state: WidgetLoad<T>,
+    loadingText: String,
+    unavailableText: String,
     format: (T) -> String,
 ): String =
     when (state) {
         is WidgetLoad.Data -> format(state.value)
-        WidgetLoad.Error -> "–"
-        else -> "…"
+        WidgetLoad.Error -> unavailableText
+        else -> loadingText
     }
 
 private data class KpiItem(
@@ -2092,6 +2121,8 @@ private data class KpiItem(
     val trend: KpiTrend? = null,
     /** Série pour la mini-sparkline. Peut être vide/trop courte/plate — géré par [KpiSparkline]. */
     val sparklineValues: List<Float> = emptyList(),
+    /** Chargement / indisponible : [value] porte alors le texte annoncé, la tuile affiche un état dédié. */
+    val status: TileStatus = TileStatus.Ready,
 )
 
 // ─── Previews ─────────────────────────────────────────────────────────────────

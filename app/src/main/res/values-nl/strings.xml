@@ -562,4 +562,12 @@
     <string name="dashboard_widget_empty">Niets om te tonen.</string>
     <string name="dashboard_widget_carts_sub">%1$s in het spel</string>
     <string name="dashboard_widget_top_qty">%1$d verkocht</string>
+    <string name="dashboard_edit_hint">Raak de greep aan en sleep om de volgorde te wijzigen. Met de schakelaar verberg of toon je een widget.</string>
+    <string name="dashboard_edit_span_half">Halve breedte</string>
+    <string name="dashboard_edit_span_full">Volle breedte</string>
+    <string name="dashboard_widget_loading">Laden</string>
+    <string name="dashboard_widget_unavailable_short">Niet beschikbaar</string>
+    <string name="dashboard_split_total_label">bestellingen</string>
+    <string name="dashboard_split_percent">%1$d %%</string>
+    <string name="dashboard_split_description">%1$s: %2$d bestellingen, %3$s %4$d (%5$d %%), %6$s %7$d (%8$d %%)</string>
 </resources>

@@ -576,4 +576,12 @@
     <string name="dashboard_widget_empty">Aucune donnée à afficher.</string>
     <string name="dashboard_widget_carts_sub">%1$s en jeu</string>
     <string name="dashboard_widget_top_qty">%1$d vendus</string>
+    <string name="dashboard_edit_hint">Touchez la poignée et faites glisser pour réordonner. L\'interrupteur masque ou affiche un widget.</string>
+    <string name="dashboard_edit_span_half">Demi-largeur</string>
+    <string name="dashboard_edit_span_full">Pleine largeur</string>
+    <string name="dashboard_widget_loading">Chargement</string>
+    <string name="dashboard_widget_unavailable_short">Indisponible</string>
+    <string name="dashboard_split_total_label">commandes</string>
+    <string name="dashboard_split_percent">%1$d %%</string>
+    <string name="dashboard_split_description">%1$s : %2$d commandes, %3$s %4$d (%5$d %%), %6$s %7$d (%8$d %%)</string>
 </resources>

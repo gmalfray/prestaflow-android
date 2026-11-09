@@ -562,4 +562,12 @@
     <string name="dashboard_widget_empty">Nichts anzuzeigen.</string>
     <string name="dashboard_widget_carts_sub">%1$s im Spiel</string>
     <string name="dashboard_widget_top_qty">%1$d verkauft</string>
+    <string name="dashboard_edit_hint">Griff berühren und ziehen, um die Reihenfolge zu ändern. Mit dem Schalter blenden Sie ein Widget aus oder ein.</string>
+    <string name="dashboard_edit_span_half">Halbe Breite</string>
+    <string name="dashboard_edit_span_full">Volle Breite</string>
+    <string name="dashboard_widget_loading">Wird geladen</string>
+    <string name="dashboard_widget_unavailable_short">Nicht verfügbar</string>
+    <string name="dashboard_split_total_label">Bestellungen</string>
+    <string name="dashboard_split_percent">%1$d %%</string>
+    <string name="dashboard_split_description">%1$s: %2$d Bestellungen, %3$s %4$d (%5$d %%), %6$s %7$d (%8$d %%)</string>
 </resources>
