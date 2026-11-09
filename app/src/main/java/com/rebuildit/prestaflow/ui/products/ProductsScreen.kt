@@ -32,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -76,12 +77,22 @@ fun ProductsRoute(
     onProductClick: (Long) -> Unit = {},
     onAddShop: () -> Unit = {},
     onScanProduct: () -> Unit = {},
+    initialStockFilter: StockFilter? = null,
     modifier: Modifier = Modifier,
     viewModel: ProductsViewModel = hiltViewModel(),
     shopsViewModel: ShopsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
+
+    // Préfiltre venu de la navigation (tuile « Stock bas » du dashboard) : appliqué une seule fois à
+    // l'ouverture. L'entrée Produits est fraîche (popUpTo lors de la navigation), donc ce LaunchedEffect
+    // ne se rejoue pas si l'utilisateur change ensuite le filtre à la main.
+    LaunchedEffect(Unit) {
+        if (initialStockFilter != null) {
+            viewModel.onStockFilterSelected(initialStockFilter)
+        }
+    }
 
     // Rattrapage : recharge la liste quand l'écran redevient visible (retour d'un autre onglet),
     // cf. KDoc de OrdersViewModel.onScreenResumed pour le throttle et le pourquoi.

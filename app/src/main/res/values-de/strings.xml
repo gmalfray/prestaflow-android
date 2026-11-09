@@ -548,6 +548,7 @@
     <string name="dashboard_widget_chart">Diagramm</string>
     <string name="dashboard_widget_pending_orders">Zahlung ausstehend</string>
     <string name="dashboard_widget_low_stock">Niedriger Bestand</string>
+    <string name="dashboard_widget_low_stock_subtitle">unter dem Schwellenwert</string>
     <string name="dashboard_edit_action">Dashboard anpassen</string>
     <string name="dashboard_edit_title">Dashboard anpassen</string>
     <string name="dashboard_edit_save">Speichern</string>

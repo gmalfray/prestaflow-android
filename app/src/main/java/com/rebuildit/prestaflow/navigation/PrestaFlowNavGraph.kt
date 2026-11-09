@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.rebuildit.prestaflow.domain.products.model.StockFilter
 import com.rebuildit.prestaflow.ui.carts.CartDetailRoute
 import com.rebuildit.prestaflow.ui.carts.CartsRoute
 import com.rebuildit.prestaflow.ui.clients.ClientDetailRoute
@@ -72,6 +73,21 @@ fun PrestaFlowNavGraph(
                             navController.navigate("${AppDestination.Clients.route}?section=reviews") {
                                 launchSingleTop = true
                             }
+                        },
+                        onLowStockClick = {
+                            // Tuile "Stock bas" → onglet Produits préfiltré sur le stock bas, pour voir
+                            // et réassortir les références concernées. Même frontière
+                            // popUpTo(startDestinationId) + saveState que les autres tuiles qui ouvrent un
+                            // onglet de la barre du bas (cf. onClientsClick) : garantit un ViewModel frais
+                            // qui applique bien le filtre même si l'onglet Produits a déjà été visité.
+                            val lowStockParam = StockFilter.LOW_STOCK.stockParam ?: "low_stock"
+                            navController.navigate(AppDestination.productsRouteWithStock(lowStockParam)) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        onProductClick = { productId ->
+                            navController.navigate("${AppDestination.Products.route}/$productId")
                         },
                     ),
                 onAddShop = {
@@ -174,8 +190,24 @@ fun PrestaFlowNavGraph(
                 },
             )
         }
-        composable(AppDestination.Products.route) {
+        // Onglet Produits, avec filtre de stock optionnel (transmis depuis la tuile "Stock bas" du
+        // dashboard). L'argument "stock" est null lors d'un accès direct via la barre de navigation.
+        composable(
+            route = "${AppDestination.Products.route}?${AppDestination.PRODUCTS_STOCK_ARG}={${AppDestination.PRODUCTS_STOCK_ARG}}",
+            arguments =
+                listOf(
+                    navArgument(AppDestination.PRODUCTS_STOCK_ARG) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+        ) { backStackEntry ->
+            val stockParam = backStackEntry.arguments?.getString(AppDestination.PRODUCTS_STOCK_ARG)
+            val initialStockFilter =
+                StockFilter.entries.firstOrNull { it.stockParam != null && it.stockParam == stockParam }
             ProductsRoute(
+                initialStockFilter = initialStockFilter,
                 onProductClick = { productId ->
                     navController.navigate("${AppDestination.Products.route}/$productId")
                 },

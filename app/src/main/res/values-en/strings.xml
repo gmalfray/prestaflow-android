@@ -547,6 +547,7 @@
     <string name="dashboard_widget_chart">Chart</string>
     <string name="dashboard_widget_pending_orders">Awaiting payment</string>
     <string name="dashboard_widget_low_stock">Low stock</string>
+    <string name="dashboard_widget_low_stock_subtitle">below threshold</string>
     <string name="dashboard_edit_action">Customize dashboard</string>
     <string name="dashboard_edit_title">Customize dashboard</string>
     <string name="dashboard_edit_save">Save</string>

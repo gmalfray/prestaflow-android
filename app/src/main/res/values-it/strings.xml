@@ -548,6 +548,7 @@
     <string name="dashboard_widget_chart">Grafico</string>
     <string name="dashboard_widget_pending_orders">In attesa di pagamento</string>
     <string name="dashboard_widget_low_stock">Scorte basse</string>
+    <string name="dashboard_widget_low_stock_subtitle">sotto la soglia</string>
     <string name="dashboard_edit_action">Personalizza la dashboard</string>
     <string name="dashboard_edit_title">Personalizza la dashboard</string>
     <string name="dashboard_edit_save">Salva</string>

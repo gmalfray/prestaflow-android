@@ -548,6 +548,7 @@
     <string name="dashboard_widget_chart">Gráfico</string>
     <string name="dashboard_widget_pending_orders">Pendientes de pago</string>
     <string name="dashboard_widget_low_stock">Stock bajo</string>
+    <string name="dashboard_widget_low_stock_subtitle">por debajo del umbral</string>
     <string name="dashboard_edit_action">Personalizar el panel</string>
     <string name="dashboard_edit_title">Personalizar el panel</string>
     <string name="dashboard_edit_save">Guardar</string>

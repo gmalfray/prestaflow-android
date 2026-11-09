@@ -138,6 +138,10 @@ data class DashboardWidgetActions(
     val onAllOrdersClick: () -> Unit = {},
     val onCartsClick: () -> Unit = {},
     val onReviewsClick: () -> Unit = {},
+    /** Tuile « Stock bas » → ouvre l'onglet Produits préfiltré sur le stock bas. */
+    val onLowStockClick: () -> Unit = {},
+    /** Ligne du widget « Top produits » → ouvre la fiche du produit. */
+    val onProductClick: (Long) -> Unit = {},
     val onRetry: (DashboardWidget) -> Unit = {},
 )
 
@@ -425,6 +429,8 @@ private fun DashboardContent(
                     title = stringResource(id = DashboardWidget.LOW_STOCK.titleRes()),
                     value = lowStockText,
                     icon = DashboardWidget.LOW_STOCK.icon(),
+                    subtitle = stringResource(R.string.dashboard_widget_low_stock_subtitle),
+                    onClick = widgetActions.onLowStockClick,
                 ),
         )
     val reviewsUnavailable = widgetStates.pendingReviews == WidgetLoad.Unavailable
@@ -543,6 +549,7 @@ private fun DashboardContent(
                             modifier = cellModifier,
                             state = widgetStates.topProducts,
                             onRetry = { widgetActions.onRetry(DashboardWidget.TOP_PRODUCTS) },
+                            onProductClick = widgetActions.onProductClick,
                         )
                     DashboardWidget.SALES_BY_UNIVERSE ->
                         SalesByUniverseCard(

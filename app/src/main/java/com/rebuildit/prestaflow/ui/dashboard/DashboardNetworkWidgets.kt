@@ -171,6 +171,7 @@ internal fun TopProductsCard(
     state: WidgetLoad<List<TopProduct>>,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    onProductClick: (Long) -> Unit = {},
 ) {
     val currency = rememberCurrencyFormatter()
     NetworkWidgetCard(DashboardWidget.TOP_PRODUCTS, state, onRetry, modifier) { products ->
@@ -179,7 +180,12 @@ internal fun TopProductsCard(
         } else {
             products.forEachIndexed { index, product ->
                 if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                TopProductRow(rank = index + 1, product = product, currency = currency)
+                TopProductRow(
+                    rank = index + 1,
+                    product = product,
+                    currency = currency,
+                    onClick = { onProductClick(product.productId.toLong()) },
+                )
             }
         }
     }
@@ -190,9 +196,16 @@ private fun TopProductRow(
     rank: Int,
     product: TopProduct,
     currency: NumberFormat,
+    onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = Dimensions.minTouchTarget).padding(vertical = Dimensions.spacingS),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(Dimensions.cardCornerRadius))
+                .clickable(onClick = onClick)
+                .heightIn(min = Dimensions.minTouchTarget)
+                .padding(vertical = Dimensions.spacingS),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
     ) {

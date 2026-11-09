@@ -41,5 +41,15 @@ enum class AppDestination(
          * Pas une entrée d'[AppDestination] : le SAV n'a pas sa propre place dans la barre du bas.
          */
         const val SAV_THREAD_ROUTE = "sav"
+
+        /**
+         * Argument de requête optionnel de l'onglet [Products] : préfiltre la liste sur un état de
+         * stock (ex. « stock bas » depuis la tuile dashboard). Absent lors d'un accès normal via la
+         * barre du bas.
+         */
+        const val PRODUCTS_STOCK_ARG = "stock"
+
+        /** Route de l'onglet Produits préfiltrée sur un état de stock (cf. [PRODUCTS_STOCK_ARG]). */
+        fun productsRouteWithStock(stockParam: String): String = "${Products.route}?$PRODUCTS_STOCK_ARG=$stockParam"
     }
 }

@@ -548,6 +548,7 @@
     <string name="dashboard_widget_chart">Grafiek</string>
     <string name="dashboard_widget_pending_orders">Wacht op betaling</string>
     <string name="dashboard_widget_low_stock">Lage voorraad</string>
+    <string name="dashboard_widget_low_stock_subtitle">onder de drempel</string>
     <string name="dashboard_edit_action">Dashboard aanpassen</string>
     <string name="dashboard_edit_title">Dashboard aanpassen</string>
     <string name="dashboard_edit_save">Opslaan</string>
