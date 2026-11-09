@@ -209,12 +209,10 @@ fun PrestaFlowNavGraph(
                         defaultValue = null
                     },
                 ),
-        ) { backStackEntry ->
-            val stockParam = backStackEntry.arguments?.getString(AppDestination.PRODUCTS_STOCK_ARG)
-            val initialStockFilter =
-                StockFilter.entries.firstOrNull { it.stockParam != null && it.stockParam == stockParam }
+        ) {
+            // L'argument "stock" est lu par ProductsViewModel via son SavedStateHandle et appliqué dès
+            // l'état initial (cf. ProductsViewModel) : rien à transmettre ni à appliquer ici.
             ProductsRoute(
-                initialStockFilter = initialStockFilter,
                 onProductClick = { productId ->
                     navController.navigate("${AppDestination.Products.route}/$productId")
                 },

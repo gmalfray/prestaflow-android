@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.products
 
+import androidx.lifecycle.SavedStateHandle
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
 import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard
 import com.rebuildit.prestaflow.core.util.ScreenResumeRefreshGuard.Companion.MIN_INTERVAL_MS
@@ -55,12 +56,13 @@ class ProductsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun buildViewModel(): ProductsViewModel =
+    private fun buildViewModel(stockArg: String? = null): ProductsViewModel =
         ProductsViewModel(
             productsRepository = fakeProductsRepo,
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = fakeAuthRepo,
             resumeRefreshGuard = resumeRefreshGuard,
+            savedStateHandle = SavedStateHandle(stockArg?.let { mapOf("stock" to it) } ?: emptyMap()),
         )
 
     // ─── Total depuis l'API ──────────────────────────────────────────────────
@@ -252,6 +254,48 @@ class ProductsViewModelTest {
             assertNull(
                 "StockFilter.ALL doit transmettre null comme active",
                 lastCall?.active,
+            )
+        }
+
+    @Test
+    fun `l argument de nav stock applique le filtre des l etat initial sans course`() =
+        runTest {
+            val vm = buildViewModel(stockArg = StockFilter.LOW_STOCK.stockParam)
+            advanceUntilIdle()
+
+            assertEquals(
+                "L'état initial doit porter le filtre LOW_STOCK transmis par la navigation",
+                StockFilter.LOW_STOCK,
+                vm.uiState.value.stockFilter,
+            )
+            val firstCall = fakeProductsRepo.refreshCalls.firstOrNull()
+            assertEquals(
+                "Le premier refresh (init) doit déjà utiliser low_stock : pas de refresh 'Tout' qui courrait après",
+                StockFilter.LOW_STOCK.stockParam,
+                firstCall?.stockFilter,
+            )
+        }
+
+    @Test
+    fun `onStockFilterToggle active le filtre puis revient au defaut au re-tap`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onStockFilterToggle(StockFilter.LOW_STOCK)
+            advanceUntilIdle()
+            assertEquals(
+                "Premier tap : le filtre LOW_STOCK devient actif",
+                StockFilter.LOW_STOCK,
+                vm.uiState.value.stockFilter,
+            )
+
+            vm.onStockFilterToggle(StockFilter.LOW_STOCK)
+            advanceUntilIdle()
+            assertEquals(
+                "Re-tap sur le filtre actif : retour au défaut ALL",
+                StockFilter.ALL,
+                vm.uiState.value.stockFilter,
             )
         }
 

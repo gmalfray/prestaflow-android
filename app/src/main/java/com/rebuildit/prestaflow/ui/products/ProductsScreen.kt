@@ -32,7 +32,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -77,22 +76,15 @@ fun ProductsRoute(
     onProductClick: (Long) -> Unit = {},
     onAddShop: () -> Unit = {},
     onScanProduct: () -> Unit = {},
-    initialStockFilter: StockFilter? = null,
     modifier: Modifier = Modifier,
     viewModel: ProductsViewModel = hiltViewModel(),
     shopsViewModel: ShopsViewModel = hiltViewModel(),
 ) {
+    // Le filtre initial (ex. « stock bas » depuis la tuile du dashboard) est lu par le ViewModel depuis
+    // l'argument de navigation « stock » et appliqué dès l'état initial, cf. ProductsViewModel. Pas de
+    // LaunchedEffect ici : l'appliquer après coup créait une course avec le refresh de l'init.
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val connections by shopsViewModel.connections.collectAsStateWithLifecycle()
-
-    // Préfiltre venu de la navigation (tuile « Stock bas » du dashboard) : appliqué une seule fois à
-    // l'ouverture. L'entrée Produits est fraîche (popUpTo lors de la navigation), donc ce LaunchedEffect
-    // ne se rejoue pas si l'utilisateur change ensuite le filtre à la main.
-    LaunchedEffect(Unit) {
-        if (initialStockFilter != null) {
-            viewModel.onStockFilterSelected(initialStockFilter)
-        }
-    }
 
     // Rattrapage : recharge la liste quand l'écran redevient visible (retour d'un autre onglet),
     // cf. KDoc de OrdersViewModel.onScreenResumed pour le throttle et le pourquoi.
@@ -110,6 +102,7 @@ fun ProductsRoute(
         onSwitchShop = shopsViewModel::switchShop,
         onAddShop = onAddShop,
         onStockFilterSelected = viewModel::onStockFilterSelected,
+        onStockFilterToggle = viewModel::onStockFilterToggle,
         // Le FAB "Scanner un produit" ouvre désormais l'écran dédié de réappro en série
         // (scanner permanent, cf. StockReplenishScreen) au lieu de l'ancien flux
         // scan ponctuel → bottom sheet fiche stock. Ce dernier (ProductScanViewModel /
@@ -131,6 +124,7 @@ fun ProductsScreen(
     onSwitchShop: (String) -> Unit = {},
     onAddShop: () -> Unit = {},
     onStockFilterSelected: (StockFilter) -> Unit = {},
+    onStockFilterToggle: (StockFilter) -> Unit = {},
     onScanProduct: () -> Unit = {},
 ) {
     val errorMessage = state.error?.asString()
@@ -169,6 +163,7 @@ fun ProductsScreen(
                     onAddShop = onAddShop,
                     stockFilter = state.stockFilter,
                     onStockFilterSelected = onStockFilterSelected,
+                    onStockFilterToggle = onStockFilterToggle,
                 )
         }
 
@@ -207,6 +202,7 @@ private fun ProductList(
     onAddShop: () -> Unit,
     stockFilter: StockFilter = StockFilter.ALL,
     onStockFilterSelected: (StockFilter) -> Unit = {},
+    onStockFilterToggle: (StockFilter) -> Unit = {},
 ) {
     val currencyFormatter = remember { euroCurrencyFormatter() }
 
@@ -242,6 +238,8 @@ private fun ProductList(
                         ProductsStatsRow(
                             totalCount = totalCount,
                             lowStockCount = lowStockCount,
+                            stockFilter = stockFilter,
+                            onStockFilterToggle = onStockFilterToggle,
                         )
                     }
 
@@ -334,46 +332,71 @@ private fun ProductsStatsRow(
     totalCount: Int,
     lowStockCount: Int,
     modifier: Modifier = Modifier,
+    stockFilter: StockFilter = StockFilter.ALL,
+    onStockFilterToggle: (StockFilter) -> Unit = {},
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Dimensions.gutter),
     ) {
-        // Total produits
+        // Total produits : carte-bascule vers la liste complète (défaut). Mise en évidence quand aucun
+        // filtre de stock n'est actif.
         StatCard(
             modifier = Modifier.weight(1f),
             label = stringResource(R.string.products_stats_total),
             value = totalCount.toString(),
+            selected = stockFilter == StockFilter.ALL,
+            onClick = { onStockFilterToggle(StockFilter.ALL) },
         )
-        // Stock faible
+        // Stock faible : carte-bascule vers le filtre stock bas (re-tap = retour à la liste complète).
         StatCard(
             modifier = Modifier.weight(1f),
             label = stringResource(R.string.products_stats_low_stock),
             value = lowStockCount.toString(),
             isAlert = lowStockCount > 0,
+            selected = stockFilter == StockFilter.LOW_STOCK,
+            onClick = { onStockFilterToggle(StockFilter.LOW_STOCK) },
         )
     }
 }
 
+/**
+ * Carte KPI de l'écran Produits, utilisable en bascule de filtre (cf. ClientStatCard côté Clients).
+ *
+ * [selected] : carte mise en évidence (fond primaryContainer) quand son filtre est actif.
+ * [isAlert]  : accent d'alerte (stock faible non nul) quand la carte n'est pas sélectionnée.
+ * [onClick]  : null = carte non cliquable (simple indicateur).
+ */
 @Composable
 private fun StatCard(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
     isAlert: Boolean = false,
+    selected: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
-    val bgColor =
-        if (isAlert) {
-            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerLowest
+    val containerColor =
+        when {
+            selected -> MaterialTheme.colorScheme.primaryContainer
+            isAlert -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+            else -> MaterialTheme.colorScheme.surfaceContainerLowest
         }
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-        colors = CardDefaults.cardColors(containerColor = bgColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-    ) {
+    val labelColor =
+        when {
+            selected -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+            isAlert -> MaterialTheme.colorScheme.onErrorContainer
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    val valueColor =
+        when {
+            selected -> MaterialTheme.colorScheme.onPrimaryContainer
+            isAlert -> MaterialTheme.colorScheme.error
+            else -> MaterialTheme.colorScheme.onSurface
+        }
+    val iconTint = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.error
+
+    val content: @Composable () -> Unit = {
         Column(
             modifier = Modifier.padding(Dimensions.cardPadding),
             verticalArrangement = Arrangement.spacedBy(Dimensions.spacingXs),
@@ -386,18 +409,13 @@ private fun StatCard(
                 Text(
                     text = label.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
-                    color =
-                        if (isAlert) {
-                            MaterialTheme.colorScheme.onErrorContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
+                    color = labelColor,
                 )
                 if (isAlert) {
                     Icon(
                         imageVector = Icons.Outlined.Warning,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
+                        tint = iconTint,
                         modifier = Modifier.size(16.dp),
                     )
                 }
@@ -405,13 +423,21 @@ private fun StatCard(
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineMedium,
-                color =
-                    if (isAlert) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                color = valueColor,
             )
+        }
+    }
+
+    val shape = RoundedCornerShape(Dimensions.cardCornerRadius)
+    val colors = CardDefaults.cardColors(containerColor = containerColor)
+    val elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    if (onClick != null) {
+        Card(onClick = onClick, modifier = modifier, shape = shape, colors = colors, elevation = elevation) {
+            content()
+        }
+    } else {
+        Card(modifier = modifier, shape = shape, colors = colors, elevation = elevation) {
+            content()
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.products
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rebuildit.prestaflow.core.network.NetworkErrorMapper
@@ -35,8 +36,18 @@ class ProductsViewModel
         private val networkErrorMapper: NetworkErrorMapper,
         private val authRepository: AuthRepository,
         private val resumeRefreshGuard: ScreenResumeRefreshGuard,
+        savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
-        private val _uiState = MutableStateFlow(ProductsUiState())
+        // Filtre initial transmis par la navigation (arg "stock", cf. AppDestination.PRODUCTS_STOCK_ARG) :
+        // "low_stock" quand on arrive depuis la tuile « Stock bas » du dashboard. Null (accès direct via
+        // la barre du bas) donne StockFilter.ALL. Appliqué dès l'état initial pour qu'il n'y ait qu'un
+        // seul refresh, avec le bon filtre : sinon le refresh « Tout » de l'init et un refresh « stock
+        // bas » appliqué après se courent après, et le filtre saute selon celui qui finit en dernier.
+        private val initialStockFilter: StockFilter =
+            savedStateHandle.get<String?>("stock")
+                ?.let { param -> StockFilter.entries.firstOrNull { it.stockParam == param } }
+                ?: StockFilter.ALL
+        private val _uiState = MutableStateFlow(ProductsUiState(stockFilter = initialStockFilter))
         val uiState: StateFlow<ProductsUiState> = _uiState.asStateFlow()
 
         init {
@@ -109,6 +120,23 @@ class ProductsViewModel
         /** Sélectionne un filtre de stock puis recharge la liste depuis le serveur. */
         fun onStockFilterSelected(filter: StockFilter) {
             _uiState.update { it.copy(stockFilter = filter) }
+            refresh(forceRemote = true, notifyOnError = true)
+        }
+
+        /**
+         * Bascule du filtre depuis les cartes KPI (Total produits / Stock faible) : taper une carte déjà
+         * active revient au défaut [StockFilter.ALL]. Même esprit que ClientsViewModel.onFilterChange.
+         */
+        fun onStockFilterToggle(filter: StockFilter) {
+            val current = _uiState.value.stockFilter
+            val newFilter =
+                when {
+                    filter == StockFilter.ALL -> StockFilter.ALL
+                    current == filter -> StockFilter.ALL
+                    else -> filter
+                }
+            if (newFilter == current) return
+            _uiState.update { it.copy(stockFilter = newFilter) }
             refresh(forceRemote = true, notifyOnError = true)
         }
 
