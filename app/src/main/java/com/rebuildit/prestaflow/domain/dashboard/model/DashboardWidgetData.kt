@@ -113,3 +113,47 @@ data class FreeConversionCohorts(
 ) {
     val isEmpty: Boolean get() = cohorts.isEmpty()
 }
+
+/** CA d'un mois (`yyyy-MM`) : marchandise hors port, [orders] = commandes du mois. */
+data class MonthlyTurnoverPoint(
+    val month: String,
+    val turnover: Double,
+    val orders: Int,
+)
+
+/** Série mensuelle continue, triée par mois croissant. Le dernier mois est le mois en cours, donc partiel. */
+data class MonthlyTurnover(
+    val months: List<MonthlyTurnoverPoint>,
+) {
+    val total: Double get() = months.sumOf { it.turnover }
+    val peakTurnover: Double get() = months.maxOfOrNull { it.turnover } ?: 0.0
+
+    /** Mois au CA maximal (ex aequo inclus) ; vide si aucune vente. */
+    val peakMonths: List<MonthlyTurnoverPoint>
+        get() = if (peakTurnover > 0.0) months.filter { it.turnover >= peakTurnover } else emptyList()
+    val isEmpty: Boolean get() = months.isEmpty() || total <= 0.0
+}
+
+/** Indicateurs SAV de la période. */
+data class SavSummary(
+    val openThreads: Int,
+    val answeredThreads: Int,
+)
+
+/**
+ * Synthèse avis et SAV de la période. [totalReviews] inclut les avis importés ; [nativeReviews] = avis
+ * déposés sur le site, et [reviewRatePercent] (0.2 = 0,2 %) = taux des avis natifs sur [orders].
+ * [averageRating] (sur 5) et [reviewRatePercent] sont null sans données ; [sav] est null quand le
+ * connecteur ne l'expose pas.
+ */
+data class ReviewsSummary(
+    val totalReviews: Int,
+    val nativeReviews: Int,
+    val averageRating: Double?,
+    val pendingReviews: Int,
+    val orders: Int,
+    val reviewRatePercent: Double?,
+    val sav: SavSummary?,
+) {
+    val isEmpty: Boolean get() = totalReviews <= 0 && pendingReviews <= 0 && sav == null
+}

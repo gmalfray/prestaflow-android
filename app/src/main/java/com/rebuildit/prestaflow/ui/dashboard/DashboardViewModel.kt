@@ -20,7 +20,9 @@ import com.rebuildit.prestaflow.domain.dashboard.model.DashboardWidget
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversion
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversionCohorts
 import com.rebuildit.prestaflow.domain.dashboard.model.LatestOrder
+import com.rebuildit.prestaflow.domain.dashboard.model.MonthlyTurnover
 import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
+import com.rebuildit.prestaflow.domain.dashboard.model.ReviewsSummary
 import com.rebuildit.prestaflow.domain.dashboard.model.SalesByUniverse
 import com.rebuildit.prestaflow.domain.dashboard.model.TopProduct
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -148,6 +150,16 @@ class DashboardViewModel
                     launchWidgetLoad(widget, { it.freeCohorts }, { s, v -> s.copy(freeCohorts = v) }) {
                         widgetsRepository.getFreeConversionCohorts(COHORTS_MONTHS)
                     }
+                // Non period-aware : toujours les MONTHLY_MONTHS derniers mois.
+                DashboardWidget.MONTHLY_TURNOVER ->
+                    launchWidgetLoad(widget, { it.monthlyTurnover }, { s, v -> s.copy(monthlyTurnover = v) }) {
+                        widgetsRepository.getMonthlyTurnover(MONTHLY_MONTHS)
+                    }
+                DashboardWidget.REVIEWS_SUMMARY ->
+                    launchWidgetLoad(widget, { it.reviewsSummary }, { s, v -> s.copy(reviewsSummary = v) }) {
+                        val (from, to) = periodDateRange(selectedPeriodFlow.value, customRangeFlow.value)
+                        widgetsRepository.getReviewsSummary(from, to)
+                    }
                 else -> Unit
             }
         }
@@ -187,6 +199,7 @@ class DashboardViewModel
                 DashboardWidget.SALES_BY_UNIVERSE,
                 DashboardWidget.CUSTOMER_RETENTION,
                 DashboardWidget.ACQUISITION_CHANNELS,
+                DashboardWidget.REVIEWS_SUMMARY,
             )
                 .filter { it in visible }
                 .forEach(::loadWidget)
@@ -311,6 +324,8 @@ class DashboardViewModel
                                 customerRetention = WidgetLoad.Idle,
                                 acquisitionChannels = WidgetLoad.Idle,
                                 freeCohorts = WidgetLoad.Idle,
+                                monthlyTurnover = WidgetLoad.Idle,
+                                reviewsSummary = WidgetLoad.Idle,
                             )
                         }
                         loadVisibleWidgets()
@@ -470,6 +485,8 @@ data class DashboardUiState(
     val customerRetention: WidgetLoad<CustomerRetention> = WidgetLoad.Idle,
     val acquisitionChannels: WidgetLoad<AcquisitionChannels> = WidgetLoad.Idle,
     val freeCohorts: WidgetLoad<FreeConversionCohorts> = WidgetLoad.Idle,
+    val monthlyTurnover: WidgetLoad<MonthlyTurnover> = WidgetLoad.Idle,
+    val reviewsSummary: WidgetLoad<ReviewsSummary> = WidgetLoad.Idle,
 )
 
 private const val LATEST_ORDERS_LIMIT = 5
@@ -477,6 +494,7 @@ private const val ABANDONED_CARTS_DAYS = 7
 private const val TOP_PRODUCTS_LIMIT = 5
 private const val ACQUISITION_WINDOW_DAYS = 30
 private const val COHORTS_MONTHS = 12
+private const val MONTHLY_MONTHS = 12
 
 /** État de la carte conversion offert → payant. */
 sealed interface ConversionState {

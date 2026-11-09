@@ -599,4 +599,22 @@
     <string name="dashboard_split_total_label">pedidos</string>
     <string name="dashboard_split_percent">%1$d %%</string>
     <string name="dashboard_split_description">%1$s: %2$d pedidos, %3$s %4$d (%5$d %%), %6$s %7$d (%8$d %%)</string>
+    <string name="dashboard_widget_monthly_turnover">Estacionalidad</string>
+    <string name="dashboard_widget_reviews_summary">Reseñas y soporte</string>
+    <string name="dashboard_monthly_subtitle">Ventas por mes, últimos 12 meses</string>
+    <string name="dashboard_monthly_total">Total 12 meses</string>
+    <string name="dashboard_monthly_peak">Mejor mes</string>
+    <string name="dashboard_monthly_partial">%1$s: mes en curso, incompleto</string>
+    <string name="dashboard_monthly_chart_description">Ventas mensuales, pico: %1$s</string>
+    <string name="dashboard_reviews_rating">Nota media</string>
+    <string name="dashboard_reviews_rating_value">%1$s ★</string>
+    <string name="dashboard_reviews_no_rating">Sin nota</string>
+    <string name="dashboard_reviews_count">Reseñas</string>
+    <string name="dashboard_reviews_rate">Tasa de reseñas (tienda)</string>
+    <string name="dashboard_reviews_rate_sub">%1$d reseñas en la tienda</string>
+    <string name="dashboard_reviews_pending">Pendientes</string>
+    <string name="dashboard_sav_title">Soporte</string>
+    <string name="dashboard_sav_open">Hilos abiertos</string>
+    <string name="dashboard_sav_answered">Hilos respondidos</string>
+    <string name="dashboard_reviews_rating_sub">de %1$d reseñas</string>
 </resources>

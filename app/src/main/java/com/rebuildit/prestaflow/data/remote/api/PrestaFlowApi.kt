@@ -15,6 +15,7 @@ import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.FreeConversionCohortsResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.FreeConversionDto
 import com.rebuildit.prestaflow.data.remote.dto.GenerateLabelResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.MonthlyTurnoverResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto
@@ -29,6 +30,7 @@ import com.rebuildit.prestaflow.data.remote.dto.ReviewReplyRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewReplyResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.ReviewsSummaryResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SalesByUniversResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyResponseDto
@@ -220,6 +222,17 @@ interface PrestaFlowApi {
     suspend fun getFreeConversionCohorts(
         @Query("months") months: Int? = null,
     ): FreeConversionCohortsResponseDto
+
+    @GET("dashboard/monthly-turnover")
+    suspend fun getMonthlyTurnover(
+        @Query("months") months: Int? = null,
+    ): MonthlyTurnoverResponseDto
+
+    @GET("reports/reviews-summary")
+    suspend fun getReviewsSummary(
+        @Query("date_from") dateFrom: String? = null,
+        @Query("date_to") dateTo: String? = null,
+    ): ReviewsSummaryResponseDto
 
     @GET("customers/stats")
     suspend fun getCustomerStats(): CustomerStatsDto

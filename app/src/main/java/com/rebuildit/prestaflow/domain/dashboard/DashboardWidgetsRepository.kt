@@ -5,7 +5,9 @@ import com.rebuildit.prestaflow.domain.dashboard.model.AcquisitionChannels
 import com.rebuildit.prestaflow.domain.dashboard.model.CustomerRetention
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversionCohorts
 import com.rebuildit.prestaflow.domain.dashboard.model.LatestOrder
+import com.rebuildit.prestaflow.domain.dashboard.model.MonthlyTurnover
 import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
+import com.rebuildit.prestaflow.domain.dashboard.model.ReviewsSummary
 import com.rebuildit.prestaflow.domain.dashboard.model.SalesByUniverse
 import com.rebuildit.prestaflow.domain.dashboard.model.TopProduct
 
@@ -67,4 +69,19 @@ interface DashboardWidgetsRepository {
      * dashboard). `null` si l'endpoint est absent (HTTP 404 ou 409).
      */
     suspend fun getFreeConversionCohorts(months: Int): FreeConversionCohorts?
+
+    /**
+     * CA mensuel sur les [months] derniers mois (indépendant de la période du dashboard). `null` si
+     * l'endpoint est absent (HTTP 404 ou 409).
+     */
+    suspend fun getMonthlyTurnover(months: Int): MonthlyTurnover?
+
+    /**
+     * Synthèse avis et SAV sur la période ([dateFrom] / [dateTo] au format `yyyy-MM-dd HH:mm:ss`).
+     * `null` si l'endpoint ou le module d'avis est absent (HTTP 404 ou 409).
+     */
+    suspend fun getReviewsSummary(
+        dateFrom: String?,
+        dateTo: String?,
+    ): ReviewsSummary?
 }

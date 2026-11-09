@@ -613,4 +613,22 @@
     <string name="dashboard_split_total_label">commandes</string>
     <string name="dashboard_split_percent">%1$d %%</string>
     <string name="dashboard_split_description">%1$s : %2$d commandes, %3$s %4$d (%5$d %%), %6$s %7$d (%8$d %%)</string>
+    <string name="dashboard_widget_monthly_turnover">Saisonnalité</string>
+    <string name="dashboard_widget_reviews_summary">Avis et SAV</string>
+    <string name="dashboard_monthly_subtitle">CA par mois, 12 derniers mois</string>
+    <string name="dashboard_monthly_total">Total 12 mois</string>
+    <string name="dashboard_monthly_peak">Meilleur mois</string>
+    <string name="dashboard_monthly_partial">%1$s : mois en cours, incomplet</string>
+    <string name="dashboard_monthly_chart_description">CA mensuel, pic : %1$s</string>
+    <string name="dashboard_reviews_rating">Note moyenne</string>
+    <string name="dashboard_reviews_rating_value">%1$s ★</string>
+    <string name="dashboard_reviews_no_rating">Pas de note</string>
+    <string name="dashboard_reviews_count">Avis</string>
+    <string name="dashboard_reviews_rate">Taux d\'avis (site)</string>
+    <string name="dashboard_reviews_rate_sub">%1$d avis sur le site</string>
+    <string name="dashboard_reviews_pending">En attente</string>
+    <string name="dashboard_sav_title">SAV</string>
+    <string name="dashboard_sav_open">Fils ouverts</string>
+    <string name="dashboard_sav_answered">Fils répondus</string>
+    <string name="dashboard_reviews_rating_sub">sur %1$d avis</string>
 </resources>

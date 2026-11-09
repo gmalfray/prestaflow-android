@@ -6,7 +6,9 @@ import com.rebuildit.prestaflow.domain.dashboard.model.AcquisitionChannels
 import com.rebuildit.prestaflow.domain.dashboard.model.CustomerRetention
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversionCohorts
 import com.rebuildit.prestaflow.domain.dashboard.model.LatestOrder
+import com.rebuildit.prestaflow.domain.dashboard.model.MonthlyTurnover
 import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
+import com.rebuildit.prestaflow.domain.dashboard.model.ReviewsSummary
 import com.rebuildit.prestaflow.domain.dashboard.model.SalesByUniverse
 import com.rebuildit.prestaflow.domain.dashboard.model.TopProduct
 
@@ -20,7 +22,14 @@ class FakeDashboardWidgetsRepository : DashboardWidgetsRepository {
     var customerRetention: CustomerRetention? = CustomerRetention(0, 0, 0.0, null, 0, 0)
     var acquisitionChannels: AcquisitionChannels? = AcquisitionChannels(emptyList(), 30)
     var freeCohorts: FreeConversionCohorts? = FreeConversionCohorts(emptyList())
+    var monthlyTurnover: MonthlyTurnover? = MonthlyTurnover(emptyList())
+    var reviewsSummary: ReviewsSummary? = ReviewsSummary(0, 0, null, 0, 0, null, null)
     var failure: Throwable? = null
+
+    var monthlyTurnoverCalls = 0
+    var reviewsSummaryCalls = 0
+    var lastMonthlyMonths: Int? = null
+    var lastReviewsSummaryRange: Pair<String?, String?>? = null
 
     var customerRetentionCalls = 0
     var acquisitionChannelsCalls = 0
@@ -102,5 +111,22 @@ class FakeDashboardWidgetsRepository : DashboardWidgetsRepository {
         lastCohortsMonths = months
         failure?.let { throw it }
         return freeCohorts
+    }
+
+    override suspend fun getMonthlyTurnover(months: Int): MonthlyTurnover? {
+        monthlyTurnoverCalls++
+        lastMonthlyMonths = months
+        failure?.let { throw it }
+        return monthlyTurnover
+    }
+
+    override suspend fun getReviewsSummary(
+        dateFrom: String?,
+        dateTo: String?,
+    ): ReviewsSummary? {
+        reviewsSummaryCalls++
+        lastReviewsSummaryRange = dateFrom to dateTo
+        failure?.let { throw it }
+        return reviewsSummary
     }
 }

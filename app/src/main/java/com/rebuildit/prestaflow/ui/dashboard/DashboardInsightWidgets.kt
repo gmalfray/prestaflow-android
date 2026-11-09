@@ -80,13 +80,13 @@ internal fun isImmatureCohort(
 internal fun maxRate90(cohorts: List<FreeConversionCohort>): Double = cohorts.maxOfOrNull { it.rate90Percent } ?: 0.0
 
 @Composable
-private fun rememberLocale(): Locale {
+internal fun rememberLocale(): Locale {
     val locales = LocalConfiguration.current.locales
     return if (!locales.isEmpty) locales[0] else Locale.getDefault()
 }
 
 @Composable
-private fun rememberPercentFormatter(): NumberFormat {
+internal fun rememberPercentFormatter(): NumberFormat {
     val locale = rememberLocale()
     return remember(locale) { NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 1 } }
 }
@@ -139,7 +139,7 @@ internal fun CustomerRetentionCard(
 
 /** Tuile de statistique : libellé discret, valeur en évidence, sous-texte optionnel. */
 @Composable
-private fun StatTile(
+internal fun StatTile(
     label: String,
     value: String,
     modifier: Modifier = Modifier,

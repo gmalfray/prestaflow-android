@@ -16,6 +16,7 @@ import com.rebuildit.prestaflow.data.remote.dto.DeviceRegistrationRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.FreeConversionCohortsResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.FreeConversionDto
 import com.rebuildit.prestaflow.data.remote.dto.GenerateLabelResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.MonthlyTurnoverResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderDetailResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderShippingUpdateRequestDto
@@ -30,6 +31,7 @@ import com.rebuildit.prestaflow.data.remote.dto.ReviewReplyRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewReplyResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewTrashResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.ReviewsSummaryResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SalesByUniversResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyRequestDto
 import com.rebuildit.prestaflow.data.remote.dto.SavReplyResponseDto
@@ -211,6 +213,29 @@ class FakePrestaFlowApi : PrestaFlowApi {
         lastFreeConversionCohortsMonths = months
         freeConversionCohortsException?.let { throw it }
         return freeConversionCohorts ?: throw UnsupportedOperationException("Non utilisé dans ce test")
+    }
+
+    var monthlyTurnover: MonthlyTurnoverResponseDto? = null
+    var monthlyTurnoverException: Throwable? = null
+    var lastMonthlyTurnoverMonths: Int? = null
+
+    override suspend fun getMonthlyTurnover(months: Int?): MonthlyTurnoverResponseDto {
+        lastMonthlyTurnoverMonths = months
+        monthlyTurnoverException?.let { throw it }
+        return monthlyTurnover ?: throw UnsupportedOperationException("Non utilisé dans ce test")
+    }
+
+    var reviewsSummary: ReviewsSummaryResponseDto? = null
+    var reviewsSummaryException: Throwable? = null
+    var lastReviewsSummaryQuery: Pair<String?, String?>? = null
+
+    override suspend fun getReviewsSummary(
+        dateFrom: String?,
+        dateTo: String?,
+    ): ReviewsSummaryResponseDto {
+        lastReviewsSummaryQuery = dateFrom to dateTo
+        reviewsSummaryException?.let { throw it }
+        return reviewsSummary ?: throw UnsupportedOperationException("Non utilisé dans ce test")
     }
 
     override suspend fun getCustomerStats(): CustomerStatsDto = throw UnsupportedOperationException("Non utilisé dans ce test")

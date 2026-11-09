@@ -5,7 +5,9 @@ import com.rebuildit.prestaflow.data.remote.dto.AcquisitionChannelsResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.BestSellerDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerRetentionDto
 import com.rebuildit.prestaflow.data.remote.dto.FreeConversionCohortsResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.MonthlyTurnoverResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListItemDto
+import com.rebuildit.prestaflow.data.remote.dto.ReviewsSummaryResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SalesByUniversResponseDto
 import com.rebuildit.prestaflow.domain.carts.CartsRepository
 import com.rebuildit.prestaflow.domain.dashboard.DashboardWidgetsRepository
@@ -16,8 +18,12 @@ import com.rebuildit.prestaflow.domain.dashboard.model.CustomerRetention
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversionCohort
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversionCohorts
 import com.rebuildit.prestaflow.domain.dashboard.model.LatestOrder
+import com.rebuildit.prestaflow.domain.dashboard.model.MonthlyTurnover
+import com.rebuildit.prestaflow.domain.dashboard.model.MonthlyTurnoverPoint
 import com.rebuildit.prestaflow.domain.dashboard.model.PendingReviewsCount
+import com.rebuildit.prestaflow.domain.dashboard.model.ReviewsSummary
 import com.rebuildit.prestaflow.domain.dashboard.model.SalesByUniverse
+import com.rebuildit.prestaflow.domain.dashboard.model.SavSummary
 import com.rebuildit.prestaflow.domain.dashboard.model.TopProduct
 import com.rebuildit.prestaflow.domain.dashboard.model.UniverseSales
 import kotlinx.coroutines.CoroutineDispatcher
@@ -119,6 +125,19 @@ class DashboardWidgetsRepositoryImpl
             withContext(ioDispatcher) {
                 nullIfUnavailable { api.getFreeConversionCohorts(months = months).toDomain() }
             }
+
+        override suspend fun getMonthlyTurnover(months: Int): MonthlyTurnover? =
+            withContext(ioDispatcher) {
+                nullIfUnavailable { api.getMonthlyTurnover(months = months).toDomain() }
+            }
+
+        override suspend fun getReviewsSummary(
+            dateFrom: String?,
+            dateTo: String?,
+        ): ReviewsSummary? =
+            withContext(ioDispatcher) {
+                nullIfUnavailable { api.getReviewsSummary(dateFrom = dateFrom, dateTo = dateTo).toDomain() }
+            }
     }
 
 /** Endpoint absent côté boutique (connecteur pas à jour : 404 ou 409) : `null` ; toute autre erreur est propagée. */
@@ -152,6 +171,34 @@ internal fun AcquisitionChannelsResponseDto.toDomain(requestedWindowDays: Int = 
                 .filter { it.orders > 0 }
                 .sortedByDescending { it.orders },
         windowDays = windowDays ?: requestedWindowDays,
+    )
+
+/** Mois sans clé écartés, tri chronologique (le format `yyyy-MM` se trie lexicalement). */
+internal fun MonthlyTurnoverResponseDto.toDomain(): MonthlyTurnover =
+    MonthlyTurnover(
+        months =
+            months
+                .filter { it.month.isNotBlank() }
+                .map { MonthlyTurnoverPoint(month = it.month, turnover = it.turnover, orders = it.orders) }
+                .sortedBy { it.month },
+    )
+
+/** Note et taux d'avis restent null s'ils sont absents (rien n'est inventé) ; bloc SAV facultatif. */
+internal fun ReviewsSummaryResponseDto.toDomain(): ReviewsSummary =
+    ReviewsSummary(
+        totalReviews = totalReviews,
+        nativeReviews = nativeReviews,
+        averageRating = averageRating,
+        pendingReviews = pendingReviews,
+        orders = orders,
+        reviewRatePercent = reviewRate,
+        sav =
+            sav?.let {
+                SavSummary(
+                    openThreads = it.openThreads,
+                    answeredThreads = it.answeredThreads,
+                )
+            },
     )
 
 /** Mois les plus récents d'abord (le format `yyyy-MM` se trie lexicalement) ; cohortes sans mois écartées. */

@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.DonutLarge
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.outlined.RateReview
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.RemoveShoppingCart
 import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.Reviews
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rebuildit.prestaflow.R
@@ -45,6 +47,8 @@ internal fun DashboardWidget.titleRes(): Int =
         DashboardWidget.CUSTOMER_RETENTION -> R.string.dashboard_widget_customer_retention
         DashboardWidget.ACQUISITION_CHANNELS -> R.string.dashboard_widget_acquisition_channels
         DashboardWidget.FREE_CONVERSION_COHORTS -> R.string.dashboard_widget_free_cohorts
+        DashboardWidget.MONTHLY_TURNOVER -> R.string.dashboard_widget_monthly_turnover
+        DashboardWidget.REVIEWS_SUMMARY -> R.string.dashboard_widget_reviews_summary
     }
 
 @Suppress("CyclomaticComplexMethod")
@@ -67,4 +71,6 @@ internal fun DashboardWidget.icon(): ImageVector =
         DashboardWidget.CUSTOMER_RETENTION -> Icons.Outlined.Repeat
         DashboardWidget.ACQUISITION_CHANNELS -> Icons.Outlined.Campaign
         DashboardWidget.FREE_CONVERSION_COHORTS -> Icons.Outlined.CardGiftcard
+        DashboardWidget.MONTHLY_TURNOVER -> Icons.Outlined.CalendarMonth
+        DashboardWidget.REVIEWS_SUMMARY -> Icons.Outlined.Reviews
     }

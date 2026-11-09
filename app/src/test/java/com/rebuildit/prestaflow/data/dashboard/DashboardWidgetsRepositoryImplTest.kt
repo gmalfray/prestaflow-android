@@ -5,12 +5,14 @@ import com.rebuildit.prestaflow.data.remote.dto.BestSellerDto
 import com.rebuildit.prestaflow.data.remote.dto.BestSellersResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.CustomerRetentionDto
 import com.rebuildit.prestaflow.data.remote.dto.FreeConversionCohortsResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.MonthlyTurnoverResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListCustomerDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListDto
 import com.rebuildit.prestaflow.data.remote.dto.OrderListItemDto
 import com.rebuildit.prestaflow.data.remote.dto.PaginationDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewDto
 import com.rebuildit.prestaflow.data.remote.dto.ReviewListResponseDto
+import com.rebuildit.prestaflow.data.remote.dto.ReviewsSummaryResponseDto
 import com.rebuildit.prestaflow.data.remote.dto.SalesByUniversResponseDto
 import com.rebuildit.prestaflow.domain.carts.model.CartSummary
 import com.rebuildit.prestaflow.domain.dashboard.model.AcquisitionChannel
@@ -328,5 +330,100 @@ class DashboardWidgetsRepositoryImplTest {
             assertNull(repo.getFreeConversionCohorts(12))
             api.freeConversionCohortsException = httpException(500)
             assertTrue(runCatching { repo.getFreeConversionCohorts(12) }.exceptionOrNull() is HttpException)
+        }
+
+    @Test
+    fun `saisonnalité - série triée par mois, mois sans clé écarté, pic et total`() =
+        runTest {
+            api.monthlyTurnover =
+                json.decodeFromString(
+                    MonthlyTurnoverResponseDto.serializer(),
+                    """{"months":[{"month":"2026-01","turnover":0.0,"orders":0},
+                        {"month":"2025-12","turnover":1234.56,"orders":42},{"month":"","turnover":9.0},
+                        {"month":"2026-02","turnover":1234.56,"orders":40}],"period":{"from":"2025-12-01","to":"2026-02-28"}}""",
+                )
+            val result = repo.getMonthlyTurnover(12)!!
+
+            assertEquals(12, api.lastMonthlyTurnoverMonths)
+            assertEquals(listOf("2025-12", "2026-01", "2026-02"), result.months.map { it.month })
+            assertEquals(2469.12, result.total, 0.0001)
+            assertEquals(listOf("2025-12", "2026-02"), result.peakMonths.map { it.month })
+            assertFalse(result.isEmpty)
+        }
+
+    @Test
+    fun `saisonnalité - aucune vente donne vide, 404 ou 409 donne null, autre erreur propagée`() =
+        runTest {
+            api.monthlyTurnover =
+                json.decodeFromString(
+                    MonthlyTurnoverResponseDto.serializer(),
+                    """{"months":[{"month":"2026-01","turnover":0.0,"orders":0}]}""",
+                )
+            val empty = repo.getMonthlyTurnover(12)!!
+            assertTrue(empty.isEmpty)
+            assertTrue(empty.peakMonths.isEmpty())
+
+            api.monthlyTurnoverException = httpException(404)
+            assertNull(repo.getMonthlyTurnover(12))
+            api.monthlyTurnoverException = httpException(409)
+            assertNull(repo.getMonthlyTurnover(12))
+            api.monthlyTurnoverException = httpException(500)
+            assertTrue(runCatching { repo.getMonthlyTurnover(12) }.exceptionOrNull() is HttpException)
+        }
+
+    @Test
+    fun `avis et SAV - réponse complète mappée, période transmise`() =
+        runTest {
+            api.reviewsSummary =
+                json.decodeFromString(
+                    ReviewsSummaryResponseDto.serializer(),
+                    """{"total_reviews":2856,"native_reviews":16,"average_rating":4.88,"pending_reviews":0,"orders":6721,"review_rate":0.2,
+                        "period":{},"sav":{"open_threads":5,"answered_threads":190}}""",
+                )
+            val result = repo.getReviewsSummary("2026-11-01 00:00:00", "2026-11-09 23:59:59")!!
+
+            assertEquals("2026-11-01 00:00:00" to "2026-11-09 23:59:59", api.lastReviewsSummaryQuery)
+            assertEquals(2856, result.totalReviews)
+            assertEquals(16, result.nativeReviews)
+            assertEquals(4.88, result.averageRating!!, 0.0001)
+            assertEquals(0, result.pendingReviews)
+            assertEquals(0.2, result.reviewRatePercent!!, 0.0001)
+            assertEquals(5, result.sav!!.openThreads)
+            assertEquals(190, result.sav!!.answeredThreads)
+        }
+
+    @Test
+    fun `avis et SAV - note, taux et bloc SAV absents ou null restent null`() =
+        runTest {
+            api.reviewsSummary =
+                json.decodeFromString(
+                    ReviewsSummaryResponseDto.serializer(),
+                    """{"total_reviews":0,"average_rating":null,"pending_reviews":2,"orders":0,"review_rate":null}""",
+                )
+            val result = repo.getReviewsSummary(null, null)!!
+            assertNull(result.averageRating)
+            assertNull(result.reviewRatePercent)
+            assertEquals(0, result.nativeReviews)
+            assertNull(result.sav)
+            assertFalse(result.isEmpty)
+
+            // Ancien connecteur : median_first_response_hours encore présent, ignoré sans erreur.
+            api.reviewsSummary =
+                json.decodeFromString(
+                    ReviewsSummaryResponseDto.serializer(),
+                    """{"total_reviews":1,"sav":{"open_threads":2,"median_first_response_hours":6.0,"answered_threads":3}}""",
+                )
+            assertEquals(2, repo.getReviewsSummary(null, null)!!.sav!!.openThreads)
+        }
+
+    @Test
+    fun `avis et SAV - 409 reviews_unavailable donne null, 500 propagée`() =
+        runTest {
+            api.reviewsSummaryException = httpException(409)
+            assertNull(repo.getReviewsSummary(null, null))
+            api.reviewsSummaryException = httpException(404)
+            assertNull(repo.getReviewsSummary(null, null))
+            api.reviewsSummaryException = httpException(500)
+            assertTrue(runCatching { repo.getReviewsSummary(null, null) }.exceptionOrNull() is HttpException)
         }
 }

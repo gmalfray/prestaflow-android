@@ -599,4 +599,22 @@
     <string name="dashboard_split_total_label">ordini</string>
     <string name="dashboard_split_percent">%1$d %%</string>
     <string name="dashboard_split_description">%1$s: %2$d ordini, %3$s %4$d (%5$d %%), %6$s %7$d (%8$d %%)</string>
+    <string name="dashboard_widget_monthly_turnover">Stagionalità</string>
+    <string name="dashboard_widget_reviews_summary">Recensioni e assistenza</string>
+    <string name="dashboard_monthly_subtitle">Ricavi per mese, ultimi 12 mesi</string>
+    <string name="dashboard_monthly_total">Totale 12 mesi</string>
+    <string name="dashboard_monthly_peak">Mese migliore</string>
+    <string name="dashboard_monthly_partial">%1$s: mese in corso, incompleto</string>
+    <string name="dashboard_monthly_chart_description">Ricavi mensili, picco: %1$s</string>
+    <string name="dashboard_reviews_rating">Voto medio</string>
+    <string name="dashboard_reviews_rating_value">%1$s ★</string>
+    <string name="dashboard_reviews_no_rating">Nessun voto</string>
+    <string name="dashboard_reviews_count">Recensioni</string>
+    <string name="dashboard_reviews_rate">Tasso di recensioni (sito)</string>
+    <string name="dashboard_reviews_rate_sub">%1$d recensioni sul sito</string>
+    <string name="dashboard_reviews_pending">In attesa</string>
+    <string name="dashboard_sav_title">Assistenza</string>
+    <string name="dashboard_sav_open">Conversazioni aperte</string>
+    <string name="dashboard_sav_answered">Conversazioni con risposta</string>
+    <string name="dashboard_reviews_rating_sub">su %1$d recensioni</string>
 </resources>

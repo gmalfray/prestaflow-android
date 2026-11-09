@@ -2,6 +2,7 @@ package com.rebuildit.prestaflow.ui.dashboard
 
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.domain.dashboard.model.FreeConversionCohort
+import com.rebuildit.prestaflow.domain.dashboard.model.MonthlyTurnoverPoint
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -45,5 +46,37 @@ class DashboardInsightWidgetsTest {
         val cohorts = listOf(FreeConversionCohort("2026-05", 40, 1, 2, 3), FreeConversionCohort("2026-04", 50, 3, 5, 10))
         assertEquals(20.0, maxRate90(cohorts), 0.0001)
         assertEquals(0.0, maxRate90(emptyList()), 0.0)
+    }
+
+    @Test
+    fun `mois abrégé - sans point final, texte brut si illisible`() {
+        assertEquals("janv", formatMonthShort("2026-01", Locale.FRANCE))
+        assertEquals("déc", formatMonthShort("2025-12", Locale.FRANCE))
+        assertEquals("Mar", formatMonthShort("2026-03", Locale.ENGLISH))
+        assertEquals("nope", formatMonthShort("nope", Locale.FRANCE))
+    }
+
+    @Test
+    fun `hauteurs des barres - rapportées au pic, zéro et négatif à 0`() {
+        val months =
+            listOf(
+                MonthlyTurnoverPoint("2026-08", 50.0, 1),
+                MonthlyTurnoverPoint("2026-09", 100.0, 2),
+                MonthlyTurnoverPoint("2026-10", 0.0, 0),
+                MonthlyTurnoverPoint("2026-11", -5.0, 0),
+            )
+        assertEquals(listOf(0.5f, 1f, 0f, 0f), monthlyBarFractions(months))
+        assertEquals(emptyList<Float>(), monthlyBarFractions(emptyList()))
+        assertEquals(listOf(0f), monthlyBarFractions(listOf(MonthlyTurnoverPoint("2026-08", 0.0, 0))))
+    }
+
+    @Test
+    fun `étiquettes de mois - une sur deux ou trois, le dernier mois toujours étiqueté`() {
+        assertEquals(2, monthLabelStep(1f))
+        assertEquals(3, monthLabelStep(2f))
+        val shown2 = (0..11).filter { isMonthLabelShown(it, 11, 2) }
+        assertEquals(listOf(1, 3, 5, 7, 9, 11), shown2)
+        val shown3 = (0..11).filter { isMonthLabelShown(it, 11, 3) }
+        assertEquals(listOf(2, 5, 8, 11), shown3)
     }
 }

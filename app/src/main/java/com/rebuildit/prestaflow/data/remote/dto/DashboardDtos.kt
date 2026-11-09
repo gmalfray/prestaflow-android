@@ -134,3 +134,39 @@ data class FreeConversionCohortDto(
     @SerialName("converted_60d") val converted60d: Int = 0,
     @SerialName("converted_90d") val converted90d: Int = 0,
 )
+
+/** Réponse de `GET dashboard/monthly-turnover` : série continue de mois, triée par mois croissant. */
+@Serializable
+data class MonthlyTurnoverResponseDto(
+    @SerialName("months") val months: List<MonthlyTurnoverPointDto> = emptyList(),
+)
+
+/** `turnover` = CA marchandise hors port ; `month` au format `yyyy-MM`. */
+@Serializable
+data class MonthlyTurnoverPointDto(
+    @SerialName("month") val month: String = "",
+    @SerialName("turnover") val turnover: Double = 0.0,
+    @SerialName("orders") val orders: Int = 0,
+)
+
+/**
+ * Réponse de `GET reports/reviews-summary`. `total_reviews` inclut les avis importés (Etsy) ;
+ * `native_reviews` = avis déposés sur le site, et `review_rate` = native_reviews / orders (taux des avis
+ * natifs). `average_rating` et `review_rate` sont null sans données ; `sav` est absent sans module SAV.
+ */
+@Serializable
+data class ReviewsSummaryResponseDto(
+    @SerialName("total_reviews") val totalReviews: Int = 0,
+    @SerialName("native_reviews") val nativeReviews: Int = 0,
+    @SerialName("average_rating") val averageRating: Double? = null,
+    @SerialName("pending_reviews") val pendingReviews: Int = 0,
+    @SerialName("orders") val orders: Int = 0,
+    @SerialName("review_rate") val reviewRate: Double? = null,
+    @SerialName("sav") val sav: ReviewsSavDto? = null,
+)
+
+@Serializable
+data class ReviewsSavDto(
+    @SerialName("open_threads") val openThreads: Int = 0,
+    @SerialName("answered_threads") val answeredThreads: Int = 0,
+)

@@ -599,4 +599,22 @@
     <string name="dashboard_split_total_label">bestellingen</string>
     <string name="dashboard_split_percent">%1$d %%</string>
     <string name="dashboard_split_description">%1$s: %2$d bestellingen, %3$s %4$d (%5$d %%), %6$s %7$d (%8$d %%)</string>
+    <string name="dashboard_widget_monthly_turnover">Seizoenspatroon</string>
+    <string name="dashboard_widget_reviews_summary">Beoordelingen en support</string>
+    <string name="dashboard_monthly_subtitle">Omzet per maand, laatste 12 maanden</string>
+    <string name="dashboard_monthly_total">Totaal 12 maanden</string>
+    <string name="dashboard_monthly_peak">Beste maand</string>
+    <string name="dashboard_monthly_partial">%1$s: lopende maand, onvolledig</string>
+    <string name="dashboard_monthly_chart_description">Maandomzet, piek: %1$s</string>
+    <string name="dashboard_reviews_rating">Gemiddelde score</string>
+    <string name="dashboard_reviews_rating_value">%1$s ★</string>
+    <string name="dashboard_reviews_no_rating">Geen score</string>
+    <string name="dashboard_reviews_count">Beoordelingen</string>
+    <string name="dashboard_reviews_rate">Beoordelingspercentage (site)</string>
+    <string name="dashboard_reviews_rate_sub">%1$d beoordelingen op de site</string>
+    <string name="dashboard_reviews_pending">In behandeling</string>
+    <string name="dashboard_sav_title">Support</string>
+    <string name="dashboard_sav_open">Open gesprekken</string>
+    <string name="dashboard_sav_answered">Beantwoorde gesprekken</string>
+    <string name="dashboard_reviews_rating_sub">uit %1$d beoordelingen</string>
 </resources>

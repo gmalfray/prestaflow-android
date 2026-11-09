@@ -432,8 +432,20 @@ private fun DashboardContent(
     val retentionUnavailable = widgetStates.customerRetention == WidgetLoad.Unavailable
     val channelsUnavailable = widgetStates.acquisitionChannels == WidgetLoad.Unavailable
     val cohortsUnavailable = widgetStates.freeCohorts == WidgetLoad.Unavailable
+    val monthlyUnavailable = widgetStates.monthlyTurnover == WidgetLoad.Unavailable
+    val reviewsSummaryUnavailable = widgetStates.reviewsSummary == WidgetLoad.Unavailable
+    val unavailableFlags =
+        listOf(
+            reviewsUnavailable,
+            universeUnavailable,
+            retentionUnavailable,
+            channelsUnavailable,
+            cohortsUnavailable,
+            monthlyUnavailable,
+            reviewsSummaryUnavailable,
+        )
     val widgetRows =
-        remember(widgetLayout, reviewsUnavailable, universeUnavailable, retentionUnavailable, channelsUnavailable, cohortsUnavailable) {
+        remember(widgetLayout, unavailableFlags) {
             val hidden =
                 buildSet {
                     if (reviewsUnavailable) add(DashboardWidget.REVIEWS)
@@ -441,6 +453,8 @@ private fun DashboardContent(
                     if (retentionUnavailable) add(DashboardWidget.CUSTOMER_RETENTION)
                     if (channelsUnavailable) add(DashboardWidget.ACQUISITION_CHANNELS)
                     if (cohortsUnavailable) add(DashboardWidget.FREE_CONVERSION_COHORTS)
+                    if (monthlyUnavailable) add(DashboardWidget.MONTHLY_TURNOVER)
+                    if (reviewsSummaryUnavailable) add(DashboardWidget.REVIEWS_SUMMARY)
                 }
             widgetLayout.rows(hidden = hidden)
         }
@@ -553,6 +567,18 @@ private fun DashboardContent(
                             modifier = cellModifier,
                             state = widgetStates.freeCohorts,
                             onRetry = { widgetActions.onRetry(DashboardWidget.FREE_CONVERSION_COHORTS) },
+                        )
+                    DashboardWidget.MONTHLY_TURNOVER ->
+                        MonthlyTurnoverCard(
+                            modifier = cellModifier,
+                            state = widgetStates.monthlyTurnover,
+                            onRetry = { widgetActions.onRetry(DashboardWidget.MONTHLY_TURNOVER) },
+                        )
+                    DashboardWidget.REVIEWS_SUMMARY ->
+                        ReviewsSummaryCard(
+                            modifier = cellModifier,
+                            state = widgetStates.reviewsSummary,
+                            onRetry = { widgetActions.onRetry(DashboardWidget.REVIEWS_SUMMARY) },
                         )
                     else -> {
                         val item =

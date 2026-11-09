@@ -598,4 +598,22 @@
     <string name="dashboard_split_total_label">orders</string>
     <string name="dashboard_split_percent">%1$d %%</string>
     <string name="dashboard_split_description">%1$s: %2$d orders, %3$s %4$d (%5$d %%), %6$s %7$d (%8$d %%)</string>
+    <string name="dashboard_widget_monthly_turnover">Seasonality</string>
+    <string name="dashboard_widget_reviews_summary">Reviews &amp; support</string>
+    <string name="dashboard_monthly_subtitle">Revenue by month, last 12 months</string>
+    <string name="dashboard_monthly_total">12-month total</string>
+    <string name="dashboard_monthly_peak">Best month</string>
+    <string name="dashboard_monthly_partial">%1$s: current month, incomplete</string>
+    <string name="dashboard_monthly_chart_description">Monthly revenue, peak: %1$s</string>
+    <string name="dashboard_reviews_rating">Average rating</string>
+    <string name="dashboard_reviews_rating_value">%1$s ★</string>
+    <string name="dashboard_reviews_no_rating">No rating</string>
+    <string name="dashboard_reviews_count">Reviews</string>
+    <string name="dashboard_reviews_rate">Review rate (site)</string>
+    <string name="dashboard_reviews_rate_sub">%1$d reviews on the site</string>
+    <string name="dashboard_reviews_pending">Pending</string>
+    <string name="dashboard_sav_title">Support</string>
+    <string name="dashboard_sav_open">Open threads</string>
+    <string name="dashboard_sav_answered">Answered threads</string>
+    <string name="dashboard_reviews_rating_sub">from %1$d reviews</string>
 </resources>

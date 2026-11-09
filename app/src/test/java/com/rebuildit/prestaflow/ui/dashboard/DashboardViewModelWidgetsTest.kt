@@ -223,4 +223,57 @@ class DashboardViewModelWidgetsTest {
             advanceUntilIdle()
             assertEquals(WidgetLoad.Error, vm.uiState.value.freeCohorts)
         }
+
+    @Test
+    fun `saisonnalité - 12 mois fixes, pas rechargée au changement de période`() =
+        runTest {
+            prefs.setWidgetLayout(layoutWith(DashboardWidget.MONTHLY_TURNOVER))
+            val vm = vm()
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.monthlyTurnover is WidgetLoad.Data)
+            assertEquals(12, widgets.lastMonthlyMonths)
+            val callsBefore = widgets.monthlyTurnoverCalls
+            vm.onPeriodSelected(DashboardPeriod.YEAR)
+            advanceUntilIdle()
+            assertEquals(callsBefore, widgets.monthlyTurnoverCalls)
+        }
+
+    @Test
+    fun `avis et SAV - masqué par défaut, rechargé au changement de période`() =
+        runTest {
+            val hidden = vm()
+            advanceUntilIdle()
+            assertEquals(0, widgets.reviewsSummaryCalls)
+            assertEquals(0, widgets.monthlyTurnoverCalls)
+            assertEquals(WidgetLoad.Idle, hidden.uiState.value.reviewsSummary)
+
+            prefs.setWidgetLayout(layoutWith(DashboardWidget.REVIEWS_SUMMARY))
+            val vm = vm()
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.reviewsSummary is WidgetLoad.Data)
+            val before = widgets.reviewsSummaryCalls
+            vm.onPeriodSelected(DashboardPeriod.YEAR)
+            advanceUntilIdle()
+            assertEquals(before + 1, widgets.reviewsSummaryCalls)
+            assertTrue(widgets.lastReviewsSummaryRange!!.first!!.endsWith("-01-01 00:00:00"))
+        }
+
+    @Test
+    fun `saisonnalité et avis SAV - absent donne Unavailable, échec donne Error`() =
+        runTest {
+            prefs.setWidgetLayout(layoutWith(DashboardWidget.MONTHLY_TURNOVER, DashboardWidget.REVIEWS_SUMMARY))
+            widgets.monthlyTurnover = null
+            widgets.reviewsSummary = null
+            val vm = vm()
+            advanceUntilIdle()
+            assertEquals(WidgetLoad.Unavailable, vm.uiState.value.monthlyTurnover)
+            assertEquals(WidgetLoad.Unavailable, vm.uiState.value.reviewsSummary)
+
+            widgets.failure = IllegalStateException("boom")
+            vm.onWidgetRetry(DashboardWidget.REVIEWS_SUMMARY)
+            vm.onWidgetRetry(DashboardWidget.MONTHLY_TURNOVER)
+            advanceUntilIdle()
+            assertEquals(WidgetLoad.Error, vm.uiState.value.reviewsSummary)
+            assertEquals(WidgetLoad.Error, vm.uiState.value.monthlyTurnover)
+        }
 }

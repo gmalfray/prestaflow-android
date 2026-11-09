@@ -599,4 +599,22 @@
     <string name="dashboard_split_total_label">Bestellungen</string>
     <string name="dashboard_split_percent">%1$d %%</string>
     <string name="dashboard_split_description">%1$s: %2$d Bestellungen, %3$s %4$d (%5$d %%), %6$s %7$d (%8$d %%)</string>
+    <string name="dashboard_widget_monthly_turnover">Saisonalität</string>
+    <string name="dashboard_widget_reviews_summary">Bewertungen &amp; Support</string>
+    <string name="dashboard_monthly_subtitle">Umsatz pro Monat, letzte 12 Monate</string>
+    <string name="dashboard_monthly_total">Summe 12 Monate</string>
+    <string name="dashboard_monthly_peak">Bester Monat</string>
+    <string name="dashboard_monthly_partial">%1$s: laufender Monat, unvollständig</string>
+    <string name="dashboard_monthly_chart_description">Monatsumsatz, Spitze: %1$s</string>
+    <string name="dashboard_reviews_rating">Durchschnittsnote</string>
+    <string name="dashboard_reviews_rating_value">%1$s ★</string>
+    <string name="dashboard_reviews_no_rating">Keine Note</string>
+    <string name="dashboard_reviews_count">Bewertungen</string>
+    <string name="dashboard_reviews_rate">Bewertungsquote (Shop)</string>
+    <string name="dashboard_reviews_rate_sub">%1$d Bewertungen im Shop</string>
+    <string name="dashboard_reviews_pending">Ausstehend</string>
+    <string name="dashboard_sav_title">Support</string>
+    <string name="dashboard_sav_open">Offene Fälle</string>
+    <string name="dashboard_sav_answered">Beantwortete Fälle</string>
+    <string name="dashboard_reviews_rating_sub">aus %1$d Bewertungen</string>
 </resources>
