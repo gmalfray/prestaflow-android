@@ -460,124 +460,126 @@ private fun DashboardContent(
     // ── Graphique en plein écran (volet 3) ──────────────────────────────────────────
     var showFullscreenChart by rememberSaveable { mutableStateOf(false) }
 
-    PullToRefreshBox(
-        modifier = modifier.background(MaterialTheme.colorScheme.background),
-        isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp),
+    Box(modifier = modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
         ) {
-            // En-tête collant intégré dans la liste pour éviter un ScaffoldTopBar
-            item {
-                DashboardHeader(
-                    connections = connections,
-                    selectedPeriod = selectedPeriod,
-                    customRange = customRange,
-                    onPeriodSelected = onPeriodSelected,
-                    onCustomRangeSelected = onCustomRangeSelected,
-                    onSwitchShop = onSwitchShop,
-                    onAddShop = onAddShop,
-                    onEditLayout = { showLayoutEditor = true },
-                )
-            }
-
-            // Bandeau erreur inline
-            if (errorMessage != null) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                // En-tête collant intégré dans la liste pour éviter un ScaffoldTopBar
                 item {
-                    ErrorBanner(
-                        message = errorMessage,
-                        onRetry = onRefresh,
-                        modifier = Modifier.padding(horizontal = Dimensions.screenEdgeMargin),
+                    DashboardHeader(
+                        connections = connections,
+                        selectedPeriod = selectedPeriod,
+                        customRange = customRange,
+                        onPeriodSelected = onPeriodSelected,
+                        onCustomRangeSelected = onCustomRangeSelected,
+                        onSwitchShop = onSwitchShop,
+                        onAddShop = onAddShop,
+                        onEditLayout = { showLayoutEditor = true },
+                    )
+                }
+
+                // Bandeau erreur inline
+                if (errorMessage != null) {
+                    item {
+                        ErrorBanner(
+                            message = errorMessage,
+                            onRetry = onRefresh,
+                            modifier = Modifier.padding(horizontal = Dimensions.screenEdgeMargin),
+                        )
+                    }
+                }
+
+                // Widgets visibles, dans l'ordre de la disposition (HALF empilés deux par ligne)
+                items(widgetRows, key = { row -> row.first().id }) { row ->
+                    val rowModifier =
+                        Modifier
+                            .padding(horizontal = Dimensions.screenEdgeMargin)
+                            .padding(top = Dimensions.spacingL)
+                    val widget = row.first()
+                    when (widget) {
+                        DashboardWidget.FREE_CONVERSION ->
+                            FreeConversionCard(modifier = rowModifier, state = conversion, onRetry = onConversionRetry)
+                        DashboardWidget.CHART ->
+                            DashboardChartCard(
+                                modifier = rowModifier,
+                                points = snapshot.chart,
+                                mode = chartMode,
+                                onModeSelected = onChartModeSelected,
+                                totalText = chartTotalText,
+                                currentTurnover = snapshot.turnover,
+                                previousTurnover = snapshot.previousTurnover,
+                                // En mode plage libre, on n'affiche pas le comparatif "vs même période l'an dernier"
+                                selectedPeriod = if (customRange == null) selectedPeriod else null,
+                                onExpandClick = { showFullscreenChart = true },
+                            )
+                        DashboardWidget.ORDERS_SPLIT ->
+                            DashboardOrdersSplitCard(
+                                modifier = rowModifier,
+                                ordersCount = snapshot.ordersCount,
+                                ordersFreeCount = snapshot.ordersFreeCount,
+                            )
+                        DashboardWidget.LATEST_ORDERS ->
+                            LatestOrdersCard(
+                                modifier = rowModifier,
+                                state = widgetStates.latestOrders,
+                                onRetry = { widgetActions.onRetry(DashboardWidget.LATEST_ORDERS) },
+                                onOrderClick = widgetActions.onOrderClick,
+                                onHeaderClick = widgetActions.onAllOrdersClick,
+                            )
+                        DashboardWidget.TOP_PRODUCTS ->
+                            TopProductsCard(
+                                modifier = rowModifier,
+                                state = widgetStates.topProducts,
+                                onRetry = { widgetActions.onRetry(DashboardWidget.TOP_PRODUCTS) },
+                            )
+                        else ->
+                            DashboardKpiGrid(
+                                modifier = rowModifier,
+                                kpiItems =
+                                    row.mapNotNull { w ->
+                                        when (w) {
+                                            DashboardWidget.CARTS -> cartsItem
+                                            DashboardWidget.REVIEWS -> reviewsItem
+                                            else -> kpiItems[w]
+                                        }
+                                    },
+                            )
+                    }
+                }
+
+                // Dernière synchronisation
+                item {
+                    Text(
+                        modifier =
+                            Modifier
+                                .padding(horizontal = Dimensions.screenEdgeMargin)
+                                .padding(top = Dimensions.spacingS, bottom = Dimensions.spacingL),
+                        text = stringResource(id = R.string.label_last_sync, lastUpdatedText),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-
-            // Widgets visibles, dans l'ordre de la disposition (HALF empilés deux par ligne)
-            items(widgetRows, key = { row -> row.first().id }) { row ->
-                val rowModifier =
-                    Modifier
-                        .padding(horizontal = Dimensions.screenEdgeMargin)
-                        .padding(top = Dimensions.spacingL)
-                val widget = row.first()
-                when (widget) {
-                    DashboardWidget.FREE_CONVERSION ->
-                        FreeConversionCard(modifier = rowModifier, state = conversion, onRetry = onConversionRetry)
-                    DashboardWidget.CHART ->
-                        DashboardChartCard(
-                            modifier = rowModifier,
-                            points = snapshot.chart,
-                            mode = chartMode,
-                            onModeSelected = onChartModeSelected,
-                            totalText = chartTotalText,
-                            currentTurnover = snapshot.turnover,
-                            previousTurnover = snapshot.previousTurnover,
-                            // En mode plage libre, on n'affiche pas le comparatif "vs même période l'an dernier"
-                            selectedPeriod = if (customRange == null) selectedPeriod else null,
-                            onExpandClick = { showFullscreenChart = true },
-                        )
-                    DashboardWidget.ORDERS_SPLIT ->
-                        DashboardOrdersSplitCard(
-                            modifier = rowModifier,
-                            ordersCount = snapshot.ordersCount,
-                            ordersFreeCount = snapshot.ordersFreeCount,
-                        )
-                    DashboardWidget.LATEST_ORDERS ->
-                        LatestOrdersCard(
-                            modifier = rowModifier,
-                            state = widgetStates.latestOrders,
-                            onRetry = { widgetActions.onRetry(DashboardWidget.LATEST_ORDERS) },
-                            onOrderClick = widgetActions.onOrderClick,
-                            onHeaderClick = widgetActions.onAllOrdersClick,
-                        )
-                    DashboardWidget.TOP_PRODUCTS ->
-                        TopProductsCard(
-                            modifier = rowModifier,
-                            state = widgetStates.topProducts,
-                            onRetry = { widgetActions.onRetry(DashboardWidget.TOP_PRODUCTS) },
-                        )
-                    else ->
-                        DashboardKpiGrid(
-                            modifier = rowModifier,
-                            kpiItems =
-                                row.mapNotNull { w ->
-                                    when (w) {
-                                        DashboardWidget.CARTS -> cartsItem
-                                        DashboardWidget.REVIEWS -> reviewsItem
-                                        else -> kpiItems[w]
-                                    }
-                                },
-                        )
-                }
-            }
-
-            // Dernière synchronisation
-            item {
-                Text(
-                    modifier =
-                        Modifier
-                            .padding(horizontal = Dimensions.screenEdgeMargin)
-                            .padding(top = Dimensions.spacingS, bottom = Dimensions.spacingL),
-                    text = stringResource(id = R.string.label_last_sync, lastUpdatedText),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
-    }
 
-    if (showLayoutEditor) {
-        DashboardLayoutEditorDialog(
-            layout = widgetLayout,
-            onSave = { layout ->
-                onWidgetLayoutSaved(layout)
-                showLayoutEditor = false
-            },
-            onDismiss = { showLayoutEditor = false },
-        )
-    }
+        if (showLayoutEditor) {
+            DashboardLayoutEditorOverlay(
+                layout = widgetLayout,
+                onSave = { layout ->
+                    onWidgetLayoutSaved(layout)
+                    showLayoutEditor = false
+                },
+                onDismiss = { showLayoutEditor = false },
+            )
+        }
+    } // fin du Box racine
 
     // Graphique plein écran — ouvert depuis DashboardChartCard (volet 3)
     if (showFullscreenChart) {

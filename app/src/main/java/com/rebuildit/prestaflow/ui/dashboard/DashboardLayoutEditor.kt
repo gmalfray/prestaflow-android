@@ -1,5 +1,6 @@
 package com.rebuildit.prestaflow.ui.dashboard
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -50,8 +51,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.rebuildit.prestaflow.R
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardLayout
 import com.rebuildit.prestaflow.domain.dashboard.model.DashboardLayoutItem
@@ -68,25 +67,22 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
  * l'enregistrement, l'annulation ou la fermeture ne persistent rien.
  */
 @Composable
-internal fun DashboardLayoutEditorDialog(
+internal fun DashboardLayoutEditorOverlay(
     layout: DashboardLayout,
     onSave: (DashboardLayout) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // decorFitsSystemWindows = false : la fenêtre du dialog est de bout en bout (edge-to-edge) et
-    // les insets sont appliqués par le contenu, sinon le pied passe sous la navigation gestuelle.
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) {
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            DashboardLayoutEditorContent(
-                layout = layout,
-                onSave = onSave,
-                onDismiss = onDismiss,
-                modifier = Modifier.systemBarsPadding(),
-            )
-        }
+    // Overlay plein écran (pas un Dialog) : posé dans un Box borné par l'écran, la hauteur est
+    // bornée, donc le weight(1f) de la liste laisse toujours la place au pied d'actions. Un Dialog
+    // gardait une fenêtre en wrap-content qui débordait et rognait le pied sous l'écran.
+    BackHandler(onBack = onDismiss)
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        DashboardLayoutEditorContent(
+            layout = layout,
+            onSave = onSave,
+            onDismiss = onDismiss,
+            modifier = Modifier.systemBarsPadding(),
+        )
     }
 }
 
