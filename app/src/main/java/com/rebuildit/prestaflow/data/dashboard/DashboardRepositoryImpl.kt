@@ -66,7 +66,10 @@ class DashboardRepositoryImpl
                                 previousTurnover = payload.previousTurnover,
                                 ordersFreeCount = payload.ordersFreeCount,
                                 pendingOrdersCount = payload.pendingOrdersCount,
-                                lowStockCount = payload.lowStockAlerts.size,
+                                // Comptage exact (connecteur v1.24.0+) aligné sur le filtre Produits
+                                // « Stock faible » ; repli sur la taille de la liste (plafonnée à 50) pour
+                                // les connecteurs plus anciens.
+                                lowStockCount = payload.lowStockCount ?: payload.lowStockAlerts.size,
                             )
                         dashboardDao.upsert(entity)
                     },
@@ -99,7 +102,10 @@ class DashboardRepositoryImpl
                                 previousTurnover = payload.previousTurnover,
                                 ordersFreeCount = payload.ordersFreeCount,
                                 pendingOrdersCount = payload.pendingOrdersCount,
-                                lowStockCount = payload.lowStockAlerts.size,
+                                // Comptage exact (connecteur v1.24.0+) aligné sur le filtre Produits
+                                // « Stock faible » ; repli sur la taille de la liste (plafonnée à 50) pour
+                                // les connecteurs plus anciens.
+                                lowStockCount = payload.lowStockCount ?: payload.lowStockAlerts.size,
                             )
                         dashboardDao.upsert(entity)
                     },

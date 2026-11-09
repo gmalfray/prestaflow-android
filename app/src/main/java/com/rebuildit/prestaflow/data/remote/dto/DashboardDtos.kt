@@ -21,6 +21,13 @@ data class DashboardMetricsDto(
     @SerialName("pending_orders_count") val pendingOrdersCount: Int = 0,
     /** Produits actifs sous le seuil de stock bas (liste plafonnée à 50 côté connecteur). */
     @SerialName("low_stock_alerts") val lowStockAlerts: List<LowStockAlertDto> = emptyList(),
+    /**
+     * Comptage EXACT du stock faible (connecteur v1.24.0+), aligné sur le filtre Produits `stock=low_stock`
+     * (0 < quantité <= seuil par produit, hors ruptures). À préférer à la taille de [lowStockAlerts]
+     * (plafonnée à 50, ruptures incluses) pour que la tuile « Stock bas » colle à la carte « Stock faible »
+     * de l'onglet Produits. Null si le connecteur ne renvoie pas encore ce champ.
+     */
+    @SerialName("low_stock_count") val lowStockCount: Int? = null,
 )
 
 /** Entrée de `low_stock_alerts` ; seuls les champs utiles au dashboard sont mappés. */

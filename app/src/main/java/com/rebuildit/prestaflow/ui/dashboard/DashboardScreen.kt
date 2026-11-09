@@ -376,11 +376,10 @@ private fun DashboardContent(
         }
 
     val pendingOrdersText = remember(snapshot.pendingOrdersCount) { numberFormatter.format(snapshot.pendingOrdersCount) }
-    val lowStockText =
-        remember(snapshot.lowStockCount) {
-            val count = numberFormatter.format(snapshot.lowStockCount)
-            if (snapshot.lowStockCount >= LOW_STOCK_CAP) "$count+" else count
-        }
+    // Chiffre exact (connecteur v1.24.0+ via low_stock_count) : la tuile « Stock bas » doit afficher le
+    // même nombre que la carte « Stock faible » de l'onglet Produits, vers laquelle elle mène, donc sans
+    // plafond d'affichage.
+    val lowStockText = remember(snapshot.lowStockCount) { numberFormatter.format(snapshot.lowStockCount) }
     val kpiItems =
         mapOf(
             DashboardWidget.TURNOVER to
@@ -2209,8 +2208,6 @@ internal fun kpiTrendPercentFromSeries(
 }
 
 // ─── Modèle local ─────────────────────────────────────────────────────────────
-
-private const val LOW_STOCK_CAP = 50
 
 /** Statut d'affichage d'une tuile à données réseau. */
 private fun <T> WidgetLoad<T>.tileStatus(): TileStatus =
