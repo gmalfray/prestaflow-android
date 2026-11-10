@@ -53,7 +53,13 @@ class DashboardWidgetsRepositoryImpl
     ) : DashboardWidgetsRepository {
         override suspend fun getLatestOrders(limit: Int): List<LatestOrder> =
             withContext(ioDispatcher) {
-                val filters = mapOf("sort" to "date_desc", "limit" to limit.toString(), "offset" to "0")
+                val filters =
+                    mapOf(
+                        "sort" to "date_desc",
+                        "limit" to limit.toString(),
+                        "offset" to "0",
+                        "exclude_free" to "1",
+                    )
                 api.getOrders(filters).orders.take(limit).map { it.toLatestOrder() }
             }
 

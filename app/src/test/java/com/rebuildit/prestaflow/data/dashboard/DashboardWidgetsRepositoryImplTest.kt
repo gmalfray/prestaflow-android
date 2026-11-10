@@ -119,6 +119,7 @@ class DashboardWidgetsRepositoryImplTest {
             val orders = repo.getLatestOrders(limit = 5)
 
             assertEquals("date_desc", api.lastOrderFilters?.get("sort"))
+            assertEquals("1", api.lastOrderFilters?.get("exclude_free"))
             assertEquals("5", api.lastOrderFilters?.get("limit"))
             assertEquals("Ada Lovelace", orders.single().customerName)
             assertEquals("#32CD32", orders.single().statusColor)
