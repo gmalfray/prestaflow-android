@@ -177,7 +177,10 @@ class ProductsViewModel
                     .drop(1) // ignore la valeur initiale vide
                     .debounce(SEARCH_DEBOUNCE_MS)
                     .collect {
-                        refresh(forceRemote = true, notifyOnError = false)
+                        // notifyOnError = true : une recherche en échec doit afficher une erreur
+                        // exploitable dans la zone liste (le champ reste affiché au-dessus), pas
+                        // un échec avalé qui laisse l'écran sans issue.
+                        refresh(forceRemote = true, notifyOnError = true)
                     }
             }
         }
@@ -223,8 +226,12 @@ class ProductsViewModel
                             val mapped = networkErrorMapper.map(error)
                             current.copy(
                                 isRefreshing = false,
-                                isLoading = current.products.isEmpty(),
-                                error = if (notifyOnError) mapped else current.error,
+                                // Le refresh a tranché : on ne reste jamais en chargement après un
+                                // échec, même liste vide (sinon spinner permanent).
+                                isLoading = false,
+                                // Liste vide = rien à perdre : on expose l'erreur même en refresh
+                                // silencieux, pour que l'utilisateur voie pourquoi et puisse réessayer.
+                                error = if (notifyOnError || current.products.isEmpty()) mapped else current.error,
                             )
                         }
                     }
@@ -232,7 +239,7 @@ class ProductsViewModel
                         _uiState.update { current ->
                             current.copy(
                                 isRefreshing = false,
-                                isLoading = current.products.isEmpty(),
+                                isLoading = false,
                                 error = null,
                                 totalCount = total ?: current.totalCount,
                             )

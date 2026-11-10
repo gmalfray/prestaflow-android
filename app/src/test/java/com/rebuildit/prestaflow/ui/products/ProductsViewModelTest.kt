@@ -14,12 +14,14 @@ import com.rebuildit.prestaflow.fakes.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -33,6 +35,8 @@ import org.junit.Test
  * - La recherche passe bien en paramètre `search` au repository (pas de filtrage local).
  * - Le filtre de stock est transmis au repository.
  */
+private const val SEARCH_DEBOUNCE_TEST_MS = 301L
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProductsViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
@@ -355,6 +359,77 @@ class ProductsViewModelTest {
                 "L'état doit contenir une erreur après onRefresh() échoué",
                 vm.uiState.value.error != null,
             )
+        }
+
+    // ─── Recherche sans résultat / en échec ──────────────────────────────────
+
+    @Test
+    fun `une recherche a zero resultat donne un etat vide sans spinner et conserve la query`() =
+        runTest {
+            fakeProductsRepo.setProducts(listOf(buildProduct(1L), buildProduct(2L)))
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            // « kit sok » : 0 résultat, le repo vide le cache puis renvoie un total de 0.
+            fakeProductsRepo.refreshTotal = 0
+            fakeProductsRepo.setProducts(emptyList())
+            vm.onQueryChange("kit sok")
+            advanceTimeBy(SEARCH_DEBOUNCE_TEST_MS)
+            advanceUntilIdle()
+
+            val state = vm.uiState.value
+            assertEquals("kit sok", state.query)
+            assertTrue(state.products.isEmpty())
+            assertFalse("Pas de spinner infini sur recherche vide", state.isLoading)
+            assertFalse(state.isRefreshing)
+            assertNull(state.error)
+            assertEquals(0, state.totalCount)
+        }
+
+    @Test
+    fun `une recherche en echec expose une erreur et ne laisse pas isLoading a vrai`() =
+        runTest {
+            fakeProductsRepo.setProducts(listOf(buildProduct(1L)))
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            fakeProductsRepo.shouldThrowOnRefresh = true
+            fakeProductsRepo.setProducts(emptyList())
+            vm.onQueryChange("kit sok")
+            advanceTimeBy(SEARCH_DEBOUNCE_TEST_MS)
+            advanceUntilIdle()
+
+            val state = vm.uiState.value
+            assertFalse("isLoading ne doit pas rester coincé à vrai", state.isLoading)
+            assertFalse(state.isRefreshing)
+            assertTrue("Une erreur exploitable doit être exposée", state.error != null)
+            assertEquals("kit sok", state.query)
+        }
+
+    @Test
+    fun `une recherche sur liste vide transmet la query puis sort du chargement`() =
+        runTest {
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onQueryChange("soc")
+            advanceTimeBy(SEARCH_DEBOUNCE_TEST_MS)
+            advanceUntilIdle()
+
+            assertEquals("soc", fakeProductsRepo.refreshCalls.last().search)
+            assertFalse(vm.uiState.value.isLoading)
+            assertFalse(vm.uiState.value.isRefreshing)
+        }
+
+    @Test
+    fun `un echec silencieux au demarrage sur liste vide n est plus un spinner permanent`() =
+        runTest {
+            fakeProductsRepo.shouldThrowOnRefresh = true
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            assertFalse(vm.uiState.value.isLoading)
+            assertTrue(vm.uiState.value.error != null)
         }
 
     // ─── Rattrapage au retour sur l'écran (onScreenResumed) ─────────────────

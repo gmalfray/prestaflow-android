@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -57,9 +59,7 @@ import com.rebuildit.prestaflow.domain.auth.model.ShopConnection
 import com.rebuildit.prestaflow.domain.products.model.Product
 import com.rebuildit.prestaflow.domain.products.model.ProductStock
 import com.rebuildit.prestaflow.domain.products.model.StockFilter
-import com.rebuildit.prestaflow.ui.components.EmptyState
 import com.rebuildit.prestaflow.ui.components.ErrorRow
-import com.rebuildit.prestaflow.ui.components.LoadingState
 import com.rebuildit.prestaflow.ui.components.SearchField
 import com.rebuildit.prestaflow.ui.components.SectionHeader
 import com.rebuildit.prestaflow.ui.components.ShopSwitcherChip
@@ -130,42 +130,32 @@ fun ProductsScreen(
     val errorMessage = state.error?.asString()
 
     Box(modifier = modifier.fillMaxSize()) {
-        when {
-            state.isLoading && state.products.isEmpty() -> LoadingState(Modifier.fillMaxSize())
-            state.products.isEmpty() ->
-                EmptyState(
-                    message = stringResource(R.string.products_list_empty),
-                    modifier = Modifier.fillMaxSize(),
-                    errorMessage = errorMessage,
-                    onRefresh = onRefresh,
-                )
-            else ->
-                ProductList(
-                    modifier = Modifier.fillMaxSize(),
-                    products = state.visibleProducts,
-                    // KPI « Total produits » = total serveur du catalogue COMPLET (actifs + inactifs),
-                    // indépendant du filtre actif. Tant que le compteur serveur n'a pas répondu, on
-                    // retombe sur le total du filtre actif (approximation, cf. state.catalogTotal).
-                    totalCount = state.catalogTotal ?: state.totalCount,
-                    // KPI « Stock faible » = total serveur (stable, = total du filtre « Stock faible »,
-                    // indépendant de la pagination). Tant que le compteur serveur n'a pas répondu, on
-                    // affiche une approximation locale (produits chargés marqués is_low). Les ruptures
-                    // (quantité 0) ne sont pas comptées ici — elles ont leur filtre « En rupture ».
-                    lowStockCount = state.lowStockTotal ?: state.products.count { it.stock.isLow },
-                    query = state.query,
-                    onQueryChange = onQueryChange,
-                    isRefreshing = state.isRefreshing,
-                    errorMessage = errorMessage,
-                    connections = connections,
-                    onRefresh = onRefresh,
-                    onProductClick = onProductClick,
-                    onSwitchShop = onSwitchShop,
-                    onAddShop = onAddShop,
-                    stockFilter = state.stockFilter,
-                    onStockFilterSelected = onStockFilterSelected,
-                    onStockFilterToggle = onStockFilterToggle,
-                )
-        }
+        // Le bandeau (KPI, boutique, recherche, filtres) est toujours affiché : seule la zone de
+        // contenu dessous alterne entre spinner, message vide / erreur et liste.
+        ProductList(
+            modifier = Modifier.fillMaxSize(),
+            products = state.visibleProducts,
+            // KPI « Total produits » = total serveur du catalogue COMPLET (actifs + inactifs),
+            // indépendant du filtre actif. Tant que le compteur serveur n'a pas répondu, on
+            // retombe sur le total du filtre actif (approximation, cf. state.catalogTotal).
+            totalCount = state.catalogTotal ?: state.totalCount,
+            // KPI « Stock faible » = total serveur (stable, indépendant de la pagination). Tant que
+            // le compteur n'a pas répondu, approximation locale (produits chargés marqués is_low).
+            lowStockCount = state.lowStockTotal ?: state.products.count { it.stock.isLow },
+            query = state.query,
+            onQueryChange = onQueryChange,
+            isLoading = state.isLoading,
+            isRefreshing = state.isRefreshing,
+            errorMessage = errorMessage,
+            connections = connections,
+            onRefresh = onRefresh,
+            onProductClick = onProductClick,
+            onSwitchShop = onSwitchShop,
+            onAddShop = onAddShop,
+            stockFilter = state.stockFilter,
+            onStockFilterSelected = onStockFilterSelected,
+            onStockFilterToggle = onStockFilterToggle,
+        )
 
         val scanContentDescription = stringResource(R.string.products_scan_fab_content_description)
         FloatingActionButton(
@@ -193,6 +183,7 @@ private fun ProductList(
     lowStockCount: Int,
     query: String,
     onQueryChange: (String) -> Unit,
+    isLoading: Boolean,
     isRefreshing: Boolean,
     errorMessage: String?,
     connections: List<ShopConnection>,
@@ -233,95 +224,158 @@ private fun ProductList(
                         ),
                     verticalArrangement = Arrangement.spacedBy(Dimensions.spacingM),
                 ) {
-                    // KPI stats : total produits + stock faible
-                    item {
-                        ProductsStatsRow(
-                            totalCount = totalCount,
-                            lowStockCount = lowStockCount,
-                            stockFilter = stockFilter,
-                            onStockFilterToggle = onStockFilterToggle,
-                        )
-                    }
+                    productsHeader(
+                        totalCount = totalCount,
+                        lowStockCount = lowStockCount,
+                        query = query,
+                        onQueryChange = onQueryChange,
+                        connections = connections,
+                        onSwitchShop = onSwitchShop,
+                        onAddShop = onAddShop,
+                        stockFilter = stockFilter,
+                        onStockFilterSelected = onStockFilterSelected,
+                        onStockFilterToggle = onStockFilterToggle,
+                    )
 
-                    item { Spacer(modifier = Modifier.height(Dimensions.spacingXs)) }
+                    productsContent(
+                        products = products,
+                        isLoading = isLoading,
+                        query = query,
+                        currencyFormatter = currencyFormatter,
+                        onProductClick = onProductClick,
+                    )
+                }
+            }
+        } // fin PullToRefreshBox
+    }
+}
 
-                    // Sélecteur de boutique
-                    if (connections.isNotEmpty()) {
-                        item {
-                            ShopSwitcherChip(
-                                connections = connections,
-                                onSwitch = onSwitchShop,
-                                onAddShop = onAddShop,
-                            )
-                        }
-                    }
+/** Bandeau toujours affiché : KPI cliquables, sélecteur de boutique, titre, recherche et filtres de stock. */
+@Suppress("LongParameterList")
+private fun LazyListScope.productsHeader(
+    totalCount: Int,
+    lowStockCount: Int,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    connections: List<ShopConnection>,
+    onSwitchShop: (String) -> Unit,
+    onAddShop: () -> Unit,
+    stockFilter: StockFilter,
+    onStockFilterSelected: (StockFilter) -> Unit,
+    onStockFilterToggle: (StockFilter) -> Unit,
+) {
+    // KPI stats : total produits + stock faible
+    item {
+        ProductsStatsRow(
+            totalCount = totalCount,
+            lowStockCount = lowStockCount,
+            stockFilter = stockFilter,
+            onStockFilterToggle = onStockFilterToggle,
+        )
+    }
 
-                    // En-tête de section
-                    item {
-                        SectionHeader(
-                            title = stringResource(R.string.products_list_section_title),
-                        )
-                    }
+    item { Spacer(modifier = Modifier.height(Dimensions.spacingXs)) }
 
-                    // Champ de recherche
-                    item {
-                        SearchField(
-                            query = query,
-                            onQueryChange = onQueryChange,
-                            placeholder = stringResource(R.string.products_search_placeholder),
-                        )
-                    }
+    // Sélecteur de boutique
+    if (connections.isNotEmpty()) {
+        item {
+            ShopSwitcherChip(
+                connections = connections,
+                onSwitch = onSwitchShop,
+                onAddShop = onAddShop,
+            )
+        }
+    }
 
-                    // Chips de filtre par état de stock
-                    item {
-                        StockFilterBar(
-                            selected = stockFilter,
-                            onSelected = onStockFilterSelected,
-                        )
-                    }
+    // En-tête de section
+    item {
+        SectionHeader(
+            title = stringResource(R.string.products_list_section_title),
+        )
+    }
 
-                    if (products.isEmpty()) {
-                        item {
-                            Text(
-                                text = stringResource(R.string.list_no_results, query),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(vertical = Dimensions.spacingM),
-                            )
-                        }
+    // Champ de recherche
+    item {
+        SearchField(
+            query = query,
+            onQueryChange = onQueryChange,
+            placeholder = stringResource(R.string.products_search_placeholder),
+        )
+    }
+
+    // Chips de filtre par état de stock
+    item {
+        StockFilterBar(
+            selected = stockFilter,
+            onSelected = onStockFilterSelected,
+        )
+    }
+}
+
+/**
+ * Zone de contenu sous le bandeau : spinner (chargement), message vide (aucun produit / aucun
+ * résultat pour la recherche) ou carte des lignes produit.
+ */
+@Suppress("LongParameterList")
+private fun LazyListScope.productsContent(
+    products: List<Product>,
+    isLoading: Boolean,
+    query: String,
+    currencyFormatter: NumberFormat,
+    onProductClick: (Long) -> Unit,
+) {
+    if (products.isEmpty() && isLoading) {
+        item {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(vertical = Dimensions.spacingL),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+    } else if (products.isEmpty()) {
+        item {
+            Text(
+                text =
+                    if (query.isBlank()) {
+                        stringResource(R.string.products_list_empty)
                     } else {
-                        // Carte conteneur avec toutes les lignes produit
-                        item {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                                colors =
-                                    CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                                    ),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            ) {
-                                Column {
-                                    products.forEachIndexed { index, product ->
-                                        ProductRow(
-                                            product = product,
-                                            currencyFormatter = currencyFormatter,
-                                            onClick = { onProductClick(product.id) },
-                                        )
-                                        if (index < products.lastIndex) {
-                                            HorizontalDivider(
-                                                color = MaterialTheme.colorScheme.surfaceContainer,
-                                                thickness = 1.dp,
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+                        stringResource(R.string.list_no_results, query)
+                    },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = Dimensions.spacingM),
+            )
+        }
+    } else {
+        // Carte conteneur avec toutes les lignes produit
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                    ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            ) {
+                Column {
+                    products.forEachIndexed { index, product ->
+                        ProductRow(
+                            product = product,
+                            currencyFormatter = currencyFormatter,
+                            onClick = { onProductClick(product.id) },
+                        )
+                        if (index < products.lastIndex) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                thickness = 1.dp,
+                            )
                         }
                     }
                 }
             }
-        } // fin PullToRefreshBox
+        }
     }
 }
 
