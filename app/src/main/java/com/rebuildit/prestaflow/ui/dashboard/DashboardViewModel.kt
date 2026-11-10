@@ -314,8 +314,8 @@ class DashboardViewModel
                             current.copy(snapshot = null, customRange = null, isLoading = true, error = null)
                         }
                         customRangeFlow.value = null
-                        _uiState.update {
-                            it.copy(
+                        _uiState.update { widgets ->
+                            widgets.copy(
                                 latestOrders = WidgetLoad.Idle,
                                 abandonedCarts = WidgetLoad.Idle,
                                 pendingReviews = WidgetLoad.Idle,

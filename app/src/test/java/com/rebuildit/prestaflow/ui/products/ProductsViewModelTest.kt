@@ -62,7 +62,7 @@ class ProductsViewModelTest {
             networkErrorMapper = NetworkErrorMapper(),
             authRepository = fakeAuthRepo,
             resumeRefreshGuard = resumeRefreshGuard,
-            savedStateHandle = SavedStateHandle(stockArg?.let { mapOf("stock" to it) } ?: emptyMap()),
+            savedStateHandle = SavedStateHandle(stockArg?.let { mapOf("stock" to it) }.orEmpty()),
         )
 
     // ─── Total depuis l'API ──────────────────────────────────────────────────

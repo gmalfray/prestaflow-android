@@ -45,6 +45,7 @@ complexity:
     active: true
     functionThreshold: 6
     constructorThreshold: 6
+    ignoreDefaultParameters: true
   TooManyFunctions:
     active: false
 
